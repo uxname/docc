@@ -2,15 +2,13 @@
 
 # docc
 
+overview
+
 docc is a compiler and linter for documentation written as JSON. It checks structure, links, content and style, and builds Markdown for people to read.
 
 Data is the source of truth and Markdown is generated output. Invalid documentation never reaches the main branch, in the same way as invalid code.
 
 Start with [Document model](document-model.md) to see what a document looks like, then [Agent workflow](agent-workflow.md) for the loop an agent follows.
-
-## Kind
-
-overview
 
 ## Links
 
@@ -24,3 +22,18 @@ overview
 - [Agent workflow](agent-workflow.md)
 - [Performance](performance.md)
 - [Decisions and assumptions](decisions.md)
+
+## Referenced by
+
+- [Agent workflow](agent-workflow.md)
+- [Architecture](architecture.md)
+- [Commands](commands.md)
+- [Configuration](config.md)
+- [Decisions and assumptions](decisions.md)
+- [Document model](document-model.md)
+- [Goals and non-goals](goals.md)
+- [Performance](performance.md)
+- [Rendering](rendering.md)
+- [Rules and diagnostics](rules.md)
+
+Document tree: [_tree.md](_tree.md)

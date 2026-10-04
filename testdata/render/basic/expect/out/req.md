@@ -4,6 +4,12 @@
 
 Requirement body, see [Deep doc](a/deep.md#acceptance-criteria).
 
+## Statement
+
+First fact.
+
+Second fact.
+
 ## Parent
 
 [Index](index.md)
@@ -12,8 +18,7 @@ Requirement body, see [Deep doc](a/deep.md#acceptance-criteria).
 
 - [Deep doc](a/deep.md)
 
-## Statement
+## Referenced by
 
-First fact.
-
-Second fact.
+- [Deep doc](a/deep.md)
+- [Index](index.md)

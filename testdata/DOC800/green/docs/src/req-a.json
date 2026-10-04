@@ -1,1 +1,1 @@
-{ "title": "A", "kind": "requirement", "statement": "The system must handle 5 requests, not `несколько`." }
+{ "title": "A", "kind": "requirement", "statement": "The system must handle 5 requests, not `множество`." }

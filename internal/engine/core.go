@@ -16,8 +16,11 @@ func (p *Project) checkSyntax() {
 		t := d.Root.Get("title")
 		switch {
 		case t == nil:
-			p.emit(d, "DOC103", d.Root.Start, d.Root.Start+1, "the document has no title",
-				`Add a non-empty "title" string.`)
+			hint := `Add a non-empty "title" string.`
+			if d.Root.Get("Title") != nil {
+				hint = `The field is named "title" (lowercase): rename "Title".`
+			}
+			p.emit(d, "DOC103", d.Root.Start, d.Root.Start+1, "the document has no title", hint)
 		case t.Kind == loader.String && strings.TrimSpace(t.Str) == "":
 			p.emit(d, "DOC103", t.Start, t.End, "the title is empty",
 				"Write a short, meaningful title.")

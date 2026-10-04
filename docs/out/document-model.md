@@ -4,16 +4,7 @@
 
 A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected.
 
-Only title is required. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docc-ignore. Every other field is free and holds prose, so no document types are built in.
-
-## Parent
-
-[docc](index.md)
-
-## Links
-
-- [Rules and diagnostics](rules.md)
-- [Rendering](rendering.md)
+Only title is required. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docIgnore. Every other field is free and holds prose, so no document types are built in.
 
 ## References
 
@@ -31,4 +22,18 @@ The include `{{id#field}}` is replaced at build time by the text of that field, 
 
 ## Suppression
 
-docc-ignore lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.
+docIgnore lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.
+
+## Parent
+
+[docc](index.md)
+
+## Links
+
+- [Rules and diagnostics](rules.md)
+- [Rendering](rendering.md)
+
+## Referenced by
+
+- [docc](index.md)
+- [Rendering](rendering.md)

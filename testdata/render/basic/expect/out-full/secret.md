@@ -2,30 +2,30 @@
 
 # Secret
 
-> Скрытый документ.
+> Hidden document.
 
 Hidden text with <!-- include req#statement -->First fact. Second fact.<!-- /include -->
 
-## Links
+## Notes (hidden)
 
-- [Index](index.md)
-
-## Заметки (скрытые)
-
-> Служебное.
+> Service information.
 
 - private note
 
-## Подавления (docc-ignore)
+## Suppressions (docIgnore)
 
-> Служебное.
+> Service information.
 
 1. - **rule:** DOC303
    - **reason:** demo
    - **path:** /body
 
-## Подтверждения (reviewed)
+## Reviewed
 
-> Служебное.
+> Service information.
 
 - **index:** 00000000
+
+## Links
+
+- [Index](index.md)

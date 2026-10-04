@@ -47,13 +47,24 @@ func runGolden(t *testing.T, dir, code, kind string) {
 	if b, err := os.ReadFile(filepath.Join(dir, "args.txt")); err == nil {
 		args = strings.Fields(string(b))
 	}
-	args = append(args, "--format", "json")
+	args = append(args, "--format", "json", "--max-diagnostics", "0")
 	t.Chdir(dir)
-	var out, errb bytes.Buffer
-	exit := run(args, &out, &errb)
+	var envelope, errb bytes.Buffer
+	exit := run(args, &envelope, &errb)
 	if exit == 2 {
 		t.Fatalf("usage/config error: %s", errb.String())
 	}
+	// expected.json holds the diagnostics array of the report
+	var out bytes.Buffer
+	var rep struct{ Diagnostics json.RawMessage }
+	if err := json.Unmarshal(envelope.Bytes(), &rep); err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.MarshalIndent(rep.Diagnostics, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out.Write(append(b, '\n'))
 	exp := filepath.Join(dir, "expected.json")
 	if *update {
 		if err := os.WriteFile(exp, out.Bytes(), 0o644); err != nil {

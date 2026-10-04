@@ -21,7 +21,7 @@
     "column": 1,
     "endLine": 1,
     "endColumn": 1,
-    "message": "extra file in the output directory",
+    "message": "extra file in the output directory (no source produces it)",
     "hint": "Run docc build: it removes files that no source produces.",
     "fixable": "none"
   },
@@ -34,7 +34,7 @@
     "column": 1,
     "endLine": 1,
     "endColumn": 1,
-    "message": "the generated file is outdated",
+    "message": "the generated file is outdated (source: docs/src/index.json)",
     "hint": "Run docc build and commit the result.",
     "fixable": "none"
   }

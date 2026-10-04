@@ -8,7 +8,7 @@
     "column": 5,
     "endLine": 4,
     "endColumn": 25,
-    "message": "a docc-ignore entry needs a reason",
+    "message": "a docIgnore entry needs a reason",
     "hint": "Add \"reason\": explain why the rule does not apply here.",
     "fixable": "none"
   },
@@ -47,7 +47,7 @@
     "column": 5,
     "endLine": 7,
     "endColumn": 51,
-    "message": "a docc-ignore entry needs a reason",
+    "message": "a docIgnore entry needs a reason",
     "hint": "Add \"reason\": explain why the rule does not apply here.",
     "fixable": "none"
   },
@@ -73,7 +73,7 @@
     "column": 41,
     "endLine": 9,
     "endColumn": 48,
-    "message": "unknown key \"extra\" in a docc-ignore entry",
+    "message": "unknown key \"extra\" in a docIgnore entry",
     "hint": "Use only rule, reason and path.",
     "fixable": "none"
   },
@@ -86,7 +86,7 @@
     "column": 5,
     "endLine": 10,
     "endColumn": 13,
-    "message": "a docc-ignore entry must be an object",
+    "message": "a docIgnore entry must be an object",
     "hint": "Write { \"rule\": \"DOC301\", \"reason\": \"why\" }.",
     "fixable": "none"
   }

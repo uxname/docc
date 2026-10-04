@@ -108,6 +108,14 @@ func normalize(b []byte) []byte {
 	return bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n"))
 }
 
+// src names the source document of a generated page, if there is one.
+func src(p *engine.Project, rel string) string {
+	if id := strings.TrimSuffix(rel, ".md"); id != rel && p.Graph[id] != nil {
+		return " (source: " + p.Graph[id].File + ")"
+	}
+	return ""
+}
+
 // CheckFresh compares dir with the expected files and reports DOC501 for
 // missing, outdated and extra files.
 func CheckFresh(p *engine.Project, outRel string, files map[string]string) {
@@ -123,12 +131,12 @@ func CheckFresh(p *engine.Project, outRel string, files map[string]string) {
 		want, ok := files[rel]
 		file := outRel + "/" + rel
 		if !ok {
-			p.ReportFile(file, "DOC501", 1, 1, "extra file in the output directory", "Run docc build: it removes files that no source produces.")
+			p.ReportFile(file, "DOC501", 1, 1, "extra file in the output directory (no source produces it)", "Run docc build: it removes files that no source produces.")
 			return nil
 		}
 		got, err := os.ReadFile(path)
 		if err != nil || !bytes.Equal(normalize(got), []byte(want)) {
-			p.ReportFile(file, "DOC501", 1, 1, "the generated file is outdated", "Run docc build and commit the result.")
+			p.ReportFile(file, "DOC501", 1, 1, "the generated file is outdated"+src(p, rel), "Run docc build and commit the result.")
 		}
 		return nil
 	})
@@ -140,6 +148,6 @@ func CheckFresh(p *engine.Project, outRel string, files map[string]string) {
 	}
 	sort.Strings(missing)
 	for _, rel := range missing {
-		p.ReportFile(outRel+"/"+rel, "DOC501", 1, 1, "the generated file is missing", "Run docc build and commit the result.")
+		p.ReportFile(outRel+"/"+rel, "DOC501", 1, 1, "the generated file is missing"+src(p, rel), "Run docc build and commit the result.")
 	}
 }

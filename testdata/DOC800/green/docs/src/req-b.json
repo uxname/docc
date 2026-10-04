@@ -1,6 +1,6 @@
 {
   "title": "B",
   "kind": "requirement",
-  "statement": "It must handle несколько requests.",
-  "docc-ignore": [{ "rule": "custom/no-vague-quantity", "reason": "wording from the customer", "path": "/statement" }]
+  "statement": "It must handle множество requests.",
+  "docIgnore": [{ "rule": "custom/no-vague-quantity", "reason": "wording from the customer", "path": "/statement" }]
 }

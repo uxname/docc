@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,6 +33,15 @@ func do(args ...string) (int, string, string) {
 	return code, out.String(), errb.String()
 }
 
+// diagnosticsOf returns the "diagnostics" array of a JSON report.
+func diagnosticsOf(out string) []byte {
+	var rep struct{ Diagnostics json.RawMessage }
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		return []byte(out)
+	}
+	return rep.Diagnostics
+}
+
 func TestMissingSrcIsUsageError(t *testing.T) {
 	project(t, map[string]string{})
 	code, out, errs := do("validate")
@@ -51,7 +61,7 @@ func TestEmptySrcGivesDOC205(t *testing.T) {
 func TestBadConfigIsExit2(t *testing.T) {
 	project(t, map[string]string{"docc.json": "{\n  \"rules\": { \"DOC101\": \"off\" }\n}", "docs/src/index.json": `{"title":"I"}`})
 	code, out, errs := do("validate")
-	if code != 2 || out != "" || !strings.HasPrefix(errs, "docc.json:2:") || !strings.Contains(errs, "config error") {
+	if code != 2 || out != "" || !strings.HasPrefix(errs, "docc: error: docc.json:2:") || !strings.Contains(errs, "config error") {
 		t.Fatalf("%d %q %q", code, out, errs)
 	}
 }
@@ -59,11 +69,17 @@ func TestBadConfigIsExit2(t *testing.T) {
 func TestCleanProject(t *testing.T) {
 	project(t, map[string]string{"docs/src/index.json": `{"title":"I"}`})
 	code, out, _ := do("validate")
-	if code != 0 || out != "0 errors, 0 warnings in 0 files\n" {
+	if code != 0 || out != "checked 1 file: 0 errors, 0 warnings\n" {
 		t.Fatalf("%d %q", code, out)
 	}
 	code, out, _ = do("validate", "--format", "json")
-	if code != 0 || out != "[]\n" {
+	if code != 0 || !strings.Contains(out, `"summary": {
+    "checked": 1,
+    "errors": 0,
+    "warnings": 0,
+    "shown": 0,
+    "truncated": false
+  }`) || !strings.Contains(out, `"diagnostics": []`) {
 		t.Fatalf("%d %q", code, out)
 	}
 }
@@ -80,19 +96,20 @@ func TestTextFormatAndLimit(t *testing.T) {
 	}
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	want := []string{
-		`docs/src/o0.json:1:1: error DOC203 document "o0" is not reachable from the roots [index]`,
+		`docs/src/o0.json:1:1: error DOC203 (graph/orphan) document "o0" is not reachable from the roots [index]`,
 		"  hint: Link it from a reachable document (links or [[id]] in the text) or set its parent.",
-		`docs/src/o1.json:1:1: error DOC203 document "o1" is not reachable from the roots [index]`,
+		`docs/src/o1.json:1:1: error DOC203 (graph/orphan) document "o1" is not reachable from the roots [index]`,
 		"  hint: Link it from a reachable document (links or [[id]] in the text) or set its parent.",
-		"показано 2 из 5",
-		"5 errors, 0 warnings in 5 files",
+		"showing 2 of 5",
+		"checked 6 files: 5 errors, 0 warnings",
+		"Run docc explain <rule> for details",
 	}
 	if strings.Join(lines, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("got:\n%s", out)
 	}
 	_, out, _ = do("validate", "--format", "json", "--max-diagnostics", "2")
-	if strings.Count(out, `"code"`) != 5 {
-		t.Fatal("json output must not be limited")
+	if strings.Count(out, `"code"`) != 2 || !strings.Contains(out, `"truncated": true`) || !strings.Contains(out, `"shown": 2`) || !strings.Contains(out, `"errors": 5`) {
+		t.Fatalf("json output is limited like text, and says so:\n%s", out)
 	}
 }
 
@@ -290,7 +307,7 @@ func TestFullBuildLeavesOutAlone(t *testing.T) {
 		t.Fatal("--full must not change out/")
 	}
 	h := readFile(t, "docs/out-full/h.md")
-	if !strings.Contains(h, "> Скрытый документ.") || !strings.Contains(h, "secret") {
+	if !strings.Contains(h, "> Hidden document.") || !strings.Contains(h, "secret") {
 		t.Fatalf("full page of a hidden document:\n%s", h)
 	}
 	// check ignores out-full: a stray file there is not DOC501
@@ -386,5 +403,97 @@ func TestSameOutAndOutFullIsUsageError(t *testing.T) {
 	})
 	if code, _, errs := do("build", "--full"); code != 2 || !strings.Contains(errs, "output directory") {
 		t.Fatalf("%d %s", code, errs)
+	}
+}
+
+func TestHelpPerCommand(t *testing.T) {
+	project(t, map[string]string{})
+	for _, cmd := range []string{"init", "validate", "build", "check", "explain", "rules", "schema"} {
+		for _, h := range []string{"--help", "-h"} {
+			code, out, errs := do(cmd, h)
+			if code != 0 || errs != "" || !strings.HasPrefix(out, "Usage: docc "+cmd) || !strings.Contains(out, "Example") {
+				t.Errorf("%s %s: %d %q %q", cmd, h, code, out, errs)
+			}
+		}
+	}
+	_, out, _ := do("validate", "--help")
+	if !strings.Contains(out, "-unsafe") || !strings.Contains(out, `(default "text")`) {
+		t.Errorf("flags with defaults missing:\n%s", out)
+	}
+	if code, out, _ := do("--format", "json", "--help"); code != 0 || !strings.HasPrefix(out, "docc - ") {
+		t.Errorf("%d %q", code, out)
+	}
+}
+
+func TestGlobalFlagsBeforeCommand(t *testing.T) {
+	files := map[string]string{"docs/src/index.json": `{"title":"I"}`}
+	for i := 0; i < 3; i++ {
+		files[fmt.Sprintf("docs/src/o%d.json", i)] = `{"title":"O"}`
+	}
+	project(t, files)
+	code, out, _ := do("--format", "json", "--max-diagnostics", "1", "validate")
+	if code != 1 || !strings.Contains(out, `"truncated": true`) || strings.Count(out, `"code"`) != 1 {
+		t.Fatalf("%d %s", code, out)
+	}
+	if code, out, _ := do("--format", "json", "explain", "DOC301"); code != 0 || !strings.Contains(out, `"fixable": "none"`) {
+		t.Fatalf("explain: %d %s", code, out)
+	}
+	if code, out, _ := do("--format", "json", "rules"); code != 0 || !strings.HasPrefix(out, "[") {
+		t.Fatalf("rules: %d %s", code, out)
+	}
+	if code, out, _ := do("--max-warnings", "3", "schema", "document"); code != 0 || !strings.Contains(out, "docc document") {
+		t.Fatalf("schema: %d %s", code, out)
+	}
+	if code, _, errs := do("--bogus", "validate"); code != 2 || !strings.Contains(errs, "docc: error:") {
+		t.Fatalf("%d %s", code, errs)
+	}
+	if code, _, _ := do("--format", "json"); code != 2 {
+		t.Fatal("flags without a command")
+	}
+	if code, _, errs := do("validate", "--max-diagnostics", "-1"); code != 2 || !strings.Contains(errs, "negative") {
+		t.Fatalf("%d %s", code, errs)
+	}
+}
+
+func TestErrorsAreJSONWithFormatJSON(t *testing.T) {
+	project(t, map[string]string{"docc.json": "{\n  \"rules\": { \"DOC101\": \"off\" }\n}", "docs/src/index.json": `{"title":"I"}`})
+	for _, args := range [][]string{{"validate", "--format", "json"}, {"--format", "json", "validate"}} {
+		code, out, errs := do(args...)
+		var e struct {
+			Code, Message, Hint, File string
+			Line, Column              int
+		}
+		if err := json.Unmarshal([]byte(out), &e); err != nil || code != 2 || errs != "" || e.Code != "config" || e.File != "docc.json" || e.Line != 2 || e.Column == 0 || e.Message == "" {
+			t.Fatalf("%v: %d %v %+v %q", args, code, err, e, errs)
+		}
+	}
+	code, out, _ := do("validate", "--format", "json", "--bogus")
+	if code != 2 || !strings.Contains(out, `"code": "usage"`) {
+		t.Fatalf("%d %s", code, out)
+	}
+}
+
+func TestTooManyWarningsExplained(t *testing.T) {
+	project(t, map[string]string{"docs/src/index.json": `{"title":"I","body":"TODO"}`})
+	code, out, errs := do("validate", "--max-warnings", "0")
+	if code != 1 || errs != "too many warnings: 1 > --max-warnings 0\n" || !strings.Contains(out, "checked 1 file: 0 errors, 1 warning\n") {
+		t.Fatalf("%d %q %q", code, out, errs)
+	}
+	code, out, errs = do("validate", "--max-warnings", "0", "--format", "json")
+	if code != 1 || errs != "" || !strings.Contains(out, `"failure": "too many warnings: 1 > --max-warnings 0"`) {
+		t.Fatalf("%d %q %q", code, out, errs)
+	}
+}
+
+func TestBuildSkippedAndInitNext(t *testing.T) {
+	project(t, map[string]string{"docs/src/index.json": `{"title":"I","links":["nope"]}`})
+	code, out, _ := do("build")
+	if code != 1 || !strings.Contains(out, "build skipped: 1 errors, docs/out not changed\n") {
+		t.Fatalf("%d %s", code, out)
+	}
+	project(t, map[string]string{})
+	code, out, _ = do("init")
+	if code != 0 || !strings.Contains(out, "Next:\n  1. edit docs/src/index.json") || !strings.Contains(out, "docc validate --format json") || !strings.Contains(out, "SKILL.md") {
+		t.Fatalf("%d %s", code, out)
 	}
 }

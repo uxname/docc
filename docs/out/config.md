@@ -17,3 +17,10 @@ trace.scan lists masks of code files that are searched for covers tags; without 
 ## Parent
 
 [docc](index.md)
+
+## Referenced by
+
+- [Commands](commands.md)
+- [Decisions and assumptions](decisions.md)
+- [docc](index.md)
+- [Rules and diagnostics](rules.md)

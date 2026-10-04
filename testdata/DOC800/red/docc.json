@@ -1,7 +1,7 @@
 {
   "customRules": [
     { "id": "custom/no-vague-quantity", "level": "warn", "kind": "requirement", "given": "/statement",
-      "forbid": "(?i)(^|[^\\p{L}])несколько($|[^\\p{L}])", "message": "Replace «несколько» with a number", "hint": "State an exact value" },
+      "forbid": "(?i)(^|[^\\p{L}])множество($|[^\\p{L}])", "message": "Replace «множество» with a number", "hint": "State an exact value" },
     { "id": "custom/needs-must", "level": "error", "kind": "requirement", "given": "/statement",
       "require": "(?i)(^|[^\\p{L}])must($|[^\\p{L}])", "message": "A requirement statement must contain \"must\"" },
     { "id": "custom/no-maybe-in-criteria", "level": "warn", "given": "/acceptance/*", "forbid": "maybe" , "message": "No hedging in criteria"}

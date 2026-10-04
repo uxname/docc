@@ -36,7 +36,7 @@ var all = []Rule{
 	{"DOC105", "syntax/document-schema", "syntax", E, "none", true, "A field does not match the built-in document schema: wrong type, or a repeated element in links or tags.", `{ "title": "A", "links": ["b", "b"] }`, `{ "title": "A", "links": ["b"] }`, ""},
 	{"DOC106", "schema/violation", "schema", E, "none", false, "The document violates the schema of its kind from docs/schemas/<kind>.json.", `{ "title": "A", "kind": "requirement" }  (schema requires "statement")`, `{ "title": "A", "kind": "requirement", "statement": "..." }`, ""},
 	{"DOC107", "schema/unregistered", "schema", E, "none", false, "kind or a tag is not in the registry (kinds, tags in docc.json).", `{ "title": "A", "kind": "memo" }`, `{ "title": "A", "kind": "note" }`, ""},
-	{"DOC108", "syntax/invalid-ignore", "syntax", E, "none", true, "docc-ignore has no reason, has a wrong shape, or targets a rule that cannot be suppressed.", `"docc-ignore": [{ "rule": "DOC301" }]`, `"docc-ignore": [{ "rule": "DOC301", "reason": "term from the customer spec" }]`, ""},
+	{"DOC108", "syntax/invalid-ignore", "syntax", E, "none", true, "docIgnore has no reason, has a wrong shape, or targets a rule that cannot be suppressed.", `"docIgnore": [{ "rule": "DOC301" }]`, `"docIgnore": [{ "rule": "DOC301", "reason": "term from the customer spec" }]`, ""},
 	{"DOC201", "graph/duplicate-id", "graph", E, "none", true, "Two documents have the same id (file name without extension) in different folders.", "docs/src/a/x.json and docs/src/b/x.json", "docs/src/a/x.json and docs/src/b/y.json", ""},
 	{"DOC202", "graph/broken-ref", "graph", E, "none", true, "parent, links or [[id]] (also inside notes) point to a document that does not exist.", `"links": ["missing"]`, `"links": ["existing-doc"]`, ""},
 	{"DOC203", "graph/orphan", "graph", E, "none", true, "The document is not reachable from any root in roots.", "a document nobody links to", `add the document to links of a reachable document, or set its parent`, ""},
@@ -61,14 +61,14 @@ var all = []Rule{
 	{"DOC312", "markdown/broken-anchor", "markdown", E, "none", false, "[[id#field]] points to a field that does not exist or is a service field.", `[[b#missing]]`, `[[b#statement]]`, ""},
 	{"DOC313", "text/repeated-word", "text", W, "unsafe", false, "The same word twice in a row.", `"body": "the the system"`, `"body": "the system"`, "--fix --unsafe removes the repeated word."},
 	{"DOC351", "style/sentence-length", "style", O, "none", false, "A sentence is longer than max words (default 30).", "a 45-word sentence", "split it", ""},
-	{"DOC352", "style/hedging", "style", O, "none", false, "Hedging words: maybe, probably, usually.", `"body": "It will probably work."`, `"body": "It works."`, ""},
-	{"DOC353", "style/timeless-words", "style", O, "none", false, "Words that age: currently, recently, soon, new.", `"body": "Currently we use X."`, `"body": "We use X."`, ""},
+	{"DOC352", "style/hedging", "style", W, "none", false, "Hedging and vague-quantity words: maybe, probably, usually, several, various.", `"body": "It will probably work."`, `"body": "It works."`, ""},
+	{"DOC353", "style/timeless-words", "style", W, "none", false, "Words that age: currently, recently, soon, new.", `"body": "Currently we use X."`, `"body": "We use X."`, ""},
 	{"DOC354", "style/ambiguous-pronoun", "style", O, "none", false, "A value starts with This, It, They and the like without saying what it refers to.", `"body": "This is slow."`, `"body": "The export is slow."`, ""},
 	{"DOC355", "style/undefined-acronym", "style", O, "none", false, "An acronym is used without a definition in the same document.", `"body": "We use ML."`, `"body": "We use machine learning (ML)."`, ""},
 	{"DOC401", "trace/unknown-id", "trace", E, "none", true, "A @covers tag in code points to a document that does not exist. Works only when trace.scan is set.", "// @covers missing-doc", "// @covers existing-doc", ""},
 	{"DOC501", "build/stale-output", "build", E, "none", true, "out/ differs from what the sources produce: a file is missing, outdated or extra.", "docs/out/a.md edited by hand", "run docc build", ""},
 	{"DOC800", "custom/<name>", "custom", W, "none", false, "A rule from customRules in docc.json; the rule name is in the rule field.", "see customRules", "see customRules", ""},
-	{"DOC901", "meta/unused-ignore", "meta", W, "none", false, "A docc-ignore entry suppresses nothing, or targets a disabled rule.", `"docc-ignore": [{ "rule": "DOC301", "reason": "x" }]  (nothing to suppress)`, "remove the entry", ""},
+	{"DOC901", "meta/unused-ignore", "meta", W, "none", false, "A docIgnore entry suppresses nothing, or targets a disabled rule.", `"docIgnore": [{ "rule": "DOC301", "reason": "x" }]  (nothing to suppress)`, "remove the entry", ""},
 }
 
 var byCode = map[string]*Rule{}

@@ -152,7 +152,7 @@ func (s *Set) CheckBuiltin(root *loader.Node) []Violation {
 	vs := s.run(s.builtin, inst, root)
 	out := vs[:0]
 	for _, v := range vs {
-		if v.Pointer == "" && strings.HasPrefix(v.Message, "missing property 'title'") {
+		if v.Pointer == "" && strings.HasPrefix(v.Message, "missing property \"title\"") {
 			continue
 		}
 		if v.Pointer == "/title" && !strings.Contains(v.Message, "got ") {
@@ -173,7 +173,7 @@ func (s *Set) CheckKind(kindName string, root *loader.Node) []Violation {
 	inst := map[string]any{}
 	for _, m := range root.Members {
 		switch m.Key {
-		case "$schema", "docc-ignore", "reviewed", "notes", "hidden":
+		case "$schema", "docIgnore", "reviewed", "notes", "hidden":
 			continue
 		}
 		if _, ok := inst[m.Key]; !ok {
@@ -232,7 +232,7 @@ func collect(ve *jsonschema.ValidationError, root *loader.Node, out *[]Violation
 	switch k := ve.ErrorKind.(type) {
 	case *kind.Required:
 		for _, m := range k.Missing {
-			*out = append(*out, mk(loc, fmt.Sprintf("missing property '%s'", m), fmt.Sprintf("Add the field %q.", m), n.Start, n.Start+1))
+			*out = append(*out, mk(loc, fmt.Sprintf("missing property %q", m), fmt.Sprintf("Add the field %q.", m), n.Start, n.Start+1))
 		}
 	case *kind.AdditionalProperties:
 		for _, p := range k.Properties {
@@ -243,7 +243,7 @@ func collect(ve *jsonschema.ValidationError, root *loader.Node, out *[]Violation
 					break
 				}
 			}
-			*out = append(*out, mk(loc, fmt.Sprintf("property '%s' is not allowed", p), fmt.Sprintf("Remove the field %q or allow it in the schema.", p), start, end))
+			*out = append(*out, mk(loc, fmt.Sprintf("property %q is not allowed", p), fmt.Sprintf("Remove the field %q or allow it in the schema.", p), start, end))
 		}
 	case *kind.UniqueItems:
 		idx := k.Duplicates[1]
@@ -253,7 +253,11 @@ func collect(ve *jsonschema.ValidationError, root *loader.Node, out *[]Violation
 		item := nodeAt(root, append(append([]string{}, loc...), fmt.Sprint(idx)))
 		*out = append(*out, mk(append(append([]string{}, loc...), fmt.Sprint(idx)), text, "Remove the repeated element.", item.Start, item.End))
 	case *kind.Type:
-		*out = append(*out, mk(loc, text, "Use a value of the required type.", n.Start, n.End))
+		hint := fmt.Sprintf("Use a value of type %s.", strings.Join(k.Want, " or "))
+		if len(loc) > 0 {
+			hint = fmt.Sprintf("Field %q must be %s, not %s.", loc[len(loc)-1], strings.Join(k.Want, " or "), k.Got)
+		}
+		*out = append(*out, mk(loc, text, hint, n.Start, n.End))
 	case *kind.Enum:
 		*out = append(*out, mk(loc, text, "Use one of the allowed values.", n.Start, n.End))
 	default:

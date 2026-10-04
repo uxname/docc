@@ -60,6 +60,7 @@ type Project struct {
 	Docs    []*Doc          // every file with a valid name, ordered by path
 	Graph   map[string]*Doc // first document per id
 	Diags   []diag.Diagnostic
+	Covers  map[string][]string // document id -> "file:line" of its @covers tags (only when trace.scan is set)
 
 	byFile   map[string]*Doc
 	matchers map[string]*text.Matcher
@@ -158,6 +159,12 @@ func (p *Project) read(d *Doc, srcAbs string) {
 	}
 	if d.Res.Err != nil {
 		hint := "Fix the JSON syntax: strict JSON only, no comments or trailing commas."
+		switch msg := d.Res.Err.Msg; {
+		case strings.Contains(msg, "file is empty"):
+			hint = `The file is empty: write an object such as {"title": "..."} or delete the file.`
+		case strings.Contains(msg, "must be an object"):
+			hint = `The top-level value must be an object: wrap it as {"title": "..."}.`
+		}
 		if strings.Contains(string(data), "<<<<<<<") || strings.Contains(string(data), ">>>>>>>") {
 			hint = "Resolve the merge conflict markers in the file first."
 		}

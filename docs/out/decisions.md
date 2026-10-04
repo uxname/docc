@@ -14,6 +14,12 @@ The comparison in the rule DOC306 uses the Jaccard coefficient of character trig
 
 Fixes are applied in passes: the first added link creates the links field and the next pass appends further ids, so two fixes never write the same place.
 
+## Not verified
+
+Windows and macOS were not run: only Linux was available, and no CI is configured yet.
+
+The criterion that an agent fixes 9 of 10 synthetic errors in two iterations was not measured.
+
 ## Parent
 
 [docc](index.md)
@@ -23,8 +29,6 @@ Fixes are applied in passes: the first added link creates the links field and th
 - [Rules and diagnostics](rules.md)
 - [Configuration](config.md)
 
-## Not verified
+## Referenced by
 
-Windows and macOS were not run: only Linux was available, and no CI is configured yet.
-
-The criterion that an agent fixes 9 of 10 synthetic errors in two iterations was not measured.
+- [docc](index.md)

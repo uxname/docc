@@ -34,8 +34,21 @@
     "column": 76,
     "endLine": 1,
     "endColumn": 87,
-    "message": "Replace «несколько» with a number",
+    "message": "Replace «множество» with a number",
     "hint": "State an exact value",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC352",
+    "rule": "style/hedging",
+    "level": "warn",
+    "file": "docs/src/req-d.json",
+    "line": 1,
+    "column": 99,
+    "endLine": 1,
+    "endColumn": 104,
+    "message": "hedging word \"maybe\"",
+    "hint": "State the fact plainly, or say exactly when it holds.",
     "fixable": "none"
   },
   {
@@ -49,6 +62,19 @@
     "endColumn": 104,
     "message": "No hedging in criteria",
     "hint": "",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC352",
+    "rule": "style/hedging",
+    "level": "warn",
+    "file": "docs/src/req-d.json",
+    "line": 1,
+    "column": 132,
+    "endLine": 1,
+    "endColumn": 137,
+    "message": "hedging word \"maybe\"",
+    "hint": "State the fact plainly, or say exactly when it holds.",
     "fixable": "none"
   },
   {

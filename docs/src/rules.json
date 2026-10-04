@@ -4,11 +4,12 @@
   "links": ["config", "commands"],
   "body": [
     "Rules are grouped like in Biome: syntax, schema, graph, text, markdown, style, trace, build, meta and custom. A code such as DOC301 is a public contract and never changes; retired codes are not reused. Messages are in English and every message has a hint.",
+    "The rules style/hedging (DOC352) and style/timeless-words (DOC353) warn about vague and time-bound words by default.",
     "The preset recommended gives every rule a default level. Rules that are off by default form the nursery group: they are noisy on Russian text or need a deliberate choice, and are enabled in the configuration, one by one or as a group.",
     "Core rules are always errors and cannot be suppressed or switched off: broken JSON, duplicate keys, a missing title, invalid ids, the built-in schema, duplicate ids, broken references, orphans, parent cycles, missing roots, links to hidden documents, bad includes, unknown ids in code tags and stale output."
   ],
   "diagnostic_format": [
-    "Text form: file:line:column: level CODE message, followed by a line with the hint. JSON form: an array of objects with code, rule, level, file, line, column, endLine, endColumn, message, hint and fixable.",
+    "Text form: file:line:column: level CODE (group/name) message, followed by a line with the hint, then a summary line such as checked 3 files: 1 error, 0 warnings. JSON form: an envelope with a summary (checked, errors, warnings, shown, truncated) and a diagnostics array of objects with code, rule, level, file, line, column, endLine, endColumn, message, hint and fixable. When the output is cut by max-diagnostics, truncated is true.",
     "The order is deterministic: level, file path, line, column, code, rule name. Columns count Unicode characters of the source text, also inside strings with escape sequences."
   ],
   "fixes": "The command validate with the flag fix applies safe fixes (adding a used id to links). With the flag unsafe it also removes self links and repeated words. Fixes are patches by source offsets, so the rest of the file keeps its formatting, and a second run changes nothing.",

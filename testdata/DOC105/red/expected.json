@@ -9,7 +9,7 @@
     "endLine": 1,
     "endColumn": 36,
     "message": "document does not match the built-in schema: /parent: got array, want string",
-    "hint": "Use a value of the required type.",
+    "hint": "Field \"parent\" must be string, not array.",
     "fixable": "none"
   },
   {
@@ -74,7 +74,7 @@
     "endLine": 6,
     "endColumn": 18,
     "message": "document does not match the built-in schema: /hidden: got string, want boolean",
-    "hint": "Use a value of the required type.",
+    "hint": "Field \"hidden\" must be boolean, not string.",
     "fixable": "none"
   },
   {

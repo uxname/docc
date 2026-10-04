@@ -8,10 +8,15 @@ On Linux (Intel Core i7-1165G7) the whole check takes about 0.31 seconds: loadin
 
 The measurement is repeatable with DOCC_SCALE set to 1 and the command go test ./cmd/docc -run Scale -v. Windows with a virus scanner and macOS have not been measured.
 
+## History
+
+The first measurement was 1.66 seconds. The word lists were matched with case-insensitive regular expressions, which took most of the time; a lower-cased search with word boundary checks brought it to the current value.
+
 ## Parent
 
 [docc](index.md)
 
-## History
+## Referenced by
 
-The first measurement was 1.66 seconds. The word lists were matched with case-insensitive regular expressions, which took most of the time; a lower-cased search with word boundary checks brought it to the current value.
+- [Architecture](architecture.md)
+- [docc](index.md)

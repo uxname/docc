@@ -1,18 +1,5 @@
 [
   {
-    "code": "DOC204",
-    "rule": "graph/parent-cycle",
-    "level": "error",
-    "file": "docs/src/b.json",
-    "line": 1,
-    "column": 27,
-    "endLine": 1,
-    "endColumn": 30,
-    "message": "the parent chain of \"b\" forms a cycle",
-    "hint": "Break the cycle: point one document in it to a different parent.",
-    "fixable": "none"
-  },
-  {
     "code": "DOC206",
     "rule": "graph/self-link",
     "level": "warn",

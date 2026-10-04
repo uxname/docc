@@ -104,7 +104,7 @@ func TestKindSchema(t *testing.T) {
 		msgs = append(msgs, v.Message)
 	}
 	joined := strings.Join(msgs, "\n")
-	for _, w := range []string{"missing property 'statement'", "/status", "property 'extra' is not allowed"} {
+	for _, w := range []string{`missing property "statement"`, "/status", `property "extra" is not allowed`} {
 		if !strings.Contains(joined, w) {
 			t.Errorf("missing %q in:\n%s", w, joined)
 		}
@@ -208,7 +208,7 @@ func TestConfigSchema(t *testing.T) {
 
 func TestDocumentSchemaIsValid(t *testing.T) {
 	sc := compileBytes(t, Document())
-	r := parse2(t, []byte(`{"title":"A","docc-ignore":[{"rule":"DOC301","reason":"x"}]}`))
+	r := parse2(t, []byte(`{"title":"A","docIgnore":[{"rule":"DOC301","reason":"x"}]}`))
 	if err := sc.Validate(loader.Value(r.Root)); err != nil {
 		t.Fatal(err)
 	}

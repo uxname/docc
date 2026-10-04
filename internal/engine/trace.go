@@ -18,9 +18,16 @@ func (p *Project) checkTrace() {
 	if err != nil {
 		return
 	}
+	p.Covers = map[string][]string{}
 	for _, t := range tags {
+		if _, ok := p.Graph[t.Next]; ok && t.Next != "" {
+			p.emitFile(t.File, "DOC401", t.Line, t.Col, fmt.Sprintf("@covers lists ids without a comma: %q follows the ids but is not checked", t.Next),
+				"Separate ids with commas: @covers a, b.")
+		}
 		for _, id := range t.IDs {
-			if _, ok := p.Graph[id]; !ok {
+			if _, ok := p.Graph[id]; ok {
+				p.Covers[id] = append(p.Covers[id], fmt.Sprintf("%s:%d", t.File, t.Line))
+			} else {
 				p.emitFile(t.File, "DOC401", t.Line, t.Col, fmt.Sprintf("@covers points to a document that does not exist: %q", id),
 					fmt.Sprintf("Create %s/%s.json or fix the id in the tag.", p.Cfg.Src, id))
 			}

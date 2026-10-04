@@ -72,7 +72,7 @@ func TestUnsafeFixes(t *testing.T) {
 }
 
 func TestFixRespectsIgnoreAndEscapes(t *testing.T) {
-	in := `{"title":"A","parent":"index","body":"in in","docc-ignore":[{"rule":"DOC313","reason":"quoted"}]}`
+	in := `{"title":"A","parent":"index","body":"in in","docIgnore":[{"rule":"DOC313","reason":"quoted"}]}`
 	if got := fixed(t, in, "--unsafe"); got != in {
 		t.Errorf("suppressed diagnostics must not be fixed: %s", got)
 	}
@@ -90,7 +90,7 @@ func TestFixOutputAndExitCode(t *testing.T) {
 		"docs/src/a.json":     `{"title":"A","parent":"index","body":"The the end"}`,
 	})
 	code, out, _ := do("validate", "--fix")
-	if code != 0 || !strings.Contains(out, "0 errors, 1 warnings") {
+	if code != 0 || !strings.Contains(out, "0 errors, 1 warning") {
 		t.Fatalf("%d %s", code, out)
 	}
 	code, out, _ = do("validate", "--fix", "--unsafe")

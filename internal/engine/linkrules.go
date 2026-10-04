@@ -91,7 +91,7 @@ func (p *Project) undeclaredLinks(d *Doc) {
 }
 
 // Fingerprint is the first 8 hex digits of SHA-256 of the canonical JSON of a
-// document without reviewed, docc-ignore, $schema and notes.
+// document without reviewed, docIgnore, $schema and notes.
 func Fingerprint(root *loader.Node) string {
 	var b strings.Builder
 	canonical(&b, root, true)
@@ -126,7 +126,7 @@ func canonical(b *strings.Builder, n *loader.Node, top bool) {
 				continue
 			}
 			seen[m.Key] = true
-			if top && (m.Key == "reviewed" || m.Key == "docc-ignore" || m.Key == "$schema" || m.Key == "notes") {
+			if top && (m.Key == "reviewed" || m.Key == "docIgnore" || m.Key == "$schema" || m.Key == "notes") {
 				continue
 			}
 			items = append(items, kv{m.Key, m.Value})

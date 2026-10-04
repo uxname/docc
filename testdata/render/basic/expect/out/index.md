@@ -2,28 +2,13 @@
 
 # Index
 
+note · accepted · draft, x
+
 Welcome. See [Deep doc](a/deep.md#acceptance-criteria), [Requirement](req.md) and [Requirement](req.md).
 
 First fact.
 
 Second fact.
-
-## Kind
-
-note
-
-## Status
-
-accepted
-
-## Links
-
-- [Deep doc](a/deep.md)
-- [Requirement](req.md)
-
-## Tags
-
-`draft`, `x`
 
 ## Owner name
 
@@ -65,3 +50,15 @@ Text Requirement here and `{{literal}}` code and [Deep doc](a/deep.md).
 
 - 1
 - 2.50
+
+## Links
+
+- [Deep doc](a/deep.md)
+- [Requirement](req.md)
+
+## Referenced by
+
+- [Deep doc](a/deep.md)
+- [Requirement](req.md)
+
+Document tree: [_tree.md](_tree.md)

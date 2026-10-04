@@ -2,6 +2,8 @@
 
 # Index
 
+note · accepted · draft, x
+
 Welcome. See [Deep doc](a/deep.md#acceptance-criteria), [Requirement](req.md) and [Requirement](req.md).
 
 <!-- include req#statement -->
@@ -11,23 +13,6 @@ First fact.
 Second fact.
 
 <!-- /include -->
-
-## Kind
-
-note
-
-## Status
-
-accepted
-
-## Links
-
-- [Deep doc](a/deep.md)
-- [Requirement](req.md)
-
-## Tags
-
-`draft`, `x`
 
 ## Owner name
 
@@ -70,8 +55,21 @@ Text <!-- include req#title -->Requirement<!-- /include --> here and `{{literal}
 - 1
 - 2.50
 
-## Заметки (скрытые)
+## Notes (hidden)
 
-> Служебное.
+> Service information.
 
 - note about [Deep doc](a/deep.md) stays hidden
+
+## Links
+
+- [Deep doc](a/deep.md)
+- [Requirement](req.md)
+
+## Referenced by
+
+- [Deep doc](a/deep.md)
+- [Requirement](req.md)
+- [Secret](secret.md)
+
+Document tree: [_tree.md](_tree.md)

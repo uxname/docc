@@ -6,14 +6,6 @@ The pipeline is: load the JSON files, check the built-in and kind schemas, build
 
 The code is a Go module with a single binary and a small set of packages under internal.
 
-## Parent
-
-[docc](index.md)
-
-## Links
-
-- [Performance](performance.md)
-
 ## Packages
 
 loader: a strict JSON parser that keeps offsets, positions and duplicate keys.
@@ -35,3 +27,15 @@ cmd/docc: the command line.
 ## Principles
 
 Golden tests, a pure core with input and output at the edges, stable codes and an idempotent fix. The only dependency besides the standard library is the JSON Schema library.
+
+## Parent
+
+[docc](index.md)
+
+## Links
+
+- [Performance](performance.md)
+
+## Referenced by
+
+- [docc](index.md)

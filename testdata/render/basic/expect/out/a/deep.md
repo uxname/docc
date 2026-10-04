@@ -4,6 +4,12 @@
 
 Back to [Index](../index.md) and [Index](../index.md#owner-name).
 
+## Acceptance criteria
+
+Given X.
+
+Then Y with [Requirement](../req.md#statement).
+
 ## Parent
 
 [Index](../index.md)
@@ -12,8 +18,7 @@ Back to [Index](../index.md) and [Index](../index.md#owner-name).
 
 - [Index](../index.md)
 
-## Acceptance criteria
+## Referenced by
 
-Given X.
-
-Then Y with [Requirement](../req.md#statement).
+- [Index](../index.md)
+- [Requirement](../req.md)

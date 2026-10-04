@@ -35,7 +35,7 @@ func TestPositionsWithEscapesAndNewlines(t *testing.T) {
 		Code                             string
 		Line, Column, EndLine, EndColumn int
 	}
-	if err := json.Unmarshal([]byte(out), &ds); err != nil || len(ds) != 1 || ds[0].Code != "DOC301" {
+	if err := json.Unmarshal(diagnosticsOf(out), &ds); err != nil || len(ds) != 1 || ds[0].Code != "DOC301" {
 		t.Fatalf("%v %s", err, out)
 	}
 	// source column of "fast": the file is one line; count runes before it
@@ -48,7 +48,7 @@ func TestPositionsWithEscapesAndNewlines(t *testing.T) {
 	pretty := "{\n  \"title\": \"I\",\n  \"body\": \"x fast\"\n}\n"
 	project(t, map[string]string{"docs/src/index.json": pretty})
 	_, out, _ = do("validate", "--format", "json")
-	if err := json.Unmarshal([]byte(out), &ds); err != nil || ds[0].Line != 3 || ds[0].Column != 14 {
+	if err := json.Unmarshal(diagnosticsOf(out), &ds); err != nil || ds[0].Line != 3 || ds[0].Column != 14 {
 		t.Fatalf("%v %+v", err, ds)
 	}
 	// a diagnostic that spans lines: a sentence over the limit across escaped newlines
@@ -58,7 +58,7 @@ func TestPositionsWithEscapesAndNewlines(t *testing.T) {
 		"docc.json":           `{"rules":{"DOC351":{"level":"warn","max":3}}}`,
 	})
 	_, out, _ = do("validate", "--format", "json")
-	if err := json.Unmarshal([]byte(out), &ds); err != nil || len(ds) != 1 || ds[0].Line != 3 || ds[0].EndLine != 3 {
+	if err := json.Unmarshal(diagnosticsOf(out), &ds); err != nil || len(ds) != 1 || ds[0].Line != 3 || ds[0].EndLine != 3 {
 		t.Fatalf("%v %+v", err, ds)
 	}
 	// real line breaks inside the JSON text are not allowed in strings; the value may span lines only via \n

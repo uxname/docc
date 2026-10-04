@@ -13,12 +13,12 @@ import (
 var reservedKeys = map[string]bool{
 	"$schema": true, "title": true, "kind": true, "status": true, "parent": true,
 	"links": true, "body": true, "tags": true, "notes": true, "hidden": true,
-	"reviewed": true, "docc-ignore": true,
+	"reviewed": true, "docIgnore": true,
 }
 
 // ServiceFields cannot be anchors or include sources.
 var ServiceFields = map[string]bool{
-	"notes": true, "docc-ignore": true, "reviewed": true, "hidden": true, "$schema": true,
+	"notes": true, "docIgnore": true, "reviewed": true, "hidden": true, "$schema": true,
 }
 
 // StrNode is one string value of a document with its location.

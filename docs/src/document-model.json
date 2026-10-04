@@ -4,7 +4,7 @@
   "links": ["rules", "rendering"],
   "body": [
     "A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected.",
-    "Only title is required. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docc-ignore. Every other field is free and holds prose, so no document types are built in."
+    "Only title is required. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docIgnore. Every other field is free and holds prose, so no document types are built in."
   ],
   "references": [
     "Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one of its fields. Both are checked like parent and links. Code blocks and inline code are ignored.",
@@ -15,5 +15,5 @@
     "A document with hidden set to true is checked like any other, gets no page and cannot be linked from a visible document.",
     "The include `{{id#field}}` is replaced at build time by the text of that field, so a fact is stored once."
   ],
-  "suppression": "docc-ignore lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901."
+  "suppression": "docIgnore lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901."
 }

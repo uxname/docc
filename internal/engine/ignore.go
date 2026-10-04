@@ -10,7 +10,7 @@ import (
 	"github.com/santiment/docc/internal/schema"
 )
 
-// Ignore is one valid docc-ignore entry.
+// Ignore is one valid docIgnore entry.
 type Ignore struct {
 	Rule     *rules.Rule // nil for a custom rule named by Custom
 	Custom   string      // custom rule name, "" otherwise
@@ -23,14 +23,14 @@ type Ignore struct {
 	Used     bool
 }
 
-// parseIgnores validates docc-ignore of every document (DOC108) and keeps the
+// parseIgnores validates docIgnore of every document (DOC108) and keeps the
 // valid entries in Doc.Ignores.
 func (p *Project) parseIgnores() {
 	for _, d := range p.Docs {
 		if !d.Parsed() {
 			continue
 		}
-		n := d.Root.Get("docc-ignore")
+		n := d.Root.Get("docIgnore")
 		if n == nil {
 			continue
 		}
@@ -38,7 +38,7 @@ func (p *Project) parseIgnores() {
 			p.emit(d, "DOC108", at.Start, at.End, msg, hint)
 		}
 		if n.Kind != loader.Array {
-			bad(n, "docc-ignore must be an array of entries", `Write "docc-ignore": [{ "rule": "DOC301", "reason": "why" }].`)
+			bad(n, "docIgnore must be an array of entries", `Write "docIgnore": [{ "rule": "DOC301", "reason": "why" }].`)
 			continue
 		}
 		for _, it := range n.Items {
@@ -51,7 +51,7 @@ func (p *Project) parseIgnores() {
 
 func (p *Project) parseIgnore(d *Doc, it *loader.Node, bad func(*loader.Node, string, string)) *Ignore {
 	if it.Kind != loader.Object {
-		bad(it, "a docc-ignore entry must be an object", `Write { "rule": "DOC301", "reason": "why" }.`)
+		bad(it, "a docIgnore entry must be an object", `Write { "rule": "DOC301", "reason": "why" }.`)
 		return nil
 	}
 	ig := &Ignore{Node: it}
@@ -69,17 +69,17 @@ func (p *Project) parseIgnore(d *Doc, it *loader.Node, bad func(*loader.Node, st
 			}
 			ig.Path, ig.HasPath = m.Value.Str, true
 		default:
-			p.emit(d, "DOC108", m.KeyStart, m.KeyEnd, fmt.Sprintf("unknown key %q in a docc-ignore entry", m.Key), "Use only rule, reason and path.")
+			p.emit(d, "DOC108", m.KeyStart, m.KeyEnd, fmt.Sprintf("unknown key %q in a docIgnore entry", m.Key), "Use only rule, reason and path.")
 			return nil
 		}
 	}
 	if reasonNode == nil || reasonNode.Kind != loader.String || strings.TrimSpace(reasonNode.Str) == "" {
-		bad(it, "a docc-ignore entry needs a reason", `Add "reason": explain why the rule does not apply here.`)
+		bad(it, "a docIgnore entry needs a reason", `Add "reason": explain why the rule does not apply here.`)
 		return nil
 	}
 	ig.Reason = reasonNode.Str
 	if ruleNode == nil || ruleNode.Kind != loader.String {
-		bad(it, "a docc-ignore entry needs a rule", `Add "rule": a rule code such as DOC301 or a name such as text/forbidden-words.`)
+		bad(it, "a docIgnore entry needs a rule", `Add "rule": a rule code such as DOC301 or a name such as text/forbidden-words.`)
 		return nil
 	}
 	key := ruleNode.Str
@@ -130,7 +130,7 @@ func (ig *Ignore) covers(dg *diag.Diagnostic) bool {
 	return ig.PathNode != nil && !dg.NoPos && dg.Start >= ig.PathNode.Start && dg.Start < ig.PathNode.End
 }
 
-// suppress drops diagnostics covered by docc-ignore and reports entries that
+// suppress drops diagnostics covered by docIgnore and reports entries that
 // cover nothing (DOC901).
 func (p *Project) suppress() {
 	kept := p.Diags[:0]
@@ -159,10 +159,10 @@ func (p *Project) suppress() {
 			what := ig.Path
 			if ig.PathNode == nil && ig.HasPath {
 				p.emit(d, "DOC901", ig.Node.Start, ig.Node.End, fmt.Sprintf("the path %q does not exist in this document", what),
-					"Fix the path or remove the docc-ignore entry.")
+					"Fix the path or remove the docIgnore entry.")
 				continue
 			}
-			p.emit(d, "DOC901", ig.Node.Start, ig.Node.End, "this docc-ignore entry suppresses nothing",
+			p.emit(d, "DOC901", ig.Node.Start, ig.Node.End, "this docIgnore entry suppresses nothing",
 				"Remove the entry: the rule is off here, or nothing triggers it.")
 		}
 	}

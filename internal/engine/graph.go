@@ -132,6 +132,9 @@ func (p *Project) parentCycles() {
 	for _, d := range p.Docs {
 		if onCycle[d.ID] && p.inGraph(d) {
 			n := parentOf(d)
+			if n.Str == d.ID {
+				continue // a self-parent is reported once, as DOC206
+			}
 			p.emit(d, "DOC204", n.Start, n.End, fmt.Sprintf("the parent chain of %q forms a cycle", d.ID),
 				"Break the cycle: point one document in it to a different parent.")
 		}
@@ -210,6 +213,10 @@ func (p *Project) roots() {
 	}
 	for _, d := range p.Docs {
 		if !d.Parsed() || !p.inGraph(d) || d.Hidden || seen[d.ID] {
+			continue
+		}
+		// a broken parent is already reported (DOC105 / DOC206): no cascade
+		if pn := d.Root.Get("parent"); pn != nil && (pn.Kind != loader.String || pn.Str == d.ID) {
 			continue
 		}
 		p.emitNoPos(d, "DOC203", fmt.Sprintf("document %q is not reachable from the roots %v", d.ID, p.Cfg.Roots),

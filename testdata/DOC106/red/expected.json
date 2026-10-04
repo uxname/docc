@@ -8,7 +8,7 @@
     "column": 1,
     "endLine": 1,
     "endColumn": 2,
-    "message": "document violates the schema of kind \"requirement\": missing property 'statement'",
+    "message": "document violates the schema of kind \"requirement\": missing property \"statement\"",
     "hint": "Add the field \"statement\".",
     "fixable": "none"
   },

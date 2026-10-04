@@ -4,9 +4,13 @@
 
 A person states a task in words. An agent edits the JSON, runs docc validate and fixes what it reports, then runs docc build. The person reads the generated Markdown and checks meaning and readability, and CI runs docc check before the merge.
 
-The skill in skills/docc/SKILL.md teaches an agent the format, the loop, the diagnostics and the rules of conduct. The main rule: fix the cause of a diagnostic instead of hiding it with docc-ignore, and link only to ids that exist.
+The skill in skills/docc/SKILL.md teaches an agent the format, the loop, the diagnostics and the rules of conduct. The main rule: fix the cause of a diagnostic instead of hiding it with docIgnore, and link only to ids that exist.
 
 A review comment on the Markdown is applied to the sources by the agent or by a person, never to docs/out. A merge conflict in docs/out is resolved by running docc build; a conflict in a source file shows up as DOC101 and is resolved first.
+
+## Limit
+
+Reachability checks only the shape of the graph. Whether a link means something is left to the reviewer.
 
 ## Parent
 
@@ -17,6 +21,6 @@ A review comment on the Markdown is applied to the sources by the agent or by a 
 - [Commands](commands.md)
 - [Rules and diagnostics](rules.md)
 
-## Limit
+## Referenced by
 
-Reachability checks only the shape of the graph. Whether a link means something is left to the reviewer.
+- [docc](index.md)

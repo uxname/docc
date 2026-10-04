@@ -1,6 +1,6 @@
 ---
 name: docc
-description: Write and fix documentation as JSON files that the docc linter and compiler check. Use when a task touches docs/src, a docc.json file, or asks to document something in a project that uses docc: write or edit documents, run docc validate and docc build, read the JSON diagnostics and fix them.
+description: Write, edit and fix project documentation (requirements, decisions, goals, questions) stored as JSON in docs/src and checked by the docc linter. Use whenever a task touches docs/src or docc.json, or asks to document, record a requirement or decision, or update project documentation in a project that has a docc.json, even if another document skill also fits. Covers docc validate, docc build and reading diagnostics.
 ---
 
 # docc
@@ -11,7 +11,7 @@ description: Write and fix documentation as JSON files that the docc linter and 
 
 After every change in `docs/src`, run both commands in this order:
 
-1. `docc validate --format json` — read the diagnostics, fix the sources, repeat until the list has no `"level": "error"`.
+1. `docc validate --format json` — read the diagnostics, fix the sources, repeat until `summary.errors` is 0.
 2. `docc build` — writes `docs/out`. Commit sources and output together.
 
 CI runs `docc check`: it fails on errors and when `docs/out` differs from the sources. If it reports DOC501, run `docc build`.
@@ -34,7 +34,7 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 }
 ```
 
-- `title` is required. `kind`, `status`, `parent` (one id), `links` (ids), `tags`, `body`, `notes`, `hidden`, `reviewed`, `docc-ignore` are the reserved fields. Any other field is free and holds prose.
+- `title` is required. `kind`, `status`, `parent` (one id), `links` (ids), `tags`, `body`, `notes`, `hidden`, `reviewed`, `docIgnore` are the reserved fields. Any other field is free and holds prose.
 - Write long text as an array of paragraphs, one paragraph per line of the file: `"body": ["One.", "Two."]`. Inside a paragraph a line break is `\n`.
 - Link to another document inside text with `[[id]]`, or to one of its fields with `[[id#field]]`. The id must exist. Put every document you link in the text also into `links` (or `parent`); `docc validate --fix` can add the missing ones.
 - Every visible document must be reachable from a root (default root: the document `index`) through `parent`, `links` or `[[id]]`. Reachability checks only the shape of the graph. Whether a link makes sense is for a human reviewer, so link a document where a reader would look for it, not only to silence the error.
@@ -50,21 +50,58 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 
 ## Reading diagnostics
 
-`docc validate --format json` prints an array of `{code, rule, level, file, line, column, endLine, endColumn, message, hint, fixable}`; positions point into the JSON source. Each `hint` says how to fix the problem. `docc explain DOC301` describes a rule with a violating and a fixed example. `docc rules` lists every rule with its current level.
+`docc validate --format json` prints an envelope: `{"summary": {checked, errors, warnings, shown, truncated}, "diagnostics": [{code, rule, level, file, line, column, endLine, endColumn, message, hint, fixable}]}`. Positions point into the JSON source. Each `hint` says how to fix the problem. The text format prints one line per finding: `file:line:col: level CODE (group/name) message`.
 
+- By default only the first 20 diagnostics are shown. If `summary.truncated` is true, fix those and run again, or run `docc validate --format json --max-diagnostics 0` for all of them.
+- `docc explain DOC301` or `docc explain style/hedging` describes one rule with a violating and a fixed example (a code or a name, not a group). `docc rules` lists every rule with its level.
 - `fixable: "safe"` is applied by `docc validate --fix`; `"unsafe"` needs `--fix --unsafe`. Review the diff afterwards.
-- Warnings do not fail the run unless `--max-warnings` or `maxWarnings` is set. Fix them anyway when the cause is real.
+- Warnings do not fail the run unless `--max-warnings` or `maxWarnings` is set. Vague words (`style/hedging`, DOC352) and time-bound words (`style/timeless-words`, DOC353) are warnings: fix them when the cause is real.
+- `docc <command> --help` prints the flags of a command.
+- DOC901 means a `docIgnore` entry suppresses nothing: delete it.
+
+## Starting a project
+
+`docc init` creates `docc.json` and `docs/src/index.json` (the root). Then declare the vocabulary in `docc.json`, otherwise a typo in `kind` or a tag is not caught:
+
+```json
+{ "kinds": ["goal", "requirement", "decision", "question"], "tags": ["security", "ux"] }
+```
+
+Suggested kinds: `goal`, `requirement`, `decision`, `question`. Suggested statuses: `draft`, `accepted`, `superseded` (a question: `open`, `closed`). To enforce fields and statuses write `docs/schemas/<kind>.json`. One fact is one document: do not put several requirements into one file; each gets its own file with its own `parent`.
+
+## Changing a decision
+
+Write a new decision document. Set the old one to `"status": "superseded"` and link it to the new one. `docc` does not compare numbers in free fields, so after the change search for the old value yourself: `grep -rn "old value" docs/src code config`, then fix every hit. Do not rewrite history by editing the old decision's text.
+
+## Code tags
+
+With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// @covers req-lockout, req-password-length` in code links the file to documents. Ids are separated by commas; with a space only the first id is read (DOC401 reports it). docc checks that each id exists, nothing more. The pages in `docs/out` show `Covered by` and `Referenced by`.
+
+## notes or hidden
+
+`notes` holds doubts and open points inside a visible document. `"hidden": true` is for a document that must not be published. Do not duplicate one fact into both. Unknown or vague input goes to `notes`, or to a document with `"kind": "question"`, `"status": "open"`.
 
 ## Rules for you
 
-1. Fix the cause. Do **not** add `docc-ignore` to silence a diagnostic you could fix. Use it only for a real exception and always give a `reason` that a reviewer can accept:
-   `"docc-ignore": [{ "rule": "DOC301", "reason": "term from the customer's spec", "path": "/statement" }]`.
+1. Fix the cause. Do **not** add `docIgnore` to silence a diagnostic you could fix. Use it only for a real exception and always give a `reason` that a reviewer can accept:
+   `"docIgnore": [{ "rule": "DOC301", "reason": "term from the customer's spec", "path": "/statement" }]`.
    Core rules (syntax, graph, build) cannot be suppressed.
 2. Link only to ids that exist. Never invent an id to remove DOC202; create the document or remove the link.
 3. Do not edit `docs/out` or `docs/out-full`. Edit `docs/src`, then `docc validate` and `docc build`.
 4. Do not rename a document without updating every `parent`, `links` and `[[id]]` that points to it.
 5. Keep facts in one place: use `{{id#field}}` or a link instead of copying text.
 6. State facts. Replace words such as "fast", "easy", "soon" with measurable statements; leave no TODO or ??? in committed text.
+7. Do **not** invent numbers, dates, reasons or decisions that the source does not contain. If the source says "a few weeks", do not write "4 weeks": put the doubt into `notes` or create a question document (`"kind": "question"`, `"status": "open"`).
+8. One fact, one document. Never pack several requirements into one file.
+9. A literal `[[id]]`, `{{ }}` or `<tag>` in prose goes into backticks; otherwise docc reads it as a link, an include or HTML.
+
+## Before you finish
+
+1. `docc validate --format json`: `summary.errors` is 0, and every warning is fixed or justified.
+2. `docc build`, then `docc check` passes.
+3. No invented facts: every number and reason comes from the source.
+4. Every document you linked is in `links` or `parent`; no document is left unreachable.
+5. After changing a decision, the old values are gone from `docs/src`, code and config.
 
 ## Hook for Claude Code
 
@@ -93,7 +130,7 @@ case "$f" in
 esac
 ```
 
-`.claude/hooks/docc-after-edit.sh` validates and builds after a source edit. The diagnostics reach the model through stderr and exit code 2:
+`.claude/hooks/docc-after-edit.sh` validates and builds after a source edit. Errors block (stderr and exit code 2 return to the model); warnings are printed to stderr and sent to the model as additional context without blocking:
 
 ```sh
 #!/bin/sh
@@ -102,8 +139,13 @@ case "$f" in
   */docs/src/*|*/docs/schemas/*|*/docc.json) ;;
   *) exit 0 ;;
 esac
-out=$(docc validate --format json); code=$?
-if [ "$code" -ne 0 ]; then echo "$out" >&2; exit 2; fi
+out=$(docc validate --format json --max-diagnostics 0); code=$?
+list=$(echo "$out" | jq -r '(.diagnostics // [.])[] | "\(.file):\(.line):\(.column): \(.level // "error") \(.code) \(.message) Hint: \(.hint)"' 2>/dev/null) || list=$out
+if [ "$code" -ne 0 ]; then echo "$list" >&2; exit 2; fi
+if [ -n "$list" ]; then
+  echo "$list" >&2
+  jq -n --arg c "$list" '{hookSpecificOutput:{hookEventName:"PostToolUse",additionalContext:$c}}'
+fi
 docc build >/dev/null || exit 2
 ```
 

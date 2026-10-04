@@ -21,7 +21,7 @@
     "column": 5,
     "endLine": 6,
     "endColumn": 73,
-    "message": "this docc-ignore entry suppresses nothing",
+    "message": "this docIgnore entry suppresses nothing",
     "hint": "Remove the entry: the rule is off here, or nothing triggers it.",
     "fixable": "none"
   },
@@ -35,7 +35,7 @@
     "endLine": 7,
     "endColumn": 66,
     "message": "the path \"/nope\" does not exist in this document",
-    "hint": "Fix the path or remove the docc-ignore entry.",
+    "hint": "Fix the path or remove the docIgnore entry.",
     "fixable": "none"
   },
   {
@@ -47,7 +47,7 @@
     "column": 5,
     "endLine": 8,
     "endColumn": 66,
-    "message": "this docc-ignore entry suppresses nothing",
+    "message": "this docIgnore entry suppresses nothing",
     "hint": "Remove the entry: the rule is off here, or nothing triggers it.",
     "fixable": "none"
   }

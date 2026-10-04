@@ -2,10 +2,6 @@
 
 # Goals and non-goals
 
-## Parent
-
-[docc](index.md)
-
 ## Summary
 
 Data is the source of truth and Markdown is generated output. Invalid documentation never reaches the main branch, in the same way as invalid code.
@@ -29,3 +25,11 @@ Checking meaning: the core never calls a language model, a human reviewer checks
 Output templates: one universal renderer is used.
 
 Search commands for agents, renaming, migration of existing Markdown, status transitions, diagrams and glossaries.
+
+## Parent
+
+[docc](index.md)
+
+## Referenced by
+
+- [docc](index.md)

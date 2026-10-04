@@ -21,9 +21,12 @@ type Tag struct {
 	File      string // path relative to the project root, with '/'
 	Line, Col int
 	IDs       []string
+	Next      string // the word right after the ids on the same line, if separated by blanks only
 }
 
 var tagRe = regexp.MustCompile(`@covers[ \t]+([a-z0-9-]+(?:[ \t]*,[ \t]*[a-z0-9-]+)*)`)
+
+var nextRe = regexp.MustCompile(`^[a-z0-9-]+`)
 
 // Scan searches the files that match masks (relative to root). Skipped:
 // .git, the given directories (docc's own src, out and outFull), symbolic
@@ -82,7 +85,11 @@ func scanFile(rel string, data []byte) []Tag {
 			for _, id := range strings.Split(line[m[2]:m[3]], ",") {
 				ids = append(ids, strings.TrimSpace(id))
 			}
-			tags = append(tags, Tag{File: rel, Line: i + 1, Col: utf8.RuneCountInString(line[:m[0]]) + 1, IDs: ids})
+			next := ""
+			if rest := line[m[1]:]; len(rest) > 0 && (rest[0] == ' ' || rest[0] == '\t') {
+				next = nextRe.FindString(strings.TrimLeft(rest, " \t"))
+			}
+			tags = append(tags, Tag{File: rel, Line: i + 1, Col: utf8.RuneCountInString(line[:m[0]]) + 1, IDs: ids, Next: next})
 		}
 	}
 	return tags

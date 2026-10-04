@@ -26,7 +26,7 @@
       "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
       "description": "Confirmed links: target id to the 8-hex fingerprint of the target when it was checked."
     },
-    "docc-ignore": {
+    "docIgnore": {
       "type": "array",
       "items": {
         "type": "object",

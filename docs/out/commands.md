@@ -10,7 +10,21 @@ docc build writes the Markdown into docs/out and removes everything else from th
 
 docc check is read-only and made for CI. It runs validate and then compares docs/out with what the sources produce (DOC501). With errors of the groups 1xx or 2xx the comparison is skipped.
 
-docc explain prints a rule with an example, docc rules lists the rules with their effective levels (the flag file adds the overrides of one file), docc schema document and docc schema config print the JSON Schemas.
+Every command accepts --help and prints its flags with an example. The global flags may stand before or after the command. docc init ends with a Next block of three steps.
+
+docc explain takes a code (DOC301) or a name (style/hedging), not a group. It prints a rule with an example, docc rules lists the rules with their effective levels (the flag file adds the overrides of one file), docc schema document and docc schema config print the JSON Schemas.
+
+## Flags
+
+format text or json, config, max-diagnostics (default 20, errors first, applies to both formats, 0 means no limit, negative values are rejected), max-warnings.
+
+## Exit codes
+
+0: clean.
+
+1: errors, or more effective warnings than the limit.
+
+2: wrong usage or configuration, including a missing source folder. The message goes to stderr.
 
 ## Parent
 
@@ -21,14 +35,8 @@ docc explain prints a rule with an example, docc rules lists the rules with thei
 - [Configuration](config.md)
 - [Rendering](rendering.md)
 
-## Flags
+## Referenced by
 
-format text or json, config, max-diagnostics (text only, default 20, errors first, a banner says how many are shown), max-warnings.
-
-## Exit codes
-
-0: clean.
-
-1: errors, or more effective warnings than the limit.
-
-2: wrong usage or configuration, including a missing source folder. The message goes to stderr.
+- [Agent workflow](agent-workflow.md)
+- [docc](index.md)
+- [Rules and diagnostics](rules.md)

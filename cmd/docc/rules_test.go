@@ -23,10 +23,10 @@ func TestRulesList(t *testing.T) {
 	for _, r := range rows {
 		got[r["code"]] = r
 	}
-	if r := got["DOC301"]; r["level"] != "warn" || r["group"] != "text" || r["name"] != "text/forbidden-words" || r["fix"] != "none" {
+	if r := got["DOC301"]; r["level"] != "warn" || r["group"] != "text" || r["rule"] != "text/forbidden-words" || r["fixable"] != "none" || r["description"] == "" {
 		t.Errorf("DOC301: %v", r)
 	}
-	if got["DOC208"]["fix"] != "safe" || got["DOC313"]["fix"] != "unsafe" || got["DOC302"]["level"] != "off" || got["DOC101"]["level"] != "error" {
+	if got["DOC208"]["fixable"] != "safe" || got["DOC313"]["fixable"] != "unsafe" || got["DOC302"]["level"] != "off" || got["DOC101"]["level"] != "error" {
 		t.Error("levels or fix kinds wrong")
 	}
 	_, text, _ := do("rules")
@@ -57,7 +57,7 @@ func TestRulesEffectiveLevelsAndFile(t *testing.T) {
 		}
 		m := map[string]string{}
 		for _, r := range rows {
-			m[r["name"]] = r["level"]
+			m[r["rule"]] = r["level"]
 		}
 		return m
 	}
@@ -94,7 +94,7 @@ func TestExplain(t *testing.T) {
 		"docc.json": `{"customRules":[{"id":"custom/x","level":"warn","message":"No x","hint":"Use y","given":"/a","forbid":"x+"}]}`,
 	})
 	code, out, _ := do("explain", "DOC301")
-	if code != 0 || !strings.HasPrefix(out, "DOC301 text/forbidden-words\nGroup: text\nDefault level: warn\n") ||
+	if code != 0 || !strings.HasPrefix(out, "DOC301 text/forbidden-words\nGroup: text\nLevel: warn\n") ||
 		!strings.Contains(out, "Violation:") || !strings.Contains(out, "Fixed:") || !strings.Contains(out, "Automatic fix: none") {
 		t.Fatalf("%d\n%s", code, out)
 	}
@@ -103,7 +103,7 @@ func TestExplain(t *testing.T) {
 	}
 	code, out, _ = do("explain", "DOC208", "--format", "json")
 	var e map[string]string
-	if err := json.Unmarshal([]byte(out), &e); err != nil || code != 0 || e["fix"] != "safe" || e["code"] != "DOC208" || e["fixDescription"] == "" {
+	if err := json.Unmarshal([]byte(out), &e); err != nil || code != 0 || e["fixable"] != "safe" || e["code"] != "DOC208" || e["fixDescription"] == "" {
 		t.Fatalf("%v %v", err, e)
 	}
 	if code, out, _ := do("explain", "custom/x"); code != 0 || !strings.Contains(out, "DOC800 custom/x") || !strings.Contains(out, "x+") {
@@ -161,5 +161,29 @@ func TestExplainCustomRequire(t *testing.T) {
 	code, out, errs := do("explain", "custom/needs-y")
 	if code != 0 || !strings.Contains(out, "does not match y+") {
 		t.Fatalf("%d %s %s", code, out, errs)
+	}
+}
+
+func TestExplainShowsEffectiveLevelAndConfigure(t *testing.T) {
+	project(t, map[string]string{
+		"docc.json": `{"rules":{"DOC302":"warn"},"overrides":[{"include":["drafts/**"],"rules":{"DOC302":"off"}}],"customRules":[{"id":"custom/x","level":"warn","message":"No x","hint":"Use y","given":"/a","forbid":"x+"}]}`,
+	})
+	_, out, _ := do("explain", "DOC302")
+	if !strings.Contains(out, "Level: warn (default: off)") || !strings.Contains(out, `"rules": { "DOC302": "off" }`) || !strings.Contains(out, `"docIgnore"`) {
+		t.Fatalf("%s", out)
+	}
+	if _, out, _ = do("explain", "DOC302", "--file", "docs/src/drafts/a.json"); !strings.Contains(out, "Level: off\n") {
+		t.Fatalf("%s", out)
+	}
+	if _, out, _ = do("explain", "DOC101"); !strings.Contains(out, "cannot be disabled") {
+		t.Fatalf("%s", out)
+	}
+	_, out, _ = do("explain", "custom/x")
+	if !strings.Contains(out, "No x") || !strings.Contains(out, "x+") || !strings.Contains(out, "Use y") {
+		t.Fatalf("custom: %s", out)
+	}
+	_, out, _ = do("rules")
+	if strings.Index(out, "custom/x") > strings.Index(out, "DOC901") || !strings.Contains(out, "DESCRIPTION") {
+		t.Fatalf("custom rules go where DOC800 is:\n%s", out)
 	}
 }

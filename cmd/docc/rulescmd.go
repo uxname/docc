@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"io"
 	"path/filepath"
 	"strings"
@@ -12,11 +11,12 @@ import (
 )
 
 type ruleRow struct {
-	Code  string `json:"code"`
-	Name  string `json:"name"`
-	Group string `json:"group"`
-	Level string `json:"level"`
-	Fix   string `json:"fix"`
+	Code        string `json:"code"`
+	Rule        string `json:"rule"`
+	Group       string `json:"group"`
+	Level       string `json:"level"`
+	Fixable     string `json:"fixable"`
+	Description string `json:"description"`
 }
 
 func writeJSON(w io.Writer, v any) error {
@@ -39,9 +39,8 @@ func relToSrc(cfg *config.Config, file string) string {
 	return strings.TrimPrefix(f, cfg.Src+"/")
 }
 
-func cmdRules(args []string, stdout io.Writer) (int, error) {
-	var c common
-	fs := newFlags("rules", &c)
+func cmdRules(c *common, args []string, stdout io.Writer) (int, error) {
+	fs := newFlags("rules", c)
 	file := fs.String("file", "", "show levels for this file (overrides applied)")
 	pos, err := parse(fs, args)
 	if err == nil {
@@ -53,7 +52,7 @@ func cmdRules(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	cfg, err := loadConfig(&c)
+	cfg, err := loadConfig(c)
 	if err != nil {
 		return 2, err
 	}
@@ -64,13 +63,13 @@ func cmdRules(args []string, stdout io.Writer) (int, error) {
 	res := cfg.For(rel)
 	var rows []ruleRow
 	for _, r := range rules.All() {
-		if r.Code == "DOC800" {
-			continue // custom rules are listed individually
+		if r.Code == "DOC800" { // custom rules are listed individually, in its place
+			for _, cr := range cfg.Custom {
+				rows = append(rows, ruleRow{"DOC800", cr.ID, "custom", res.Custom(cr.ID).Level.String(), "none", cr.Message})
+			}
+			continue
 		}
-		rows = append(rows, ruleRow{r.Code, r.Name, r.Group, res.Rule(r.Code).Level.String(), r.Fix})
-	}
-	for _, cr := range cfg.Custom {
-		rows = append(rows, ruleRow{"DOC800", cr.ID, "custom", res.Custom(cr.ID).Level.String(), "none"})
+		rows = append(rows, ruleRow{r.Code, r.Name, r.Group, res.Rule(r.Code).Level.String(), r.Fix, r.Desc})
 	}
 	if c.format == "json" {
 		return 0, writeJSON(stdout, rows)
@@ -78,19 +77,27 @@ func cmdRules(args []string, stdout io.Writer) (int, error) {
 	return 0, writeTable(stdout, rows)
 }
 
+// firstSentence shortens a description for the table.
+func firstSentence(s string) string {
+	if i := strings.Index(s, ". "); i >= 0 {
+		return s[:i+1]
+	}
+	return s
+}
+
 func writeTable(w io.Writer, rows []ruleRow) error {
-	head := ruleRow{"CODE", "RULE", "GROUP", "LEVEL", "FIX"}
+	head := ruleRow{"CODE", "RULE", "GROUP", "LEVEL", "FIXABLE", "DESCRIPTION"}
 	all := append([]ruleRow{head}, rows...)
-	var wd [4]int
+	var wd [5]int
 	for _, r := range all {
-		for i, s := range []string{r.Code, r.Name, r.Group, r.Level} {
+		for i, s := range []string{r.Code, r.Rule, r.Group, r.Level, r.Fixable} {
 			wd[i] = max(wd[i], len([]rune(s)))
 		}
 	}
 	var b strings.Builder
 	pad := func(s string, n int) string { return s + strings.Repeat(" ", n-len([]rune(s))) }
 	for _, r := range all {
-		b.WriteString(pad(r.Code, wd[0]) + "  " + pad(r.Name, wd[1]) + "  " + pad(r.Group, wd[2]) + "  " + pad(r.Level, wd[3]) + "  " + r.Fix + "\n")
+		b.WriteString(pad(r.Code, wd[0]) + "  " + pad(r.Rule, wd[1]) + "  " + pad(r.Group, wd[2]) + "  " + pad(r.Level, wd[3]) + "  " + pad(r.Fixable, wd[4]) + "  " + firstSentence(r.Description) + "\n")
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
@@ -98,22 +105,22 @@ func writeTable(w io.Writer, rows []ruleRow) error {
 
 type explanation struct {
 	Code           string `json:"code"`
-	Name           string `json:"name"`
+	Rule           string `json:"rule"`
 	Group          string `json:"group"`
 	Level          string `json:"level"`
 	Description    string `json:"description"`
 	Bad            string `json:"bad"`
 	Good           string `json:"good"`
-	Fix            string `json:"fix"`
-	FixDescription string `json:"fixDescription"`
+	Fixable        string `json:"fixable"`
+	FixDescription string `json:"fixDescription,omitempty"`
+
+	core bool
+	def  string // the default level, when Level is overridden by the config
 }
 
-func cmdExplain(args []string, stdout io.Writer) (int, error) {
-	var c common
-	fs := flag.NewFlagSet("explain", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-	fs.StringVar(&c.format, "format", "text", "text or json")
-	fs.StringVar(&c.configPath, "config", "", "path to docc.json (for custom rules)")
+func cmdExplain(c *common, args []string, stdout io.Writer) (int, error) {
+	fs := newFlags("explain", c)
+	file := fs.String("file", "", "show the level for this file (overrides applied)")
 	pos, err := parse(fs, args)
 	if err == nil && len(pos) != 1 {
 		err = usageErr("usage: docc explain <code or rule name>")
@@ -124,7 +131,7 @@ func cmdExplain(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	e, err := explain(&c, pos[0])
+	e, err := explain(c, pos[0], *file)
 	if err != nil {
 		return 2, err
 	}
@@ -132,23 +139,51 @@ func cmdExplain(args []string, stdout io.Writer) (int, error) {
 		return 0, writeJSON(stdout, e)
 	}
 	fix := "none"
-	if e.Fix != "none" {
-		fix = e.Fix + ": " + e.FixDescription
+	if e.Fixable != "none" {
+		fix = e.Fixable + ": " + e.FixDescription
 	}
-	text := e.Code + " " + e.Name + "\nGroup: " + e.Group + "\nDefault level: " + e.Level + "\n\n" +
-		e.Description + "\n\nViolation:\n  " + indent(e.Bad) + "\n\nFixed:\n  " + indent(e.Good) + "\n\nAutomatic fix: " + fix + "\n"
+	level := e.Level
+	if e.def != "" {
+		level += " (default: " + e.def + ")"
+	}
+	text := e.Code + " " + e.Rule + "\nGroup: " + e.Group + "\nLevel: " + level + "\n\n" +
+		e.Description + "\n\nViolation:\n  " + indent(e.Bad) + "\n\nFixed:\n  " + indent(e.Good) + "\n\nAutomatic fix: " + fix + "\n\n" +
+		configure(e) + "\n"
 	_, err = io.WriteString(stdout, text)
 	return 0, err
 }
 
 func indent(s string) string { return strings.ReplaceAll(s, "\n", "\n  ") }
 
-func explain(c *common, key string) (*explanation, error) {
+// configure shows how to change the level of a rule or suppress one finding.
+func configure(e *explanation) string {
+	if e.core {
+		return "Configure: this rule cannot be disabled, re-levelled or suppressed."
+	}
+	key := e.Code
+	if e.Code == "DOC800" {
+		key = e.Rule
+	}
+	return "Configure (docc.json):\n  \"rules\": { \"" + key + "\": \"off\" }   (or \"warn\", \"error\")\n" +
+		"Suppress one finding (in the document):\n  \"docIgnore\": [{ \"rule\": \"" + key + "\", \"reason\": \"why this is fine\" }]"
+}
+
+func explain(c *common, key, file string) (*explanation, error) {
+	cfg, err := loadConfig(c)
 	if r := rules.Lookup(key); r != nil {
-		return &explanation{r.Code, r.Name, r.Group, r.Default.String(), r.Desc, r.Bad, r.Good, r.Fix, r.FixDesc}, nil
+		e := &explanation{Code: r.Code, Rule: r.Name, Group: r.Group, Level: r.Default.String(), Description: r.Desc, Bad: r.Bad, Good: r.Good, Fixable: r.Fix, FixDescription: r.FixDesc, core: r.Core}
+		if err == nil && !r.Core && r.Code != "DOC800" { // a broken config must not stop a reference lookup
+			rel := ""
+			if file != "" {
+				rel = relToSrc(cfg, file)
+			}
+			if l := cfg.For(rel).Rule(r.Code).Level.String(); l != e.Level {
+				e.def, e.Level = e.Level, l
+			}
+		}
+		return e, nil
 	}
 	if rules.IsCustomName(key) {
-		cfg, err := loadConfig(c)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +201,11 @@ func explain(c *common, key string) (*explanation, error) {
 			if cr.Hint != "" {
 				ok = cr.Hint
 			}
-			return &explanation{"DOC800", cr.ID, "custom", cr.Level.String(), desc, kind, ok, "none", ""}, nil
+			rel := ""
+			if file != "" {
+				rel = relToSrc(cfg, file)
+			}
+			return &explanation{Code: "DOC800", Rule: cr.ID, Group: "custom", Level: cfg.For(rel).Custom(cr.ID).Level.String(), Description: desc, Bad: kind, Good: ok, Fixable: "none"}, nil
 		}
 	}
 	return nil, usageErr("unknown rule %q: use a code like DOC301 or a name like text/forbidden-words", key)
