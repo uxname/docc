@@ -1,0 +1,15 @@
+[
+  {
+    "code": "DOC205",
+    "rule": "graph/root-not-found",
+    "level": "error",
+    "file": "docc.json",
+    "line": 2,
+    "column": 12,
+    "endLine": 2,
+    "endColumn": 12,
+    "message": "root \"start\" does not exist",
+    "hint": "Create docs/src/start.json, or change roots in docc.json.",
+    "fixable": "none"
+  }
+]

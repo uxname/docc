@@ -1,0 +1,15 @@
+[
+  {
+    "code": "DOC101",
+    "rule": "syntax/invalid-json",
+    "level": "error",
+    "file": "docs/src/broken.json",
+    "line": 3,
+    "column": 1,
+    "endLine": 3,
+    "endColumn": 1,
+    "message": "invalid JSON: expected a string key",
+    "hint": "Fix the JSON syntax: strict JSON only, no comments or trailing commas.",
+    "fixable": "none"
+  }
+]

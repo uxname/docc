@@ -1,0 +1,15 @@
+[
+  {
+    "code": "DOC203",
+    "rule": "graph/orphan",
+    "level": "error",
+    "file": "docs/src/lonely.json",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 1,
+    "message": "document \"lonely\" is not reachable from the roots [index]",
+    "hint": "Link it from a reachable document (links or [[id]] in the text) or set its parent.",
+    "fixable": "none"
+  }
+]

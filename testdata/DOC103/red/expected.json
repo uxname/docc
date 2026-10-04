@@ -1,0 +1,28 @@
+[
+  {
+    "code": "DOC103",
+    "rule": "syntax/missing-title",
+    "level": "error",
+    "file": "docs/src/blank.json",
+    "line": 1,
+    "column": 12,
+    "endLine": 1,
+    "endColumn": 17,
+    "message": "the title is empty",
+    "hint": "Write a short, meaningful title.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC103",
+    "rule": "syntax/missing-title",
+    "level": "error",
+    "file": "docs/src/notitle.json",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 2,
+    "message": "the document has no title",
+    "hint": "Add a non-empty \"title\" string.",
+    "fixable": "none"
+  }
+]

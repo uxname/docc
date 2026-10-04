@@ -1,0 +1,15 @@
+[
+  {
+    "code": "DOC201",
+    "rule": "graph/duplicate-id",
+    "level": "error",
+    "file": "docs/src/b/x.json",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 1,
+    "message": "id \"x\" is already used by docs/src/a/x.json",
+    "hint": "Rename one of the files: the file name (without .json) is the document id and must be unique.",
+    "fixable": "none"
+  }
+]

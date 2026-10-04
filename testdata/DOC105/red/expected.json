@@ -1,0 +1,93 @@
+[
+  {
+    "code": "DOC105",
+    "rule": "syntax/document-schema",
+    "level": "error",
+    "file": "docs/src/a.json",
+    "line": 1,
+    "column": 27,
+    "endLine": 1,
+    "endColumn": 36,
+    "message": "document does not match the built-in schema: /parent: got array, want string",
+    "hint": "Use a value of the required type.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC105",
+    "rule": "syntax/document-schema",
+    "level": "error",
+    "file": "docs/src/a.json",
+    "line": 1,
+    "column": 61,
+    "endLine": 1,
+    "endColumn": 66,
+    "message": "document does not match the built-in schema: /reviewed/index: 'xyz' does not match pattern '^[0-9a-f]{8}$'",
+    "hint": "Change the value so that it matches the schema.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC105",
+    "rule": "syntax/document-schema",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 11,
+    "endLine": 3,
+    "endColumn": 21,
+    "message": "document does not match the built-in schema: /kind: 'Bad Kind' does not match pattern '^[a-z0-9-]+$'",
+    "hint": "Change the value so that it matches the schema.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC105",
+    "rule": "syntax/document-schema",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 4,
+    "column": 18,
+    "endLine": 4,
+    "endColumn": 21,
+    "message": "document does not match the built-in schema: /links/1: items at 0 and 1 are equal",
+    "hint": "Remove the repeated element.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC105",
+    "rule": "syntax/document-schema",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 5,
+    "column": 22,
+    "endLine": 5,
+    "endColumn": 25,
+    "message": "document does not match the built-in schema: /tags/2: items at 0 and 2 are equal",
+    "hint": "Remove the repeated element.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC105",
+    "rule": "syntax/document-schema",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 6,
+    "column": 13,
+    "endLine": 6,
+    "endColumn": 18,
+    "message": "document does not match the built-in schema: /hidden: got string, want boolean",
+    "hint": "Use a value of the required type.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC105",
+    "rule": "syntax/document-schema",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 7,
+    "column": 11,
+    "endLine": 7,
+    "endColumn": 12,
+    "message": "document does not match the built-in schema: /body: value does not match any allowed shape",
+    "hint": "Use one of the shapes the schema allows for this field.",
+    "fixable": "none"
+  }
+]

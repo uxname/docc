@@ -1,0 +1,7 @@
+{
+  "title": "Index",
+  "parent": "no-parent",
+  "links": ["a", "no-link"],
+  "body": "See [[no-ref]] and [[Bad Id]].",
+  "notes": ["Check [[no-note]] too."]
+}

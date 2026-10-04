@@ -1,0 +1,15 @@
+[
+  {
+    "code": "DOC102",
+    "rule": "syntax/duplicate-key",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 21,
+    "endLine": 1,
+    "endColumn": 28,
+    "message": "duplicate key \"title\"",
+    "hint": "Remove one of the repeated keys or merge their values.",
+    "fixable": "none"
+  }
+]

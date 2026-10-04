@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "docc document",
+  "description": "A docc source document: one JSON file in docs/src. The id is the file name without extension. Extra free fields are allowed.",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "$schema": { "type": "string", "description": "Path to a kind schema, for editor autocompletion; ignored by docc." },
+    "title": { "type": "string", "pattern": "\\S", "description": "Non-empty heading of the document." },
+    "kind": { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "Document kind; selects docs/schemas/<kind>.json." },
+    "status": { "type": "string", "description": "Allowed values are set by the kind schema." },
+    "parent": { "type": "string", "description": "Id of the parent document." },
+    "links": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Ids of related documents." },
+    "body": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Main text: a string or an array of paragraphs, printed right under the title."
+    },
+    "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "notes": { "type": "array", "items": { "type": "string" }, "description": "Hidden notes for agents; never printed to Markdown." },
+    "hidden": { "type": "boolean", "description": "true: checked but not printed to out/." },
+    "reviewed": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
+      "description": "Confirmed links: target id to the 8-hex fingerprint of the target when it was checked."
+    },
+    "docc-ignore": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule", "reason"],
+        "properties": {
+          "rule": { "type": "string" },
+          "reason": { "type": "string" },
+          "path": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Suppressions; every entry needs a reason."
+    }
+  }
+}
