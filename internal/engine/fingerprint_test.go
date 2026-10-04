@@ -60,3 +60,11 @@ func TestFingerprintCanonicalForm(t *testing.T) {
 		t.Error("order or whitespace changed the fingerprint")
 	}
 }
+
+func TestIsAcronym(t *testing.T) {
+	for w, want := range map[string]bool{"ML": true, "ИИ": true, "NLP": true, "A": false, "DOC101": false, "Ml": false, "ml": false, "API2": false} {
+		if got := isAcronym(w); got != want {
+			t.Errorf("%q: got %v", w, got)
+		}
+	}
+}

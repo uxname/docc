@@ -110,20 +110,18 @@ func boundaryOK(s string, a, b int, seps string) bool {
 	return true
 }
 
+// isAcronym reports a word made only of capital letters, two or more of them
+// (a rule code such as DOC101 is not an acronym).
 func isAcronym(w string) bool {
 	if utf8.RuneCountInString(w) < 2 {
 		return false
 	}
-	upper := 0
 	for _, r := range w {
-		switch {
-		case unicode.IsLower(r):
+		if !unicode.IsUpper(r) {
 			return false
-		case unicode.IsUpper(r):
-			upper++
 		}
 	}
-	return upper >= 2
+	return true
 }
 
 // acronyms implements DOC355: the first use of an acronym that is not
