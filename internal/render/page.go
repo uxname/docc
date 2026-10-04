@@ -16,7 +16,14 @@ var reserved = map[string]bool{
 
 func (r *Renderer) page(d *engine.Doc) string {
 	pg := &page{r: r, doc: d, path: PagePath(d)}
-	blocks := []string{Header, "# " + pg.refs(oneLine.Replace(rawTitle(d)))}
+	var blocks []string
+	switch {
+	case !r.single:
+		blocks = append(blocks, Header)
+	case r.anchors:
+		blocks = append(blocks, pg.anchorTag(""))
+	}
+	blocks = append(blocks, "# "+pg.refs(oneLine.Replace(rawTitle(d))))
 	if meta := metaLine(d); meta != "" {
 		blocks = append(blocks, meta)
 	}
@@ -29,6 +36,9 @@ func (r *Renderer) page(d *engine.Doc) string {
 	for _, m := range d.Root.Members {
 		if !reserved[m.Key] {
 			if c := pg.fieldContent(m.Value); c != "" {
+				if r.anchors {
+					blocks = append(blocks, pg.anchorTag(anchor(heading(m.Key))))
+				}
 				blocks = append(blocks, "## "+heading(m.Key), c)
 			}
 		}
@@ -38,6 +48,17 @@ func (r *Renderer) page(d *engine.Doc) string {
 	}
 	pg.relations(&blocks)
 	return strings.Join(blocks, "\n\n") + "\n"
+}
+
+// anchorTag is the target of an in-file link to this page (field == "") or to
+// one of its field sections.
+// ponytail: ids are <docid>--<anchor>; a document id that itself contains "--" can collide.
+func (pg *page) anchorTag(field string) string {
+	id := pg.doc.ID
+	if field != "" {
+		id += "--" + field
+	}
+	return `<a id="` + id + `"></a>`
 }
 
 // fieldContent renders the value of a free field.
@@ -87,8 +108,15 @@ func (pg *page) serviceSections(blocks *[]string) {
 	}
 }
 
-// tree renders _tree.md: documents nested by parent.
-func (r *Renderer) tree() string {
+// entry is one line of the document tree.
+type entry struct {
+	d     *engine.Doc
+	depth int
+}
+
+// layout nests the documents by parent: first those reachable from the roots,
+// then those without a visible parent (with their own children).
+func (r *Renderer) layout() (tree, orphans []entry) {
 	docs := r.docs()
 	isRoot := map[string]bool{}
 	var roots []*engine.Doc
@@ -99,7 +127,7 @@ func (r *Renderer) tree() string {
 		}
 	}
 	children := map[string][]*engine.Doc{}
-	var orphans []*engine.Doc
+	var loose []*engine.Doc
 	for _, d := range docs {
 		if isRoot[d.ID] {
 			continue
@@ -111,61 +139,91 @@ func (r *Renderer) tree() string {
 		if p := r.P.Graph[pid]; pid != "" && r.hasPage(p) {
 			children[pid] = append(children[pid], d)
 		} else {
-			orphans = append(orphans, d)
+			loose = append(loose, d)
 		}
 	}
 	for _, list := range children {
 		sort.Slice(list, func(i, j int) bool { return list[i].ID < list[j].ID })
 	}
-	sort.Slice(orphans, func(i, j int) bool { return orphans[i].ID < orphans[j].ID })
+	sort.Slice(loose, func(i, j int) bool { return loose[i].ID < loose[j].ID })
 
-	var lines []string
 	seen := map[string]bool{}
+	var out *[]entry
 	var emit func(d *engine.Doc, depth int)
 	emit = func(d *engine.Doc, depth int) {
 		if seen[d.ID] {
 			return
 		}
 		seen[d.ID] = true
-		line := strings.Repeat("  ", depth) + "- [" + titleOf(d) + "](" + PagePath(d) + ")"
-		if r.Full && d.Hidden {
-			line += " (hidden)"
-		}
-		lines = append(lines, line)
+		*out = append(*out, entry{d, depth})
 		for _, c := range children[d.ID] {
 			emit(c, depth+1)
 		}
 	}
+	out = &tree
 	for _, d := range roots {
 		emit(d, 0)
 	}
-	out := []string{Header}
+	out = &orphans
+	for _, d := range loose {
+		emit(d, 0)
+	}
+	return tree, orphans
+}
+
+// href is the link target of a page: its file, or an in-file anchor in a
+// single-file build.
+func (r *Renderer) href(d *engine.Doc) string {
+	if r.single {
+		return "#" + d.ID
+	}
+	return PagePath(d)
+}
+
+// treeLines renders tree entries as a nested list.
+func (r *Renderer) treeLines(es []entry) string {
+	var lines []string
+	for _, e := range es {
+		line := strings.Repeat("  ", e.depth) + "- [" + titleOf(e.d) + "](" + r.href(e.d) + ")"
+		if r.Full && e.d.Hidden {
+			line += " (hidden)"
+		}
+		lines = append(lines, line)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// treeBlocks are the blocks of the document tree, without the header.
+func (r *Renderer) treeBlocks() []string {
+	tree, orphans := r.layout()
+	var out []string
 	if r.Full {
 		out = append(out, "> full build: includes hidden documents and notes — do not publish")
 	}
 	out = append(out, "# Document tree")
-	if len(lines) > 0 {
-		out = append(out, strings.Join(lines, "\n"))
+	if len(tree) > 0 {
+		out = append(out, r.treeLines(tree))
 	}
-	lines = nil
-	for _, d := range orphans {
-		emit(d, 0)
-	}
-	if len(lines) > 0 {
-		out = append(out, "## Without parent", strings.Join(lines, "\n"))
+	if len(orphans) > 0 {
+		out = append(out, "## Without parent", r.treeLines(orphans))
 	}
 	if len(r.P.Cfg.TraceScan) > 0 {
-		lines = nil
-		for _, d := range docs {
+		var lines []string
+		for _, d := range r.docs() {
 			if k := d.Root.Get("kind"); k != nil && k.Str == "requirement" && len(r.P.Covers[d.ID]) == 0 {
-				lines = append(lines, "- ["+titleOf(d)+"]("+PagePath(d)+")")
+				lines = append(lines, "- ["+titleOf(d)+"]("+r.href(d)+")")
 			}
 		}
 		if len(lines) > 0 {
 			out = append(out, "## Requirements without code coverage", strings.Join(lines, "\n"))
 		}
 	}
-	return strings.Join(out, "\n\n") + "\n"
+	return out
+}
+
+// tree renders _tree.md: documents nested by parent.
+func (r *Renderer) tree() string {
+	return strings.Join(append([]string{Header}, r.treeBlocks()...), "\n\n") + "\n"
 }
 
 func rawTitle(d *engine.Doc) string {
@@ -267,7 +325,7 @@ func (pg *page) relations(blocks *[]string) {
 	}
 	add("Covered by", strings.Join(items, "\n"))
 	for _, id := range r.P.Cfg.Roots {
-		if id == d.ID {
+		if id == d.ID && !r.single {
 			*blocks = append(*blocks, "Document tree: [_tree.md](_tree.md)")
 			break
 		}

@@ -136,9 +136,10 @@ func TestRenderGolden(t *testing.T) {
 			for _, mode := range []struct {
 				args        []string
 				out, expect string
+				files       []string // single-file builds: names next to the output directory
 			}{
-				{[]string{"build"}, "docs/out", "out"},
-				{[]string{"build", "--full"}, "docs/out-full", "out-full"},
+				{[]string{"build", "--single"}, "docs/out", "out", []string{"out.md"}},
+				{[]string{"build", "--full", "--single"}, "docs/out-full", "out-full", []string{"out-full.md"}},
 			} {
 				var out, errb bytes.Buffer
 				if code := run(mode.args, &out, &errb); code == 2 {
@@ -152,6 +153,21 @@ func TestRenderGolden(t *testing.T) {
 					}
 				}
 				compareTrees(t, expectDir, filepath.Join(work, mode.out))
+				for _, f := range mode.files {
+					got, err := os.ReadFile(filepath.Join(work, "docs", f))
+					if err != nil {
+						t.Fatal(err)
+					}
+					want := filepath.Join(src, "expect", f)
+					if *update {
+						if err := os.WriteFile(want, got, 0o644); err != nil {
+							t.Fatal(err)
+						}
+					}
+					if b, err := os.ReadFile(want); err != nil || string(b) != string(got) {
+						t.Errorf("%s differs from %s:\n%s", f, want, got)
+					}
+				}
 			}
 		})
 	}

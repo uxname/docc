@@ -42,6 +42,27 @@ func CheckDir(p *engine.Project, rel string) error {
 	return nil
 }
 
+// SingleFile returns the absolute path of a single-file build: the output
+// directory with ext added ("docs/out" gives "docs/out.md"). It refuses a path
+// that would overwrite the config, the sources or the schemas.
+func SingleFile(p *engine.Project, outRel, ext string) (string, error) {
+	cfg := p.Cfg
+	f := cfg.Abs(outRel) + ext
+	if inside(cfg.Abs(cfg.Src), f) || inside(cfg.Abs(cfg.Schemas), f) ||
+		filepath.Clean(f) == filepath.Join(cfg.Root, filepath.Base(cfg.File)) {
+		return "", &engine.UsageError{Msg: fmt.Sprintf("single file %q overlaps the project (config, sources or schemas); choose another output directory", f)}
+	}
+	return f, nil
+}
+
+// WriteFile writes one file (LF, UTF-8) unless it already has this content.
+func WriteFile(path, content string) error {
+	if old, err := os.ReadFile(path); err == nil && bytes.Equal(old, []byte(content)) {
+		return nil
+	}
+	return os.WriteFile(path, []byte(content), 0o644)
+}
+
 // Write makes dir contain exactly files: writes them (LF, UTF-8, no BOM) and
 // removes everything else, including foreign files and folders.
 func Write(dir string, files map[string]string) error {

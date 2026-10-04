@@ -19,7 +19,9 @@ type Renderer struct {
 	P    *engine.Project
 	Full bool
 
-	back map[string][]*engine.Doc
+	back    map[string][]*engine.Doc
+	single  bool // single-file build: links are in-file anchors, no Header per page
+	anchors bool // single Markdown file: emit <a id> before pages and field headings
 }
 
 // Files returns every generated file: path relative to the output directory
@@ -31,6 +33,37 @@ func (r *Renderer) Files() map[string]string {
 		out[PagePath(d)] = lf(r.page(d))
 	}
 	out["_tree.md"] = lf(r.tree())
+	return out
+}
+
+// Single returns every page in one Markdown file: the document tree first,
+// then the pages in tree order. Links become in-file anchors. Same call
+// contract as Files.
+func (r *Renderer) Single() string {
+	s := *r
+	s.single, s.anchors = true, true
+	blocks := append([]string{Header}, s.treeBlocks()...)
+	for _, d := range s.ordered() {
+		blocks = append(blocks, "---", s.page(d))
+	}
+	return lf(strings.Join(blocks, "\n\n")) + "\n"
+}
+
+// ordered returns the pages in tree order; documents the tree walk cannot reach
+// (a parent cycle) follow, so that nothing is lost.
+func (r *Renderer) ordered() []*engine.Doc {
+	tree, orphans := r.layout()
+	seen := map[string]bool{}
+	var out []*engine.Doc
+	for _, e := range append(tree, orphans...) {
+		seen[e.d.ID] = true
+		out = append(out, e.d)
+	}
+	for _, d := range r.docs() {
+		if !seen[d.ID] {
+			out = append(out, d)
+		}
+	}
 	return out
 }
 

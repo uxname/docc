@@ -20,6 +20,13 @@ const maxIncludeDepth = 32
 
 // link renders a link to a document page, with an optional anchor.
 func (pg *page) link(target *engine.Doc, text, anchor string) string {
+	if pg.r.single {
+		href := "#" + target.ID
+		if anchor != "" {
+			href += "--" + anchor
+		}
+		return "[" + text + "](" + href + ")"
+	}
 	href := relPath(pg.path, PagePath(target))
 	if anchor != "" {
 		href += "#" + anchor

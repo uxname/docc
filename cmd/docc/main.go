@@ -29,7 +29,7 @@ Usage: docc [flags] <command> [flags]
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources (--fix applies safe fixes)
-  build              build Markdown into docs/out (--full: audit build)
+  build              build Markdown into docs/out (--full: audit build, --single: one .md file)
   check              read-only check for CI: validate + freshness of out/
   explain <code>     describe a rule
   rules              list rules with effective levels
@@ -62,10 +62,13 @@ Examples:
 	"build": `Usage: docc build [flags]
 
 Validates and writes Markdown into docs/out. With errors in groups 1xx-2xx nothing is written.
+--single also writes every page into one Markdown file next to the directory (docs/out.md). It is
+for reading, is not checked by docc check and is usually kept out of git.
 
 Examples:
   docc build
   docc build --full
+  docc build --single
 `,
 	"check": `Usage: docc check [flags]
 
@@ -377,28 +380,52 @@ func noArgs(pos []string) error {
 }
 
 // build validates, and when there are no errors of groups 1xx-2xx writes the
-// Markdown into out (or outFull) and returns the number of files.
-func build(p *engine.Project, full bool) (int, error) {
+// Markdown into out (or outFull) and returns the number of files. With single
+// it also writes the one-file Markdown next to the directory and returns its
+// path in extra.
+func build(p *engine.Project, full, single bool) (n int, extra []string, err error) {
 	if engine.Structural(p.Diags) {
-		return 0, nil
+		return 0, nil, nil
 	}
 	dir := p.Cfg.Out
 	if full {
 		dir = p.Cfg.OutFull
 	}
 	if err := render.CheckDir(p, dir); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	files := (&render.Renderer{P: p, Full: full}).Files()
+	r := &render.Renderer{P: p, Full: full}
+	files := r.Files()
+	one := map[string]string{} // extension -> content of a single-file build
+	if single {
+		one[".md"] = r.Single()
+	}
+	paths := map[string]string{}
+	for ext := range one {
+		f, err := render.SingleFile(p, dir, ext)
+		if err != nil {
+			return 0, nil, err
+		}
+		paths[ext] = f
+	}
 	if err := render.Write(p.Cfg.Abs(dir), files); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	return len(files), nil
+	for _, ext := range []string{".md", ".html"} {
+		if content, ok := one[ext]; ok {
+			if err := render.WriteFile(paths[ext], content); err != nil {
+				return 0, nil, err
+			}
+			extra = append(extra, dir+ext)
+		}
+	}
+	return len(files), extra, nil
 }
 
 func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	fs := newFlags("build", c)
 	full := fs.Bool("full", false, "audit build into outFull")
+	single := fs.Bool("single", false, "also write all pages as one Markdown file next to the output directory")
 	pos, err := parse(fs, args)
 	if err == nil {
 		err = noArgs(pos)
@@ -413,7 +440,7 @@ func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	n, err := build(p, *full)
+	n, extra, err := build(p, *full, *single)
 	if err != nil {
 		return 2, err
 	}
@@ -427,6 +454,9 @@ func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	if n > 0 {
 		say(stdout, "built %d files in %s\n", n, dir)
+		for _, f := range extra {
+			say(stdout, "built %s\n", f)
+		}
 	} else if engine.Structural(p.Diags) {
 		errs, _ := report.Counts(p.Diags)
 		say(stdout, "build skipped: %d errors, %s not changed\n", errs, dir)
@@ -508,7 +538,7 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	n, err := build(p, false)
+	n, _, err := build(p, false, false)
 	if err != nil {
 		return 2, err
 	}
