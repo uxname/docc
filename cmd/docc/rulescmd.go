@@ -156,9 +156,11 @@ func explain(c *common, key string) (*explanation, error) {
 			if cr.ID != key {
 				continue
 			}
-			kind, ok := "a value that matches "+cr.Forbid.String(), "a value without a match"
+			var kind, ok string
 			if cr.Require != nil {
 				kind, ok = "a value that does not match "+cr.Require.String(), "a value that matches the required expression"
+			} else {
+				kind, ok = "a value that matches "+cr.Forbid.String(), "a value without a match"
 			}
 			desc := cr.Message + " (custom rule from " + cfg.File + ", checks " + cr.Given + ")"
 			if cr.Hint != "" {
