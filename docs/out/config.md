@@ -2,7 +2,7 @@
 
 # Configuration
 
-docc.json is optional and every field has a default. The file is looked up only in the current folder, which becomes the project root. Unknown keys are errors, reported as docc.json:line:column: config error: message with exit code 2.
+docc.json is optional and every field has a default. The nearest docc.json is used: it is looked up in the current folder, then in the parent folders, and its folder becomes the project root, so docc can run from a subfolder. If there is none, the current folder is the root and the defaults apply; docc init does not look upward. Unknown keys are errors, reported as docc.json:line:column: config error: message with exit code 2.
 
 Paths: src, out, schemas and outFull. The folder out is owned by docc: the build deletes every file in it that no source produced. Folders that overlap the sources, the schemas or the project root are refused.
 

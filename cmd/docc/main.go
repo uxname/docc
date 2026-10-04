@@ -272,7 +272,36 @@ func loadConfig(c *common) (*config.Config, error) {
 	if c.configPath != "" {
 		return config.Load(c.configPath, true)
 	}
+	if p := findConfig(); p != "" {
+		return config.Load(p, true)
+	}
 	return config.Load("docc.json", false)
+}
+
+// findConfig returns the nearest docc.json in the current folder or above it,
+// or "" when there is none (the current folder then is the project root with
+// the defaults). Like git and biome, so hooks and agents may run docc from a
+// subfolder.
+func findConfig() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	for dir := wd; ; {
+		p := filepath.Join(dir, "docc.json")
+		if st, err := os.Stat(p); err == nil && !st.IsDir() {
+			// relative to the current folder: config errors read "docc.json:3:5" here, "../docc.json:3:5" in a subfolder
+			if rel, err := filepath.Rel(wd, p); err == nil {
+				return rel
+			}
+			return p
+		}
+		up := filepath.Dir(dir)
+		if up == dir {
+			return ""
+		}
+		dir = up
+	}
 }
 
 // emit prints diagnostics and returns the exit code.

@@ -48,7 +48,13 @@ func runGolden(t *testing.T, dir, code, kind string) {
 		args = strings.Fields(string(b))
 	}
 	args = append(args, "--format", "json", "--max-diagnostics", "0")
-	t.Chdir(dir)
+	// run in a copy outside the repository: a case without docc.json would
+	// otherwise find the repository's own docc.json above it
+	work := t.TempDir()
+	if err := copyTree(dir, work); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(work)
 	var envelope, errb bytes.Buffer
 	exit := run(args, &envelope, &errb)
 	if exit == 2 {

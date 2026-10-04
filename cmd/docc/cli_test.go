@@ -497,3 +497,40 @@ func TestBuildSkippedAndInitNext(t *testing.T) {
 		t.Fatalf("%d %s", code, out)
 	}
 }
+
+func TestConfigFoundInParentFolder(t *testing.T) {
+	dir := project(t, map[string]string{
+		"docc.json":           `{"src":"docs/src","out":"docs/out"}`,
+		"docs/src/index.json": `{"title":"I","links":["gone"]}`,
+		"docs/src/sub/x.txt":  "",
+	})
+	t.Chdir(filepath.Join(dir, "docs", "src", "sub"))
+	code, out, errs := do("validate", "--format", "json")
+	if code != 1 || !strings.Contains(out, `"file": "docs/src/index.json"`) {
+		t.Fatalf("a subfolder must find the root docc.json, paths from the root: %d %s %s", code, out, errs)
+	}
+}
+
+func TestConfigErrorInParentFolderNamesTheFile(t *testing.T) {
+	dir := project(t, map[string]string{"docc.json": `{"src": 1}`})
+	if err := os.MkdirAll(filepath.Join(dir, "a"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(filepath.Join(dir, "a"))
+	code, _, errs := do("validate")
+	if code != 2 || !strings.Contains(errs, filepath.Join("..", "docc.json")+":") {
+		t.Fatalf("%d %s", code, errs)
+	}
+}
+
+func TestConfigExplicitBeatsParent(t *testing.T) {
+	dir := project(t, map[string]string{
+		"docc.json":                 `{"src":"nope"}`,
+		"other/docc.json":           `{"src":"docs/src"}`,
+		"other/docs/src/index.json": `{"title":"I"}`,
+	})
+	t.Chdir(filepath.Join(dir, "other"))
+	if code, out, errs := do("validate", "--config", "docc.json"); code != 0 {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+}
