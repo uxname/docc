@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["statement"],
+  "properties": {
+    "status": { "enum": ["draft", "accepted"] },
+    "statement": { "type": "string", "minLength": 10 },
+    "priority": { "type": "integer", "minimum": 1, "maximum": 3 }
+  }
+}

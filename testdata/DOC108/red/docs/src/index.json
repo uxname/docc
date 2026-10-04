@@ -1,0 +1,12 @@
+{
+  "title": "Index",
+  "docc-ignore": [
+    { "rule": "DOC301" },
+    { "rule": "DOC202", "reason": "core rules cannot be suppressed" },
+    { "rule": "DOC999", "reason": "unknown" },
+    { "rule": "text/placeholder", "reason": "  " },
+    { "rule": "DOC303", "reason": "ok", "path": "body" },
+    { "rule": "DOC303", "reason": "ok", "extra": 1 },
+    "DOC301"
+  ]
+}

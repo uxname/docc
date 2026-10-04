@@ -41,8 +41,9 @@ type Doc struct {
 	Root   *loader.Node // nil when the file does not parse
 	Hidden bool
 
-	Refs []RefUse
-	Incs []IncUse
+	Refs    []RefUse
+	Incs    []IncUse
+	Ignores []*Ignore
 
 	strs []StrNode
 	done bool

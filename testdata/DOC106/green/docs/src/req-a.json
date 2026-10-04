@@ -1,0 +1,1 @@
+{ "$schema": "../schemas/requirement.json", "title": "Fine", "kind": "requirement", "status": "accepted", "statement": "A long enough statement.", "notes": ["service fields are ignored by kind schemas"] }

@@ -11,6 +11,8 @@ func (p *Project) Validate() []diag.Diagnostic {
 	p.checkSyntax()
 	p.analyze()
 	p.checkGraph()
+	p.parseIgnores()
+	p.checkKinds()
 	diag.Sort(p.Diags)
 	return p.Diags
 }

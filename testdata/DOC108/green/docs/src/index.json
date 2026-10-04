@@ -1,0 +1,5 @@
+{
+  "title": "Index",
+  "body": "It is fast.",
+  "docc-ignore": [{ "rule": "DOC301", "reason": "term from the customer spec", "path": "/body" }]
+}

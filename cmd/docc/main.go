@@ -12,6 +12,7 @@ import (
 	"github.com/santiment/docc/internal/diag"
 	"github.com/santiment/docc/internal/engine"
 	"github.com/santiment/docc/internal/report"
+	"github.com/santiment/docc/internal/schema"
 )
 
 var version = "dev"
@@ -59,6 +60,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	case "validate":
 		code, err = cmdValidate(args[1:], stdout)
+	case "schema":
+		err = cmdSchema(args[1:], stdout)
 	default:
 		err = usageErr("unknown command %q (try docc --help)", args[0])
 	}
@@ -175,4 +178,25 @@ func cmdValidate(args []string, stdout io.Writer) (int, error) {
 	}
 	ds := p.Validate()
 	return emit(stdout, &c, cfg, ds)
+}
+
+func cmdSchema(args []string, stdout io.Writer) error {
+	fs := flag.NewFlagSet("schema", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	pos, err := parse(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(pos) != 1 {
+		return usageErr("usage: docc schema document|config")
+	}
+	switch pos[0] {
+	case "document":
+		_, err = stdout.Write(schema.Document())
+	case "config":
+		_, err = stdout.Write(schema.Config())
+	default:
+		return usageErr("unknown schema %q: use document or config", pos[0])
+	}
+	return err
 }

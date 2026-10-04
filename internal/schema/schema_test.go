@@ -149,3 +149,80 @@ func TestResolvePointer(t *testing.T) {
 		t.Error("root")
 	}
 }
+
+func compileBytes(t *testing.T, b []byte) interface{ Validate(any) error } {
+	t.Helper()
+	r := parse2(t, b)
+	l := memLoader{"docc://t/x.json": loader.Value(r.Root)}
+	sc, err := newCompiler(l).Compile("docc://t/x.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sc
+}
+
+func parse2(t *testing.T, b []byte) *loader.Result {
+	t.Helper()
+	r := loader.Parse(b)
+	if r.Err != nil {
+		t.Fatal(r.Err)
+	}
+	return r
+}
+
+const specConfig = `{
+  "src": "docs/src", "out": "docs/out", "schemas": "docs/schemas", "outFull": "docs/out-full",
+  "roots": ["index"], "kinds": ["note", "requirement"], "tags": ["draft"], "recommended": true,
+  "rules": {
+    "text/forbidden-words": { "level": "warn", "words": ["a"], "allow": [] },
+    "style/sentence-length": { "level": "warn", "max": 30 },
+    "text/max-length": { "level": "warn", "max": 2000 },
+    "markdown/raw-html": "off", "nursery": "warn", "custom/x": "off", "DOC800": "off"
+  },
+  "overrides": [{ "include": ["drafts/**"], "rules": { "text/placeholder": "off" } }],
+  "customRules": [{ "id": "custom/no-vague", "level": "warn", "kind": "requirement", "given": "/statement",
+    "forbid": "x", "message": "m", "hint": "h" }],
+  "trace": { "scan": ["tests/**"] }, "maxWarnings": 3, "$schema": "x"
+}`
+
+func TestConfigSchema(t *testing.T) {
+	sc := compileBytes(t, Config())
+	ok := parse2(t, []byte(specConfig))
+	if err := sc.Validate(loader.Value(ok.Root)); err != nil {
+		t.Fatalf("spec example must validate: %v", err)
+	}
+	for name, bad := range map[string]string{
+		"unknown key":   `{"foo":1}`,
+		"bad level":     `{"rules":{"DOC301":"loud"}}`,
+		"unknown rule":  `{"rules":{"nonsense":"off"}}`,
+		"empty roots":   `{"roots":[]}`,
+		"both rx":       `{"customRules":[{"id":"custom/a","level":"warn","message":"m","given":"/x","forbid":"a","require":"b"}]}`,
+		"bad custom id": `{"customRules":[{"id":"a","level":"warn","message":"m","given":"/x","forbid":"a"}]}`,
+	} {
+		r := parse2(t, []byte(bad))
+		if err := sc.Validate(loader.Value(r.Root)); err == nil {
+			t.Errorf("%s: should fail", name)
+		}
+	}
+}
+
+func TestDocumentSchemaIsValid(t *testing.T) {
+	sc := compileBytes(t, Document())
+	r := parse2(t, []byte(`{"title":"A","docc-ignore":[{"rule":"DOC301","reason":"x"}]}`))
+	if err := sc.Validate(loader.Value(r.Root)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFormatIsAnAssertion(t *testing.T) {
+	s, err := load(t, map[string]string{"event.json": `{"properties":{"due":{"type":"string","format":"date"}}}`})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vs := s.CheckKind("event", parse(t, `{"title":"A","due":"31.12.2026"}`).Root); len(vs) != 1 {
+		t.Errorf("bad date: %+v", vs)
+	}
+	if vs := s.CheckKind("event", parse(t, `{"title":"A","due":"2026-12-31"}`).Root); len(vs) != 0 {
+		t.Errorf("good date: %+v", vs)
+	}
+}

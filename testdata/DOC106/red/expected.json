@@ -1,0 +1,54 @@
+[
+  {
+    "code": "DOC106",
+    "rule": "schema/violation",
+    "level": "error",
+    "file": "docs/src/req-a.json",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 2,
+    "message": "document violates the schema of kind \"requirement\": missing property 'statement'",
+    "hint": "Add the field \"statement\".",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC106",
+    "rule": "schema/violation",
+    "level": "error",
+    "file": "docs/src/req-a.json",
+    "line": 1,
+    "column": 61,
+    "endLine": 1,
+    "endColumn": 66,
+    "message": "document violates the schema of kind \"requirement\": /status: value must be one of 'draft', 'accepted'",
+    "hint": "Use one of the allowed values.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC106",
+    "rule": "schema/violation",
+    "level": "error",
+    "file": "docs/src/req-a.json",
+    "line": 1,
+    "column": 80,
+    "endLine": 1,
+    "endColumn": 81,
+    "message": "document violates the schema of kind \"requirement\": /priority: maximum: got 7, want 3",
+    "hint": "Change the value so that it matches the schema.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC106",
+    "rule": "schema/violation",
+    "level": "error",
+    "file": "docs/src/req-b.json",
+    "line": 1,
+    "column": 61,
+    "endLine": 1,
+    "endColumn": 68,
+    "message": "document violates the schema of kind \"requirement\": /statement: minLength: got 5, want 10",
+    "hint": "Change the value so that it matches the schema.",
+    "fixable": "none"
+  }
+]

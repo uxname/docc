@@ -114,3 +114,49 @@ func TestFlagsAfterArguments(t *testing.T) {
 		t.Fatal("version")
 	}
 }
+
+func TestSchemaCommand(t *testing.T) {
+	project(t, map[string]string{})
+	code, out, _ := do("schema", "document")
+	if code != 0 || !strings.Contains(out, `"title": "docc document"`) {
+		t.Fatalf("%d %q", code, out)
+	}
+	code, out, _ = do("schema", "config")
+	if code != 0 || !strings.Contains(out, `"additionalProperties": false`) || !strings.Contains(out, "text/forbidden-words") {
+		t.Fatalf("%d %q", code, out)
+	}
+	if code, _, _ := do("schema"); code != 2 {
+		t.Fatal("schema without argument must be a usage error")
+	}
+	if code, _, _ := do("schema", "other"); code != 2 {
+		t.Fatal("unknown schema")
+	}
+}
+
+func TestBrokenSchemaFilesAreExit2(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"invalid json": {"docs/schemas/a.json": `{`},
+		"bad schema":   {"docs/schemas/a.json": `{"type":"nonsense"}`},
+		"remote ref":   {"docs/schemas/a.json": `{"$ref":"https://example.com/s.json"}`},
+		"outside ref":  {"docs/schemas/a.json": `{"$ref":"../secret.json"}`, "docs/secret.json": `{"type":"string"}`},
+	} {
+		files["docs/src/index.json"] = `{"title":"I"}`
+		project(t, files)
+		code, out, errs := do("validate")
+		if code != 2 || out != "" || !strings.Contains(errs, "docs/schemas/a.json") {
+			t.Errorf("%s: %d %q %q", name, code, out, errs)
+		}
+	}
+}
+
+func TestKindSchemaFileWithLocalRef(t *testing.T) {
+	project(t, map[string]string{
+		"docs/schemas/note.json":          `{"properties":{"status":{"$ref":"common/status.json"}}}`,
+		"docs/schemas/common/status.json": `{"enum":["a","b"]}`,
+		"docs/src/index.json":             `{"title":"I","kind":"note","status":"c"}`,
+	})
+	code, out, _ := do("validate", "--format", "json")
+	if code != 1 || !strings.Contains(out, "DOC106") {
+		t.Fatalf("%d %s", code, out)
+	}
+}

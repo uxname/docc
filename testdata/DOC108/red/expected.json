@@ -1,0 +1,93 @@
+[
+  {
+    "code": "DOC108",
+    "rule": "syntax/invalid-ignore",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 4,
+    "column": 5,
+    "endLine": 4,
+    "endColumn": 25,
+    "message": "a docc-ignore entry needs a reason",
+    "hint": "Add \"reason\": explain why the rule does not apply here.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC108",
+    "rule": "syntax/invalid-ignore",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 5,
+    "column": 15,
+    "endLine": 5,
+    "endColumn": 23,
+    "message": "DOC202 is a core rule and cannot be suppressed",
+    "hint": "Fix the problem instead of suppressing it.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC108",
+    "rule": "syntax/invalid-ignore",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 6,
+    "column": 15,
+    "endLine": 6,
+    "endColumn": 23,
+    "message": "unknown rule \"DOC999\"",
+    "hint": "Use a rule code (DOC301) or name (text/forbidden-words); see docc rules.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC108",
+    "rule": "syntax/invalid-ignore",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 7,
+    "column": 5,
+    "endLine": 7,
+    "endColumn": 51,
+    "message": "a docc-ignore entry needs a reason",
+    "hint": "Add \"reason\": explain why the rule does not apply here.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC108",
+    "rule": "syntax/invalid-ignore",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 8,
+    "column": 49,
+    "endLine": 8,
+    "endColumn": 55,
+    "message": "path must be a JSON pointer string",
+    "hint": "Write a pointer such as \"/statement\" or \"/body/1\".",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC108",
+    "rule": "syntax/invalid-ignore",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 9,
+    "column": 41,
+    "endLine": 9,
+    "endColumn": 48,
+    "message": "unknown key \"extra\" in a docc-ignore entry",
+    "hint": "Use only rule, reason and path.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC108",
+    "rule": "syntax/invalid-ignore",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 10,
+    "column": 5,
+    "endLine": 10,
+    "endColumn": 13,
+    "message": "a docc-ignore entry must be an object",
+    "hint": "Write { \"rule\": \"DOC301\", \"reason\": \"why\" }.",
+    "fixable": "none"
+  }
+]
