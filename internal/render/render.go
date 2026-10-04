@@ -26,9 +26,9 @@ type Renderer struct {
 func (r *Renderer) Files() map[string]string {
 	out := map[string]string{}
 	for _, d := range r.docs() {
-		out[PagePath(d)] = r.page(d)
+		out[PagePath(d)] = lf(r.page(d))
 	}
-	out["_tree.md"] = r.tree()
+	out["_tree.md"] = lf(r.tree())
 	return out
 }
 
@@ -52,11 +52,20 @@ func (r *Renderer) hasPage(d *engine.Doc) bool {
 	return d != nil && r.P.Graph[d.ID] == d && d.Parsed() && (r.Full || !d.Hidden)
 }
 
+// oneLine turns line breaks into spaces: titles are used in headings and
+// link texts, which must stay on one line.
+var oneLine = strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ")
+
 func titleOf(d *engine.Doc) string {
 	if t := d.Root.Get("title"); t != nil && t.Kind == loader.String {
-		return t.Str
+		return oneLine.Replace(t.Str)
 	}
 	return d.ID
+}
+
+// lf makes line breaks in generated text \n only.
+func lf(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", "\n"), "\r", "\n")
 }
 
 // relPath returns the relative path to `to` from the directory of the page

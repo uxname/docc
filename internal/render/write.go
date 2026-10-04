@@ -28,6 +28,9 @@ func CheckDir(p *engine.Project, rel string) error {
 	bad := inside(cfg.Root, out) || inside(src, out) || inside(sch, out) ||
 		inside(filepath.Join(cfg.Root, filepath.Base(cfg.File)), out) ||
 		inside(out, src) || inside(out, sch)
+	if filepath.Clean(cfg.Abs(cfg.Out)) == filepath.Clean(cfg.Abs(cfg.OutFull)) {
+		bad = true
+	}
 	for _, other := range []string{cfg.Out, cfg.OutFull} {
 		if other != rel && (inside(out, cfg.Abs(other)) || inside(cfg.Abs(other), out)) {
 			bad = true

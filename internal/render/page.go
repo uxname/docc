@@ -16,7 +16,7 @@ var reserved = map[string]bool{
 
 func (r *Renderer) page(d *engine.Doc) string {
 	pg := &page{r: r, doc: d, path: PagePath(d)}
-	blocks := []string{Header, "# " + pg.refs(titleOf(d))}
+	blocks := []string{Header, "# " + pg.refs(oneLine.Replace(rawTitle(d)))}
 	if r.Full && d.Hidden {
 		blocks = append(blocks, "> Скрытый документ.")
 	}
@@ -173,4 +173,11 @@ func (r *Renderer) tree() string {
 		out = append(out, "## Без родителя", strings.Join(lines, "\n"))
 	}
 	return strings.Join(out, "\n\n") + "\n"
+}
+
+func rawTitle(d *engine.Doc) string {
+	if t := d.Root.Get("title"); t != nil && t.Kind == loader.String {
+		return t.Str
+	}
+	return d.ID
 }

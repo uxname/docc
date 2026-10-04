@@ -118,6 +118,7 @@ func (w *walker) entry(rk string, n *loader.Node) (*Entry, *Error) {
 	}
 	ent := &Entry{}
 	var wordsFile, allowFile []string
+	var wordsNode, allowNode *loader.Node
 	for _, m := range n.Members {
 		if m.Key == "level" {
 			l, e := w.level(m.Value)
@@ -138,8 +139,10 @@ func (w *walker) entry(rk string, n *loader.Node) (*Entry, *Error) {
 			ent.Params.Allow, e = w.strs(m.Value)
 		case "wordsFile":
 			wordsFile, e = w.fileList(m.Value)
+			wordsNode = m.Value
 		case "allowFile":
 			allowFile, e = w.fileList(m.Value)
+			allowNode = m.Value
 		case "max":
 			ent.Params.Max, e = w.nonNegInt(m.Value)
 			ent.Params.HasMax = e == nil
@@ -158,14 +161,14 @@ func (w *walker) entry(rk string, n *loader.Node) (*Entry, *Error) {
 	for _, f := range wordsFile {
 		ws, err := readList(filepath.Join(w.root, filepath.FromSlash(f)))
 		if err != nil {
-			return nil, &Error{File: w.file, Msg: err.Error()}
+			return nil, w.errAt(wordsNode.Start, "%s", err.Error())
 		}
 		ent.Params.Words = append(ent.Params.Words, ws...)
 	}
 	for _, f := range allowFile {
 		ws, err := readList(filepath.Join(w.root, filepath.FromSlash(f)))
 		if err != nil {
-			return nil, &Error{File: w.file, Msg: err.Error()}
+			return nil, w.errAt(allowNode.Start, "%s", err.Error())
 		}
 		ent.Params.Allow = append(ent.Params.Allow, ws...)
 	}

@@ -359,3 +359,32 @@ func TestInit(t *testing.T) {
 		t.Fatal("init always builds")
 	}
 }
+
+func TestLineBreaksInValuesStayLF(t *testing.T) {
+	bs := "\\"
+	project(t, map[string]string{"docs/src/index.json": `{"title":"I` + bs + `r` + bs + `nx","body":"a` + bs + `r` + bs + `nb` + bs + `rc"}`})
+	if code, _, errs := do("build"); code != 0 {
+		t.Fatalf("%d %s", code, errs)
+	}
+	for _, f := range []string{"docs/out/index.md", "docs/out/_tree.md"} {
+		if strings.Contains(readFile(t, f), "\r") {
+			t.Errorf("%s contains a carriage return", f)
+		}
+	}
+	if !strings.Contains(readFile(t, "docs/out/index.md"), "# I x\n") {
+		t.Error("a line break in the title must become a space in the heading")
+	}
+	if code, out, _ := do("check"); code != 0 {
+		t.Fatalf("check right after build must pass: %s", out)
+	}
+}
+
+func TestSameOutAndOutFullIsUsageError(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"I"}`,
+		"docc.json":           `{"out":"docs/out","outFull":"docs/out"}`,
+	})
+	if code, _, errs := do("build", "--full"); code != 2 || !strings.Contains(errs, "output directory") {
+		t.Fatalf("%d %s", code, errs)
+	}
+}
