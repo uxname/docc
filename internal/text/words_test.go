@@ -59,3 +59,16 @@ func TestPlaceholders(t *testing.T) {
 		t.Errorf("%q", got)
 	}
 }
+
+// Lower-casing U+0130 changes the byte length, which forces the slow path;
+// both paths must give the same answer.
+func TestSlowPathAgrees(t *testing.T) {
+	m := NewMatcher([]string{"быстро", "быстр*", "как правило", "etc."})
+	for _, s := range []string{"Как  правило, быстро и быстрая; etc.", "Работает БЫСТРО.", "небыстро"} {
+		want := found(m, s)
+		got := found(m, "İ "+s)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%q: slow %q fast %q", s, got, want)
+		}
+	}
+}

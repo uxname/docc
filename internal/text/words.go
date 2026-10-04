@@ -90,11 +90,17 @@ type Matcher struct {
 	entries []entry
 }
 
+type part struct {
+	s      string // lower case
+	prefix bool
+}
+
 type entry struct {
 	text       string
-	re         *regexp.Regexp
-	startBound bool // the entry starts with a word character
-	endBound   bool // the entry ends with a word character and no star
+	parts      []part
+	re         *regexp.Regexp // slow path, used when lower-casing changes the text length
+	startBound bool           // the entry starts with a word character
+	endBound   bool           // the entry ends with a word character and no star
 }
 
 // NewMatcher compiles word-list entries; empty entries are skipped.
@@ -105,27 +111,29 @@ func NewMatcher(list []string) *Matcher {
 		if e == "" {
 			continue
 		}
-		parts := strings.Fields(e)
+		var parts []part
 		var re strings.Builder
 		re.WriteString("(?i)")
-		for i, p := range parts {
+		for i, p := range strings.Fields(e) {
 			if i > 0 {
 				re.WriteString(`\s+`)
 			}
-			if strings.HasSuffix(p, "*") {
-				re.WriteString(regexp.QuoteMeta(strings.TrimSuffix(p, "*")))
+			pre := strings.HasSuffix(p, "*")
+			p = strings.TrimSuffix(p, "*")
+			parts = append(parts, part{strings.ToLower(p), pre})
+			re.WriteString(regexp.QuoteMeta(p))
+			if pre {
 				re.WriteString(`[\p{L}\p{N}_'’-]*`)
-			} else {
-				re.WriteString(regexp.QuoteMeta(p))
 			}
 		}
 		first, _ := utf8.DecodeRuneInString(e)
 		last, _ := utf8.DecodeLastRuneInString(e)
 		m.entries = append(m.entries, entry{
 			text:       e,
+			parts:      parts,
 			re:         regexp.MustCompile(re.String()),
 			startBound: isWordRune(first),
-			endBound:   isWordRune(last),
+			endBound:   isWordRune(last) && !strings.HasSuffix(e, "*"),
 		})
 	}
 	return m
@@ -139,28 +147,15 @@ type Hit struct {
 
 // Find returns all matches in s ordered by position.
 func (m *Matcher) Find(s string) []Hit {
+	lower := strings.ToLower(s)
+	fast := len(lower) == len(s)
 	var hits []Hit
-	for _, e := range m.entries {
-		pos := 0
-		for pos <= len(s) {
-			loc := e.re.FindStringIndex(s[pos:])
-			if loc == nil {
-				break
-			}
-			a, b := pos+loc[0], pos+loc[1]
-			if (e.startBound && wordBefore(s, a)) || (e.endBound && wordAfter(s, b)) {
-				_, n := utf8.DecodeRuneInString(s[a:])
-				if n == 0 {
-					n = 1
-				}
-				pos = a + n
-				continue
-			}
-			hits = append(hits, Hit{a, b, e.text})
-			if b == a {
-				b++
-			}
-			pos = b
+	for i := range m.entries {
+		e := &m.entries[i]
+		if fast {
+			hits = e.findFast(lower, hits)
+		} else {
+			hits = e.findSlow(s, hits)
 		}
 	}
 	sortHits(hits)
@@ -172,6 +167,86 @@ func (m *Matcher) Find(s string) []Hit {
 		out = append(out, h)
 	}
 	return out
+}
+
+func (e *entry) bounded(s string, a, b int) bool {
+	return !(e.startBound && wordBefore(s, a)) && !(e.endBound && wordAfter(s, b))
+}
+
+// extend moves b over the rest of a word for a prefix part.
+func extend(s string, b int) int {
+	for b < len(s) {
+		r, n := utf8.DecodeRuneInString(s[b:])
+		if !isWordRune(r) && !isJoiner(r) {
+			break
+		}
+		b += n
+	}
+	return b
+}
+
+// findFast searches the lower-cased text with strings.Index.
+func (e *entry) findFast(lower string, hits []Hit) []Hit {
+	first := e.parts[0]
+	pos := 0
+	for pos <= len(lower) {
+		i := strings.Index(lower[pos:], first.s)
+		if i < 0 {
+			break
+		}
+		a := pos + i
+		b := a + len(first.s)
+		if first.prefix {
+			b = extend(lower, b)
+		}
+		ok := true
+		for _, p := range e.parts[1:] {
+			k := b
+			for k < len(lower) {
+				r, n := utf8.DecodeRuneInString(lower[k:])
+				if !unicode.IsSpace(r) {
+					break
+				}
+				k += n
+			}
+			if k == b || !strings.HasPrefix(lower[k:], p.s) {
+				ok = false
+				break
+			}
+			b = k + len(p.s)
+			if p.prefix {
+				b = extend(lower, b)
+			}
+		}
+		if ok && e.bounded(lower, a, b) {
+			hits = append(hits, Hit{a, b, e.text})
+			pos = b
+			continue
+		}
+		_, n := utf8.DecodeRuneInString(lower[a:])
+		pos = a + max(n, 1)
+	}
+	return hits
+}
+
+// findSlow uses the case-insensitive regular expression.
+func (e *entry) findSlow(s string, hits []Hit) []Hit {
+	pos := 0
+	for pos <= len(s) {
+		loc := e.re.FindStringIndex(s[pos:])
+		if loc == nil {
+			break
+		}
+		a, b := pos+loc[0], pos+loc[1]
+		if !e.bounded(s, a, b) {
+			_, n := utf8.DecodeRuneInString(s[a:])
+			pos = a + max(n, 1)
+			continue
+		}
+		hits = append(hits, Hit{a, b, e.text})
+		pos = max(b, a+1)
+	}
+	return hits
 }
 
 func sortHits(h []Hit) {
