@@ -72,6 +72,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		code, err = cmdCheck(args[1:], stdout)
 	case "init":
 		code, err = cmdInit(args[1:], stdout)
+	case "rules":
+		code, err = cmdRules(args[1:], stdout)
+	case "explain":
+		code, err = cmdExplain(args[1:], stdout)
 	case "schema":
 		err = cmdSchema(args[1:], stdout)
 	default:

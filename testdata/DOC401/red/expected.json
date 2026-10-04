@@ -1,0 +1,41 @@
+[
+  {
+    "code": "DOC401",
+    "rule": "trace/unknown-id",
+    "level": "error",
+    "file": "src/x.py",
+    "line": 1,
+    "column": 10,
+    "endLine": 1,
+    "endColumn": 10,
+    "message": "@covers points to a document that does not exist: \"ghost-three\"",
+    "hint": "Create docs/src/ghost-three.json or fix the id in the tag.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC401",
+    "rule": "trace/unknown-id",
+    "level": "error",
+    "file": "tests/a_test.go",
+    "line": 3,
+    "column": 4,
+    "endLine": 3,
+    "endColumn": 4,
+    "message": "@covers points to a document that does not exist: \"ghost-one\"",
+    "hint": "Create docs/src/ghost-one.json or fix the id in the tag.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC401",
+    "rule": "trace/unknown-id",
+    "level": "error",
+    "file": "tests/a_test.go",
+    "line": 5,
+    "column": 11,
+    "endLine": 5,
+    "endColumn": 11,
+    "message": "@covers points to a document that does not exist: \"ghost-two\"",
+    "hint": "Create docs/src/ghost-two.json or fix the id in the tag.",
+    "fixable": "none"
+  }
+]

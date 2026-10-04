@@ -194,7 +194,14 @@ func (p *Project) emit(d *Doc, code string, start, end int, msg, hint string) *d
 	if lvl == diag.Off {
 		return nil
 	}
+	return p.emitAt(d, code, rules.ByCode(code).Name, lvl, start, end, msg, hint)
+}
+
+// emitAt adds a document diagnostic with an explicit rule name and level
+// (custom rules use DOC800 with their own name).
+func (p *Project) emitAt(d *Doc, code, name string, lvl diag.Level, start, end int, msg, hint string) *diag.Diagnostic {
 	dg, _ := p.newDiag(d.File, code)
+	dg.Rule = name
 	dg.DocID = d.ID
 	dg.Message, dg.Hint = msg, hint
 	dg.Start, dg.End = start, end

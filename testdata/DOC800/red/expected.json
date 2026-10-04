@@ -1,0 +1,67 @@
+[
+  {
+    "code": "DOC800",
+    "rule": "custom/needs-must",
+    "level": "error",
+    "file": "docs/src/req-b.json",
+    "line": 1,
+    "column": 53,
+    "endLine": 1,
+    "endColumn": 75,
+    "message": "A requirement statement must contain \"must\"",
+    "hint": "",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC800",
+    "rule": "custom/needs-must",
+    "level": "error",
+    "file": "docs/src/req-c.json",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 1,
+    "message": "A requirement statement must contain \"must\"",
+    "hint": "",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC800",
+    "rule": "custom/no-vague-quantity",
+    "level": "warn",
+    "file": "docs/src/req-a.json",
+    "line": 1,
+    "column": 76,
+    "endLine": 1,
+    "endColumn": 87,
+    "message": "Replace «несколько» with a number",
+    "hint": "State an exact value",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC800",
+    "rule": "custom/no-maybe-in-criteria",
+    "level": "warn",
+    "file": "docs/src/req-d.json",
+    "line": 1,
+    "column": 99,
+    "endLine": 1,
+    "endColumn": 104,
+    "message": "No hedging in criteria",
+    "hint": "",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC800",
+    "rule": "custom/no-maybe-in-criteria",
+    "level": "warn",
+    "file": "docs/src/req-d.json",
+    "line": 1,
+    "column": 132,
+    "endLine": 1,
+    "endColumn": 137,
+    "message": "No hedging in criteria",
+    "hint": "",
+    "fixable": "none"
+  }
+]
