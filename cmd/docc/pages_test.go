@@ -124,3 +124,44 @@ func TestSingleFileNotWrittenOnStructuralErrors(t *testing.T) {
 		t.Error("docs/out.md written despite errors")
 	}
 }
+
+func TestHTMLBuild(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"Index <b>","body":["See [[req#statement]] and [[req]].","<script>alert(1)</script> text"],"links":["req"]}`,
+		"docs/src/req.json": `{"title":"Req","parent":"index","statement":"Fact.",
+			"rows":[{"a":"one\ntwo","b":"x"}]}`,
+		"docs/src/h.json": `{"title":"Hid","hidden":true,"parent":"index","body":"Secret"}`,
+	})
+	if code, out, errs := do("build", "--html"); code != 0 || !strings.Contains(out, "built docs/out.html") {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+	page := readFile(t, "docs/out.html")
+	for _, want := range []string{
+		`<section id="index">`, `<section id="req">`,
+		`<h2 id="req--statement">Statement</h2>`, // target of [[req#statement]]
+		`<a href="#req--statement">Req</a>`,      // the link itself
+		`<a href="#req">Req</a>`,                 // plain page link, also in the tree
+		"<td>one<br>two</td>",                    // line break in a table cell survives
+		"<title>Index &lt;b&gt;</title>",         // titles are escaped
+		`<input type="search"`, `prefers-color-scheme`, `@media print`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("out.html lacks %q", want)
+		}
+	}
+	// agents' raw HTML never reaches the file; hidden documents stay out; nothing is fetched
+	for _, bad := range []string{"<script>alert", "Secret", "Hid", "http://", "https://", ".md\""} {
+		if strings.Contains(page, bad) {
+			t.Errorf("out.html contains %q", bad)
+		}
+	}
+	before := readFile(t, "docs/out.html")
+	do("build", "--html")
+	if readFile(t, "docs/out.html") != before {
+		t.Error("the second build changed the file")
+	}
+	do("build", "--full", "--html")
+	if full := readFile(t, "docs/out-full.html"); !strings.Contains(full, "Secret") {
+		t.Error("out-full.html lacks the hidden document")
+	}
+}

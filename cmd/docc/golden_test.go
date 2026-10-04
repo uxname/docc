@@ -138,8 +138,8 @@ func TestRenderGolden(t *testing.T) {
 				out, expect string
 				files       []string // single-file builds: names next to the output directory
 			}{
-				{[]string{"build", "--single"}, "docs/out", "out", []string{"out.md"}},
-				{[]string{"build", "--full", "--single"}, "docs/out-full", "out-full", []string{"out-full.md"}},
+				{[]string{"build", "--single", "--html"}, "docs/out", "out", []string{"out.md", "out.html"}},
+				{[]string{"build", "--full", "--single", "--html"}, "docs/out-full", "out-full", []string{"out-full.md", "out-full.html"}},
 			} {
 				var out, errb bytes.Buffer
 				if code := run(mode.args, &out, &errb); code == 2 {

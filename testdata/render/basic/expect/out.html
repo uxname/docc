@@ -1,0 +1,194 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Index</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--fg:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#0969da;--code:#f6f8fa}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--line:#3d444d;--accent:#4493f8;--code:#151b23}}
+*{box-sizing:border-box}
+body{margin:0;display:grid;grid-template-columns:18rem minmax(0,1fr);background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
+a{color:var(--accent)}
+aside{position:sticky;top:0;height:100vh;overflow:auto;padding:1rem;border-right:1px solid var(--line);font-size:.9rem}
+#q{width:100%;padding:.4rem .6rem;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:.3rem}
+#count{margin:.3rem 0 0;color:var(--muted);min-height:1.5em}
+nav h1{font-size:1rem;margin:.8rem 0 .3rem}
+nav h2{font-size:.9rem;margin:.8rem 0 .3rem}
+nav ul{margin:0;padding-left:1rem}
+nav>ul{padding-left:0}
+nav li{list-style:none;margin:.15rem 0}
+nav blockquote{margin:.5rem 0;color:var(--muted)}
+.miss{opacity:.4}
+main{max-width:52rem;padding:0 2rem;overflow-wrap:anywhere}
+section{padding:1rem 0 2rem;border-bottom:1px solid var(--line)}
+section:last-child{border-bottom:0}
+h1,h2{line-height:1.25}
+h2{margin-top:1.8rem;font-size:1.25rem}
+code,pre{font-family:ui-monospace,monospace;font-size:.9em;background:var(--code);border-radius:.25rem}
+code{padding:.1em .3em}
+pre{padding:.8rem;overflow-x:auto}
+pre code{padding:0}
+table{display:block;overflow-x:auto;border-collapse:collapse}
+th,td{padding:.35rem .7rem;border:1px solid var(--line);text-align:left;vertical-align:top}
+blockquote{margin:1rem 0;padding:0 1rem;border-left:.25rem solid var(--line);color:var(--muted)}
+@media (max-width:50rem){
+body{display:block}
+aside{position:static;height:auto;max-height:50vh;border-right:0;border-bottom:1px solid var(--line)}
+main{padding:0 1rem}
+}
+@media print{
+aside{display:none}
+body{display:block}
+main{max-width:none;padding:0}
+section{break-before:page;border:0}
+section:first-child{break-before:auto}
+a{color:inherit}
+}
+</style>
+<aside>
+<input type="search" id="q" placeholder="Search" aria-label="Search the documentation">
+<p id="count" role="status"></p>
+<nav aria-label="Document tree">
+<h1 id="nav--document-tree">Document tree</h1>
+<ul>
+<li><a href="#index">Index</a>
+<ul>
+<li><a href="#deep">Deep doc</a></li>
+<li><a href="#req">Requirement</a></li>
+</ul>
+</li>
+</ul>
+
+</nav>
+</aside>
+<main>
+<section id="index">
+<h1 id="index--index">Index</h1>
+<p>note · accepted · draft, x</p>
+<p>Welcome. See <a href="#deep--acceptance-criteria">Deep doc</a>, <a href="#req">Requirement</a> and <a href="#req">Requirement</a>.</p>
+<p>First fact.</p>
+<p>Second fact.</p>
+<h2 id="index--owner-name">Owner name</h2>
+<p>Team</p>
+<h2 id="index--count">Count</h2>
+<p>3</p>
+<h2 id="index--flag">Flag</h2>
+<p>true</p>
+<h2 id="index--meta">Meta</h2>
+<ul>
+<li><strong>a:</strong> x</li>
+<li><strong>nested:</strong>
+<ul>
+<li><strong>k:</strong> v</li>
+<li><strong>list:</strong>
+<ul>
+<li>p</li>
+<li>q</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>multi:</strong> line1
+line2</li>
+</ul>
+<h2 id="index--steps">Steps</h2>
+<ol>
+<li>
+<ul>
+<li><strong>name:</strong> one</li>
+<li><strong>done:</strong> true</li>
+</ul>
+</li>
+<li>
+<ul>
+<li><strong>name:</strong> two</li>
+<li><strong>items:</strong>
+<ul>
+<li>a</li>
+<li>b</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="index--inline">Inline</h2>
+<p>Text Requirement here and <code>{{literal}}</code> code and <a href="#deep">Deep doc</a>.</p>
+<h2 id="index--numbers">Numbers</h2>
+<ul>
+<li>1</li>
+<li>2.50</li>
+</ul>
+<h2 id="index--links">Links</h2>
+<ul>
+<li><a href="#deep">Deep doc</a></li>
+<li><a href="#req">Requirement</a></li>
+</ul>
+<h2 id="index--referenced-by">Referenced by</h2>
+<ul>
+<li><a href="#deep">Deep doc</a></li>
+<li><a href="#req">Requirement</a></li>
+</ul>
+</section>
+<section id="deep">
+<h1 id="deep--deep-doc">Deep doc</h1>
+<p>Back to <a href="#index">Index</a> and <a href="#index--owner-name">Index</a>.</p>
+<h2 id="deep--acceptance-criteria">Acceptance criteria</h2>
+<p>Given X.</p>
+<p>Then Y with <a href="#req--statement">Requirement</a>.</p>
+<h2 id="deep--parent">Parent</h2>
+<p><a href="#index">Index</a></p>
+<h2 id="deep--links">Links</h2>
+<ul>
+<li><a href="#index">Index</a></li>
+</ul>
+<h2 id="deep--referenced-by">Referenced by</h2>
+<ul>
+<li><a href="#index">Index</a></li>
+<li><a href="#req">Requirement</a></li>
+</ul>
+</section>
+<section id="req">
+<h1 id="req--requirement">Requirement</h1>
+<p>Requirement body, see <a href="#deep--acceptance-criteria">Deep doc</a>.</p>
+<h2 id="req--statement">Statement</h2>
+<p>First fact.</p>
+<p>Second fact.</p>
+<h2 id="req--parent">Parent</h2>
+<p><a href="#index">Index</a></p>
+<h2 id="req--links">Links</h2>
+<ul>
+<li><a href="#deep">Deep doc</a></li>
+</ul>
+<h2 id="req--referenced-by">Referenced by</h2>
+<ul>
+<li><a href="#deep">Deep doc</a></li>
+<li><a href="#index">Index</a></li>
+</ul>
+</section>
+
+</main>
+<script>
+(function(){
+var q=document.getElementById('q'),c=document.getElementById('count');
+var secs=[].slice.call(document.querySelectorAll('main>section'));
+var text=secs.map(function(s){return s.textContent.toLowerCase()});
+var links=[].slice.call(document.querySelectorAll('nav a[href^="#"]'));
+function find(){
+  var v=q.value.trim().toLowerCase(),n=0,hit={};
+  secs.forEach(function(s,i){
+    var ok=!v||text[i].indexOf(v)>=0;
+    s.hidden=!ok;
+    if(ok){n++;hit[s.id]=1}
+  });
+  links.forEach(function(a){
+    a.classList.toggle('miss',!!v&&!hit[decodeURIComponent(a.hash.slice(1))]);
+  });
+  c.textContent=v?n+' of '+secs.length+' pages':'';
+}
+q.addEventListener('input',find);
+window.addEventListener('hashchange',function(){
+  var t=document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  var s=t&&t.closest('section');
+  if(s&&s.hidden){q.value='';find();s.scrollIntoView()}
+});
+})();
+</script>

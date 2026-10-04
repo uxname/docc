@@ -29,7 +29,7 @@ Usage: docc [flags] <command> [flags]
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources (--fix applies safe fixes)
-  build              build Markdown into docs/out (--full: audit build, --single: one .md file)
+  build              build Markdown into docs/out (--full: audit, --single/--html: one file)
   check              read-only check for CI: validate + freshness of out/
   explain <code>     describe a rule
   rules              list rules with effective levels
@@ -62,13 +62,17 @@ Examples:
 	"build": `Usage: docc build [flags]
 
 Validates and writes Markdown into docs/out. With errors in groups 1xx-2xx nothing is written.
---single also writes every page into one Markdown file next to the directory (docs/out.md). It is
-for reading, is not checked by docc check and is usually kept out of git.
+--single also writes every page into one Markdown file next to the directory (docs/out.md), --html
+into one self-contained HTML file (docs/out.html): a document tree, search, dark theme and print
+styles, no network needed. With --full the files are docs/out-full.md and docs/out-full.html. They
+are for reading, are not checked by docc check and are usually kept out of git.
 
 Examples:
   docc build
   docc build --full
   docc build --single
+  docc build --html
+  docc build --full --single --html
 `,
 	"check": `Usage: docc check [flags]
 
@@ -381,9 +385,9 @@ func noArgs(pos []string) error {
 
 // build validates, and when there are no errors of groups 1xx-2xx writes the
 // Markdown into out (or outFull) and returns the number of files. With single
-// it also writes the one-file Markdown next to the directory and returns its
-// path in extra.
-func build(p *engine.Project, full, single bool) (n int, extra []string, err error) {
+// and html it also writes the one-file Markdown and HTML next to the directory
+// and returns their paths in extra.
+func build(p *engine.Project, full, single, html bool) (n int, extra []string, err error) {
 	if engine.Structural(p.Diags) {
 		return 0, nil, nil
 	}
@@ -399,6 +403,9 @@ func build(p *engine.Project, full, single bool) (n int, extra []string, err err
 	one := map[string]string{} // extension -> content of a single-file build
 	if single {
 		one[".md"] = r.Single()
+	}
+	if html {
+		one[".html"] = r.HTML()
 	}
 	paths := map[string]string{}
 	for ext := range one {
@@ -426,6 +433,7 @@ func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	fs := newFlags("build", c)
 	full := fs.Bool("full", false, "audit build into outFull")
 	single := fs.Bool("single", false, "also write all pages as one Markdown file next to the output directory")
+	html := fs.Bool("html", false, "also write all pages as one self-contained HTML file next to the output directory")
 	pos, err := parse(fs, args)
 	if err == nil {
 		err = noArgs(pos)
@@ -440,7 +448,7 @@ func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	n, extra, err := build(p, *full, *single)
+	n, extra, err := build(p, *full, *single, *html)
 	if err != nil {
 		return 2, err
 	}
@@ -538,7 +546,7 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	n, _, err := build(p, false, false)
+	n, _, err := build(p, false, false, false)
 	if err != nil {
 		return 2, err
 	}
