@@ -8,6 +8,8 @@ docc validate checks the sources. With the flag fix it applies safe fixes; with 
 
 docc build writes the Markdown into docs/out and removes everything else from that folder. When the sources have errors of the groups 1xx or 2xx it writes nothing and exits with code 1. With the flag full it writes the audit build into docs/out-full and leaves docs/out alone.
 
+The flags single and html add one file next to the folder, both can be combined with full: docc build --single writes all pages into one Markdown file (docs/out.md) and docc build --html into one self-contained HTML file (docs/out.html). The folder of pages is built as before. These files are for reading, are not committed and are not checked by docc check. With full they are docs/out-full.md and docs/out-full.html.
+
 docc check is read-only and made for CI. It runs validate and then compares docs/out with what the sources produce (DOC501). With errors of the groups 1xx or 2xx the comparison is skipped.
 
 Every command accepts --help and prints its flags with an example. The global flags may stand before or after the command. docc init ends with a Next block of three steps.

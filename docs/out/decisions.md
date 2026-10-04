@@ -12,6 +12,10 @@ The acronym rule DOC355 reports only the first use of an unexplained acronym in 
 
 The comparison in the rule DOC306 uses the Jaccard coefficient of character trigrams; a match is reported on the document with the larger id.
 
+The single files docs/out.md and docs/out.html take their names from the output folder (out and outFull plus an extension), so no settings exist for them. They are not checked by docc check and are meant to stay out of git.
+
+The single HTML file is built from the same Markdown as the single Markdown file, converted by the library goldmark with the GitHub extensions. Page anchors are the document id and field anchors are the document id, two hyphens and the field anchor.
+
 Fixes are applied in passes: the first added link creates the links field and the next pass appends further ids, so two fixes never write the same place.
 
 ## Not verified

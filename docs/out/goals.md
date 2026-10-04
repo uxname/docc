@@ -18,11 +18,11 @@ Deterministic output and a single static binary for Linux, macOS and Windows.
 
 ## Non goals
 
-A wiki, an editor, a site generator or a task tracker.
+A wiki, an editor, a site generator (a server, one HTML file per page, styling options) or a task tracker. One self-contained HTML file for reading is not a site and is allowed.
 
 Checking meaning: the core never calls a language model, a human reviewer checks meaning and readability of the Markdown.
 
-Output templates: one universal renderer is used.
+Output templates: one universal renderer is used, and the single HTML file has one fixed look without custom themes or styles.
 
 Search commands for agents, renaming, migration of existing Markdown, status transitions, diagrams and glossaries.
 

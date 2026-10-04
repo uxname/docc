@@ -10,6 +10,8 @@ A reference to a document becomes a relative link whose text is the title of the
 
 The file docs/out/_tree.md shows the documents nested by parent, starting with the roots.
 
+The flags single and html of docc build also write all pages into one file next to the folder: docs/out.md and docs/out.html. The pages follow the order of the tree, and links between them are anchors inside the file, so the file works on its own. The Markdown file starts with the tree and puts an invisible anchor before every page and field section. The HTML file needs no network: styles and scripts are inside. It has the document tree and a search box on the left, a light or dark theme that follows the system, and print styles. Raw HTML written in the documents is dropped, only the line break in table cells is kept. The look is fixed, there are no templates.
+
 The output is deterministic: stable sorting, no timestamps, line feeds only, UTF-8 without a byte order mark. Carriage returns and byte order marks in input files and in the output folder are normalized when reading and comparing.
 
 ## Audit build

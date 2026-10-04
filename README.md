@@ -6,7 +6,7 @@ Install: download a release archive (binary and `skills/docc/SKILL.md`), or `go 
 
     docc init        # docc.json, docs/src/index.json, docs/out
     docc validate    # check the sources (--format json for agents and CI)
-    docc build       # write docs/out
+    docc build       # write docs/out (--single, --html: also one .md and one .html file for reading)
     docc check       # for CI: validate + docs/out is up to date
 
 A document is one JSON file in `docs/src`; its id is the file name (`docs/src/req-lockout.json` is `req-lockout`):

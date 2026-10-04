@@ -42,10 +42,11 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 
 ## Hidden material
 
-- `notes`: an array of strings for agents, never printed to Markdown. Read the notes of a document before you edit it. Links `[[id]]` in notes are checked but do not make a document reachable.
+- `notes`: an array of strings for agents, printed only by the audit build (`docc build --full`). Read the notes of a document before you edit it. Links `[[id]]` in notes are checked but do not make a document reachable.
 - `"hidden": true`: the document is checked but gets no page in `docs/out`, and is not required to be reachable. A visible document cannot link to a hidden one (DOC210).
 - `{{id#field}}` inside `body` or a free field is replaced at build time by the text of that field of another document, so a fact is stored once. Write the whole paragraph as `"{{id#field}}"` to insert all paragraphs of the target. Not allowed: `{{id}}` without a field, service fields, cycles.
 - `reviewed`: `{"target-id": "8-hex-fingerprint"}` confirms a link after you checked the target. Rule DOC209 (off by default) prints the expected fingerprint in its hint. Never write a fingerprint without actually reading the target.
+- `docc build --single` and `docc build --html` also write all pages into one Markdown file (`docs/out.md`) and one self-contained HTML file (`docs/out.html`) for a person to read or to send. They are generated, not committed and not checked by `docc check`; do not edit them. They combine with `--full` (`docs/out-full.md`, `docs/out-full.html`).
 - `docc build --full` writes everything into `docs/out-full` (not committed): hidden documents, notes, suppressions, reviewed entries and include boundaries. Use it to audit what agents work with.
 
 ## Reading diagnostics
