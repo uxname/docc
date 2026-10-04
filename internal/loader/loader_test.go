@@ -113,3 +113,42 @@ func TestValue(t *testing.T) {
 		t.Fatalf("%v", m)
 	}
 }
+
+func FuzzParse(f *testing.F) {
+	for _, s := range []string{
+		`{"a":[1,2,{"b":"c"}],"d":"é😀"}`, "{\n\"a\" : 1 ,\r\n\"a\":2}", `{"x":-0.5e+10}`, "\xEF\xBB\xBF{}", `{"s":"\q"}`,
+	} {
+		f.Add([]byte(s))
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		r := Parse(data)
+		if r.Err != nil {
+			if r.Err.Offset < 0 || r.Err.Offset > len(r.Src.Data) {
+				t.Fatalf("error offset %d out of range", r.Err.Offset)
+			}
+			return
+		}
+		var visit func(n *Node)
+		visit = func(n *Node) {
+			if n.Start < 0 || n.End > len(r.Src.Data) || n.Start >= n.End {
+				t.Fatalf("bad range %d..%d", n.Start, n.End)
+			}
+			r.Src.Position(n.Start)
+			if n.Kind == String {
+				for i := 0; i <= len(n.Str); i++ {
+					off := r.Src.StrOffset(n, i)
+					if off < n.Start || off >= n.End {
+						t.Fatalf("StrOffset(%d)=%d outside %d..%d", i, off, n.Start, n.End)
+					}
+				}
+			}
+			for _, it := range n.Items {
+				visit(it)
+			}
+			for _, m := range n.Members {
+				visit(m.Value)
+			}
+		}
+		visit(r.Root)
+	})
+}
