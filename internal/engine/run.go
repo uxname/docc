@@ -18,6 +18,7 @@ func (p *Project) Validate() []diag.Diagnostic {
 	p.checkStyle()
 	p.checkTitles()
 	p.checkLinks()
+	p.suppress()
 	diag.Sort(p.Diags)
 	return p.Diags
 }

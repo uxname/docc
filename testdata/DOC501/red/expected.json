@@ -1,0 +1,41 @@
+[
+  {
+    "code": "DOC501",
+    "rule": "build/stale-output",
+    "level": "error",
+    "file": "docs/out/_tree.md",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 1,
+    "message": "the generated file is missing",
+    "hint": "Run docc build and commit the result.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC501",
+    "rule": "build/stale-output",
+    "level": "error",
+    "file": "docs/out/extra.md",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 1,
+    "message": "extra file in the output directory",
+    "hint": "Run docc build: it removes files that no source produces.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC501",
+    "rule": "build/stale-output",
+    "level": "error",
+    "file": "docs/out/index.md",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 1,
+    "message": "the generated file is outdated",
+    "hint": "Run docc build and commit the result.",
+    "fixable": "none"
+  }
+]

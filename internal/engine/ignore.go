@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/santiment/docc/internal/diag"
 	"github.com/santiment/docc/internal/loader"
 	"github.com/santiment/docc/internal/rules"
 	"github.com/santiment/docc/internal/schema"
@@ -112,4 +113,62 @@ func (p *Project) parseIgnore(d *Doc, it *loader.Node, bad func(*loader.Node, st
 		ig.PathNode = schema.ResolvePointer(d.Root, ig.Path)
 	}
 	return ig
+}
+
+// covers reports whether the entry suppresses the diagnostic.
+func (ig *Ignore) covers(dg *diag.Diagnostic) bool {
+	if dg.Code == "DOC800" {
+		if !ig.AllCust && ig.Custom != dg.Rule {
+			return false
+		}
+	} else if ig.Rule == nil || ig.Rule.Code != dg.Code {
+		return false
+	}
+	if !ig.HasPath {
+		return true // the whole document, also diagnostics without a position
+	}
+	return ig.PathNode != nil && !dg.NoPos && dg.Start >= ig.PathNode.Start && dg.Start < ig.PathNode.End
+}
+
+// suppress drops diagnostics covered by docc-ignore and reports entries that
+// cover nothing (DOC901).
+func (p *Project) suppress() {
+	kept := p.Diags[:0]
+	for i := range p.Diags {
+		dg := &p.Diags[i]
+		d := p.byFile[dg.File]
+		suppressed := false
+		if d != nil && !isCore(dg.Code) {
+			for _, ig := range d.Ignores {
+				if ig.covers(dg) {
+					ig.Used = true
+					suppressed = true
+				}
+			}
+		}
+		if !suppressed {
+			kept = append(kept, *dg)
+		}
+	}
+	p.Diags = kept
+	for _, d := range p.Docs {
+		for _, ig := range d.Ignores {
+			if ig.Used {
+				continue
+			}
+			what := ig.Path
+			if ig.PathNode == nil && ig.HasPath {
+				p.emit(d, "DOC901", ig.Node.Start, ig.Node.End, fmt.Sprintf("the path %q does not exist in this document", what),
+					"Fix the path or remove the docc-ignore entry.")
+				continue
+			}
+			p.emit(d, "DOC901", ig.Node.Start, ig.Node.End, "this docc-ignore entry suppresses nothing",
+				"Remove the entry: the rule is off here, or nothing triggers it.")
+		}
+	}
+}
+
+func isCore(code string) bool {
+	r := rules.ByCode(code)
+	return r != nil && r.Core
 }

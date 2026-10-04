@@ -1,0 +1,22 @@
+{
+  "title": "Index",
+  "kind": "note",
+  "status": "accepted",
+  "tags": ["draft", "x"],
+  "links": ["deep", "req"],
+  "body": [
+    "Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].",
+    "{{req#statement}}"
+  ],
+  "owner_name": "Team",
+  "count": 3,
+  "flag": true,
+  "empty": "",
+  "nothing": null,
+  "none": [],
+  "meta": { "a": "x", "nested": { "k": "v", "list": ["p", "q"] }, "multi": "line1\nline2", "skip": "" },
+  "steps": [{ "name": "one", "done": true }, { "name": "two", "items": ["a", "b"] }],
+  "inline": "Text {{req#title}} here and `{{literal}}` code and [[deep]].",
+  "numbers": [1, 2.50],
+  "notes": ["note about [[deep]] stays hidden"]
+}

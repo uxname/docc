@@ -238,3 +238,15 @@ func (p *Project) DocByFile(file string) *Doc { return p.byFile[file] }
 func (p *Project) Off(code string) bool {
 	return len(p.Cfg.Overrides) == 0 && p.Cfg.For("").Rule(code).Level == diag.Off
 }
+
+// ReportFile adds a diagnostic on a generated or scanned file (DOC501, DOC401)
+// and keeps the list sorted.
+func (p *Project) ReportFile(file, code string, line, col int, msg, hint string) {
+	p.emitFile(file, code, line, col, msg, hint)
+}
+
+// Sorted sorts the diagnostics and returns them.
+func (p *Project) Sorted() []diag.Diagnostic {
+	diag.Sort(p.Diags)
+	return p.Diags
+}

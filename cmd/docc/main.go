@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/santiment/docc/internal/config"
 	"github.com/santiment/docc/internal/diag"
 	"github.com/santiment/docc/internal/engine"
+	"github.com/santiment/docc/internal/fixes"
+	"github.com/santiment/docc/internal/render"
 	"github.com/santiment/docc/internal/report"
 	"github.com/santiment/docc/internal/schema"
 )
@@ -63,6 +66,12 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	case "validate":
 		code, err = cmdValidate(args[1:], stdout)
+	case "build":
+		code, err = cmdBuild(args[1:], stdout)
+	case "check":
+		code, err = cmdCheck(args[1:], stdout)
+	case "init":
+		code, err = cmdInit(args[1:], stdout)
 	case "schema":
 		err = cmdSchema(args[1:], stdout)
 	default:
@@ -175,12 +184,20 @@ func cmdValidate(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
+	if *fix {
+		edits, files, err := fixes.Run(func() (*engine.Project, error) { return engine.Load(cfg) }, *unsafe)
+		if err != nil {
+			return 2, err
+		}
+		if c.format == "text" && edits > 0 {
+			say(stdout, "applied %d fixes in %d files\n", edits, files)
+		}
+	}
 	p, err := engine.Load(cfg)
 	if err != nil {
 		return 2, err
 	}
-	ds := p.Validate()
-	return emit(stdout, &c, cfg, ds)
+	return emit(stdout, &c, cfg, p.Validate())
 }
 
 func cmdSchema(args []string, stdout io.Writer) error {
@@ -202,4 +219,164 @@ func cmdSchema(args []string, stdout io.Writer) error {
 		return usageErr("unknown schema %q: use document or config", pos[0])
 	}
 	return err
+}
+
+// loadProject loads the config and the project and runs validation.
+func loadProject(c *common) (*config.Config, *engine.Project, error) {
+	cfg, err := loadConfig(c)
+	if err != nil {
+		return nil, nil, err
+	}
+	p, err := engine.Load(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+	p.Validate()
+	return cfg, p, nil
+}
+
+func noArgs(pos []string) error {
+	if len(pos) > 0 {
+		return usageErr("unexpected argument %q", pos[0])
+	}
+	return nil
+}
+
+// build validates, and when there are no errors of groups 1xx-2xx writes the
+// Markdown into out (or outFull) and returns the number of files.
+func build(p *engine.Project, full bool) (int, error) {
+	if engine.Structural(p.Diags) {
+		return 0, nil
+	}
+	dir := p.Cfg.Out
+	if full {
+		dir = p.Cfg.OutFull
+	}
+	if err := render.CheckDir(p, dir); err != nil {
+		return 0, err
+	}
+	files := (&render.Renderer{P: p, Full: full}).Files()
+	if err := render.Write(p.Cfg.Abs(dir), files); err != nil {
+		return 0, err
+	}
+	return len(files), nil
+}
+
+func cmdBuild(args []string, stdout io.Writer) (int, error) {
+	var c common
+	fs := newFlags("build", &c)
+	full := fs.Bool("full", false, "audit build into outFull")
+	pos, err := parse(fs, args)
+	if err == nil {
+		err = noArgs(pos)
+	}
+	if err == nil {
+		err = c.check()
+	}
+	if err != nil {
+		return 2, err
+	}
+	cfg, p, err := loadProject(&c)
+	if err != nil {
+		return 2, err
+	}
+	n, err := build(p, *full)
+	if err != nil {
+		return 2, err
+	}
+	code, err := emit(stdout, &c, cfg, p.Sorted())
+	if err == nil && n > 0 && c.format == "text" {
+		dir := cfg.Out
+		if *full {
+			dir = cfg.OutFull
+		}
+		say(stdout, "built %d files in %s\n", n, dir)
+	}
+	return code, err
+}
+
+func cmdCheck(args []string, stdout io.Writer) (int, error) {
+	var c common
+	fs := newFlags("check", &c)
+	fs.Bool("fix", false, "")
+	fs.Bool("unsafe", false, "")
+	pos, err := parse(fs, args)
+	if err == nil {
+		err = noArgs(pos)
+	}
+	if err == nil {
+		fs.Visit(func(f *flag.Flag) {
+			if f.Name == "fix" || f.Name == "unsafe" {
+				err = usageErr("--%s works only with validate", f.Name)
+			}
+		})
+	}
+	if err == nil {
+		err = c.check()
+	}
+	if err != nil {
+		return 2, err
+	}
+	cfg, p, err := loadProject(&c)
+	if err != nil {
+		return 2, err
+	}
+	if !engine.Structural(p.Diags) {
+		render.CheckFresh(p, cfg.Out, (&render.Renderer{P: p}).Files())
+	}
+	return emit(stdout, &c, cfg, p.Sorted())
+}
+
+const initConfig = `{
+  "src": "docs/src",
+  "out": "docs/out",
+  "roots": ["index"]
+}
+`
+
+func cmdInit(args []string, stdout io.Writer) (int, error) {
+	var c common
+	fs := newFlags("init", &c)
+	pos, err := parse(fs, args)
+	if err == nil {
+		err = noArgs(pos)
+	}
+	if err == nil {
+		err = c.check()
+	}
+	if err != nil {
+		return 2, err
+	}
+	create := func(name, content string) error {
+		if _, err := os.Stat(name); err == nil {
+			say(stdout, "skipped %s: already exists\n", name)
+			return nil
+		}
+		if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(name, []byte(content), 0o644); err != nil {
+			return err
+		}
+		say(stdout, "created %s\n", name)
+		return nil
+	}
+	if err := create("docc.json", initConfig); err != nil {
+		return 2, err
+	}
+	if err := create(filepath.Join("docs", "src", "index.json"), "{ \"title\": \"Index\" }\n"); err != nil {
+		return 2, err
+	}
+	cfg, p, err := loadProject(&c)
+	if err != nil {
+		return 2, err
+	}
+	n, err := build(p, false)
+	if err != nil {
+		return 2, err
+	}
+	if n > 0 {
+		say(stdout, "built %d files in %s\n", n, cfg.Out)
+	}
+	return emit(stdout, &c, cfg, p.Sorted())
 }

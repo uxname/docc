@@ -1,0 +1,10 @@
+{
+  "title": "Index",
+  "body": ["It is fast.", "Also fast."],
+  "docc-ignore": [
+    { "rule": "DOC301", "reason": "first paragraph only", "path": "/body/0" },
+    { "rule": "text/placeholder", "reason": "nothing to suppress here" },
+    { "rule": "DOC301", "reason": "wrong path", "path": "/nope" },
+    { "rule": "DOC302", "reason": "this rule is off by default" }
+  ]
+}

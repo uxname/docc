@@ -98,3 +98,100 @@ func runGolden(t *testing.T, dir, code, kind string) {
 		t.Errorf("exit code %d, want %d", exit, wantExit)
 	}
 }
+
+// TestRenderGolden builds testdata/render/<case> (normal and --full) and
+// compares the generated trees with expect/out and expect/out-full.
+func TestRenderGolden(t *testing.T) {
+	root, _ := filepath.Abs("../../testdata/render")
+	cases, err := os.ReadDir(root)
+	if err != nil {
+		t.Skip("no render testdata")
+	}
+	for _, c := range cases {
+		if !c.IsDir() {
+			continue
+		}
+		t.Run(c.Name(), func(t *testing.T) {
+			src := filepath.Join(root, c.Name())
+			work := t.TempDir()
+			if err := copyTree(filepath.Join(src, "docs"), filepath.Join(work, "docs")); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(filepath.Join(src, "docc.json")); err == nil {
+				b, _ := os.ReadFile(filepath.Join(src, "docc.json"))
+				_ = os.WriteFile(filepath.Join(work, "docc.json"), b, 0o644)
+			}
+			t.Chdir(work)
+			for _, mode := range []struct {
+				args        []string
+				out, expect string
+			}{
+				{[]string{"build"}, "docs/out", "out"},
+				{[]string{"build", "--full"}, "docs/out-full", "out-full"},
+			} {
+				var out, errb bytes.Buffer
+				if code := run(mode.args, &out, &errb); code == 2 {
+					t.Fatalf("%v: %s", mode.args, errb.String())
+				}
+				expectDir := filepath.Join(src, "expect", mode.expect)
+				if *update {
+					_ = os.RemoveAll(expectDir)
+					if err := copyTree(filepath.Join(work, mode.out), expectDir); err != nil {
+						t.Fatal(err)
+					}
+				}
+				compareTrees(t, expectDir, filepath.Join(work, mode.out))
+			}
+		})
+	}
+}
+
+func copyTree(from, to string) error {
+	return filepath.WalkDir(from, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(from, p)
+		dst := filepath.Join(to, rel)
+		if d.IsDir() {
+			return os.MkdirAll(dst, 0o755)
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(dst, b, 0o644)
+	})
+}
+
+func readTree(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	m := map[string]string{}
+	_ = filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			rel, _ := filepath.Rel(dir, p)
+			b, _ := os.ReadFile(p)
+			m[filepath.ToSlash(rel)] = string(b)
+		}
+		return nil
+	})
+	return m
+}
+
+func compareTrees(t *testing.T, wantDir, gotDir string) {
+	t.Helper()
+	want, got := readTree(t, wantDir), readTree(t, gotDir)
+	for name, w := range want {
+		g, ok := got[name]
+		if !ok {
+			t.Errorf("%s: not generated", name)
+		} else if g != w {
+			t.Errorf("%s differs\n--- got\n%s\n--- want\n%s", name, g, w)
+		}
+	}
+	for name := range got {
+		if _, ok := want[name]; !ok {
+			t.Errorf("%s: unexpected file", name)
+		}
+	}
+}

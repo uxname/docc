@@ -1,0 +1,7 @@
+{
+  "title": "Requirement",
+  "parent": "index",
+  "links": ["deep"],
+  "body": "Requirement body, see [[deep#acceptance_criteria]].",
+  "statement": ["First fact.", "Second fact."]
+}
