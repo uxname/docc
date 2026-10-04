@@ -170,7 +170,9 @@ func (m *Matcher) Find(s string) []Hit {
 }
 
 func (e *entry) bounded(s string, a, b int) bool {
-	return !(e.startBound && wordBefore(s, a)) && !(e.endBound && wordAfter(s, b))
+	startOK := !e.startBound || !wordBefore(s, a)
+	endOK := !e.endBound || !wordAfter(s, b)
+	return startOK && endOK
 }
 
 // extend moves b over the rest of a word for a prefix part.
