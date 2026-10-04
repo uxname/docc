@@ -68,7 +68,7 @@ func Scan(root string, masks []*config.Glob, skipDirs []string) ([]Tag, error) {
 		if err != nil || bytes.IndexByte(data, 0) >= 0 {
 			continue
 		}
-		tags = append(tags, scanFile(rel, data)...)
+		tags = append(tags, scanFile(rel, bytes.TrimPrefix(data, []byte{0xEF, 0xBB, 0xBF}))...)
 	}
 	return tags, nil
 }

@@ -294,7 +294,6 @@ func (p *Project) similarTitles(list []titled) {
 				p.emit(b.d, "DOC306", b.node.Start, b.node.End,
 					fmt.Sprintf("the title %q is almost the same as %q of %q (similarity %.2f)", b.node.Str, a.node.Str, a.d.ID, sim),
 					"Merge the documents or make the titles clearly different.")
-				break
 			}
 		}
 	}

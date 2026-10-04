@@ -36,7 +36,7 @@
     "endColumn": 27,
     "message": "the text refers to its own document with [[a]]",
     "hint": "Remove the self-reference.",
-    "fixable": "unsafe"
+    "fixable": "none"
   },
   {
     "code": "DOC206",

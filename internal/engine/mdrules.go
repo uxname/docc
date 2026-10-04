@@ -69,7 +69,7 @@ func (p *Project) checkMarkdown() {
 				}
 			}
 		}
-		if on("DOC312") {
+		if on("DOC312") && p.inGraph(d) {
 			p.anchors(d)
 		}
 	}

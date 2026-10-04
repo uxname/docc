@@ -135,6 +135,13 @@ func (w *walker) entry(rk string, n *loader.Node) (*Entry, *Error) {
 		switch m.Key {
 		case "words":
 			ent.Params.Words, e = w.strs(m.Value)
+			if e == nil {
+				for _, x := range ent.Params.Words {
+					if !starAtWordEnd(x) {
+						e = w.errAt(m.Value.Start, "%q: * is allowed only at the end of a word", x)
+					}
+				}
+			}
 		case "allow":
 			ent.Params.Allow, e = w.strs(m.Value)
 		case "wordsFile":
@@ -280,6 +287,7 @@ func (w *walker) customRules(c *Config, n *loader.Node) *Error {
 				cr.Hint, e = w.str(m.Value)
 			case "kind":
 				cr.Kind, e = w.str(m.Value)
+				cr.KindOff = m.Value.Start
 			case "given":
 				cr.Given, e = w.str(m.Value)
 				if e == nil && !strings.HasPrefix(cr.Given, "/") {
@@ -316,4 +324,14 @@ func (w *walker) customRules(c *Config, n *loader.Node) *Error {
 		c.Custom = append(c.Custom, cr)
 	}
 	return nil
+}
+
+// starAtWordEnd checks that * appears only at the end of a space-separated word.
+func starAtWordEnd(s string) bool {
+	for _, p := range strings.Fields(s) {
+		if i := strings.IndexByte(p, '*'); i >= 0 && i != len(p)-1 {
+			return false
+		}
+	}
+	return true
 }

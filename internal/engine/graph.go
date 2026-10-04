@@ -172,7 +172,7 @@ func (p *Project) roots() {
 	}
 	visible := func(id string) bool {
 		t := p.Graph[id]
-		return t != nil && t.Parsed() && !t.Hidden
+		return t != nil && (!t.Parsed() || !t.Hidden) // a file with DOC101 stays a node
 	}
 	for _, d := range p.Docs {
 		if !d.Parsed() || !p.inGraph(d) || d.Hidden {

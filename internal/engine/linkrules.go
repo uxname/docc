@@ -78,7 +78,7 @@ func (p *Project) undeclaredLinks(d *Doc) {
 		seen[r.Target] = true
 		dg := p.emit(d, "DOC208", r.Start, r.End, fmt.Sprintf("[[%s]] is used in the text but %q is not in links or parent", r.Inner, r.Target),
 			fmt.Sprintf("Add %q to links.", r.Target))
-		if dg != nil {
+		if dg != nil && (d.Hidden || !t.Hidden) { // a visible document must not link to a hidden one (DOC210)
 			quoted := `"` + r.Target + `"`
 			if arr := d.Root.Get("links"); arr != nil && arr.Kind == loader.Array {
 				dg.Fix = &diag.Fix{Edits: []diag.Edit{appendItem(arr, quoted)}}

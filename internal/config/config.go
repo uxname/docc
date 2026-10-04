@@ -56,6 +56,7 @@ type Override struct {
 
 type Custom struct {
 	ID, Message, Hint, Kind, Given string
+	KindOff                        int // source offset of the kind value
 	Level                          diag.Level
 	Forbid, Require                *regexp.Regexp
 }
@@ -231,7 +232,7 @@ func Parse(data []byte, root, file string) (*Config, error) {
 	}
 	for _, cr := range c.Custom {
 		if cr.Kind != "" && c.HasKinds && !contains(c.Kinds, cr.Kind) {
-			return nil, &Error{File: file, Msg: fmt.Sprintf("custom rule %s: kind %q is not in kinds", cr.ID, cr.Kind)}
+			return nil, w.errAt(cr.KindOff, "custom rule %s: kind %q is not in kinds", cr.ID, cr.Kind)
 		}
 	}
 	return c, nil
