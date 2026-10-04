@@ -153,3 +153,13 @@ func TestTraceNeedsScan(t *testing.T) {
 		t.Fatalf("%d %s", code, out)
 	}
 }
+
+func TestExplainCustomRequire(t *testing.T) {
+	project(t, map[string]string{
+		"docc.json": `{"customRules":[{"id":"custom/needs-y","level":"error","message":"Need y","given":"/a","require":"y+"}]}`,
+	})
+	code, out, errs := do("explain", "custom/needs-y")
+	if code != 0 || !strings.Contains(out, "does not match y+") {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+}

@@ -156,11 +156,9 @@ func explain(c *common, key string) (*explanation, error) {
 			if cr.ID != key {
 				continue
 			}
-			kind := "a value that matches " + regexText(cr, true)
-			ok := "a value without a match"
+			kind, ok := "a value that matches "+cr.Forbid.String(), "a value without a match"
 			if cr.Require != nil {
-				kind = "a value that does not match " + regexText(cr, false)
-				ok = "a value that matches the required expression"
+				kind, ok = "a value that does not match "+cr.Require.String(), "a value that matches the required expression"
 			}
 			desc := cr.Message + " (custom rule from " + cfg.File + ", checks " + cr.Given + ")"
 			if cr.Hint != "" {
@@ -170,11 +168,4 @@ func explain(c *common, key string) (*explanation, error) {
 		}
 	}
 	return nil, usageErr("unknown rule %q: use a code like DOC301 or a name like text/forbidden-words", key)
-}
-
-func regexText(cr *config.Custom, forbid bool) string {
-	if forbid {
-		return cr.Forbid.String()
-	}
-	return cr.Require.String()
 }
