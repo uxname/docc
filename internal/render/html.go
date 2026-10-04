@@ -58,7 +58,7 @@ func (r *Renderer) HTML() string {
 		content.WriteString(`<section class="page" id="` + esc(d.ID) + `" data-title="` + esc(titleOf(d)) + "\">\n")
 		content.WriteString(s.crumbs(d) + "<h1>" + esc(titleOf(d)) + "</h1>\n" + s.badges(d))
 		content.WriteString("<div class=\"doc\">\n" + conv(d.ID, s.page(d)) + "</div>\n")
-		content.WriteString(s.cards(kids[d.ID]) + s.related(d, kids[d.ID]) + prevNext(docs, i))
+		content.WriteString(s.rows(kids[d.ID]) + s.related(d, kids[d.ID]) + prevNext(docs, i))
 		content.WriteString("</section>\n")
 	}
 	banner := ""

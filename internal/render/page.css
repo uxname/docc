@@ -27,6 +27,11 @@ a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
 #results mark{background:var(--warn-bg);color:inherit;border-radius:2px}
 #results .none{color:var(--muted);cursor:default}
 #tree h2{margin:1.4rem 0 .4rem;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+#tree .gt{display:flex;width:100%;gap:.4rem;align-items:center;padding:0;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left}
+#tree .gt::before{content:"▾";transition:transform .12s}
+#tree .gt[aria-expanded=false]::before{transform:rotate(-90deg)}
+#tree .gt span{margin-left:auto;padding:0 .45rem;font-weight:400;background:var(--line);border-radius:99px}
+#tree .gh.closed+.gb{display:none}
 #tree ul{margin:0;padding:0;list-style:none}
 #tree ul ul{margin-left:.55rem;padding-left:.6rem;border-left:1px solid var(--line)}
 #tree li{position:relative}
@@ -82,12 +87,18 @@ tbody tr:nth-child(even){background:var(--bg2)}
 blockquote{padding:.6rem 1rem;border-left:.25rem solid var(--accent);background:var(--accent-bg);border-radius:0 .5rem .5rem 0;color:var(--fg)}
 blockquote p{margin:0}
 .rh{margin:2.6rem 0 .8rem;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.8rem}
-.card{display:flex;flex-direction:column;gap:.35rem;padding:.9rem 1rem;color:inherit;text-decoration:none;background:var(--bg);border:1px solid var(--line);border-radius:.7rem;transition:border-color .12s,box-shadow .12s}
-.card:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.rows{border:1px solid var(--line);border-radius:.7rem;overflow:hidden}
+.row{display:block;padding:.8rem 1.1rem;color:inherit;text-decoration:none;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row:hover{background:var(--accent-bg)}
 .ct{font-weight:600;color:var(--accent)}
-.cs{font-size:.86rem;line-height:1.5;color:var(--muted)}
-.card .badge{align-self:flex-start}
+.ct .badge{margin-left:.4rem;vertical-align:.1em}
+.cs{display:block;margin-top:.2rem;font-size:.92rem;line-height:1.55;color:var(--muted)}
+.extra{display:none!important}
+.more{display:block;width:100%;padding:.55rem;font:inherit;font-size:.88rem;color:var(--accent);background:var(--bg2);border:0;border-top:1px solid var(--line);cursor:pointer}
+.more:hover{background:var(--accent-bg)}
+.rg .more{display:inline-block;width:auto;padding:.12rem .7rem;border:1px dashed var(--line);border-radius:99px;background:none}
+#tree .more{margin-top:.3rem;border:1px dashed var(--line);border-radius:.4rem;padding:.3rem}
 .related{display:grid;gap:.6rem}
 .rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .5rem}
 .rl{min-width:7.5rem;font-size:.85rem;color:var(--muted)}
@@ -128,5 +139,5 @@ main{max-width:none;padding:0}
 section.page{display:block!important;break-before:page;margin:0;padding:0;border:0}
 section.page:first-of-type{break-before:auto}
 a{color:inherit;text-decoration:none}
-.card,.chip{border:1px solid var(--line)}
+.row,.chip{border:1px solid var(--line)}
 }

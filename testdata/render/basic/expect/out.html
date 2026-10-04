@@ -33,6 +33,11 @@ a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
 #results mark{background:var(--warn-bg);color:inherit;border-radius:2px}
 #results .none{color:var(--muted);cursor:default}
 #tree h2{margin:1.4rem 0 .4rem;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+#tree .gt{display:flex;width:100%;gap:.4rem;align-items:center;padding:0;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left}
+#tree .gt::before{content:"▾";transition:transform .12s}
+#tree .gt[aria-expanded=false]::before{transform:rotate(-90deg)}
+#tree .gt span{margin-left:auto;padding:0 .45rem;font-weight:400;background:var(--line);border-radius:99px}
+#tree .gh.closed+.gb{display:none}
 #tree ul{margin:0;padding:0;list-style:none}
 #tree ul ul{margin-left:.55rem;padding-left:.6rem;border-left:1px solid var(--line)}
 #tree li{position:relative}
@@ -88,12 +93,18 @@ tbody tr:nth-child(even){background:var(--bg2)}
 blockquote{padding:.6rem 1rem;border-left:.25rem solid var(--accent);background:var(--accent-bg);border-radius:0 .5rem .5rem 0;color:var(--fg)}
 blockquote p{margin:0}
 .rh{margin:2.6rem 0 .8rem;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.8rem}
-.card{display:flex;flex-direction:column;gap:.35rem;padding:.9rem 1rem;color:inherit;text-decoration:none;background:var(--bg);border:1px solid var(--line);border-radius:.7rem;transition:border-color .12s,box-shadow .12s}
-.card:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.rows{border:1px solid var(--line);border-radius:.7rem;overflow:hidden}
+.row{display:block;padding:.8rem 1.1rem;color:inherit;text-decoration:none;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row:hover{background:var(--accent-bg)}
 .ct{font-weight:600;color:var(--accent)}
-.cs{font-size:.86rem;line-height:1.5;color:var(--muted)}
-.card .badge{align-self:flex-start}
+.ct .badge{margin-left:.4rem;vertical-align:.1em}
+.cs{display:block;margin-top:.2rem;font-size:.92rem;line-height:1.55;color:var(--muted)}
+.extra{display:none!important}
+.more{display:block;width:100%;padding:.55rem;font:inherit;font-size:.88rem;color:var(--accent);background:var(--bg2);border:0;border-top:1px solid var(--line);cursor:pointer}
+.more:hover{background:var(--accent-bg)}
+.rg .more{display:inline-block;width:auto;padding:.12rem .7rem;border:1px dashed var(--line);border-radius:99px;background:none}
+#tree .more{margin-top:.3rem;border:1px dashed var(--line);border-radius:.4rem;padding:.3rem}
 .related{display:grid;gap:.6rem}
 .rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .5rem}
 .rl{min-width:7.5rem;font-size:.85rem;color:var(--muted)}
@@ -134,7 +145,7 @@ main{max-width:none;padding:0}
 section.page{display:block!important;break-before:page;margin:0;padding:0;border:0}
 section.page:first-of-type{break-before:auto}
 a{color:inherit;text-decoration:none}
-.card,.chip{border:1px solid var(--line)}
+.row,.chip{border:1px solid var(--line)}
 }
 
 </style>
@@ -218,9 +229,9 @@ line2</li>
 </ul>
 </div>
 <h2 class="rh">Pages in this section</h2>
-<div class="cards">
-<a class="card" href="#deep"><span class="ct">Deep doc</span><span class="cs">Back to Index and Index.</span></a>
-<a class="card" href="#req"><span class="ct">Requirement</span><span class="cs">Requirement body, see Deep doc.</span></a>
+<div class="rows">
+<a class="row" href="#deep"><span class="ct">Deep doc</span><span class="cs">Back to Index and Index.</span></a>
+<a class="row" href="#req"><span class="ct">Requirement</span><span class="cs">Requirement body, see Deep doc.</span></a>
 </div>
 <nav class="pn" aria-label="Neighbouring pages"><a class="next" href="#deep"><small>Next</small><span>Deep doc</span></a></nav>
 </section>
@@ -304,10 +315,54 @@ line2</li>
       tw.setAttribute('aria-expanded', open ? 'true' : 'false');
       tw.setAttribute('aria-label', open ? 'Collapse' : 'Expand');
     }
+    function setGroup(h, open) {
+      h.classList.toggle('closed', !open);
+      $('.gt', h).setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
     $('#tree').addEventListener('click', function (e) {
       var tw = e.target.closest && e.target.closest('.tw');
-      if (tw) { setOpen(tw, tw.getAttribute('aria-expanded') !== 'true'); }
+      if (tw) { setOpen(tw, tw.getAttribute('aria-expanded') !== 'true'); return; }
+      var gt = e.target.closest && e.target.closest('.gt');
+      if (gt) { var h = gt.parentNode; setGroup(h, h.classList.contains('closed')); }
     });
+    // long lists show a window of items with buttons for the rest; the window
+    // moves to the current page, so a list of a thousand siblings stays short
+    function limit(list, items, n, wrap, label) {
+      var all = items(), lo = 0, hi = n, step = 30;
+      if (all.length <= n) { return; }
+      function button(text, fn) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'more'; b.addEventListener('click', fn);
+        var holder = b;
+        if (wrap) { holder = document.createElement('li'); holder.appendChild(b); }
+        return { b: b, el: holder, set: function (t) { b.textContent = t; } };
+      }
+      var up = button('', function () { lo = Math.max(0, lo - step); draw(); });
+      var down = button('', function () { hi = Math.min(all.length, hi + step); draw(); });
+      list.insertBefore(up.el, all[0]);
+      list.appendChild(down.el);
+      function draw() {
+        all.forEach(function (x, k) { x.classList.toggle('extra', k < lo || k >= hi); });
+        up.el.style.display = lo > 0 ? '' : 'none';
+        down.el.style.display = hi < all.length ? '' : 'none';
+        up.set('↑ ' + lo + ' earlier');
+        down.set((all.length - hi) + ' more ' + (label || '') + '↓');
+      }
+      list.reveal = function (el) {
+        var k = -1;
+        all.forEach(function (x, m) { if (x.contains(el)) { k = m; } });
+        if (k >= 0 && (k < lo || k >= hi)) { lo = Math.max(0, k - 10); hi = Math.min(all.length, k + 11); draw(); }
+      };
+      draw();
+    }
+    $$('#tree ul').forEach(function (ul) {
+      limit(ul, function () { return [].slice.call(ul.children).filter(function (c) { return c.tagName === 'LI'; }); }, 30, true);
+    });
+    $$('.rows').forEach(function (r) { limit(r, function () { return $$(':scope > .row', r); }, 30, false); });
+    $$('.rg').forEach(function (g) { limit(g, function () { return $$(':scope > .chip', g); }, 12, false); });
+    // the tree starts folded; show() opens the way to the current page
+    $$('#tree .tw').forEach(function (tw) { setOpen(tw, false); });
+    $$('#tree .gh').forEach(function (h) { setGroup(h, false); });
     function markTree(id) {
       links.forEach(function (a) {
         if (decode(a.hash) !== id) { a.removeAttribute('aria-current'); return; }
@@ -315,6 +370,8 @@ line2</li>
         for (var li = a.parentNode; li && li.id !== 'tree'; li = li.parentNode) {
           var tw = li.tagName === 'LI' && $(':scope > .tw', li);
           if (tw) { setOpen(tw, true); }
+          if (li.reveal) { li.reveal(a); }
+          if (li.classList && li.classList.contains('gb')) { setGroup(li.previousElementSibling, true); }
         }
       });
       var cur = $('#tree [aria-current]');

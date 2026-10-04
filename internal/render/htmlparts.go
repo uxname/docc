@@ -3,6 +3,7 @@ package render
 import (
 	"html"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/santiment/docc/internal/engine"
@@ -91,7 +92,7 @@ var (
 	htmlNoise = regexp.MustCompile(`<!--.*?-->|<[^>]*>|[*` + "`" + `]`)
 )
 
-// summary is the first body paragraph (or free text field) as plain text, cut to about 140 characters.
+// summary is the first body paragraph (or free text field) as plain text, cut to about 300 characters.
 func (r *Renderer) summary(d *engine.Doc) string {
 	pg := &page{r: r, doc: d, path: PagePath(d)}
 	body := d.Root.Get("body")
@@ -112,24 +113,29 @@ func (r *Renderer) summary(d *engine.Doc) string {
 	}
 	s := htmlNoise.ReplaceAllString(mdLink.ReplaceAllString(ps[0], "$1"), "")
 	s = strings.Join(strings.Fields(s), " ")
-	if rs := []rune(s); len(rs) > 140 {
-		s = strings.TrimSpace(string(rs[:140])) + "…"
+	if rs := []rune(s); len(rs) > 300 {
+		cut := string(rs[:300])
+		if i := strings.LastIndex(cut, " "); i > 200 {
+			cut = cut[:i]
+		}
+		s = strings.TrimSpace(cut) + "…"
 	}
 	return s
 }
 
-// cards lists child pages as cards: title, kind and the start of the body.
-func (r *Renderer) cards(kids []*engine.Doc) string {
+// rows lists child pages one per line: title, kind and the start of the body.
+func (r *Renderer) rows(kids []*engine.Doc) string {
 	if len(kids) == 0 {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("<h2 class=\"rh\">Pages in this section</h2>\n<div class=\"cards\">\n")
+	b.WriteString("<h2 class=\"rh\">Pages in this section</h2>\n<div class=\"rows\">\n")
 	for _, k := range kids {
-		b.WriteString(`<a class="card" href="#` + esc(k.ID) + `"><span class="ct">` + esc(titleOf(k)) + `</span>`)
+		b.WriteString(`<a class="row" href="#` + esc(k.ID) + `"><span class="ct">` + esc(titleOf(k)))
 		if kind := strField(k, "kind"); kind != "" {
-			b.WriteString(`<span class="badge kind">` + esc(kind) + `</span>`)
+			b.WriteString(` <span class="badge kind">` + esc(kind) + `</span>`)
 		}
+		b.WriteString("</span>")
 		if s := r.summary(k); s != "" {
 			b.WriteString(`<span class="cs">` + esc(s) + `</span>`)
 		}
@@ -256,15 +262,21 @@ func (r *Renderer) navHTML() string {
 	if len(tree) > 0 {
 		b.WriteString("<h2>Pages</h2>\n" + r.navList(tree) + "\n")
 	}
+	// groups that fold: with many documents they would push the tree off the screen
+	group := func(label string, n int, body string) {
+		b.WriteString(`<h2 class="gh"><button class="gt" type="button" aria-expanded="true">` + label + ` <span>` + strconv.Itoa(n) + "</span></button></h2>\n<div class=\"gb\">" + body + "</div>\n")
+	}
 	if len(orphans) > 0 {
-		b.WriteString("<h2>Without parent</h2>\n" + r.navList(orphans) + "\n")
+		group("Without parent", len(orphans), r.navList(orphans))
 	}
 	if un := r.uncovered(); len(un) > 0 {
-		b.WriteString("<h2>Requirements without code coverage</h2>\n<ul>")
+		var l strings.Builder
+		l.WriteString("<ul>")
 		for _, d := range un {
-			b.WriteString(`<li><a href="#` + esc(d.ID) + `">` + esc(titleOf(d)) + `</a></li>`)
+			l.WriteString(`<li><a href="#` + esc(d.ID) + `">` + esc(titleOf(d)) + `</a></li>`)
 		}
-		b.WriteString("</ul>\n")
+		l.WriteString("</ul>")
+		group("Requirements without code coverage", len(un), l.String())
 	}
 	return b.String()
 }

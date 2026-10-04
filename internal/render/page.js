@@ -40,10 +40,54 @@
       tw.setAttribute('aria-expanded', open ? 'true' : 'false');
       tw.setAttribute('aria-label', open ? 'Collapse' : 'Expand');
     }
+    function setGroup(h, open) {
+      h.classList.toggle('closed', !open);
+      $('.gt', h).setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
     $('#tree').addEventListener('click', function (e) {
       var tw = e.target.closest && e.target.closest('.tw');
-      if (tw) { setOpen(tw, tw.getAttribute('aria-expanded') !== 'true'); }
+      if (tw) { setOpen(tw, tw.getAttribute('aria-expanded') !== 'true'); return; }
+      var gt = e.target.closest && e.target.closest('.gt');
+      if (gt) { var h = gt.parentNode; setGroup(h, h.classList.contains('closed')); }
     });
+    // long lists show a window of items with buttons for the rest; the window
+    // moves to the current page, so a list of a thousand siblings stays short
+    function limit(list, items, n, wrap, label) {
+      var all = items(), lo = 0, hi = n, step = 30;
+      if (all.length <= n) { return; }
+      function button(text, fn) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'more'; b.addEventListener('click', fn);
+        var holder = b;
+        if (wrap) { holder = document.createElement('li'); holder.appendChild(b); }
+        return { b: b, el: holder, set: function (t) { b.textContent = t; } };
+      }
+      var up = button('', function () { lo = Math.max(0, lo - step); draw(); });
+      var down = button('', function () { hi = Math.min(all.length, hi + step); draw(); });
+      list.insertBefore(up.el, all[0]);
+      list.appendChild(down.el);
+      function draw() {
+        all.forEach(function (x, k) { x.classList.toggle('extra', k < lo || k >= hi); });
+        up.el.style.display = lo > 0 ? '' : 'none';
+        down.el.style.display = hi < all.length ? '' : 'none';
+        up.set('↑ ' + lo + ' earlier');
+        down.set((all.length - hi) + ' more ' + (label || '') + '↓');
+      }
+      list.reveal = function (el) {
+        var k = -1;
+        all.forEach(function (x, m) { if (x.contains(el)) { k = m; } });
+        if (k >= 0 && (k < lo || k >= hi)) { lo = Math.max(0, k - 10); hi = Math.min(all.length, k + 11); draw(); }
+      };
+      draw();
+    }
+    $$('#tree ul').forEach(function (ul) {
+      limit(ul, function () { return [].slice.call(ul.children).filter(function (c) { return c.tagName === 'LI'; }); }, 30, true);
+    });
+    $$('.rows').forEach(function (r) { limit(r, function () { return $$(':scope > .row', r); }, 30, false); });
+    $$('.rg').forEach(function (g) { limit(g, function () { return $$(':scope > .chip', g); }, 12, false); });
+    // the tree starts folded; show() opens the way to the current page
+    $$('#tree .tw').forEach(function (tw) { setOpen(tw, false); });
+    $$('#tree .gh').forEach(function (h) { setGroup(h, false); });
     function markTree(id) {
       links.forEach(function (a) {
         if (decode(a.hash) !== id) { a.removeAttribute('aria-current'); return; }
@@ -51,6 +95,8 @@
         for (var li = a.parentNode; li && li.id !== 'tree'; li = li.parentNode) {
           var tw = li.tagName === 'LI' && $(':scope > .tw', li);
           if (tw) { setOpen(tw, true); }
+          if (li.reveal) { li.reveal(a); }
+          if (li.classList && li.classList.contains('gb')) { setGroup(li.previousElementSibling, true); }
         }
       });
       var cur = $('#tree [aria-current]');

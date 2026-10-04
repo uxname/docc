@@ -143,7 +143,7 @@ func TestHTMLBuild(t *testing.T) {
 		`<h1>Req</h1>`,
 		`<span class="badge kind">requirement</span><span class="badge ok">accepted</span><span class="badge">priority 2</span><span class="tag">#t1</span>`,
 		"<dt>Owner<a id=\"req--owner\"></a></dt>\n<dd>Team</dd>", // one-line fields form a property list
-		`<a class="card" href="#req">`,                           // child cards on the parent page
+		`<a class="row" href="#req">`,                            // child pages as rows on the parent page
 		`<div class="rg"><span class="rl">Parent</span><a class="chip" href="#index">`,
 		`<a class="next" href="#req">`, `<a class="prev" href="#index">`,
 		`<h2 id="req--statement">Statement</h2>`, // target of [[req#statement]]
