@@ -1,0 +1,10 @@
+{
+  "title": "docc",
+  "kind": "overview",
+  "links": ["goals", "document-model", "rules", "commands", "config", "rendering", "architecture", "agent-workflow", "performance", "decisions"],
+  "body": [
+    "docc is a compiler and linter for documentation written as JSON. It checks structure, links, content and style, and builds Markdown for people to read.",
+    "{{goals#summary}}",
+    "Start with [[document-model]] to see what a document looks like, then [[agent-workflow]] for the loop an agent follows."
+  ]
+}

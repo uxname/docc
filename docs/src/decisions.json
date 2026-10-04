@@ -1,0 +1,17 @@
+{
+  "title": "Decisions and assumptions",
+  "parent": "index",
+  "links": ["rules", "config"],
+  "body": [
+    "These choices were made where the specification left room. Each can be changed.",
+    "The reachability check (DOC203) is skipped when none of the roots exists, because every document would then be an orphan; DOC205 already reports the missing roots.",
+    "Custom rules keep their own level when the recommended preset is switched off, because they exist only when the project defines them.",
+    "The acronym rule DOC355 reports only the first use of an unexplained acronym in a document. The undeclared link rule DOC208 reports the first use of each id.",
+    "The comparison in the rule DOC306 uses the Jaccard coefficient of character trigrams; a match is reported on the document with the larger id.",
+    "Fixes are applied in passes: the first added link creates the links field and the next pass appends further ids, so two fixes never write the same place."
+  ],
+  "not_verified": [
+    "Windows and macOS were not run: only Linux was available, and no CI is configured yet.",
+    "The criterion that an agent fixes 9 of 10 synthetic errors in two iterations was not measured."
+  ]
+}

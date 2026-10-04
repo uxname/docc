@@ -1,0 +1,5 @@
+{
+  "src": "docs/src",
+  "out": "docs/out",
+  "roots": ["index"]
+}

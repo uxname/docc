@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -63,5 +64,26 @@ func TestPositionsWithEscapesAndNewlines(t *testing.T) {
 	// real line breaks inside the JSON text are not allowed in strings; the value may span lines only via \n
 	if ds[0].EndColumn <= ds[0].Column {
 		t.Fatalf("range must have a width: %+v", ds[0])
+	}
+}
+
+// The skill must not mention rules or commands that do not exist.
+func TestSkillMatchesRegistryAndCommands(t *testing.T) {
+	b, err := os.ReadFile("../../skills/docc/SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(b)
+	for _, m := range regexp.MustCompile(`DOC\d{3}`).FindAllString(text, -1) {
+		if rules.ByCode(m) == nil {
+			t.Errorf("skill mentions unknown code %s", m)
+		}
+	}
+	for _, cmd := range regexp.MustCompile("`docc ([a-z]+)").FindAllStringSubmatch(text, -1) {
+		switch cmd[1] {
+		case "validate", "build", "check", "explain", "rules", "schema", "init":
+		default:
+			t.Errorf("skill mentions unknown command docc %s", cmd[1])
+		}
 	}
 }

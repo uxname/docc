@@ -1,0 +1,20 @@
+{
+  "title": "Architecture",
+  "parent": "index",
+  "links": ["performance"],
+  "body": [
+    "The pipeline is: load the JSON files, check the built-in and kind schemas, build the reference graph, run the rules, render, and compare the output folder.",
+    "The code is a Go module with a single binary and a small set of packages under internal."
+  ],
+  "packages": [
+    "loader: a strict JSON parser that keeps offsets, positions and duplicate keys.",
+    "config: reads docc.json and resolves effective levels per file.",
+    "schema: compiles JSON Schema (draft 2020-12), restricts references to the schemas folder and maps errors to source positions.",
+    "mdscan and text: scanners for code blocks, references, includes, words and sentences.",
+    "engine: loads a project and runs all checks, including the graph and the suppressions.",
+    "rules: the registry of all rules; explain, rules and the skill are built from it.",
+    "render, fixes, trace, report: Markdown output, fix patches, code tags and the text and JSON reports.",
+    "cmd/docc: the command line."
+  ],
+  "principles": "Golden tests, a pure core with input and output at the edges, stable codes and an idempotent fix. The only dependency besides the standard library is the JSON Schema library."
+}
