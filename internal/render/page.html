@@ -2,81 +2,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{TITLE}}</title>
+<script>document.documentElement.className="js"</script>
 <style>
-:root{color-scheme:light dark;--bg:#fff;--fg:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#0969da;--code:#f6f8fa}
-@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--line:#3d444d;--accent:#4493f8;--code:#151b23}}
-*{box-sizing:border-box}
-body{margin:0;display:grid;grid-template-columns:18rem minmax(0,1fr);background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
-a{color:var(--accent)}
-aside{position:sticky;top:0;height:100vh;overflow:auto;padding:1rem;border-right:1px solid var(--line);font-size:.9rem}
-#q{width:100%;padding:.4rem .6rem;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:.3rem}
-#count{margin:.3rem 0 0;color:var(--muted);min-height:1.5em}
-nav h1{font-size:1rem;margin:.8rem 0 .3rem}
-nav h2{font-size:.9rem;margin:.8rem 0 .3rem}
-nav ul{margin:0;padding-left:1rem}
-nav>ul{padding-left:0}
-nav li{list-style:none;margin:.15rem 0}
-nav blockquote{margin:.5rem 0;color:var(--muted)}
-.miss{opacity:.4}
-main{max-width:52rem;padding:0 2rem;overflow-wrap:anywhere}
-section{padding:1rem 0 2rem;border-bottom:1px solid var(--line)}
-section:last-child{border-bottom:0}
-h1,h2{line-height:1.25}
-h2{margin-top:1.8rem;font-size:1.25rem}
-code,pre{font-family:ui-monospace,monospace;font-size:.9em;background:var(--code);border-radius:.25rem}
-code{padding:.1em .3em}
-pre{padding:.8rem;overflow-x:auto}
-pre code{padding:0}
-table{display:block;overflow-x:auto;border-collapse:collapse}
-th,td{padding:.35rem .7rem;border:1px solid var(--line);text-align:left;vertical-align:top}
-blockquote{margin:1rem 0;padding:0 1rem;border-left:.25rem solid var(--line);color:var(--muted)}
-@media (max-width:50rem){
-body{display:block}
-aside{position:static;height:auto;max-height:50vh;border-right:0;border-bottom:1px solid var(--line)}
-main{padding:0 1rem}
-}
-@media print{
-aside{display:none}
-body{display:block}
-main{max-width:none;padding:0}
-section{break-before:page;border:0}
-section:first-child{break-before:auto}
-a{color:inherit}
-}
+{{CSS}}
 </style>
-<aside>
-<input type="search" id="q" placeholder="Search" aria-label="Search the documentation">
-<p id="count" role="status"></p>
-<nav aria-label="Document tree">
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar">
+<button id="menu" type="button" aria-label="Menu" aria-expanded="false" aria-controls="side">☰</button>
+<span id="bar-title"></span>
+</header>
+<div class="shell">
+<aside id="side">
+<div class="search">
+<input type="search" id="q" placeholder="Search  ( / )" aria-label="Search the documentation" autocomplete="off">
+<ul id="results" role="listbox" aria-label="Search results" hidden></ul>
+</div>
+{{BANNER}}
+<nav id="tree" aria-label="Document tree">
 {{NAV}}
 </nav>
 </aside>
-<main>
+<main id="main" tabindex="-1">
 {{CONTENT}}
 </main>
+<aside id="toc" aria-label="On this page" hidden></aside>
+</div>
 <script>
-(function(){
-var q=document.getElementById('q'),c=document.getElementById('count');
-var secs=[].slice.call(document.querySelectorAll('main>section'));
-var text=secs.map(function(s){return s.textContent.toLowerCase()});
-var links=[].slice.call(document.querySelectorAll('nav a[href^="#"]'));
-function find(){
-  var v=q.value.trim().toLowerCase(),n=0,hit={};
-  secs.forEach(function(s,i){
-    var ok=!v||text[i].indexOf(v)>=0;
-    s.hidden=!ok;
-    if(ok){n++;hit[s.id]=1}
-  });
-  links.forEach(function(a){
-    a.classList.toggle('miss',!!v&&!hit[decodeURIComponent(a.hash.slice(1))]);
-  });
-  c.textContent=v?n+' of '+secs.length+' pages':'';
-}
-q.addEventListener('input',find);
-window.addEventListener('hashchange',function(){
-  var t=document.getElementById(decodeURIComponent(location.hash.slice(1)));
-  var s=t&&t.closest('section');
-  if(s&&s.hidden){q.value='';find();s.scrollIntoView()}
-});
-})();
+{{JS}}
 </script>

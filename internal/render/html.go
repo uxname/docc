@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"html"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -18,14 +19,21 @@ import (
 //go:embed page.html
 var htmlTemplate string
 
-// HTML returns every page in one self-contained HTML file: a document tree
-// with search on the left, the pages in tree order on the right. Same call
-// contract as Files.
+//go:embed page.css
+var htmlCSS string
+
+//go:embed page.js
+var htmlJS string
+
+// HTML returns every page in one self-contained HTML file. With scripts it
+// shows one page at a time (document tree, search, table of contents, page
+// neighbours); without them every page follows the other, as in print. Same
+// call contract as Files.
 func (r *Renderer) HTML() string {
 	s := *r
-	s.single = true // in-file links; the headings get their ids from the converter
+	s.single, s.html = true, true // in-file links; the headings get their ids from the converter
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM), // as on GitHub: tables, autolinks, strikethrough
+		goldmark.WithExtensions(extension.GFM, extension.DefinitionList), // GFM as on GitHub: tables, autolinks, strikethrough
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		// no WithUnsafe: raw HTML written by agents is dropped, only <br> survives
 		goldmark.WithRendererOptions(renderer.WithNodeRenderers(util.Prioritized(brOnly{}, 100))),
@@ -38,17 +46,31 @@ func (r *Renderer) HTML() string {
 		}
 		return b.String()
 	}
+	tree, orphans := s.layout()
+	kids := childrenOf(tree, orphans)
+	docs := s.ordered()
 	title := "docc"
 	var content strings.Builder
-	for i, d := range s.ordered() {
+	for i, d := range docs {
 		if i == 0 {
 			title = titleOf(d)
 		}
-		content.WriteString(`<section id="` + html.EscapeString(d.ID) + "\">\n" + conv(d.ID, s.page(d)) + "</section>\n")
+		content.WriteString(`<section class="page" id="` + esc(d.ID) + `" data-title="` + esc(titleOf(d)) + "\">\n")
+		content.WriteString(s.crumbs(d) + "<h1>" + esc(titleOf(d)) + "</h1>\n" + s.badges(d))
+		content.WriteString("<div class=\"doc\">\n" + conv(d.ID, s.page(d)) + "</div>\n")
+		content.WriteString(s.cards(kids[d.ID]) + s.related(d, kids[d.ID]) + prevNext(docs, i))
+		content.WriteString("</section>\n")
+	}
+	banner := ""
+	if s.Full {
+		banner = `<p class="banner">Full build: includes hidden documents and notes. Do not publish.</p>`
 	}
 	out := strings.NewReplacer(
-		"{{TITLE}}", html.EscapeString(title),
-		"{{NAV}}", conv("nav", strings.Join(s.treeBlocks(), "\n\n")),
+		"{{TITLE}}", esc(title),
+		"{{CSS}}", htmlCSS,
+		"{{JS}}", htmlJS,
+		"{{BANNER}}", banner,
+		"{{NAV}}", s.navHTML(),
 		"{{CONTENT}}", content.String(),
 	).Replace(htmlTemplate)
 	return lf(out)
@@ -73,9 +95,11 @@ func (g *ids) Generate(value []byte, _ ast.NodeKind) []byte {
 
 func (g *ids) Put(value []byte) { g.used[string(value)] = true }
 
-// brOnly renders raw inline HTML as nothing except <br>, which table cells use
-// for line breaks.
+// brOnly renders raw inline HTML as nothing except <br> (table cells use it
+// for line breaks) and the anchors <a id="x"> and </a> that mark field targets.
 type brOnly struct{}
+
+var anchorOpen = regexp.MustCompile(`^<a id="[A-Za-z0-9_.-]+">$`)
 
 func (brOnly) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindRawHTML, func(w util.BufWriter, src []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -86,9 +110,11 @@ func (brOnly) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 				seg := raw.Segments.At(i)
 				tag = append(tag, seg.Value(src)...)
 			}
-			switch strings.ToLower(strings.ReplaceAll(string(tag), " ", "")) {
-			case "<br>", "<br/>":
+			switch t := strings.ToLower(strings.ReplaceAll(string(tag), " ", "")); {
+			case t == "<br>" || t == "<br/>":
 				_, _ = w.WriteString("<br>")
+			case t == "</a>" || anchorOpen.MatchString(string(tag)):
+				_, _ = w.WriteString(string(tag))
 			default:
 				_, _ = w.WriteString("<!-- raw HTML omitted -->")
 			}

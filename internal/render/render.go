@@ -22,6 +22,7 @@ type Renderer struct {
 	back    map[string][]*engine.Doc
 	single  bool // single-file build: links are in-file anchors, no Header per page
 	anchors bool // single Markdown file: emit <a id> before pages and field headings
+	html    bool // single HTML file: pages carry only body and fields
 }
 
 // Files returns every generated file: path relative to the output directory

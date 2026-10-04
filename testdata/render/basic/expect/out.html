@@ -2,77 +2,178 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Index</title>
+<script>document.documentElement.className="js"</script>
 <style>
-:root{color-scheme:light dark;--bg:#fff;--fg:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#0969da;--code:#f6f8fa}
-@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--line:#3d444d;--accent:#4493f8;--code:#151b23}}
+:root{color-scheme:light dark;
+--bg:#fff;--bg2:#f6f7f9;--fg:#1c2128;--muted:#5d6875;--line:#e2e5ea;--accent:#2f5fd0;--accent-bg:#eaf0fd;--code:#f1f3f6;
+--ok:#1a7f45;--ok-bg:#e3f5ea;--warn:#a15c00;--warn-bg:#fdf1d8;--bad:#b42323;--bad-bg:#fbe7e7;--shadow:0 6px 24px rgba(20,30,50,.12)}
+@media (prefers-color-scheme:dark){:root{
+--bg:#0f1318;--bg2:#161b22;--fg:#e4e8ee;--muted:#9aa5b1;--line:#2b323b;--accent:#6c9bff;--accent-bg:#1a2742;--code:#1b2129;
+--ok:#4cc17f;--ok-bg:#12301f;--warn:#e5a93b;--warn-bg:#3a2d0f;--bad:#f07a7a;--bad-bg:#3a1717;--shadow:0 6px 24px rgba(0,0,0,.5)}}
 *{box-sizing:border-box}
-body{margin:0;display:grid;grid-template-columns:18rem minmax(0,1fr);background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
-a{color:var(--accent)}
-aside{position:sticky;top:0;height:100vh;overflow:auto;padding:1rem;border-right:1px solid var(--line);font-size:.9rem}
-#q{width:100%;padding:.4rem .6rem;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:.3rem}
-#count{margin:.3rem 0 0;color:var(--muted);min-height:1.5em}
-nav h1{font-size:1rem;margin:.8rem 0 .3rem}
-nav h2{font-size:.9rem;margin:.8rem 0 .3rem}
-nav ul{margin:0;padding-left:1rem}
-nav>ul{padding-left:0}
-nav li{list-style:none;margin:.15rem 0}
-nav blockquote{margin:.5rem 0;color:var(--muted)}
-.miss{opacity:.4}
-main{max-width:52rem;padding:0 2rem;overflow-wrap:anywhere}
-section{padding:1rem 0 2rem;border-bottom:1px solid var(--line)}
-section:last-child{border-bottom:0}
-h1,h2{line-height:1.25}
-h2{margin-top:1.8rem;font-size:1.25rem}
-code,pre{font-family:ui-monospace,monospace;font-size:.9em;background:var(--code);border-radius:.25rem}
-code{padding:.1em .3em}
-pre{padding:.8rem;overflow-x:auto}
-pre code{padding:0}
-table{display:block;overflow-x:auto;border-collapse:collapse}
-th,td{padding:.35rem .7rem;border:1px solid var(--line);text-align:left;vertical-align:top}
-blockquote{margin:1rem 0;padding:0 1rem;border-left:.25rem solid var(--line);color:var(--muted)}
-@media (max-width:50rem){
-body{display:block}
-aside{position:static;height:auto;max-height:50vh;border-right:0;border-bottom:1px solid var(--line)}
-main{padding:0 1rem}
+html{scroll-behavior:smooth;scroll-padding-top:1.5rem}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.skip{position:absolute;left:-999px}
+.skip:focus{left:1rem;top:1rem;z-index:30;background:var(--bg);padding:.5rem 1rem;box-shadow:var(--shadow)}
+.bar{display:none}
+.shell{display:grid;grid-template-columns:17.5rem minmax(0,1fr) 15rem;min-height:100vh}
+/* sidebar */
+#side{position:sticky;top:0;height:100vh;overflow:auto;background:var(--bg2);border-right:1px solid var(--line);padding:1rem .9rem 2rem;font-size:.9rem;line-height:1.45}
+.search{position:relative}
+#q{width:100%;padding:.55rem .8rem;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:.55rem}
+#q:focus{border-color:var(--accent)}
+#results{position:absolute;left:0;right:0;top:calc(100% + .35rem);z-index:20;margin:0;padding:.3rem;list-style:none;max-height:70vh;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:.6rem;box-shadow:var(--shadow)}
+#results li{padding:.5rem .6rem;border-radius:.4rem;cursor:pointer}
+#results li[aria-selected=true],#results li:hover{background:var(--accent-bg)}
+#results b{display:block;font-weight:600}
+#results span{display:block;color:var(--muted);font-size:.82rem;overflow-wrap:anywhere}
+#results mark{background:var(--warn-bg);color:inherit;border-radius:2px}
+#results .none{color:var(--muted);cursor:default}
+#tree h2{margin:1.4rem 0 .4rem;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+#tree ul{margin:0;padding:0;list-style:none}
+#tree ul ul{margin-left:.55rem;padding-left:.6rem;border-left:1px solid var(--line)}
+#tree li{position:relative}
+#tree a{display:block;padding:.28rem .5rem;border-radius:.4rem;color:var(--fg);text-decoration:none}
+#tree a:hover{background:var(--accent-bg)}
+#tree a[aria-current=page]{background:var(--accent-bg);color:var(--accent);font-weight:600}
+#tree li.parent>a{padding-left:1.5rem}
+.tw{position:absolute;left:0;top:.3rem;width:1.4rem;height:1.4rem;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:.3rem}
+.tw::before{content:"▾";display:block;transition:transform .12s}
+.tw[aria-expanded=false]::before{transform:rotate(-90deg)}
+.tw[aria-expanded=false]~ul{display:none}
+.banner{margin:.9rem 0 0;padding:.5rem .7rem;font-size:.82rem;border-radius:.5rem;background:var(--warn-bg);color:var(--warn)}
+/* page */
+main{padding:2.5rem 3rem 5rem;max-width:56rem;width:100%;margin:0 auto;outline:0}
+.js section.page{display:none}
+.js section.page.on{display:block}
+section.page+section.page{margin-top:4rem;padding-top:2rem;border-top:1px solid var(--line)}
+.js section.page+section.page{margin:0;padding:0;border:0}
+.crumbs{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.85rem;color:var(--muted);margin-bottom:.6rem}
+.crumbs a{color:var(--muted);text-decoration:none}
+.crumbs a:hover{color:var(--accent);text-decoration:underline}
+h1{margin:0 0 1rem;font-size:2.2rem;line-height:1.2;letter-spacing:-.02em;font-weight:700}
+.badges{display:flex;flex-wrap:wrap;gap:.4rem;margin:-.4rem 0 1.6rem}
+.badge,.tag{display:inline-block;padding:.05rem .6rem;font-size:.78rem;line-height:1.6;border-radius:99px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);white-space:nowrap}
+.badge.kind{background:var(--accent-bg);border-color:transparent;color:var(--accent);font-weight:600}
+.badge.ok{background:var(--ok-bg);border-color:transparent;color:var(--ok)}
+.badge.warn{background:var(--warn-bg);border-color:transparent;color:var(--warn)}
+.badge.bad{background:var(--bad-bg);border-color:transparent;color:var(--bad)}
+.tag{border-style:dashed}
+.doc{overflow-wrap:break-word}
+.doc>p:first-child{font-size:1.14rem;line-height:1.65}
+.doc p,.doc ul,.doc ol,.doc table,.doc pre,.doc blockquote{margin:0 0 1.1rem}
+.doc h2{position:relative;margin:2.4rem 0 .8rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:1.35rem;line-height:1.3;letter-spacing:-.01em}
+.doc h2 .anchor{position:absolute;left:-1.3rem;color:var(--muted);text-decoration:none;opacity:0}
+.doc h2:hover .anchor,.doc h2 .anchor:focus{opacity:1}
+.doc dl{display:grid;grid-template-columns:minmax(7rem,13rem) 1fr;gap:.6rem 1.2rem;margin:0 0 1.4rem;padding:1rem 1.2rem;background:var(--bg2);border:1px solid var(--line);border-radius:.7rem}
+.doc dt{color:var(--muted);font-size:.9rem;padding-top:.1rem}
+.doc dd{margin:0}
+.doc dd p{margin:0}
+.doc li{margin:.25rem 0}
+.doc ul,.doc ol{padding-left:1.5rem}
+.doc li>ul,.doc li>ol{margin:.25rem 0}
+code,pre{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.88em}
+code{padding:.12em .38em;background:var(--code);border-radius:.3rem}
+pre{position:relative;padding:1rem 1.1rem;overflow-x:auto;background:var(--code);border:1px solid var(--line);border-radius:.6rem;line-height:1.55}
+pre code{padding:0;background:none}
+.copy{position:absolute;top:.5rem;right:.5rem;padding:.15rem .55rem;font:inherit;font-size:.75rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:.35rem;cursor:pointer;opacity:0}
+pre:hover .copy,.copy:focus{opacity:1}
+table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;font-size:.92rem}
+th{background:var(--bg2);font-weight:600}
+th,td{padding:.55rem .85rem;border:1px solid var(--line);text-align:left;vertical-align:top}
+tbody tr:nth-child(even){background:var(--bg2)}
+blockquote{padding:.6rem 1rem;border-left:.25rem solid var(--accent);background:var(--accent-bg);border-radius:0 .5rem .5rem 0;color:var(--fg)}
+blockquote p{margin:0}
+.rh{margin:2.6rem 0 .8rem;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.8rem}
+.card{display:flex;flex-direction:column;gap:.35rem;padding:.9rem 1rem;color:inherit;text-decoration:none;background:var(--bg);border:1px solid var(--line);border-radius:.7rem;transition:border-color .12s,box-shadow .12s}
+.card:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.ct{font-weight:600;color:var(--accent)}
+.cs{font-size:.86rem;line-height:1.5;color:var(--muted)}
+.card .badge{align-self:flex-start}
+.related{display:grid;gap:.6rem}
+.rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .5rem}
+.rl{min-width:7.5rem;font-size:.85rem;color:var(--muted)}
+.chip{display:inline-block;padding:.12rem .7rem;font-size:.88rem;text-decoration:none;color:var(--accent);background:var(--accent-bg);border-radius:99px}
+.chip:hover{text-decoration:underline}
+.pn{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:3rem}
+.pn a{display:flex;flex-direction:column;gap:.1rem;padding:.8rem 1rem;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:.7rem}
+.pn a:hover{border-color:var(--accent)}
+.pn small{color:var(--muted)}
+.pn span{color:var(--accent);font-weight:600}
+.pn .next{grid-column:2;text-align:right}
+.pn .prev{grid-column:1}
+/* table of contents */
+#toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:2.6rem 1rem 2rem 0;font-size:.85rem;line-height:1.4}
+#toc[hidden]{display:none}
+#toc h2{margin:0 0 .5rem;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+#toc a{display:block;padding:.25rem 0 .25rem .8rem;color:var(--muted);text-decoration:none;border-left:2px solid var(--line)}
+#toc a:hover{color:var(--fg)}
+#toc a.on{color:var(--accent);border-left-color:var(--accent);font-weight:600}
+@media (max-width:1200px){.shell{grid-template-columns:17.5rem minmax(0,1fr)}#toc{display:none}}
+@media (max-width:820px){
+.shell{display:block}
+.bar{display:flex;align-items:center;gap:.7rem;position:sticky;top:0;z-index:15;padding:.5rem .8rem;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar button{font:inherit;font-size:1.2rem;color:inherit;background:none;border:1px solid var(--line);border-radius:.4rem;padding:.1rem .6rem;cursor:pointer}
+#bar-title{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#side{position:fixed;z-index:25;left:0;top:0;bottom:0;width:min(20rem,88vw);height:auto;transform:translateX(-102%);transition:transform .18s;box-shadow:var(--shadow)}
+#side.open{transform:none}
+main{padding:1.5rem 1.1rem 4rem}
+h1{font-size:1.8rem}
+.doc h2 .anchor{display:none}
+.pn{grid-template-columns:1fr}
+.pn .next{grid-column:1}
 }
 @media print{
-aside{display:none}
-body{display:block}
+.bar,#side,#toc,.skip,.copy,.pn{display:none!important}
+.shell{display:block}
 main{max-width:none;padding:0}
-section{break-before:page;border:0}
-section:first-child{break-before:auto}
-a{color:inherit}
+section.page{display:block!important;break-before:page;margin:0;padding:0;border:0}
+section.page:first-of-type{break-before:auto}
+a{color:inherit;text-decoration:none}
+.card,.chip{border:1px solid var(--line)}
 }
+
 </style>
-<aside>
-<input type="search" id="q" placeholder="Search" aria-label="Search the documentation">
-<p id="count" role="status"></p>
-<nav aria-label="Document tree">
-<h1 id="nav--document-tree">Document tree</h1>
-<ul>
-<li><a href="#index">Index</a>
-<ul>
-<li><a href="#deep">Deep doc</a></li>
-<li><a href="#req">Requirement</a></li>
-</ul>
-</li>
-</ul>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar">
+<button id="menu" type="button" aria-label="Menu" aria-expanded="false" aria-controls="side">☰</button>
+<span id="bar-title"></span>
+</header>
+<div class="shell">
+<aside id="side">
+<div class="search">
+<input type="search" id="q" placeholder="Search  ( / )" aria-label="Search the documentation" autocomplete="off">
+<ul id="results" role="listbox" aria-label="Search results" hidden></ul>
+</div>
+
+<nav id="tree" aria-label="Document tree">
+<h2>Pages</h2>
+<ul><li class="parent"><button class="tw" type="button" aria-expanded="true" aria-label="Collapse"></button><a href="#index">Index</a><ul><li><a href="#deep">Deep doc</a></li><li><a href="#req">Requirement</a></li></ul></li></ul>
 
 </nav>
 </aside>
-<main>
-<section id="index">
-<h1 id="index--index">Index</h1>
-<p>note · accepted · draft, x</p>
+<main id="main" tabindex="-1">
+<section class="page" id="index" data-title="Index">
+<h1>Index</h1>
+<div class="badges"><span class="badge kind">note</span><span class="badge ok">accepted</span><span class="tag">#draft</span><span class="tag">#x</span></div>
+<div class="doc">
 <p>Welcome. See <a href="#deep--acceptance-criteria">Deep doc</a>, <a href="#req">Requirement</a> and <a href="#req">Requirement</a>.</p>
 <p>First fact.</p>
 <p>Second fact.</p>
-<h2 id="index--owner-name">Owner name</h2>
-<p>Team</p>
-<h2 id="index--count">Count</h2>
-<p>3</p>
-<h2 id="index--flag">Flag</h2>
-<p>true</p>
+<dl>
+<dt>Owner name<a id="index--owner-name"></a></dt>
+<dd>Team</dd>
+<dt>Count<a id="index--count"></a></dt>
+<dd>3</dd>
+<dt>Flag<a id="index--flag"></a></dt>
+<dd>true</dd>
+<dt>Inline<a id="index--inline"></a></dt>
+<dd>Text Requirement here and <code>{{literal}}</code> code and <a href="#deep">Deep doc</a>.</dd>
+</dl>
 <h2 id="index--meta">Meta</h2>
 <ul>
 <li><strong>a:</strong> x</li>
@@ -110,85 +211,264 @@ line2</li>
 </ul>
 </li>
 </ol>
-<h2 id="index--inline">Inline</h2>
-<p>Text Requirement here and <code>{{literal}}</code> code and <a href="#deep">Deep doc</a>.</p>
 <h2 id="index--numbers">Numbers</h2>
 <ul>
 <li>1</li>
 <li>2.50</li>
 </ul>
-<h2 id="index--links">Links</h2>
-<ul>
-<li><a href="#deep">Deep doc</a></li>
-<li><a href="#req">Requirement</a></li>
-</ul>
-<h2 id="index--referenced-by">Referenced by</h2>
-<ul>
-<li><a href="#deep">Deep doc</a></li>
-<li><a href="#req">Requirement</a></li>
-</ul>
+</div>
+<h2 class="rh">Pages in this section</h2>
+<div class="cards">
+<a class="card" href="#deep"><span class="ct">Deep doc</span><span class="cs">Back to Index and Index.</span></a>
+<a class="card" href="#req"><span class="ct">Requirement</span><span class="cs">Requirement body, see Deep doc.</span></a>
+</div>
+<nav class="pn" aria-label="Neighbouring pages"><a class="next" href="#deep"><small>Next</small><span>Deep doc</span></a></nav>
 </section>
-<section id="deep">
-<h1 id="deep--deep-doc">Deep doc</h1>
+<section class="page" id="deep" data-title="Deep doc">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="#index">Index</a></nav>
+<h1>Deep doc</h1>
+<div class="doc">
 <p>Back to <a href="#index">Index</a> and <a href="#index--owner-name">Index</a>.</p>
 <h2 id="deep--acceptance-criteria">Acceptance criteria</h2>
 <p>Given X.</p>
 <p>Then Y with <a href="#req--statement">Requirement</a>.</p>
-<h2 id="deep--parent">Parent</h2>
-<p><a href="#index">Index</a></p>
-<h2 id="deep--links">Links</h2>
-<ul>
-<li><a href="#index">Index</a></li>
-</ul>
-<h2 id="deep--referenced-by">Referenced by</h2>
-<ul>
-<li><a href="#index">Index</a></li>
-<li><a href="#req">Requirement</a></li>
-</ul>
+</div>
+<h2 class="rh">Related</h2>
+<div class="related">
+<div class="rg"><span class="rl">Parent</span><a class="chip" href="#index">Index</a></div>
+<div class="rg"><span class="rl">Referenced by</span><a class="chip" href="#req">Requirement</a></div>
+</div>
+<nav class="pn" aria-label="Neighbouring pages"><a class="prev" href="#index"><small>Previous</small><span>Index</span></a><a class="next" href="#req"><small>Next</small><span>Requirement</span></a></nav>
 </section>
-<section id="req">
-<h1 id="req--requirement">Requirement</h1>
+<section class="page" id="req" data-title="Requirement">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="#index">Index</a></nav>
+<h1>Requirement</h1>
+<div class="doc">
 <p>Requirement body, see <a href="#deep--acceptance-criteria">Deep doc</a>.</p>
 <h2 id="req--statement">Statement</h2>
 <p>First fact.</p>
 <p>Second fact.</p>
-<h2 id="req--parent">Parent</h2>
-<p><a href="#index">Index</a></p>
-<h2 id="req--links">Links</h2>
-<ul>
-<li><a href="#deep">Deep doc</a></li>
-</ul>
-<h2 id="req--referenced-by">Referenced by</h2>
-<ul>
-<li><a href="#deep">Deep doc</a></li>
-<li><a href="#index">Index</a></li>
-</ul>
+</div>
+<h2 class="rh">Related</h2>
+<div class="related">
+<div class="rg"><span class="rl">Parent</span><a class="chip" href="#index">Index</a></div>
+<div class="rg"><span class="rl">Links</span><a class="chip" href="#deep">Deep doc</a></div>
+<div class="rg"><span class="rl">Referenced by</span><a class="chip" href="#deep">Deep doc</a></div>
+</div>
+<nav class="pn" aria-label="Neighbouring pages"><a class="prev" href="#deep"><small>Previous</small><span>Deep doc</span></a></nav>
 </section>
 
 </main>
+<aside id="toc" aria-label="On this page" hidden></aside>
+</div>
 <script>
-(function(){
-var q=document.getElementById('q'),c=document.getElementById('count');
-var secs=[].slice.call(document.querySelectorAll('main>section'));
-var text=secs.map(function(s){return s.textContent.toLowerCase()});
-var links=[].slice.call(document.querySelectorAll('nav a[href^="#"]'));
-function find(){
-  var v=q.value.trim().toLowerCase(),n=0,hit={};
-  secs.forEach(function(s,i){
-    var ok=!v||text[i].indexOf(v)>=0;
-    s.hidden=!ok;
-    if(ok){n++;hit[s.id]=1}
-  });
-  links.forEach(function(a){
-    a.classList.toggle('miss',!!v&&!hit[decodeURIComponent(a.hash.slice(1))]);
-  });
-  c.textContent=v?n+' of '+secs.length+' pages':'';
-}
-q.addEventListener('input',find);
-window.addEventListener('hashchange',function(){
-  var t=document.getElementById(decodeURIComponent(location.hash.slice(1)));
-  var s=t&&t.closest('section');
-  if(s&&s.hidden){q.value='';find();s.scrollIntoView()}
-});
+(function () {
+  'use strict';
+  try {
+    var $ = function (s, r) { return (r || document).querySelector(s); };
+    var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+    var pages = $$('main > section.page');
+    var side = $('#side'), menu = $('#menu'), tocBox = $('#toc'), barTitle = $('#bar-title');
+    var rootTitle = document.title, current = null, spy = null;
+    var links = $$('#tree a[href^="#"]');
+
+    function decode(h) {
+      h = h.replace(/^#/, '');
+      try { return decodeURIComponent(h); } catch (e) { return h; }
+    }
+
+    // heading anchors and copy buttons
+    pages.forEach(function (p) {
+      $$('.doc h2[id]', p).forEach(function (h) {
+        h.dataset.t = h.textContent;
+        var a = document.createElement('a');
+        a.className = 'anchor'; a.href = '#' + h.id; a.textContent = '#';
+        a.setAttribute('aria-label', 'Link to this section');
+        h.insertBefore(a, h.firstChild);
+      });
+      $$('pre', p).forEach(function (pre) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+        b.addEventListener('click', function () {
+          var code = $('code', pre), text = (code || pre).textContent;
+          var done = function (m) { b.textContent = m; setTimeout(function () { b.textContent = 'Copy'; }, 1500); };
+          if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { done('Copied'); }, function () { done('Failed'); }); }
+          else { done('Failed'); }
+        });
+        pre.appendChild(b);
+      });
+    });
+
+    // sidebar tree
+    function setOpen(tw, open) {
+      tw.setAttribute('aria-expanded', open ? 'true' : 'false');
+      tw.setAttribute('aria-label', open ? 'Collapse' : 'Expand');
+    }
+    $('#tree').addEventListener('click', function (e) {
+      var tw = e.target.closest && e.target.closest('.tw');
+      if (tw) { setOpen(tw, tw.getAttribute('aria-expanded') !== 'true'); }
+    });
+    function markTree(id) {
+      links.forEach(function (a) {
+        if (decode(a.hash) !== id) { a.removeAttribute('aria-current'); return; }
+        a.setAttribute('aria-current', 'page');
+        for (var li = a.parentNode; li && li.id !== 'tree'; li = li.parentNode) {
+          var tw = li.tagName === 'LI' && $(':scope > .tw', li);
+          if (tw) { setOpen(tw, true); }
+        }
+      });
+      var cur = $('#tree [aria-current]');
+      if (cur) {
+        var r = cur.getBoundingClientRect(), s = side.getBoundingClientRect();
+        if (r.top < s.top + 60 || r.bottom > s.bottom - 20) { side.scrollTop += r.top - s.top - 120; }
+      }
+    }
+
+    // "On this page"
+    function buildToc(page) {
+      if (spy) { spy.disconnect(); spy = null; }
+      var hs = $$('.doc h2[id]', page);
+      tocBox.textContent = '';
+      if (hs.length < 2) { tocBox.hidden = true; return; }
+      var h = document.createElement('h2');
+      h.textContent = 'On this page';
+      tocBox.appendChild(h);
+      var map = {};
+      hs.forEach(function (x) {
+        var a = document.createElement('a');
+        a.href = '#' + x.id; a.textContent = x.dataset.t;
+        tocBox.appendChild(a); map[x.id] = a;
+      });
+      tocBox.hidden = false;
+      if (window.IntersectionObserver) {
+        spy = new IntersectionObserver(function (es) {
+          es.forEach(function (e) {
+            if (!e.isIntersecting) { return; }
+            $$('a', tocBox).forEach(function (a) { a.classList.remove('on'); });
+            map[e.target.id].classList.add('on');
+          });
+        }, { rootMargin: '0px 0px -75% 0px' });
+        hs.forEach(function (x) { spy.observe(x); });
+      }
+    }
+
+    // router: the hash names a page or a section inside it
+    function show() {
+      var id = decode(location.hash), target = id ? document.getElementById(id) : null;
+      var page = target && target.closest ? target.closest('section.page') : null;
+      if (!page) { page = pages[0]; target = null; }
+      if (page !== current) {
+        pages.forEach(function (p) { p.classList.toggle('on', p === page); });
+        current = page;
+        document.title = page === pages[0] ? rootTitle : page.dataset.title + ' · ' + rootTitle;
+        barTitle.textContent = page.dataset.title;
+        markTree(page.id);
+        buildToc(page);
+      }
+      if (target && target !== page) { target.scrollIntoView({ behavior: 'instant' }); }
+      else { window.scrollTo({ top: 0, behavior: 'instant' }); }
+      closeMenu();
+    }
+
+    // drawer on narrow screens
+    function closeMenu() {
+      side.classList.remove('open');
+      menu.setAttribute('aria-expanded', 'false');
+    }
+    menu.addEventListener('click', function () {
+      var open = !side.classList.contains('open');
+      side.classList.toggle('open', open);
+      menu.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    // search: every word must occur on the page; titles rank first
+    var q = $('#q'), res = $('#results'), hits = [], sel = -1;
+    var index = pages.map(function (p) {
+      return { id: p.id, title: p.dataset.title, text: $('.doc', p).textContent.replace(/\s+/g, ' ') };
+    });
+    function esc(w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    function snippet(t, re) {
+      var m = re.exec(t.text), i = m ? m.index : 0;
+      var from = Math.max(0, i - 40), to = Math.min(t.text.length, i + 110);
+      if (from > 0) { var sp = t.text.indexOf(' ', from); from = sp >= 0 && sp < i ? sp + 1 : from; }
+      if (to < t.text.length) { var sl = t.text.lastIndexOf(' ', to); to = sl > i ? sl : to; }
+      var s = (from > 0 ? '… ' : '') + t.text.slice(from, to) + (to < t.text.length ? ' …' : '');
+      var span = document.createElement('span');
+      s.split(re).forEach(function (part, k) {
+        if (k % 2) { var mk = document.createElement('mark'); mk.textContent = part; span.appendChild(mk); }
+        else { span.appendChild(document.createTextNode(part)); }
+      });
+      return span;
+    }
+    function select(i) {
+      var items = $$('li[role=option]', res);
+      items.forEach(function (x, k) { x.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
+      sel = i;
+      if (items[i]) { items[i].scrollIntoView({ block: 'nearest' }); }
+    }
+    function search() {
+      var v = q.value.trim();
+      res.textContent = ''; hits = []; sel = -1;
+      if (!v) { res.hidden = true; return; }
+      var words = v.split(/\s+/).map(function (w) { return new RegExp(esc(w), 'i'); });
+      var all = new RegExp('(' + v.split(/\s+/).map(esc).join('|') + ')', 'gi');
+      index.forEach(function (t) {
+        var ok = words.every(function (w) { return w.test(t.title) || w.test(t.text); });
+        if (!ok) { return; }
+        var score = words.reduce(function (s, w) { return s + (w.test(t.title) ? 10 : 0); }, 0);
+        hits.push({ t: t, score: score });
+      });
+      hits.sort(function (a, b) { return b.score - a.score; });
+      hits = hits.slice(0, 20);
+      if (!hits.length) {
+        var none = document.createElement('li');
+        none.className = 'none'; none.textContent = 'Nothing found';
+        res.appendChild(none);
+      }
+      hits.forEach(function (h) {
+        var li = document.createElement('li'), b = document.createElement('b');
+        li.setAttribute('role', 'option'); li.dataset.id = h.t.id;
+        b.textContent = h.t.title;
+        all.lastIndex = 0;
+        li.appendChild(b); li.appendChild(snippet(h.t, all));
+        res.appendChild(li);
+      });
+      res.hidden = false;
+      if (hits.length) { select(0); }
+    }
+    function open(id) {
+      q.value = ''; res.hidden = true; hits = []; q.blur();
+      if (decode(location.hash) === id) { show(); } else { location.hash = '#' + id; }
+    }
+    q.addEventListener('input', search);
+    q.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); select((sel + 1) % hits.length); }
+      else if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); select((sel + hits.length - 1) % hits.length); }
+      else if (e.key === 'Enter' && hits[sel]) { e.preventDefault(); open(hits[sel].t.id); }
+      else if (e.key === 'Escape') { q.value = ''; search(); q.blur(); }
+    });
+    res.addEventListener('click', function (e) {
+      var li = e.target.closest && e.target.closest('li[data-id]');
+      if (li) { open(li.dataset.id); }
+    });
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.search')) { res.hidden = true; }
+      if (!e.target.closest('#side, #menu')) { closeMenu(); }
+    });
+    document.addEventListener('keydown', function (e) {
+      var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+      if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+        e.preventDefault();
+        if (getComputedStyle(menu).display !== 'none') { side.classList.add('open'); menu.setAttribute('aria-expanded', 'true'); }
+        q.focus(); q.select();
+      } else if (e.key === 'Escape') { closeMenu(); }
+    });
+
+    window.addEventListener('hashchange', show);
+    show();
+  } catch (err) {
+    document.documentElement.className = ''; // without the script every page stays visible
+  }
 })();
+
 </script>

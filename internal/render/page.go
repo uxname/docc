@@ -1,8 +1,10 @@
 package render
 
 import (
+	"regexp"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/santiment/docc/internal/engine"
 	"github.com/santiment/docc/internal/loader"
@@ -23,30 +25,58 @@ func (r *Renderer) page(d *engine.Doc) string {
 	case r.anchors:
 		blocks = append(blocks, pg.anchorTag(""))
 	}
-	blocks = append(blocks, "# "+pg.refs(oneLine.Replace(rawTitle(d))))
-	if meta := metaLine(d); meta != "" {
-		blocks = append(blocks, meta)
-	}
-	if r.Full && d.Hidden {
-		blocks = append(blocks, "> Hidden document.")
+	if !r.html { // the HTML file draws title, badges and relations from the data itself
+		blocks = append(blocks, "# "+pg.refs(oneLine.Replace(rawTitle(d))))
+		if meta := metaLine(d); meta != "" {
+			blocks = append(blocks, meta)
+		}
+		if r.Full && d.Hidden {
+			blocks = append(blocks, "> Hidden document.")
+		}
 	}
 	if body := d.Root.Get("body"); body != nil {
 		blocks = append(blocks, pg.paragraphs(body, true)...)
 	}
+	type field struct{ key, content string }
+	var fields []field
+	short := 0
 	for _, m := range d.Root.Members {
 		if !reserved[m.Key] {
 			if c := pg.fieldContent(m.Value); c != "" {
-				if r.anchors {
-					blocks = append(blocks, pg.anchorTag(anchor(heading(m.Key))))
+				fields = append(fields, field{m.Key, c})
+				if shortValue(c) {
+					short++
 				}
-				blocks = append(blocks, "## "+heading(m.Key), c)
 			}
 		}
+	}
+	// HTML: one-line values form a property list before the sections, so a page
+	// is not a stack of headings with a single word under each
+	props := r.html && short >= 2
+	if props {
+		var items []string
+		for _, f := range fields {
+			if shortValue(f.content) {
+				items = append(items, heading(f.key)+pg.anchorTag(anchor(heading(f.key)))+"\n:   "+f.content)
+			}
+		}
+		blocks = append(blocks, strings.Join(items, "\n\n"))
+	}
+	for _, f := range fields {
+		if props && shortValue(f.content) {
+			continue
+		}
+		if r.anchors {
+			blocks = append(blocks, pg.anchorTag(anchor(heading(f.key))))
+		}
+		blocks = append(blocks, "## "+heading(f.key), f.content)
 	}
 	if r.Full {
 		pg.serviceSections(&blocks)
 	}
-	pg.relations(&blocks)
+	if !r.html {
+		pg.relations(&blocks)
+	}
 	return strings.Join(blocks, "\n\n") + "\n"
 }
 
@@ -59,6 +89,14 @@ func (pg *page) anchorTag(field string) string {
 		id += "--" + field
 	}
 	return `<a id="` + id + `"></a>`
+}
+
+var blockStart = regexp.MustCompile(`^(- |\d+\. |> |#|\|)`)
+
+// shortValue reports whether a rendered field is one plain line of up to 100
+// characters: no list, table, quote or heading.
+func shortValue(c string) bool {
+	return !strings.Contains(c, "\n") && utf8.RuneCountInString(c) <= 100 && !blockStart.MatchString(c)
 }
 
 // fieldContent renders the value of a free field.
@@ -207,15 +245,25 @@ func (r *Renderer) treeBlocks() []string {
 	if len(orphans) > 0 {
 		out = append(out, "## Without parent", r.treeLines(orphans))
 	}
-	if len(r.P.Cfg.TraceScan) > 0 {
+	if un := r.uncovered(); len(un) > 0 {
 		var lines []string
-		for _, d := range r.docs() {
-			if k := d.Root.Get("kind"); k != nil && k.Str == "requirement" && len(r.P.Covers[d.ID]) == 0 {
-				lines = append(lines, "- ["+titleOf(d)+"]("+r.href(d)+")")
-			}
+		for _, d := range un {
+			lines = append(lines, "- ["+titleOf(d)+"]("+r.href(d)+")")
 		}
-		if len(lines) > 0 {
-			out = append(out, "## Requirements without code coverage", strings.Join(lines, "\n"))
+		out = append(out, "## Requirements without code coverage", strings.Join(lines, "\n"))
+	}
+	return out
+}
+
+// uncovered lists the requirements no code file covers; empty without trace.scan.
+func (r *Renderer) uncovered() []*engine.Doc {
+	var out []*engine.Doc
+	if len(r.P.Cfg.TraceScan) == 0 {
+		return nil
+	}
+	for _, d := range r.docs() {
+		if k := d.Root.Get("kind"); k != nil && k.Str == "requirement" && len(r.P.Covers[d.ID]) == 0 {
+			out = append(out, d)
 		}
 	}
 	return out

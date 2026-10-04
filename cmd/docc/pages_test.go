@@ -128,8 +128,9 @@ func TestSingleFileNotWrittenOnStructuralErrors(t *testing.T) {
 func TestHTMLBuild(t *testing.T) {
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"Index <b>","body":["See [[req#statement]] and [[req]].","<script>alert(1)</script> text"],"links":["req"]}`,
-		"docs/src/req.json": `{"title":"Req","parent":"index","statement":"Fact.",
-			"rows":[{"a":"one\ntwo","b":"x"}]}`,
+		"docs/src/req.json": `{"title":"Req","kind":"requirement","status":"accepted","priority":2,"tags":["t1"],
+			"parent":"index","statement":["Fact.","More."],"owner":"Team","stage":"alpha",
+			"body":"Click <a id=\"x\" onclick=\"evil()\">here</a>.","rows":[{"a":"one\ntwo","b":"x"}]}`,
 		"docs/src/h.json": `{"title":"Hid","hidden":true,"parent":"index","body":"Secret"}`,
 	})
 	if code, out, errs := do("build", "--html"); code != 0 || !strings.Contains(out, "built docs/out.html") {
@@ -137,7 +138,14 @@ func TestHTMLBuild(t *testing.T) {
 	}
 	page := readFile(t, "docs/out.html")
 	for _, want := range []string{
-		`<section id="index">`, `<section id="req">`,
+		`<section class="page" id="index" data-title="Index &lt;b&gt;">`, `<section class="page" id="req" data-title="Req">`,
+		`<nav class="crumbs" aria-label="Breadcrumb"><a href="#index">Index &lt;b&gt;</a></nav>`,
+		`<h1>Req</h1>`,
+		`<span class="badge kind">requirement</span><span class="badge ok">accepted</span><span class="badge">priority 2</span><span class="tag">#t1</span>`,
+		"<dt>Owner<a id=\"req--owner\"></a></dt>\n<dd>Team</dd>", // one-line fields form a property list
+		`<a class="card" href="#req">`,                           // child cards on the parent page
+		`<div class="rg"><span class="rl">Parent</span><a class="chip" href="#index">`,
+		`<a class="next" href="#req">`, `<a class="prev" href="#index">`,
 		`<h2 id="req--statement">Statement</h2>`, // target of [[req#statement]]
 		`<a href="#req--statement">Req</a>`,      // the link itself
 		`<a href="#req">Req</a>`,                 // plain page link, also in the tree
@@ -150,7 +158,7 @@ func TestHTMLBuild(t *testing.T) {
 		}
 	}
 	// agents' raw HTML never reaches the file; hidden documents stay out; nothing is fetched
-	for _, bad := range []string{"<script>alert", "Secret", "Hid", "http://", "https://", ".md\""} {
+	for _, bad := range []string{"<script>alert", "onclick", "evil", "Secret", "Hid", "http://", "https://", ".md\"", "<h2 id=\"req--owner\""} {
 		if strings.Contains(page, bad) {
 			t.Errorf("out.html contains %q", bad)
 		}
