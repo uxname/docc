@@ -139,14 +139,14 @@ func TestWordsFiles(t *testing.T) {
 func TestTraceNeedsScan(t *testing.T) {
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"I"}`,
-		"tests/a_test.txt":     "// @covers ghost\n",
+		"tests/a_test.txt":    "// @covers ghost\n",
 	})
 	if code, out, _ := do("validate"); code != 0 {
 		t.Fatalf("without trace.scan DOC401 must not run: %d %s", code, out)
 	}
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"I"}`,
-		"tests/a_test.txt":     "// @covers ghost\n",
+		"tests/a_test.txt":    "// @covers ghost\n",
 		"docc.json":           `{"trace":{"scan":["tests/**"]}}`,
 	})
 	if code, out, _ := do("validate"); code != 1 || !strings.Contains(out, "tests/a_test.txt:1:4: error DOC401") {
