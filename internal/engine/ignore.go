@@ -22,15 +22,6 @@ type Ignore struct {
 	Used     bool
 }
 
-// matches reports whether the entry applies to the rule (code, plus the
-// custom rule name when the diagnostic comes from a custom rule).
-func (ig *Ignore) matches(code, custom string) bool {
-	if custom != "" {
-		return ig.AllCust || ig.Custom == custom
-	}
-	return ig.Rule != nil && ig.Rule.Code == code
-}
-
 // parseIgnores validates docc-ignore of every document (DOC108) and keeps the
 // valid entries in Doc.Ignores.
 func (p *Project) parseIgnores() {

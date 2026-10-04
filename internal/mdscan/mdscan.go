@@ -13,8 +13,9 @@ type Span struct{ Start, End int }
 // Result of scanning one string value.
 type Scan struct {
 	S             string
-	Plain         []Span // text outside fenced blocks and inline code
+	Plain         []Span // text outside fenced blocks, inline code and {{includes}}
 	UnclosedFence int    // offset of an unclosed opening fence, or -1
+	includes      []Ref
 }
 
 // New scans s.
@@ -54,11 +55,38 @@ func New(s string) *Scan {
 	}
 	if fenceLen > 0 {
 		// unclosed: UnclosedFence stays at the opener, the rest is code
+		sc.cutIncludes()
 		return sc
 	}
 	sc.UnclosedFence = -1
 	flush(len(s))
+	sc.cutIncludes()
 	return sc
+}
+
+// cutIncludes finds {{...}} and removes them from the plain text: text rules
+// skip includes, the inserted text is checked in its own document.
+func (sc *Scan) cutIncludes() {
+	sc.includes = sc.delimited("{{", "}}")
+	if len(sc.includes) == 0 {
+		return
+	}
+	var out []Span
+	for _, sp := range sc.Plain {
+		from := sp.Start
+		for _, in := range sc.includes {
+			if in.Start >= sp.Start && in.End <= sp.End {
+				if in.Start > from {
+					out = append(out, Span{from, in.Start})
+				}
+				from = in.End
+			}
+		}
+		if from < sp.End {
+			out = append(out, Span{from, sp.End})
+		}
+	}
+	sc.Plain = out
 }
 
 // fenceRun detects a fence line: up to 3 spaces, then 3+ of ` or ~.
@@ -128,9 +156,6 @@ func (sc *Scan) inline(a, b int) {
 		}
 		i++
 	}
-	if i > b {
-		i = b
-	}
 	if start < b {
 		sc.Plain = append(sc.Plain, Span{start, b})
 	}
@@ -172,7 +197,7 @@ func (sc *Scan) delimited(open, close string) []Ref {
 func (sc *Scan) Refs() []Ref { return sc.delimited("[[", "]]") }
 
 // Includes returns {{...}} occurrences outside code.
-func (sc *Scan) Includes() []Ref { return sc.delimited("{{", "}}") }
+func (sc *Scan) Includes() []Ref { return sc.includes }
 
 // InPlain reports whether offset lies in plain (non-code) text.
 func (sc *Scan) InPlain(off int) bool {

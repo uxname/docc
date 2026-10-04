@@ -1,0 +1,54 @@
+[
+  {
+    "code": "DOC204",
+    "rule": "graph/parent-cycle",
+    "level": "error",
+    "file": "docs/src/b.json",
+    "line": 1,
+    "column": 27,
+    "endLine": 1,
+    "endColumn": 30,
+    "message": "the parent chain of \"b\" forms a cycle",
+    "hint": "Break the cycle: point one document in it to a different parent.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC206",
+    "rule": "graph/self-link",
+    "level": "warn",
+    "file": "docs/src/a.json",
+    "line": 3,
+    "column": 13,
+    "endLine": 3,
+    "endColumn": 16,
+    "message": "the document links to itself",
+    "hint": "Remove its own id from links.",
+    "fixable": "unsafe"
+  },
+  {
+    "code": "DOC206",
+    "rule": "graph/self-link",
+    "level": "warn",
+    "file": "docs/src/a.json",
+    "line": 4,
+    "column": 22,
+    "endLine": 4,
+    "endColumn": 27,
+    "message": "the text refers to its own document with [[a]]",
+    "hint": "Remove the self-reference.",
+    "fixable": "unsafe"
+  },
+  {
+    "code": "DOC206",
+    "rule": "graph/self-link",
+    "level": "warn",
+    "file": "docs/src/b.json",
+    "line": 1,
+    "column": 27,
+    "endLine": 1,
+    "endColumn": 30,
+    "message": "the document names itself as its parent",
+    "hint": "Remove the parent field.",
+    "fixable": "unsafe"
+  }
+]

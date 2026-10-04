@@ -1,0 +1,41 @@
+[
+  {
+    "code": "DOC313",
+    "rule": "text/repeated-word",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 31,
+    "endLine": 1,
+    "endColumn": 38,
+    "message": "the word \"The\" is repeated",
+    "hint": "Remove the repeated word.",
+    "fixable": "unsafe"
+  },
+  {
+    "code": "DOC313",
+    "rule": "text/repeated-word",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 60,
+    "endLine": 1,
+    "endColumn": 63,
+    "message": "the word \"в\" is repeated",
+    "hint": "Remove the repeated word.",
+    "fixable": "unsafe"
+  },
+  {
+    "code": "DOC313",
+    "rule": "text/repeated-word",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 75,
+    "endLine": 1,
+    "endColumn": 84,
+    "message": "the word \"Done\" is repeated",
+    "hint": "Remove the repeated word.",
+    "fixable": "unsafe"
+  }
+]

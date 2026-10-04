@@ -1,0 +1,54 @@
+[
+  {
+    "code": "DOC303",
+    "rule": "text/placeholder",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 31,
+    "endLine": 1,
+    "endColumn": 35,
+    "message": "placeholder \"TODO\" is left in the text",
+    "hint": "Write the real text or remove the placeholder.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC303",
+    "rule": "text/placeholder",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 51,
+    "endLine": 1,
+    "endColumn": 54,
+    "message": "placeholder \"tbd\" is left in the text",
+    "hint": "Write the real text or remove the placeholder.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC303",
+    "rule": "text/placeholder",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 58,
+    "endLine": 1,
+    "endColumn": 63,
+    "message": "placeholder \"Lorem\" is left in the text",
+    "hint": "Write the real text or remove the placeholder.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC303",
+    "rule": "text/placeholder",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 87,
+    "endLine": 1,
+    "endColumn": 90,
+    "message": "placeholder \"???\" is left in the text",
+    "hint": "Write the real text or remove the placeholder.",
+    "fixable": "none"
+  }
+]

@@ -160,3 +160,25 @@ func TestKindSchemaFileWithLocalRef(t *testing.T) {
 		t.Fatalf("%d %s", code, out)
 	}
 }
+
+func TestMaxWarnings(t *testing.T) {
+	files := map[string]string{"docs/src/index.json": `{"title":"I","body":"TODO"}`}
+	project(t, files)
+	if code, _, _ := do("validate"); code != 0 {
+		t.Fatalf("a warning alone is not a failure, got %d", code)
+	}
+	if code, _, _ := do("validate", "--max-warnings", "0"); code != 1 {
+		t.Fatal("--max-warnings 0 must fail on one warning")
+	}
+	if code, _, _ := do("validate", "--max-warnings", "1"); code != 0 {
+		t.Fatal("one warning is within the limit 1")
+	}
+	files["docc.json"] = `{"maxWarnings":0}`
+	project(t, files)
+	if code, _, _ := do("validate"); code != 1 {
+		t.Fatal("maxWarnings from docc.json")
+	}
+	if code, _, _ := do("validate", "--max-warnings", "5"); code != 0 {
+		t.Fatal("the flag must win over docc.json")
+	}
+}

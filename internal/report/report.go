@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/santiment/docc/internal/diag"
 )
@@ -26,23 +27,26 @@ func Counts(ds []diag.Diagnostic) (errors, warnings, files int) {
 
 // Text writes `file:line:col: level CODE message`, a hint line per
 // diagnostic, a truncation banner when max > 0 cuts the list, and a summary.
-func Text(w io.Writer, ds []diag.Diagnostic, max int) {
+func Text(w io.Writer, ds []diag.Diagnostic, max int) error {
+	var b strings.Builder
 	shown := ds
 	if max > 0 && len(ds) > max {
 		shown = ds[:max]
 	}
 	for i := range shown {
 		d := &shown[i]
-		fmt.Fprintf(w, "%s:%d:%d: %s %s %s\n", d.File, d.Line, d.Column, d.Level, d.Code, d.Message)
+		fmt.Fprintf(&b, "%s:%d:%d: %s %s %s\n", d.File, d.Line, d.Column, d.Level, d.Code, d.Message)
 		if d.Hint != "" {
-			fmt.Fprintf(w, "  hint: %s\n", d.Hint)
+			fmt.Fprintf(&b, "  hint: %s\n", d.Hint)
 		}
 	}
 	if len(shown) < len(ds) {
-		fmt.Fprintf(w, "показано %d из %d\n", len(shown), len(ds))
+		fmt.Fprintf(&b, "показано %d из %d\n", len(shown), len(ds))
 	}
 	e, wn, f := Counts(ds)
-	fmt.Fprintf(w, "%d errors, %d warnings in %d files\n", e, wn, f)
+	fmt.Fprintf(&b, "%d errors, %d warnings in %d files\n", e, wn, f)
+	_, err := io.WriteString(w, b.String())
+	return err
 }
 
 // JSON writes the diagnostics as an array (empty: []), without a limit.

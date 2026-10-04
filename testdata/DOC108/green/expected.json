@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 18,
+    "endLine": 3,
+    "endColumn": 22,
+    "message": "forbidden word or phrase \"fast\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  }
+]

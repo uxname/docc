@@ -1,0 +1,28 @@
+[
+  {
+    "code": "DOC310",
+    "rule": "markdown/raw-html",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 34,
+    "endLine": 1,
+    "endColumn": 51,
+    "message": "raw HTML tag \u003cdiv\u003e in the text",
+    "hint": "Use Markdown instead of HTML; scripts are never allowed.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC310",
+    "rule": "markdown/raw-html",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 66,
+    "endLine": 1,
+    "endColumn": 74,
+    "message": "raw HTML tag \u003cscript\u003e in the text",
+    "hint": "Use Markdown instead of HTML; scripts are never allowed.",
+    "fixable": "none"
+  }
+]

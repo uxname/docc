@@ -1,0 +1,172 @@
+package engine
+
+import (
+	"fmt"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/santiment/docc/internal/config"
+	"github.com/santiment/docc/internal/diag"
+	"github.com/santiment/docc/internal/text"
+)
+
+// matcher returns a compiled word list, cached by content.
+func (p *Project) matcher(builtin, extra []string) *text.Matcher {
+	key := strings.Join(builtin, "\x00") + "\x01" + strings.Join(extra, "\x00")
+	if p.matchers == nil {
+		p.matchers = map[string]*text.Matcher{}
+	}
+	if m, ok := p.matchers[key]; ok {
+		return m
+	}
+	m := text.NewMatcher(append(append([]string{}, builtin...), extra...))
+	p.matchers[key] = m
+	return m
+}
+
+// listRule describes a rule driven by a word list.
+type listRule struct {
+	code    string
+	builtin []string
+	msg     string // format with the matched text
+	hint    string
+}
+
+var listRules = []listRule{
+	{"DOC301", text.Forbidden, "forbidden word or phrase %q", "Replace it with a specific, measurable statement."},
+	{"DOC303", text.Placeholders, "placeholder %q is left in the text", "Write the real text or remove the placeholder."},
+	{"DOC352", text.Hedging, "hedging word %q", "State the fact plainly, or say exactly when it holds."},
+	{"DOC353", text.Timeless, "time-bound word %q", "Say what is true regardless of the moment, or give a date."},
+}
+
+// checkText runs the word-based rules on every prose string.
+func (p *Project) checkText() {
+	for _, d := range p.Docs {
+		if !d.Parsed() {
+			continue
+		}
+		res := p.Cfg.For(d.Rel)
+		on := func(code string) bool { return res.Rule(code).Level != diag.Off }
+		strs := d.Strings()
+		for i := range strs {
+			sn := &strs[i]
+			if !sn.IsText() {
+				continue
+			}
+			s := sn.Node.Str
+			if on("DOC304") && sn.Field != "title" && strings.TrimSpace(s) == "" {
+				p.emit(d, "DOC304", sn.Node.Start, sn.Node.End, "the string is empty", "Fill it in or remove the field.")
+				continue
+			}
+			if on("DOC302") {
+				max := 2000
+				if st := res.Rule("DOC302").Params; st.HasMax {
+					max = st.Max
+				}
+				if n := utf8.RuneCountInString(s); n > max {
+					p.emit(d, "DOC302", sn.Node.Start, sn.Node.End, fmt.Sprintf("the text is %d characters long, the limit is %d", n, max),
+						"Split the text into several paragraphs or shorten it.")
+				}
+			}
+			for _, lr := range listRules {
+				if on(lr.code) {
+					p.listHits(d, sn, lr, res.Rule(lr.code))
+				}
+			}
+			if on("DOC354") {
+				p.pronouns(d, sn, res.Rule("DOC354"))
+			}
+			if on("DOC313") {
+				p.repeatedWords(d, sn, res.Rule("DOC313"))
+			}
+		}
+	}
+}
+
+func (p *Project) listHits(d *Doc, sn *StrNode, lr listRule, st config.Setting) {
+	var m, allow *text.Matcher
+	if lr.code == "DOC303" {
+		m = p.matcher(lr.builtin, nil)
+	} else {
+		m = p.matcher(lr.builtin, st.Params.Words)
+	}
+	if len(st.Params.Allow) > 0 {
+		allow = p.matcher(nil, st.Params.Allow)
+	}
+	s := sn.Node.Str
+	for _, sp := range sn.Scan().Plain {
+		seg := s[sp.Start:sp.End]
+		hits := m.Find(seg)
+		if allow != nil {
+			hits = text.Without(hits, allow.Find(seg))
+		}
+		for _, h := range hits {
+			a, b := d.Range(sn.Node, sp.Start+h.Start, sp.Start+h.End)
+			p.emit(d, lr.code, a, b, fmt.Sprintf(lr.msg, seg[h.Start:h.End]), lr.hint)
+		}
+	}
+}
+
+// pronouns implements DOC354: a value that starts with a bare pronoun.
+func (p *Project) pronouns(d *Doc, sn *StrNode, st config.Setting) {
+	s := sn.Node.Str
+	ws := text.Words(s)
+	if len(ws) == 0 || !sn.Scan().InPlain(ws[0].Start) {
+		return
+	}
+	first := ws[0]
+	if strings.TrimSpace(s[:first.Start]) != "" {
+		return
+	}
+	hits := p.matcher(text.Pronouns, st.Params.Words).Find(s[first.Start:first.End])
+	if len(hits) == 0 || hits[0].Start != 0 || hits[0].End != first.End-first.Start {
+		return
+	}
+	if len(st.Params.Allow) > 0 && len(p.matcher(nil, st.Params.Allow).Find(s[first.Start:first.End])) > 0 {
+		return
+	}
+	a, b := d.Range(sn.Node, first.Start, first.End)
+	p.emit(d, "DOC354", a, b, fmt.Sprintf("the text starts with the pronoun %q", first.Text),
+		"Name the subject instead of a pronoun.")
+}
+
+// repeatedWords implements DOC313 with an unsafe fix that deletes the repeat.
+func (p *Project) repeatedWords(d *Doc, sn *StrNode, st config.Setting) {
+	var allow *text.Matcher
+	if len(st.Params.Allow) > 0 {
+		allow = p.matcher(nil, st.Params.Allow)
+	}
+	s := sn.Node.Str
+	for _, sp := range sn.Scan().Plain {
+		seg := s[sp.Start:sp.End]
+		ws := text.Words(seg)
+		for i := 1; i < len(ws); i++ {
+			a, b := ws[i-1], ws[i]
+			if !strings.EqualFold(a.Text, b.Text) || !hasLetter(a.Text) {
+				continue
+			}
+			gap := seg[a.End:b.Start]
+			if gap == "" || strings.Trim(gap, " \t") != "" {
+				continue
+			}
+			if allow != nil && len(allow.Find(seg[a.Start:b.End])) > 0 {
+				continue
+			}
+			from, to := d.Range(sn.Node, sp.Start+a.End, sp.Start+b.End)
+			ra, rb := d.Range(sn.Node, sp.Start+a.Start, sp.Start+b.End)
+			if dg := p.emit(d, "DOC313", ra, rb, fmt.Sprintf("the word %q is repeated", a.Text), "Remove the repeated word."); dg != nil {
+				dg.Fix = &diag.Fix{Edits: []diag.Edit{{Start: from, End: to}}}
+			}
+		}
+	}
+}
+
+func hasLetter(s string) bool {
+	for _, r := range s {
+		if unicode.IsLetter(r) {
+			return true
+		}
+	}
+	return false
+}

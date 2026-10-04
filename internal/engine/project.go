@@ -16,6 +16,7 @@ import (
 	"github.com/santiment/docc/internal/loader"
 	"github.com/santiment/docc/internal/rules"
 	"github.com/santiment/docc/internal/schema"
+	"github.com/santiment/docc/internal/text"
 )
 
 var idRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
@@ -60,7 +61,8 @@ type Project struct {
 	Graph   map[string]*Doc // first document per id
 	Diags   []diag.Diagnostic
 
-	byFile map[string]*Doc
+	byFile   map[string]*Doc
+	matchers map[string]*text.Matcher
 }
 
 // UsageError is a problem with the environment (exit code 2).

@@ -1,0 +1,15 @@
+[
+  {
+    "code": "DOC308",
+    "rule": "markdown/unclosed-fence",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 36,
+    "endLine": 1,
+    "endColumn": 41,
+    "message": "a code fence is opened but never closed",
+    "hint": "Close the block with a matching fence line.",
+    "fixable": "none"
+  }
+]

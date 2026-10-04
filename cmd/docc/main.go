@@ -33,6 +33,9 @@ Commands:
 Flags: --format text|json, --config <file>, --max-diagnostics N, --max-warnings N
 `
 
+// say writes to a stream; a failed write to stdout or stderr has nowhere to go.
+func say(w io.Writer, format string, a ...any) { _, _ = fmt.Fprintf(w, format, a...) }
+
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
@@ -46,17 +49,17 @@ func usageErr(format string, a ...any) error { return &usageError{fmt.Sprintf(fo
 
 func run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprint(stderr, usage)
+		say(stderr, "%s", usage)
 		return 2
 	}
 	var err error
 	code := 0
 	switch args[0] {
 	case "--version", "-version", "version":
-		fmt.Fprintf(stdout, "docc %s\n", version)
+		say(stdout, "docc %s\n", version)
 		return 0
 	case "--help", "-h", "help":
-		fmt.Fprint(stdout, usage)
+		say(stdout, "%s", usage)
 		return 0
 	case "validate":
 		code, err = cmdValidate(args[1:], stdout)
@@ -71,11 +74,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 		var eu *engine.UsageError
 		switch {
 		case errors.As(err, &ue), errors.As(err, &eu):
-			fmt.Fprintf(stderr, "docc: error: %s\n", err)
+			say(stderr, "docc: error: %s\n", err)
 		case errors.As(err, &ce):
-			fmt.Fprintln(stderr, ce.Error())
+			say(stderr, "%s\n", ce.Error())
 		default:
-			fmt.Fprintf(stderr, "docc: error: %v\n", err)
+			say(stderr, "docc: error: %v\n", err)
 		}
 		return 2
 	}
@@ -136,8 +139,8 @@ func emit(stdout io.Writer, c *common, cfg *config.Config, ds []diag.Diagnostic)
 		if err := report.JSON(stdout, ds); err != nil {
 			return 2, err
 		}
-	} else {
-		report.Text(stdout, ds, c.maxDiag)
+	} else if err := report.Text(stdout, ds, c.maxDiag); err != nil {
+		return 2, err
 	}
 	errs, warns, _ := report.Counts(ds)
 	limit, has := c.maxWarnings, c.maxWarnings >= 0

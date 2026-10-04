@@ -1,0 +1,28 @@
+[
+  {
+    "code": "DOC304",
+    "rule": "text/empty-field",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 40,
+    "endLine": 1,
+    "endColumn": 45,
+    "message": "the string is empty",
+    "hint": "Fill it in or remove the field.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC304",
+    "rule": "text/empty-field",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 61,
+    "endLine": 1,
+    "endColumn": 63,
+    "message": "the string is empty",
+    "hint": "Fill it in or remove the field.",
+    "fixable": "none"
+  }
+]

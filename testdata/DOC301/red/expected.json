@@ -1,0 +1,93 @@
+[
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 24,
+    "endLine": 3,
+    "endColumn": 28,
+    "message": "forbidden word or phrase \"fast\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 33,
+    "endLine": 3,
+    "endColumn": 37,
+    "message": "forbidden word or phrase \"easy\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 39,
+    "endLine": 3,
+    "endColumn": 43,
+    "message": "forbidden word or phrase \"etc.\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 56,
+    "endLine": 3,
+    "endColumn": 62,
+    "message": "forbidden word or phrase \"быстро\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 65,
+    "endLine": 3,
+    "endColumn": 71,
+    "message": "forbidden word or phrase \"удобно\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 73,
+    "endLine": 3,
+    "endColumn": 79,
+    "message": "forbidden word or phrase \"и т.д.\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC301",
+    "rule": "text/forbidden-words",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 3,
+    "column": 89,
+    "endLine": 3,
+    "endColumn": 95,
+    "message": "forbidden word or phrase \"срочно\"",
+    "hint": "Replace it with a specific, measurable statement.",
+    "fixable": "none"
+  }
+]

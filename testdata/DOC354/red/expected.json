@@ -1,0 +1,41 @@
+[
+  {
+    "code": "DOC354",
+    "rule": "style/ambiguous-pronoun",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 31,
+    "endLine": 1,
+    "endColumn": 35,
+    "message": "the text starts with the pronoun \"This\"",
+    "hint": "Name the subject instead of a pronoun.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC354",
+    "rule": "style/ambiguous-pronoun",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 48,
+    "endLine": 1,
+    "endColumn": 51,
+    "message": "the text starts with the pronoun \"Это\"",
+    "hint": "Name the subject instead of a pronoun.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC354",
+    "rule": "style/ambiguous-pronoun",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 62,
+    "endLine": 1,
+    "endColumn": 68,
+    "message": "the text starts with the pronoun \"Данные\"",
+    "hint": "Name the subject instead of a pronoun.",
+    "fixable": "none"
+  }
+]

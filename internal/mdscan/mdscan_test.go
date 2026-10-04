@@ -88,3 +88,25 @@ func TestHTMLTags(t *testing.T) {
 		t.Errorf("%v", names)
 	}
 }
+
+func TestLinks(t *testing.T) {
+	sc := New("see [here](https://a.example/x) and https://b.example/y. Also `https://c.example` [ok text](rel.md)")
+	ls := sc.Links()
+	if len(ls) != 2 || ls[0].Text != "here" || ls[0].URL != "https://a.example/x" || ls[1].Text != "ok text" {
+		t.Fatalf("%+v", ls)
+	}
+	bare := sc.BareURLs()
+	if len(bare) != 1 || sc.S[bare[0].Start:bare[0].End] != "https://b.example/y" {
+		t.Fatalf("%+v", bare)
+	}
+}
+
+func TestIncludesAreNotPlainText(t *testing.T) {
+	sc := New("a {{x#y}} b `c` {{p#q}}")
+	if got := plainText(sc); got != "a | b | |" {
+		t.Errorf("plain: %q", got)
+	}
+	if len(sc.Includes()) != 2 || sc.Includes()[1].Inner != "p#q" {
+		t.Errorf("%+v", sc.Includes())
+	}
+}

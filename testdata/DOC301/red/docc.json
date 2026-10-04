@@ -1,0 +1,1 @@
+{ "rules": { "text/forbidden-words": { "words": ["срочн*"], "allow": ["быстро-быстро"] } } }

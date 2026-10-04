@@ -1,0 +1,15 @@
+[
+  {
+    "code": "DOC351",
+    "rule": "style/sentence-length",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 41,
+    "endLine": 1,
+    "endColumn": 94,
+    "message": "the sentence has 10 words, the limit is 5",
+    "hint": "Split the sentence into shorter ones.",
+    "fixable": "none"
+  }
+]

@@ -1,1 +1,1 @@
-{ "title": "Index", "links": ["a"], "body": "See [[b]]." }
+{ "title": "Index", "links": ["a", "b"], "body": "See [[b]]." }

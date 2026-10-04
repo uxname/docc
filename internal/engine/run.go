@@ -13,6 +13,11 @@ func (p *Project) Validate() []diag.Diagnostic {
 	p.checkGraph()
 	p.parseIgnores()
 	p.checkKinds()
+	p.checkText()
+	p.checkMarkdown()
+	p.checkStyle()
+	p.checkTitles()
+	p.checkLinks()
 	diag.Sort(p.Diags)
 	return p.Diags
 }

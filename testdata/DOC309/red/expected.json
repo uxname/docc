@@ -1,0 +1,28 @@
+[
+  {
+    "code": "DOC309",
+    "rule": "markdown/heading-in-field",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 40,
+    "endLine": 1,
+    "endColumn": 41,
+    "message": "a heading line inside a field breaks the structure of the output",
+    "hint": "Remove the leading # characters; the field name already becomes a heading.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC309",
+    "rule": "markdown/heading-in-field",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 70,
+    "endLine": 1,
+    "endColumn": 72,
+    "message": "a heading line inside a field breaks the structure of the output",
+    "hint": "Remove the leading # characters; the field name already becomes a heading.",
+    "fixable": "none"
+  }
+]
