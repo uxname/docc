@@ -78,7 +78,7 @@ Write a new decision document. Set the old one to `"status": "superseded"` and l
 
 ## Code tags
 
-With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// @covers req-lockout, req-password-length` in code links the file to documents. Ids are separated by commas; with a space only the first id is read (DOC401 reports it). docc checks that each id exists, nothing more. The pages in `docs/out` show `Covered by` and `Referenced by`.
+With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// docc: req-lockout#^limit, req-password-length` in code links the file to documents; the tag counts only when nothing but comment markers stands before it on the line. Targets are `id`, `id#field/section` or `id#^anchor`, separated by commas. `// docc:begin <targets>` … `// docc:end` marks a region of code instead of the whole file. DOC401 reports a target that does not resolve and a broken region; DOC403 reports a document whose kind schema sets `"x-docc-covered": true` and that no tag points to. The pages in `docs/out` show `Covered by` (file paths) and `Referenced by`.
 
 ## notes or hidden
 

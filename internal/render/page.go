@@ -289,19 +289,17 @@ func (r *Renderer) treeBlocks() []string {
 		for _, d := range un {
 			lines = append(lines, "- ["+titleOf(d)+"]("+r.href(d)+")")
 		}
-		out = append(out, "## Requirements without code coverage", strings.Join(lines, "\n"))
+		out = append(out, "## Documents without code coverage", strings.Join(lines, "\n"))
 	}
 	return out
 }
 
-// uncovered lists the requirements no code file covers; empty without trace.scan.
+// uncovered lists the documents of a covered kind no code tag points to
+// (DOC403); empty without trace.scan.
 func (r *Renderer) uncovered() []*engine.Doc {
 	var out []*engine.Doc
-	if len(r.P.Cfg.TraceScan) == 0 {
-		return nil
-	}
 	for _, d := range r.docs() {
-		if k := d.Root.Get("kind"); k != nil && k.Str == "requirement" && len(r.P.Covers[d.ID]) == 0 {
+		if r.P.NeedsCode(d) {
 			out = append(out, d)
 		}
 	}

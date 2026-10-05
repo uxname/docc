@@ -1,5 +1,8 @@
 package x
 
-// @covers real, ghost-one
+// docc: real, ghost-one
 func TestA() {}
-	// first @covers ghost-two and second @covers real
+	s := "docc: ghost-string"
+	// docc: real#nope, index#^nope
+// docc:begin real
+x := 1

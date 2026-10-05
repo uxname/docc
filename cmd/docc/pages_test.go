@@ -10,13 +10,13 @@ import (
 func TestPageMetaRelationsAndTable(t *testing.T) {
 	project(t, map[string]string{
 		"docc.json":           `{"trace":{"scan":["code/**"]}}`,
-		"code/a.go":           "package a\n\n// @covers req\n",
+		"code/a.go":           "package a\n\n// docc: req\n",
 		"docs/src/index.json": `{"title":"Index","body":"Start with [[req]]."}`,
 		"docs/src/req.json": `{"title":"Req","kind":"requirement","status":"accepted","priority":2,"tags":["x","y"],
 			"parent":"index","body":"Text.",
 			"acceptance":[{"given":"A","when":"B","then":"C | D"},{"given":"E","when":"F","then":"G"}]}`,
 		"docs/src/bare.json":            `{"title":"Bare","kind":"requirement","parent":"index"}`,
-		"docs/schemas/requirement.json": `{"additionalProperties":true}`,
+		"docs/schemas/requirement.json": `{"additionalProperties":true,"x-docc-covered":true}`,
 	})
 	if code, out, errs := do("build"); code != 0 {
 		t.Fatalf("%d %s %s", code, out, errs)
@@ -27,7 +27,7 @@ func TestPageMetaRelationsAndTable(t *testing.T) {
 		"| given | when | then |\n| --- | --- | --- |\n| A | B | C \\| D |",
 		"## Parent\n\n[Index](index.md)",
 		"## Referenced by\n\n- [Index](index.md)",
-		"## Covered by\n\n- `code/a.go:3`",
+		"## Covered by\n\n- `code/a.go`",
 	} {
 		if !strings.Contains(req, want) {
 			t.Errorf("req.md lacks %q:\n%s", want, req)
@@ -41,7 +41,7 @@ func TestPageMetaRelationsAndTable(t *testing.T) {
 		t.Errorf("index.md:\n%s", idx)
 	}
 	tree := readFile(t, "docs/out/_tree.md")
-	if !strings.Contains(tree, "## Requirements without code coverage\n\n- [Bare](bare.md)") || strings.Contains(tree, "- [Req](req.md)\n\n") && strings.Contains(strings.SplitN(tree, "without code coverage", 2)[1], "[Req]") {
+	if !strings.Contains(tree, "## Documents without code coverage\n\n- [Bare](bare.md)") || strings.Contains(tree, "- [Req](req.md)\n\n") && strings.Contains(strings.SplitN(tree, "without code coverage", 2)[1], "[Req]") {
 		t.Errorf("_tree.md:\n%s", tree)
 	}
 }
@@ -133,7 +133,7 @@ func TestHTMLBuild(t *testing.T) {
 			"parent":"index","statement":["Fact.","More."],"owner":"Team","stage":"alpha",
 			"body":"Click <a id=\"x\" onclick=\"evil()\">here</a>.","rows":[{"a":"one\ntwo","b":"x"}]}`,
 		"docs/src/h.json":               `{"title":"Hid","hidden":true,"parent":"index","body":"Secret"}`,
-		"docs/schemas/requirement.json": `{"additionalProperties":true}`,
+		"docs/schemas/requirement.json": `{"additionalProperties":true,"x-docc-covered":true}`,
 	})
 	if code, out, errs := do("build", "--html"); code != 0 || !strings.Contains(out, "built docs/out.html") {
 		t.Fatalf("%d %s %s", code, out, errs)
@@ -306,5 +306,22 @@ func TestSectionsIgnorePath(t *testing.T) {
 	sectionsProject(t, ignored)
 	if code, out, errs := do("validate"); code != 0 {
 		t.Errorf("docIgnore.path on a section: %d %s %s", code, out, errs)
+	}
+}
+
+func TestShiftedCodeKeepsOutput(t *testing.T) {
+	dir := project(t, map[string]string{
+		"docc.json":           `{"trace":{"scan":["code/**"]}}`,
+		"code/a.go":           "package a\n\n// docc: index\n",
+		"docs/src/index.json": `{"title":"Index"}`,
+	})
+	if code, out, errs := do("build"); code != 0 {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+	if err := os.WriteFile(dir+"/code/a.go", []byte("package a\n\nimport \"fmt\"\n\n// docc: index\nvar _ = fmt.Sprint\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, errs := do("check"); code != 0 {
+		t.Fatalf("moving a tag to another line must not change docs/out: %d %s %s", code, out, errs)
 	}
 }

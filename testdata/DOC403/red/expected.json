@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC403",
+    "rule": "trace/uncovered",
+    "level": "warn",
+    "file": "docs/src/req-a.json",
+    "line": 1,
+    "column": 48,
+    "endLine": 1,
+    "endColumn": 61,
+    "message": "no code tag points to \"req-a\", and kind \"requirement\" expects one",
+    "hint": "Add // docc: req-a to the code that implements it."
+  }
+]

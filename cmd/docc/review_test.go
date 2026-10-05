@@ -21,7 +21,7 @@ func TestTraceIgnoresBOMAndConfigPositions(t *testing.T) {
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"I"}`,
 		"docc.json":           `{"trace":{"scan":["tests/**"]}}`,
-		"tests/a.txt":         "\xEF\xBB\xBF// @covers nope\r\n",
+		"tests/a.txt":         "\xEF\xBB\xBF// docc: nope\r\n",
 	})
 	if _, out, _ := do("validate"); !strings.Contains(out, "tests/a.txt:1:4: error DOC401") {
 		t.Fatalf("%s", out)
@@ -37,16 +37,16 @@ func TestTraceIgnoresBOMAndConfigPositions(t *testing.T) {
 	}
 }
 
-func TestCoversWithoutComma(t *testing.T) {
+func TestTagWithoutComma(t *testing.T) {
 	project(t, map[string]string{
 		"docc.json":           `{"trace":{"scan":["*.go"]}}`,
 		"docs/src/index.json": `{"title":"I","body":"See [[a]] and [[b]]."}`,
 		"docs/src/a.json":     `{"title":"A"}`,
 		"docs/src/b.json":     `{"title":"B"}`,
-		"x.go":                "// @covers a b\n// @covers a, b\n",
+		"x.go":                "// docc: a b\n// docc: a, b\n",
 	})
 	_, out, _ := do("validate", "--format", "json")
-	if strings.Count(out, `"DOC401"`) != 1 || !strings.Contains(out, "Separate ids with commas") {
+	if strings.Count(out, `"DOC401"`) != 1 || !strings.Contains(out, "separate targets with commas") {
 		t.Fatalf("only the tag without a comma is reported:\n%s", out)
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/santiment/docc/internal/rules"
 	"github.com/santiment/docc/internal/schema"
 	"github.com/santiment/docc/internal/text"
+	"github.com/santiment/docc/internal/trace"
 )
 
 var idRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
@@ -63,7 +64,8 @@ type Project struct {
 	Docs    []*Doc          // every file with a valid name, ordered by path
 	Graph   map[string]*Doc // first document per id
 	Diags   []diag.Diagnostic
-	Covers  map[string][]string // document id -> "file:line" of its @covers tags (only when trace.scan is set)
+	Covers  map[string][]string  // document id -> sorted code files with a docc: tag to it (only when trace.scan is set)
+	Code    map[trace.Key]string // every resolved (code file, target) pair -> hash of its regions, "" for a plain tag
 
 	byFile   map[string]*Doc
 	matchers map[string]*text.Matcher
@@ -253,7 +255,7 @@ func (p *Project) DocByFile(file string) *Doc { return p.byFile[file] }
 // Off reports whether a rule is disabled, so a whole pass can be skipped.
 func (p *Project) Off(code string) bool { return !p.Cfg.Resolve().On(code) }
 
-// ReportFile adds a diagnostic on a generated or scanned file (DOC501, DOC401)
+// ReportFile adds a diagnostic on a generated or scanned file (DOC501)
 // and keeps the list sorted.
 func (p *Project) ReportFile(file, code string, line, col int, msg, hint string) {
 	p.emitFile(file, code, line, col, msg, hint)

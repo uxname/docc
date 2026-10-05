@@ -68,19 +68,28 @@ func (p *Project) anchors(d *Doc) {
 		if t == nil || !t.Parsed() {
 			continue // DOC202 or DOC101 speaks
 		}
-		name, block := strings.CutPrefix(r.Field, "^")
-		switch {
-		case block:
-			if t.Blocks[name] == nil {
-				p.emit(d, "DOC312", r.Start, r.End, fmt.Sprintf("document %q has no block anchor %q", r.Target, "^"+name),
-					"End a paragraph or list item of the target with \" ^"+name+"\", or fix the name.")
-			}
-		case ServiceFields[r.Field]:
-			p.emit(d, "DOC312", r.Start, r.End, fmt.Sprintf("%q is a service field and cannot be an anchor", r.Field),
-				"Point to a content field such as body or a free field.")
-		case Resolve(t.Root, r.Field) == nil:
-			p.emit(d, "DOC312", r.Start, r.End, fmt.Sprintf("document %q has no field %q", r.Target, r.Field),
-				"Use an existing top-level field or field/section.")
+		if msg, hint := fragmentProblem(t, r.Target, r.Field); msg != "" {
+			p.emit(d, "DOC312", r.Start, r.End, msg, hint)
 		}
 	}
+}
+
+// fragmentProblem explains why the fragment of [[id#field]] or of a code tag
+// does not resolve in the parsed document t; empty when it does.
+func fragmentProblem(t *Doc, id, field string) (msg, hint string) {
+	name, block := strings.CutPrefix(field, "^")
+	switch {
+	case block:
+		if t.Blocks[name] == nil {
+			return fmt.Sprintf("document %q has no block anchor %q", id, "^"+name),
+				"End a paragraph or list item of the target with \" ^" + name + "\", or fix the name."
+		}
+	case ServiceFields[field]:
+		return fmt.Sprintf("%q is a service field and cannot be an anchor", field),
+			"Point to a content field such as body or a free field."
+	case Resolve(t.Root, field) == nil:
+		return fmt.Sprintf("document %q has no field %q", id, field),
+			"Use an existing top-level field or field/section."
+	}
+	return "", ""
 }

@@ -1,0 +1,5 @@
+package a
+
+// docc:begin req-a#body
+func A() {}
+// docc:end

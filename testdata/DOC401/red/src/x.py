@@ -1,1 +1,1 @@
-# Привет @covers ghost-three
+# docc: ghost-three

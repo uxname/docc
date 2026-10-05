@@ -270,7 +270,7 @@ func (r *Renderer) navHTML() string {
 			l.WriteString(`<li><a href="#` + esc(d.ID) + `">` + esc(titleOf(d)) + `</a></li>`)
 		}
 		l.WriteString("</ul>")
-		group("Requirements without code coverage", len(un), l.String())
+		group("Documents without code coverage", len(un), l.String())
 	}
 	return b.String()
 }

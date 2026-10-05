@@ -42,7 +42,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "scan": { "type": "array", "items": { "type": "string" }, "description": "Masks from the project root for @covers tags; absent: DOC401 does not run." }
+        "scan": { "type": "array", "items": { "type": "string" }, "description": "Masks from the project root for docc: tags in code; absent: DOC401 and DOC403 do not run." }
       }
     }
   },

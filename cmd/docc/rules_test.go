@@ -16,7 +16,7 @@ func TestRulesList(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &rows); err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 31 { // 32 codes minus the generic DOC800 row
+	if len(rows) != 32 { // 33 codes minus the generic DOC800 row
 		t.Fatalf("%d rules", len(rows))
 	}
 	got := map[string]map[string]string{}
@@ -31,7 +31,7 @@ func TestRulesList(t *testing.T) {
 	}
 	_, text, _ := do("rules")
 	lines := strings.Split(strings.TrimSpace(text), "\n")
-	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 32 || strings.Contains(lines[0], "FIXABLE") {
+	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 33 || strings.Contains(lines[0], "FIXABLE") {
 		t.Fatalf("table:\n%s", text)
 	}
 	for _, ln := range lines {
@@ -99,14 +99,14 @@ func TestExplain(t *testing.T) {
 func TestTraceNeedsScan(t *testing.T) {
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"I"}`,
-		"tests/a_test.txt":    "// @covers ghost\n",
+		"tests/a_test.txt":    "// docc: ghost\n",
 	})
 	if code, out, _ := do("validate"); code != 0 {
 		t.Fatalf("without trace.scan DOC401 must not run: %d %s", code, out)
 	}
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"I"}`,
-		"tests/a_test.txt":    "// @covers ghost\n",
+		"tests/a_test.txt":    "// docc: ghost\n",
 		"docc.json":           `{"trace":{"scan":["tests/**"]}}`,
 	})
 	if code, out, _ := do("validate"); code != 1 || !strings.Contains(out, "tests/a_test.txt:1:4: error DOC401") {
