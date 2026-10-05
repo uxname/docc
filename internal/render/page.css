@@ -35,10 +35,9 @@ a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
 #tree ul{margin:0;padding:0;list-style:none}
 #tree ul ul{margin-left:.55rem;padding-left:.6rem;border-left:1px solid var(--line)}
 #tree li{position:relative}
-#tree a{display:block;padding:.28rem .5rem;border-radius:.4rem;color:var(--fg);text-decoration:none}
+#tree a{display:block;padding:.28rem .5rem .28rem 1.5rem;border-radius:.4rem;color:var(--fg);text-decoration:none}
 #tree a:hover{background:var(--accent-bg)}
 #tree a[aria-current=page]{background:var(--accent-bg);color:var(--accent);font-weight:600}
-#tree li.parent>a{padding-left:1.5rem}
 .tw{position:absolute;left:0;top:.3rem;width:1.4rem;height:1.4rem;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:.3rem}
 .tw::before{content:"▾";display:block;transition:transform .12s}
 .tw[aria-expanded=false]::before{transform:rotate(-90deg)}

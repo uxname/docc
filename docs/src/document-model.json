@@ -3,7 +3,7 @@
   "kind": "spec",
   "parent": "index",
   "links": ["rules", "rendering"],
-  "reviewed": { "rules": "c1d2bf7d", "rendering": "7d1763c9" },
+  "reviewed": { "rules": "c1d2bf7d", "rendering": "4ea7b976" },
   "body": [
     "A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected.",
     "The built-in schema requires only title. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docIgnore. Every other field is free and holds prose.",
