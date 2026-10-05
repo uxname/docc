@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/santiment/docc/internal/loader"
 )
@@ -22,9 +23,10 @@ func parentOf(d *Doc) *loader.Node {
 	return nil
 }
 
-// checkGraph emits DOC201-DOC205, DOC210 and DOC211.
+// checkGraph emits DOC201-DOC205 and DOC210-DOC212.
 func (p *Project) checkGraph() {
 	p.dupIDs()
+	p.dupAnchors()
 	p.brokenRefs()
 	p.parentCycles()
 	p.roots()
@@ -213,6 +215,53 @@ func (p *Project) roots() {
 	}
 }
 
+// dupAnchors emits DOC212: a block anchor repeats in the document or equals
+// the anchor of a field or section heading of its page.
+// ponytail: numbered heading anchors (scope-1 for a second "scope") are not counted.
+func (p *Project) dupAnchors() {
+	for _, d := range p.Docs {
+		if !d.Parsed() {
+			continue
+		}
+		heads := map[string]bool{}
+		var sections func(n *loader.Node)
+		sections = func(n *loader.Node) {
+			for _, m := range n.Members {
+				if m.Key != SectionsKey {
+					heads[HeadingAnchor(m.Key)] = true
+					if IsSections(m.Value) {
+						sections(m.Value)
+					}
+				}
+			}
+		}
+		for _, m := range d.Root.Members {
+			if !reservedKeys[m.Key] {
+				heads[HeadingAnchor(m.Key)] = true
+				if IsSections(m.Value) {
+					sections(m.Value)
+				}
+			}
+		}
+		strs := d.Strings()
+		for i := range strs {
+			sn := &strs[i]
+			if sn.Anchor == "" {
+				continue
+			}
+			a, b := d.Range(sn.Node, sn.AnchorAt+1, len(sn.Node.Str))
+			switch {
+			case d.Blocks[sn.Anchor] != sn:
+				p.emit(d, "DOC212", a, b, fmt.Sprintf("block anchor %q is already used in this document", "^"+sn.Anchor),
+					"Give each block anchor a name unique within the document.")
+			case heads[sn.Anchor]:
+				p.emit(d, "DOC212", a, b, fmt.Sprintf("block anchor %q equals the anchor of a heading on this page", "^"+sn.Anchor),
+					"Rename the block anchor: a link to it would land on the heading.")
+			}
+		}
+	}
+}
+
 type incNode struct{ doc, field string }
 
 // includes validates {{id#field}} (DOC211) and visibility (DOC210).
@@ -241,16 +290,19 @@ func (p *Project) includes() {
 			if !t.Parsed() {
 				continue // DOC101 on the target already
 			}
-			if ServiceFields[u.Field] {
+			to := incNode{u.Target, u.Field}
+			if name, ok := strings.CutPrefix(u.Field, "^"); ok {
+				if t.Blocks[name] == nil {
+					bad(fmt.Sprintf("document %q has no block anchor %q", u.Target, u.Field), "End a paragraph or list item of the target with \" "+u.Field+"\", or fix the name.")
+					continue
+				}
+			} else if ServiceFields[u.Field] {
 				bad(fmt.Sprintf("include cannot use the service field %q", u.Field), "Include a content field such as body or a free field.")
 				continue
-			}
-			v := Resolve(t.Root, u.Field)
-			if v == nil {
+			} else if v := Resolve(t.Root, u.Field); v == nil {
 				bad(fmt.Sprintf("document %q has no field %q", u.Target, u.Field), "Use an existing top-level field or field/section.")
 				continue
-			}
-			if !isText(v) {
+			} else if !isText(v) {
 				bad(fmt.Sprintf("field %q of %q is not text", u.Field, u.Target), "Include a field that is a string or a non-empty array of strings.")
 				continue
 			}
@@ -260,7 +312,11 @@ func (p *Project) includes() {
 					"A visible document cannot include text from a hidden one: make the target visible or remove the include.")
 			}
 			from := incNode{d.ID, u.SrcField}
-			edges[from] = append(edges[from], incNode{u.Target, u.Field})
+			edges[from] = append(edges[from], to)
+			if u.SrcAnchor != "" { // the anchored paragraph alone is an include source too
+				from = incNode{d.ID, "^" + u.SrcAnchor}
+				edges[from] = append(edges[from], to)
+			}
 		}
 	}
 	cyclic := cyclicNodes(edges)

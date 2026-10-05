@@ -81,7 +81,7 @@ func (p *Project) listHits(d *Doc, sn *StrNode, lr listRule, st config.Setting) 
 		allow = p.matcher(nil, st.Params.Allow)
 	}
 	s := sn.Node.Str
-	for _, sp := range sn.Scan().Plain {
+	for _, sp := range sn.Scan().Prose() {
 		seg := s[sp.Start:sp.End]
 		hits := m.Find(seg)
 		if allow != nil {
@@ -101,7 +101,7 @@ func (p *Project) repeatedWords(d *Doc, sn *StrNode, st config.Setting) {
 		allow = p.matcher(nil, st.Params.Allow)
 	}
 	s := sn.Node.Str
-	for _, sp := range sn.Scan().Plain {
+	for _, sp := range sn.Scan().Prose() {
 		seg := s[sp.Start:sp.End]
 		ws := text.Words(seg)
 		for i := 1; i < len(ws); i++ {

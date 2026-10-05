@@ -68,7 +68,13 @@ func (p *Project) anchors(d *Doc) {
 		if t == nil || !t.Parsed() {
 			continue // DOC202 or DOC101 speaks
 		}
+		name, block := strings.CutPrefix(r.Field, "^")
 		switch {
+		case block:
+			if t.Blocks[name] == nil {
+				p.emit(d, "DOC312", r.Start, r.End, fmt.Sprintf("document %q has no block anchor %q", r.Target, "^"+name),
+					"End a paragraph or list item of the target with \" ^"+name+"\", or fix the name.")
+			}
 		case ServiceFields[r.Field]:
 			p.emit(d, "DOC312", r.Start, r.End, fmt.Sprintf("%q is a service field and cannot be an anchor", r.Field),
 				"Point to a content field such as body or a free field.")

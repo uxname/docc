@@ -1,0 +1,26 @@
+[
+  {
+    "code": "DOC212",
+    "rule": "graph/duplicate-anchor",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 68,
+    "endLine": 1,
+    "endColumn": 70,
+    "message": "block anchor \"^a\" is already used in this document",
+    "hint": "Give each block anchor a name unique within the document."
+  },
+  {
+    "code": "DOC212",
+    "rule": "graph/duplicate-anchor",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 81,
+    "endLine": 1,
+    "endColumn": 92,
+    "message": "block anchor \"^scope-note\" equals the anchor of a heading on this page",
+    "hint": "Rename the block anchor: a link to it would land on the heading."
+  }
+]

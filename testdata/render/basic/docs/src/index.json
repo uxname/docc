@@ -5,7 +5,8 @@
   "tags": ["draft", "x"],
   "body": [
     "Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].",
-    "{{req#statement}}"
+    "{{req#statement}}",
+    "Quote: {{req#^first}}"
   ],
   "owner_name": "Team",
   "count": 3,

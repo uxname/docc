@@ -10,6 +10,8 @@ First fact.
 
 Second fact.
 
+Quote: First fact.
+
 ## Owner name
 
 Team

@@ -50,10 +50,12 @@ func (pg *page) refs(s string) string {
 			continue // validation rejects this; keep the text
 		}
 		anc, text := "", titleOf(t)
-		if hasField && field != "body" && field != "title" {
+		if name, ok := strings.CutPrefix(field, "^"); ok {
+			anc = name // a block anchor link reads as the document title
+		} else if hasField && field != "body" && field != "title" {
 			a := pg.r.anchorOf(t, engine.Resolve(t.Root, field))
 			if anc = a.anchor; anc == "" { // unknown path: the old guess, by the last key
-				anc = anchor(heading(field[strings.LastIndexByte(field, '/')+1:]))
+				anc = engine.HeadingAnchor(field[strings.LastIndexByte(field, '/')+1:])
 			}
 			if a.title != "" { // a section is named by its own title
 				text = a.title
@@ -67,10 +69,18 @@ func (pg *page) refs(s string) string {
 	return b.String()
 }
 
-// target returns the text elements of an include target field.
+// target returns the text elements of an include target field or block
+// anchor, without block anchor markers: the anchor stays on its own page.
 func (pg *page) target(id, field string) ([]string, bool) {
 	t := pg.r.P.Graph[id]
 	if t == nil || !t.Parsed() {
+		return nil, false
+	}
+	if name, ok := strings.CutPrefix(field, "^"); ok {
+		if sn := t.Blocks[name]; sn != nil {
+			text, _ := t.Block(sn.Node)
+			return []string{text}, true
+		}
 		return nil, false
 	}
 	v := engine.Resolve(t.Root, field)
@@ -79,14 +89,16 @@ func (pg *page) target(id, field string) ([]string, bool) {
 	}
 	switch v.Kind {
 	case loader.String:
-		return []string{v.Str}, true
+		text, _ := t.Block(v)
+		return []string{text}, true
 	case loader.Array:
 		var out []string
 		for _, it := range v.Items {
 			if it.Kind != loader.String {
 				return nil, false
 			}
-			out = append(out, it.Str)
+			text, _ := t.Block(it)
+			out = append(out, text)
 		}
 		return out, len(out) > 0
 	}
@@ -156,30 +168,49 @@ func (pg *page) expand(s string, depth int) []string {
 	return []string{b.String()}
 }
 
-// paragraphs renders the string values of a field as paragraphs.
+// paragraphs renders the string values of a field as paragraphs; a block
+// anchor marker turns into an anchor tag before its paragraph.
 func (pg *page) paragraphs(v *loader.Node, includes bool) []string {
-	var elems []string
+	var elems []*loader.Node
 	switch v.Kind {
 	case loader.String:
-		elems = []string{v.Str}
+		elems = []*loader.Node{v}
 	case loader.Array:
 		for _, it := range v.Items {
 			if it.Kind == loader.String {
-				elems = append(elems, it.Str)
+				elems = append(elems, it)
 			}
 		}
 	}
 	var out []string
-	for _, e := range elems {
+	for _, n := range elems {
+		e, tag := pg.block(n)
+		xs := []string{e}
 		if includes {
-			for _, x := range pg.expand(e, 0) {
-				out = append(out, pg.refs(x))
+			xs = pg.expand(e, 0)
+		}
+		for i, x := range xs {
+			if i == 0 {
+				x = tag + x
 			}
-		} else {
-			out = append(out, pg.refs(e))
+			out = append(out, pg.refs(x))
 		}
 	}
 	return out
+}
+
+// block returns the text of a string of this page without its block anchor
+// marker, and the anchor tag that replaces it ("" for none).
+func (pg *page) block(n *loader.Node) (text, tag string) {
+	text, name := pg.doc.Block(n)
+	switch {
+	case name == "":
+	case pg.r.single:
+		tag = pg.anchorTag(name)
+	default:
+		tag = `<a id="` + name + `"></a>`
+	}
+	return text, tag
 }
 
 // inline renders a string for use inside a list item: includes joined by
@@ -277,5 +308,9 @@ func (pg *page) item(it *loader.Node, indent, marker string, includes bool) []st
 		lines[0] = indent + marker + strings.TrimPrefix(lines[0], indent+pad)
 		return lines
 	}
-	return []string{indent + marker + indentLines(pg.inline(scalarText(it), includes && it.Kind == loader.String), indent+pad)}
+	text, tag := scalarText(it), ""
+	if includes && it.Kind == loader.String { // not in docIgnore
+		text, tag = pg.block(it)
+	}
+	return []string{indent + marker + tag + indentLines(pg.inline(text, includes && it.Kind == loader.String), indent+pad)}
 }

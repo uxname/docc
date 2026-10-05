@@ -20,6 +20,8 @@ First fact.
 
 Second fact.
 
+Quote: First fact.
+
 <a id="index--owner-name"></a>
 
 ## Owner name
@@ -97,7 +99,7 @@ Back to [Index](#index) and [Index](#index--owner-name).
 
 Given X.
 
-Then Y with [Requirement](#req--statement).
+Then Y with [Requirement](#req--statement) and [Requirement](#req--first).
 
 ## Parent
 
@@ -123,9 +125,22 @@ Requirement body, see [Deep doc](#deep--acceptance-criteria).
 
 ## Statement
 
-First fact.
+<a id="req--first"></a>First fact.
 
 Second fact.
+
+<a id="req--checks"></a>
+
+## Checks
+
+- <a id="req--check"></a>Plain check.
+- - **name:** n
+
+<a id="req--formula"></a>
+
+## Formula
+
+x ^2
 
 ## Parent
 

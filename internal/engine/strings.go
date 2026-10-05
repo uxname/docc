@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/santiment/docc/internal/loader"
 	"github.com/santiment/docc/internal/mdscan"
@@ -28,7 +30,46 @@ type StrNode struct {
 	Field string // top-level key
 	Path  string // field plus the section keys down to the value, joined by "/"
 	Notes bool   // inside notes: hidden from readers, text rules do not apply
-	scan  *mdscan.Scan
+	// Anchor is the block anchor name of a trailing " ^name", "" for none;
+	// the marker starts at AnchorAt.
+	Anchor   string
+	AnchorAt int
+	scan     *mdscan.Scan
+}
+
+// blockAnchor is a block anchor marker at the very end of a string. The name
+// starts with a letter, so "x ^2" and footnotes [^1] are not anchors.
+var blockAnchor = regexp.MustCompile(`\s\^([a-z][a-z0-9-]*)$`)
+
+// AnchorName reports whether s is a valid block anchor name.
+func AnchorName(s string) bool { return blockAnchor.MatchString(" ^" + s) }
+
+// Anchor builds a heading anchor: lower case, spaces to '-', punctuation
+// dropped, Unicode letters kept.
+func Anchor(h string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(h) {
+		switch {
+		case r == ' ':
+			b.WriteByte('-')
+		case unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_':
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// HeadingAnchor is the anchor of the heading of a field or section key.
+func HeadingAnchor(key string) string {
+	return Anchor(strings.NewReplacer("_", " ", "-", " ").Replace(key))
+}
+
+// SplitAnchor cuts a trailing block anchor marker from s.
+func SplitAnchor(s string) (text, name string) {
+	if m := blockAnchor.FindStringSubmatchIndex(s); m != nil {
+		return s[:m[0]], s[m[2]:m[3]]
+	}
+	return s, ""
 }
 
 func escTok(s string) string {
@@ -85,22 +126,30 @@ func (d *Doc) Strings() []StrNode {
 	for _, m := range d.Root.Members {
 		switch {
 		case m.Key == "title" || m.Key == "body" || !reservedKeys[m.Key]:
-			walk(m.Value, "/"+escTok(m.Key), m.Key, m.Key, !reservedKeys[m.Key], false, &d.strs)
+			walk(m.Value, "/"+escTok(m.Key), m.Key, m.Key, !reservedKeys[m.Key], false, m.Key != "title", &d.strs)
 		case m.Key == "notes":
-			walk(m.Value, "/notes", m.Key, m.Key, false, true, &d.strs)
+			walk(m.Value, "/notes", m.Key, m.Key, false, true, false, &d.strs)
 		}
 	}
 	return d.strs
 }
 
-// walk collects the strings below n; sec is true where n may be a set of sections.
-func walk(n *loader.Node, ptr, field, path string, sec, notes bool, out *[]StrNode) {
+// walk collects the strings below n; sec is true where n may be a set of
+// sections, blk where a string may carry a block anchor: the value of a field
+// or section and an array item, not a member of a list object or table row.
+func walk(n *loader.Node, ptr, field, path string, sec, notes, blk bool, out *[]StrNode) {
 	switch n.Kind {
 	case loader.String:
-		*out = append(*out, StrNode{Node: n, Ptr: ptr, Field: field, Path: path, Notes: notes})
+		sn := StrNode{Node: n, Ptr: ptr, Field: field, Path: path, Notes: notes}
+		if blk {
+			if m := blockAnchor.FindStringSubmatchIndex(n.Str); m != nil {
+				sn.Anchor, sn.AnchorAt = n.Str[m[2]:m[3]], m[0]
+			}
+		}
+		*out = append(*out, sn)
 	case loader.Array:
 		for i, it := range n.Items {
-			walk(it, ptr+"/"+strconv.Itoa(i), field, path, false, notes, out)
+			walk(it, ptr+"/"+strconv.Itoa(i), field, path, false, notes, blk, out)
 		}
 	case loader.Object:
 		isSec := sec && IsSections(n)
@@ -109,7 +158,7 @@ func walk(n *loader.Node, ptr, field, path string, sec, notes bool, out *[]StrNo
 			if isSec {
 				p += "/" + m.Key
 			}
-			walk(m.Value, ptr+"/"+escTok(m.Key), field, p, isSec, notes, out)
+			walk(m.Value, ptr+"/"+escTok(m.Key), field, p, isSec, notes, blk && isSec, out)
 		}
 	}
 }

@@ -1,1 +1,1 @@
-{ "title": "A", "parent": "index", "body": "B", "statement": "S", "kind": "page" }
+{ "title": "A", "parent": "index", "body": "B", "statement": "S ^s", "kind": "page" }

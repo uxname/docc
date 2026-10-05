@@ -68,13 +68,22 @@ func New(s string) *Scan {
 // skip includes, the inserted text is checked in its own document.
 func (sc *Scan) cutIncludes() {
 	sc.includes = sc.delimited("{{", "}}")
-	if len(sc.includes) == 0 {
-		return
+	sc.Plain = Without(sc.Plain, sc.includes)
+}
+
+// Prose returns the plain text without [[refs]]: word rules do not read ids
+// and anchor names.
+func (sc *Scan) Prose() []Span { return Without(sc.Plain, sc.Refs()) }
+
+// Without cuts the occurrences rs out of the spans.
+func Without(plain []Span, rs []Ref) []Span {
+	if len(rs) == 0 {
+		return plain
 	}
 	var out []Span
-	for _, sp := range sc.Plain {
+	for _, sp := range plain {
 		from := sp.Start
-		for _, in := range sc.includes {
+		for _, in := range rs {
 			if in.Start >= sp.Start && in.End <= sp.End {
 				if in.Start > from {
 					out = append(out, Span{from, in.Start})
@@ -86,7 +95,7 @@ func (sc *Scan) cutIncludes() {
 			out = append(out, Span{from, sp.End})
 		}
 	}
-	sc.Plain = out
+	return out
 }
 
 // fenceRun detects a fence line: up to 3 spaces, then 3+ of ` or ~.

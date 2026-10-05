@@ -14,6 +14,8 @@ Second fact.
 
 <!-- /include -->
 
+Quote: <!-- include req#^first -->First fact.<!-- /include -->
+
 ## Owner name
 
 Team

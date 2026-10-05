@@ -45,6 +45,9 @@ type Doc struct {
 	Refs    []RefUse
 	Incs    []IncUse
 	Ignores []*Ignore
+	Blocks  map[string]*StrNode // block anchor name -> first string with it
+
+	blockOf map[*loader.Node]*StrNode
 
 	strs []StrNode
 	done bool

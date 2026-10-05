@@ -2,6 +2,8 @@
   "title": "Requirement",
   "parent": "index",
   "body": "Requirement body, see [[deep#acceptance_criteria]].",
-  "statement": ["First fact.", "Second fact."],
+  "statement": ["First fact. ^first", "Second fact."],
+  "checks": ["Plain check. ^check", { "name": "n" }],
+  "formula": "x ^2",
   "kind": "page"
 }

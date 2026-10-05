@@ -134,20 +134,7 @@ func heading(key string) string {
 	return string(unicode.ToUpper(r)) + k[n:]
 }
 
-// anchor builds the heading anchor: lower case, spaces to '-', punctuation
-// dropped, Unicode letters kept.
-func anchor(h string) string {
-	var b strings.Builder
-	for _, r := range strings.ToLower(h) {
-		switch {
-		case r == ' ':
-			b.WriteByte('-')
-		case unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_':
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
-}
+var anchor = engine.Anchor
 
 // anchorInfo is the anchor of a field or section; title is set for a section.
 type anchorInfo struct{ anchor, title string }
@@ -166,7 +153,7 @@ func (r *Renderer) anchorOf(d *engine.Doc, n *loader.Node) anchorInfo {
 		r.slugs[d] = m
 		used := map[string]bool{}
 		add := func(v *loader.Node, key string, section bool) {
-			base := anchor(heading(key))
+			base := engine.HeadingAnchor(key)
 			id := base
 			for i := 1; used[id]; i++ {
 				id = base + "-" + strconv.Itoa(i)

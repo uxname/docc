@@ -183,6 +183,7 @@ a{color:inherit;text-decoration:none}
 <p>First fact.</p>
 <p>Second fact.</p>
 <!-- raw HTML omitted -->
+<p>Quote: <!-- raw HTML omitted -->First fact.<!-- raw HTML omitted --></p>
 <dl>
 <dt>Owner name<a id="index--owner-name"></a></dt>
 <dd>Team</dd>
@@ -262,7 +263,7 @@ line2</li>
 <p>Back to <a href="#index">Index</a> and <a href="#index--owner-name">Index</a>.</p>
 <h2 id="deep--acceptance-criteria">Acceptance criteria</h2>
 <p>Given X.</p>
-<p>Then Y with <a href="#req--statement">Requirement</a>.</p>
+<p>Then Y with <a href="#req--statement">Requirement</a> and <a href="#req--first">Requirement</a>.</p>
 </div>
 <h2 class="rh">Related</h2>
 <div class="related">
@@ -278,8 +279,19 @@ line2</li>
 <div class="doc">
 <p>Requirement body, see <a href="#deep--acceptance-criteria">Deep doc</a>.</p>
 <h2 id="req--statement">Statement</h2>
-<p>First fact.</p>
+<p><a id="req--first"></a>First fact.</p>
 <p>Second fact.</p>
+<h2 id="req--checks">Checks</h2>
+<ul>
+<li><a id="req--check"></a>Plain check.</li>
+<li>
+<ul>
+<li><strong>name:</strong> n</li>
+</ul>
+</li>
+</ul>
+<h2 id="req--formula">Formula</h2>
+<p>x ^2</p>
 </div>
 <h2 class="rh">Related</h2>
 <div class="related">

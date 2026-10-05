@@ -29,9 +29,21 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 80,
+    "column": 62,
     "endLine": 1,
-    "endColumn": 93,
+    "endColumn": 73,
+    "message": "document \"a\" has no block anchor \"^gone\"",
+    "hint": "End a paragraph or list item of the target with \" ^gone\", or fix the name."
+  },
+  {
+    "code": "DOC312",
+    "rule": "markdown/broken-anchor",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 93,
+    "endLine": 1,
+    "endColumn": 106,
     "message": "document \"a\" has no field \"missing\"",
     "hint": "Use an existing top-level field or field/section."
   }
