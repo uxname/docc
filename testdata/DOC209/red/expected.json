@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC209",
+    "rule": "graph/suspect-link",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 62,
+    "endLine": 1,
+    "endColumn": 74,
+    "message": "the target b#^limit changed after the link from index was confirmed",
+    "hint": "Check index against b#^limit, then run docc ack b#^limit."
+  }
+]

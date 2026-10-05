@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/text/unicode/norm"
+
 	"github.com/santiment/docc/internal/loader"
 )
 
@@ -14,12 +16,16 @@ import (
 // document without docIgnore and notes.
 func Fingerprint(root *loader.Node) string {
 	var b strings.Builder
-	canonical(&b, root, true)
+	canonical(&b, root, fingerprintSkip)
 	sum := sha256.Sum256([]byte(b.String()))
 	return hex.EncodeToString(sum[:])[:8]
 }
 
-func canonical(b *strings.Builder, n *loader.Node, top bool) {
+var fingerprintSkip = map[string]bool{"docIgnore": true, "notes": true}
+
+// canonical writes n as JSON with sorted keys and NFC strings; skip names the
+// keys dropped at the top level only.
+func canonical(b *strings.Builder, n *loader.Node, skip map[string]bool) {
 	switch n.Kind {
 	case loader.Null, loader.Bool, loader.Number:
 		b.WriteString(n.Str)
@@ -31,7 +37,7 @@ func canonical(b *strings.Builder, n *loader.Node, top bool) {
 			if i > 0 {
 				b.WriteByte(',')
 			}
-			canonical(b, it, false)
+			canonical(b, it, nil)
 		}
 		b.WriteByte(']')
 	case loader.Object:
@@ -46,7 +52,7 @@ func canonical(b *strings.Builder, n *loader.Node, top bool) {
 				continue
 			}
 			seen[m.Key] = true
-			if top && (m.Key == "docIgnore" || m.Key == "notes") {
+			if skip[m.Key] {
 				continue
 			}
 			items = append(items, kv{m.Key, m.Value})
@@ -59,7 +65,7 @@ func canonical(b *strings.Builder, n *loader.Node, top bool) {
 			}
 			quote(b, it.k)
 			b.WriteByte(':')
-			canonical(b, it.v, false)
+			canonical(b, it.v, nil)
 		}
 		b.WriteByte('}')
 	}
@@ -69,7 +75,7 @@ func canonical(b *strings.Builder, n *loader.Node, top bool) {
 // control characters as \u00XX.
 func quote(b *strings.Builder, s string) {
 	b.WriteByte('"')
-	for _, r := range s {
+	for _, r := range norm.NFC.String(s) {
 		switch {
 		case r == '"':
 			b.WriteString(`\"`)

@@ -29,7 +29,8 @@ Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources
   build              build Markdown into docs/out (--full: audit, --single/--html: one file)
-  check              read-only check for CI: validate + freshness of out/
+  check              read-only check for CI: validate + freshness of out/ and docc.lock
+  ack <id|file>...   confirm the links around a document, target or code file in docc.lock (--all: every link)
   explain <code>     describe a rule
   rules              list rules with effective levels
   schema document|config   print a JSON Schema
@@ -60,7 +61,8 @@ Examples:
 `,
 	"build": `Usage: docc build [flags]
 
-Validates and writes Markdown into docs/out. With errors in groups 1xx-2xx nothing is written.
+Validates and writes Markdown into docs/out and the links into docc.lock (new links are
+confirmed, vanished ones dropped). With errors in groups 1xx-2xx nothing is written.
 --single also writes every page into one Markdown file next to the directory (docs/out.md), --html
 into one self-contained HTML file (docs/out.html): a document tree, search, dark theme and print
 styles, no network needed. With --full the files are docs/out-full.md and docs/out-full.html. They
@@ -75,10 +77,23 @@ Examples:
 `,
 	"check": `Usage: docc check [flags]
 
-Read-only check for CI: validate, and fail (DOC501) when docs/out differs from the sources.
+Read-only check for CI: validate, and fail when docs/out (DOC501) or docc.lock (DOC503)
+differs from the sources.
 
 Example:
   docc check --max-warnings 0
+`,
+	"ack": `Usage: docc ack <id, target or code file>... | --all
+
+Confirms links in docc.lock after a review: sets the stored hashes of every line whose
+source or target is the argument, or whose target lies in the document with that id, to
+the current ones. This clears DOC209 and DOC402. New links are confirmed by docc build.
+
+Examples:
+  docc ack req-login
+  docc ack req-login#^limit
+  docc ack internal/auth/login.go
+  docc ack --all
 `,
 	"explain": `Usage: docc explain <code or rule name> [flags]
 
@@ -205,6 +220,8 @@ func dispatch(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 		return cmdInit(c, args[1:], stdout, stderr)
 	case "rules":
 		return cmdRules(c, args[1:], stdout)
+	case "ack":
+		return cmdAck(c, args[1:], stdout)
 	case "explain":
 		return cmdExplain(c, args[1:], stdout)
 	case "schema":
@@ -431,6 +448,9 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 	if err := render.Write(p.Cfg.Abs(dir), files); err != nil {
 		return 0, nil, err
 	}
+	if err := p.WriteLock(); err != nil {
+		return 0, nil, err
+	}
 	for _, ext := range []string{".md", ".html"} {
 		if content, ok := one[ext]; ok {
 			if err := render.WriteFile(paths[ext], content); err != nil {
@@ -503,8 +523,37 @@ func cmdCheck(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	if !engine.Structural(p.Diags) {
 		render.CheckFresh(p, cfg.Out, (&render.Renderer{P: p}).Files())
+		p.CheckLock()
 	}
 	return emit(stdout, stderr, c, p, p.Sorted())
+}
+
+func cmdAck(c *common, args []string, stdout io.Writer) (int, error) {
+	fs := newFlags("ack", c)
+	all := fs.Bool("all", false, "confirm every link")
+	pos, err := parse(fs, args)
+	if err == nil && *all == (len(pos) > 0) {
+		err = usageErr("give the ids, targets or code files to confirm, or --all")
+	}
+	if err == nil {
+		err = c.check()
+	}
+	if err != nil {
+		return 2, err
+	}
+	_, p, err := loadProject(c)
+	if err != nil {
+		return 2, err
+	}
+	n, err := p.Ack(pos, *all)
+	if err != nil {
+		return 2, err
+	}
+	if c.format == "json" {
+		return 0, writeJSON(stdout, map[string]any{"confirmed": n})
+	}
+	say(stdout, "confirmed %d links in %s\n", n, engine.LockFile)
+	return 0, nil
 }
 
 const initConfig = `{

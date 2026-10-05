@@ -17,6 +17,7 @@ func (p *Project) Validate() []diag.Diagnostic {
 	p.checkMarkdown()
 	p.checkCustom()
 	p.checkTrace()
+	p.checkLock()
 	p.suppress()
 	diag.Sort(p.Diags)
 	return p.Diags

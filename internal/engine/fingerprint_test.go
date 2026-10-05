@@ -20,7 +20,7 @@ func canon(t *testing.T, s string) string {
 	t.Helper()
 	r := loader.Parse([]byte(s))
 	var b strings.Builder
-	canonical(&b, r.Root, true)
+	canonical(&b, r.Root, fingerprintSkip)
 	return b.String()
 }
 

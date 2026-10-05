@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC402",
+    "rule": "trace/code-changed",
+    "level": "warn",
+    "file": "code/a.go",
+    "line": 3,
+    "column": 4,
+    "endLine": 3,
+    "endColumn": 4,
+    "message": "code region in code/a.go for index#^limit changed",
+    "hint": "Check the document index#^limit still matches, then run docc ack code/a.go."
+  }
+]

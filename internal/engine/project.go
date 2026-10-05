@@ -67,6 +67,7 @@ type Project struct {
 	Covers  map[string][]string  // document id -> sorted code files with a docc: tag to it (only when trace.scan is set)
 	Code    map[trace.Key]string // every resolved (code file, target) pair -> hash of its regions, "" for a plain tag
 
+	codeAt   map[trace.Key][2]int // first tag line and column per pair of Code
 	byFile   map[string]*Doc
 	matchers map[string]*text.Matcher
 }

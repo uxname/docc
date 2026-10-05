@@ -21,7 +21,7 @@ func (p *Project) checkTrace() {
 	if err != nil {
 		return
 	}
-	p.Covers, p.Code = map[string][]string{}, map[trace.Key]string{}
+	p.Covers, p.Code, p.codeAt = map[string][]string{}, map[trace.Key]string{}, map[trace.Key][2]int{}
 	bad := func(t trace.Tag, msg, hint string) {
 		p.emitFile(t.File, "DOC401", t.Line, t.Col, "bad code tag: "+msg, hint)
 	}
@@ -50,7 +50,11 @@ func (p *Project) checkTrace() {
 					continue
 				}
 			}
-			p.Code[trace.Key{File: t.File, Target: g}] = ""
+			k := trace.Key{File: t.File, Target: g}
+			if _, ok := p.codeAt[k]; !ok {
+				p.codeAt[k] = [2]int{t.Line, t.Col}
+			}
+			p.Code[k] = ""
 			if !slices.Contains(p.Covers[id], t.File) {
 				p.Covers[id] = append(p.Covers[id], t.File)
 			}
