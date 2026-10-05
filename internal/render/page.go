@@ -62,7 +62,7 @@ func (r *Renderer) page(d *engine.Doc) string {
 		var items []string
 		for _, f := range fields {
 			if shortValue(f.content) {
-				items = append(items, heading(f.key)+pg.anchorTag(r.anchorOf(d, f.node))+"\n:   "+f.content)
+				items = append(items, heading(f.key)+pg.anchorTag(r.anchorOf(d, f.node).anchor)+"\n:   "+f.content)
 			}
 		}
 		blocks = append(blocks, strings.Join(items, "\n\n"))
@@ -72,7 +72,7 @@ func (r *Renderer) page(d *engine.Doc) string {
 			continue
 		}
 		if r.anchors {
-			blocks = append(blocks, pg.anchorTag(r.anchorOf(d, f.node)))
+			blocks = append(blocks, pg.anchorTag(r.anchorOf(d, f.node).anchor))
 		}
 		blocks = append(blocks, "## "+heading(f.key), f.content)
 	}
@@ -143,7 +143,7 @@ func (pg *page) sections(v *loader.Node, level int) string {
 			continue
 		}
 		if pg.r.anchors {
-			blocks = append(blocks, pg.anchorTag(pg.r.anchorOf(pg.doc, m.Value)))
+			blocks = append(blocks, pg.anchorTag(pg.r.anchorOf(pg.doc, m.Value).anchor))
 		}
 		blocks = append(blocks, strings.Repeat("#", level)+" "+heading(m.Key))
 		if c := pg.fieldContent(m.Value, min(level+1, 6)); c != "" {

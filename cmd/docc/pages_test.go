@@ -229,6 +229,7 @@ func TestSectionsRenderLinkAndInclude(t *testing.T) {
 		"## 17.1 Critical\n\n### 17.1.2 No renewal date\n\nRule needs a date.",
 		"### Empty one\n\n### Deeper\n\n#### Same\n\ndeep text\n\n### Same\n\ntop text",
 		"## Plain\n\n- **timeout:** 5s", // a list object is unchanged
+		"Open: [Questions](questions.md#renewal-date).", // a link to a field keeps the title of the document
 	} {
 		if !strings.Contains(audit, want) {
 			t.Errorf("audit.md lacks %q:\n%s", want, audit)
@@ -240,7 +241,7 @@ func TestSectionsRenderLinkAndInclude(t *testing.T) {
 	q := readFile(t, "docs/out/questions.md")
 	// the first Same is "same", the second "same-1", and each link follows its own
 	for _, want := range []string{
-		"(audit.md#1712-no-renewal-date)", "(audit.md#same)", "(audit.md#same-1)", "deep text",
+		"[17.1.2 No renewal date](audit.md#1712-no-renewal-date)", "[Same](audit.md#same)", "[Same](audit.md#same-1)", "deep text",
 	} {
 		if !strings.Contains(q, want) {
 			t.Errorf("questions.md lacks %q:\n%s", want, q)

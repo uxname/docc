@@ -49,14 +49,18 @@ func (pg *page) refs(s string) string {
 		if t == nil || !pg.r.hasPage(t) {
 			continue // validation rejects this; keep the text
 		}
-		anc := ""
+		anc, text := "", titleOf(t)
 		if hasField && field != "body" && field != "title" {
-			if anc = pg.r.anchorOf(t, engine.Resolve(t.Root, field)); anc == "" { // unknown path: the old guess, by the last key
+			a := pg.r.anchorOf(t, engine.Resolve(t.Root, field))
+			if anc = a.anchor; anc == "" { // unknown path: the old guess, by the last key
 				anc = anchor(heading(field[strings.LastIndexByte(field, '/')+1:]))
+			}
+			if a.title != "" { // a section is named by its own title
+				text = a.title
 			}
 		}
 		b.WriteString(s[last:ref.Start])
-		b.WriteString(pg.link(t, titleOf(t), anc))
+		b.WriteString(pg.link(t, text, anc))
 		last = ref.End
 	}
 	b.WriteString(s[last:])

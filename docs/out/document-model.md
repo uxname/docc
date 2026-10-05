@@ -40,7 +40,7 @@ A free field can hold named sections: an object with the member `"$sections": tr
 
 An object without the marker is rendered as a bullet list, as before. The marker means nothing outside the value of a field or a section.
 
-A section is linked with `[[id#field/section]]` and included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules, docIgnore.path and DOC209 treat sections like fields. A kind schema describes the marker as `"properties": {"$sections": {"const": true}}`.
+A section is linked with `[[id#field/section]]`; the link text is the section title, not the title of the document. A section is included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules, docIgnore.path and DOC209 treat sections like fields. A kind schema describes the marker as `"properties": {"$sections": {"const": true}}`.
 
 ## Parent
 

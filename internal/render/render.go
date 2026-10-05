@@ -21,7 +21,7 @@ type Renderer struct {
 	Full bool
 
 	back    map[string][]*engine.Doc
-	slugs   map[*engine.Doc]map[*loader.Node]string
+	slugs   map[*engine.Doc]map[*loader.Node]anchorInfo
 	single  bool // single-file build: links are in-file anchors, no Header per page
 	anchors bool // single Markdown file: emit <a id> before pages and field headings
 	html    bool // single HTML file: pages carry only body and fields
@@ -149,33 +149,39 @@ func anchor(h string) string {
 	return b.String()
 }
 
-// anchorOf returns the anchor of a free field or section of d. Equal anchors on
-// one page are numbered -1, -2, ... in page order, as GitHub and the HTML build
-// do, so a link never lands on a namesake.
+// anchorInfo is the anchor of a field or section; title is set for a section.
+type anchorInfo struct{ anchor, title string }
+
+// anchorOf returns the anchor of a free field or section of d (and, for a
+// section, its title). Equal anchors on one page are numbered -1, -2, ... in
+// page order, as GitHub and the HTML build do, so a link never lands on a namesake.
 // ponytail: Markdown headings written inside body are not counted.
-func (r *Renderer) anchorOf(d *engine.Doc, n *loader.Node) string {
+func (r *Renderer) anchorOf(d *engine.Doc, n *loader.Node) anchorInfo {
 	if r.slugs == nil {
-		r.slugs = map[*engine.Doc]map[*loader.Node]string{}
+		r.slugs = map[*engine.Doc]map[*loader.Node]anchorInfo{}
 	}
 	m, ok := r.slugs[d]
 	if !ok {
-		m = map[*loader.Node]string{}
+		m = map[*loader.Node]anchorInfo{}
 		r.slugs[d] = m
 		used := map[string]bool{}
-		add := func(v *loader.Node, key string) {
+		add := func(v *loader.Node, key string, section bool) {
 			base := anchor(heading(key))
 			id := base
 			for i := 1; used[id]; i++ {
 				id = base + "-" + strconv.Itoa(i)
 			}
 			used[id] = true
-			m[v] = id
+			m[v] = anchorInfo{anchor: id}
+			if section {
+				m[v] = anchorInfo{id, oneLine.Replace(key)}
+			}
 		}
 		var sections func(v *loader.Node)
 		sections = func(v *loader.Node) {
 			for _, mem := range v.Members {
 				if mem.Key != engine.SectionsKey {
-					add(mem.Value, mem.Key)
+					add(mem.Value, mem.Key, true)
 					if engine.IsSections(mem.Value) {
 						sections(mem.Value)
 					}
@@ -184,7 +190,7 @@ func (r *Renderer) anchorOf(d *engine.Doc, n *loader.Node) string {
 		}
 		for _, mem := range d.Root.Members {
 			if !reserved[mem.Key] && !isEmpty(mem.Value) {
-				add(mem.Value, mem.Key)
+				add(mem.Value, mem.Key, false)
 				if engine.IsSections(mem.Value) {
 					sections(mem.Value)
 				}
