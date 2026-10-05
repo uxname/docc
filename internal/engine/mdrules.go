@@ -89,9 +89,9 @@ func (p *Project) anchors(d *Doc) {
 		case ServiceFields[r.Field]:
 			p.emit(d, "DOC312", r.Start, r.End, fmt.Sprintf("%q is a service field and cannot be an anchor", r.Field),
 				"Point to a content field such as body or a free field.")
-		case t.Root.Get(r.Field) == nil:
+		case Resolve(t.Root, r.Field) == nil:
 			p.emit(d, "DOC312", r.Start, r.End, fmt.Sprintf("document %q has no field %q", r.Target, r.Field),
-				"Use the name of an existing top-level field.")
+				"Use an existing top-level field or field/section.")
 		}
 	}
 }

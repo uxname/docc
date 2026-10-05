@@ -51,7 +51,9 @@ func (pg *page) refs(s string) string {
 		}
 		anc := ""
 		if hasField && field != "body" && field != "title" {
-			anc = anchor(heading(field))
+			if anc = pg.r.anchorOf(t, engine.Resolve(t.Root, field)); anc == "" { // unknown path: the old guess, by the last key
+				anc = anchor(heading(field[strings.LastIndexByte(field, '/')+1:]))
+			}
 		}
 		b.WriteString(s[last:ref.Start])
 		b.WriteString(pg.link(t, titleOf(t), anc))
@@ -67,7 +69,7 @@ func (pg *page) target(id, field string) ([]string, bool) {
 	if t == nil || !t.Parsed() {
 		return nil, false
 	}
-	v := t.Root.Get(field)
+	v := engine.Resolve(t.Root, field)
 	if v == nil {
 		return nil, false
 	}

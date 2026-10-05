@@ -15,7 +15,7 @@
 
     // heading anchors and copy buttons
     pages.forEach(function (p) {
-      $$('.doc h2[id]', p).forEach(function (h) {
+      $$('.doc h2[id], .doc h3[id], .doc h4[id]', p).forEach(function (h) {
         h.dataset.t = h.textContent;
         var a = document.createElement('a');
         a.className = 'anchor'; a.href = '#' + h.id; a.textContent = '#';
@@ -109,7 +109,7 @@
     // "On this page"
     function buildToc(page) {
       if (spy) { spy.disconnect(); spy = null; }
-      var hs = $$('.doc h2[id]', page);
+      var hs = $$('.doc h2[id], .doc h3[id], .doc h4[id]', page);
       tocBox.textContent = '';
       if (hs.length < 2) { tocBox.hidden = true; return; }
       var h = document.createElement('h2');
@@ -119,6 +119,7 @@
       hs.forEach(function (x) {
         var a = document.createElement('a');
         a.href = '#' + x.id; a.textContent = x.dataset.t;
+        a.className = 'l' + x.tagName.charAt(1);
         tocBox.appendChild(a); map[x.id] = a;
       });
       tocBox.hidden = false;

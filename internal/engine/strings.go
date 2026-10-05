@@ -26,6 +26,7 @@ type StrNode struct {
 	Node  *loader.Node
 	Ptr   string // JSON pointer of the value
 	Field string // top-level key
+	Path  string // field plus the section keys down to the value, joined by "/"
 	Notes bool   // inside notes: hidden from readers, text rules do not apply
 	scan  *mdscan.Scan
 }
@@ -35,6 +36,43 @@ func escTok(s string) string {
 		return s
 	}
 	return strings.ReplaceAll(strings.ReplaceAll(s, "~", "~0"), "/", "~1")
+}
+
+// SectionsKey marks an object whose other keys are section titles.
+const SectionsKey = "$sections"
+
+// IsSections reports whether the object is a set of sections: it has the
+// member "$sections": true. It counts only where a section may stand (a free
+// field or the value of a section); elsewhere it is an ordinary list object.
+func IsSections(n *loader.Node) bool {
+	m := n.Get(SectionsKey)
+	return m != nil && m.Kind == loader.Bool && m.Str == "true"
+}
+
+// Resolve finds a free field or a section by path: "field" or "field/section/...".
+// A key may itself contain "/", so every split is tried. Only sections are entered.
+func Resolve(root *loader.Node, path string) *loader.Node {
+	return resolve(root, path, true)
+}
+
+func resolve(n *loader.Node, path string, top bool) *loader.Node {
+	if n == nil || n.Kind != loader.Object || (!top && !IsSections(n)) {
+		return nil
+	}
+	for _, m := range n.Members {
+		if m.Key == SectionsKey {
+			continue
+		}
+		if m.Key == path {
+			return m.Value
+		}
+		if rest, ok := strings.CutPrefix(path, m.Key+"/"); ok && !(top && ServiceFields[m.Key]) {
+			if v := resolve(m.Value, rest, false); v != nil {
+				return v
+			}
+		}
+	}
+	return nil
 }
 
 // Strings returns every prose string of the document: title, body, free
@@ -47,25 +85,31 @@ func (d *Doc) Strings() []StrNode {
 	for _, m := range d.Root.Members {
 		switch {
 		case m.Key == "title" || m.Key == "body" || !reservedKeys[m.Key]:
-			walk(m.Value, "/"+escTok(m.Key), m.Key, false, &d.strs)
+			walk(m.Value, "/"+escTok(m.Key), m.Key, m.Key, !reservedKeys[m.Key], false, &d.strs)
 		case m.Key == "notes":
-			walk(m.Value, "/notes", m.Key, true, &d.strs)
+			walk(m.Value, "/notes", m.Key, m.Key, false, true, &d.strs)
 		}
 	}
 	return d.strs
 }
 
-func walk(n *loader.Node, ptr, field string, notes bool, out *[]StrNode) {
+// walk collects the strings below n; sec is true where n may be a set of sections.
+func walk(n *loader.Node, ptr, field, path string, sec, notes bool, out *[]StrNode) {
 	switch n.Kind {
 	case loader.String:
-		*out = append(*out, StrNode{Node: n, Ptr: ptr, Field: field, Notes: notes})
+		*out = append(*out, StrNode{Node: n, Ptr: ptr, Field: field, Path: path, Notes: notes})
 	case loader.Array:
 		for i, it := range n.Items {
-			walk(it, ptr+"/"+strconv.Itoa(i), field, notes, out)
+			walk(it, ptr+"/"+strconv.Itoa(i), field, path, false, notes, out)
 		}
 	case loader.Object:
+		isSec := sec && IsSections(n)
 		for _, m := range n.Members {
-			walk(m.Value, ptr+"/"+escTok(m.Key), field, notes, out)
+			p := path
+			if isSec {
+				p += "/" + m.Key
+			}
+			walk(m.Value, ptr+"/"+escTok(m.Key), field, p, isSec, notes, out)
 		}
 	}
 }

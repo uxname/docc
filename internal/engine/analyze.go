@@ -25,7 +25,7 @@ type IncUse struct {
 	Field      string
 	OK         bool // well formed (id#field)
 	Start, End int
-	SrcField   string // top-level field that contains the include
+	SrcField   string // field or section path that contains the include
 	Ptr        string
 	Valid      bool // target and field exist and hold text
 }
@@ -78,7 +78,7 @@ func (p *Project) analyze() {
 			for _, r := range sc.Includes() {
 				id, field, hasField, ok := splitRef(r.Inner)
 				a, b := d.Range(sn.Node, r.Start, r.End)
-				d.Incs = append(d.Incs, IncUse{Inner: r.Inner, Target: id, Field: field, OK: ok && hasField, Start: a, End: b, SrcField: sn.Field, Ptr: sn.Ptr})
+				d.Incs = append(d.Incs, IncUse{Inner: r.Inner, Target: id, Field: field, OK: ok && hasField, Start: a, End: b, SrcField: sn.Path, Ptr: sn.Ptr})
 			}
 		}
 	}

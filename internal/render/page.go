@@ -39,13 +39,16 @@ func (r *Renderer) page(d *engine.Doc) string {
 	if body := d.Root.Get("body"); body != nil {
 		blocks = append(blocks, pg.paragraphs(body, true)...)
 	}
-	type field struct{ key, content string }
+	type field struct {
+		key, content string
+		node         *loader.Node
+	}
 	var fields []field
 	short := 0
 	for _, m := range d.Root.Members {
 		if !reserved[m.Key] {
-			if c := pg.fieldContent(m.Value); c != "" {
-				fields = append(fields, field{m.Key, c})
+			if c := pg.fieldContent(m.Value, 3); c != "" {
+				fields = append(fields, field{m.Key, c, m.Value})
 				if shortValue(c) {
 					short++
 				}
@@ -59,7 +62,7 @@ func (r *Renderer) page(d *engine.Doc) string {
 		var items []string
 		for _, f := range fields {
 			if shortValue(f.content) {
-				items = append(items, heading(f.key)+pg.anchorTag(anchor(heading(f.key)))+"\n:   "+f.content)
+				items = append(items, heading(f.key)+pg.anchorTag(r.anchorOf(d, f.node))+"\n:   "+f.content)
 			}
 		}
 		blocks = append(blocks, strings.Join(items, "\n\n"))
@@ -69,7 +72,7 @@ func (r *Renderer) page(d *engine.Doc) string {
 			continue
 		}
 		if r.anchors {
-			blocks = append(blocks, pg.anchorTag(anchor(heading(f.key))))
+			blocks = append(blocks, pg.anchorTag(r.anchorOf(d, f.node)))
 		}
 		blocks = append(blocks, "## "+heading(f.key), f.content)
 	}
@@ -101,10 +104,14 @@ func shortValue(c string) bool {
 	return !strings.Contains(c, "\n") && utf8.RuneCountInString(c) <= 100 && !blockStart.MatchString(c)
 }
 
-// fieldContent renders the value of a free field.
-func (pg *page) fieldContent(v *loader.Node) string {
+// fieldContent renders the value of a free field or a section; level is the
+// heading level of its subsections.
+func (pg *page) fieldContent(v *loader.Node, level int) string {
 	if isEmpty(v) {
 		return ""
+	}
+	if engine.IsSections(v) {
+		return pg.sections(v, level)
 	}
 	if t := pg.table(v); t != "" {
 		return t
@@ -124,6 +131,26 @@ func (pg *page) fieldContent(v *loader.Node) string {
 		}
 	}
 	return strings.Join(pg.listLines(v, "", true), "\n")
+}
+
+// sections renders the members of a set of sections as headings of the given
+// level (at most 6), each followed by its content. A section stays visible
+// without content: a link to it must have a target.
+func (pg *page) sections(v *loader.Node, level int) string {
+	var blocks []string
+	for _, m := range v.Members {
+		if m.Key == engine.SectionsKey {
+			continue
+		}
+		if pg.r.anchors {
+			blocks = append(blocks, pg.anchorTag(pg.r.anchorOf(pg.doc, m.Value)))
+		}
+		blocks = append(blocks, strings.Repeat("#", level)+" "+heading(m.Key))
+		if c := pg.fieldContent(m.Value, min(level+1, 6)); c != "" {
+			blocks = append(blocks, c)
+		}
+	}
+	return strings.Join(blocks, "\n\n")
 }
 
 // serviceSections adds notes, docIgnore and reviewed to the audit build.

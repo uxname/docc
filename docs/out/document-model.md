@@ -16,13 +16,15 @@ Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one 
 
 A long text is an array of paragraphs, one per line of the file. The rules are applied to each element on its own.
 
+A reference can name a section inside a field: `[[id#field/section]]`. Sections are described below. DOC312 checks the whole path.
+
 ## Hidden material
 
 notes are for agents and never reach the Markdown. References inside notes are checked but give no reachability.
 
 A document with hidden set to true is checked like any other, gets no page and cannot be linked from a visible document.
 
-The include `{{id#field}}` is replaced at build time by the text of that field, so a fact is stored once.
+The include `{{id#field}}` or `{{id#field/section}}` is replaced at build time by the text of that field or section, so a fact is stored once.
 
 ## Confirmed links
 
@@ -31,6 +33,14 @@ The field reviewed confirms a link: it maps the id of a linked document to the f
 ## Suppression
 
 docIgnore lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.
+
+## Sections
+
+A free field can hold named sections: an object with the member `"$sections": true`, whose other keys are section titles. A value is text, an array of paragraphs, a list object or another set of sections. It is rendered as a second level heading for the field, third level for a section, and so on up to the sixth, in file order. A section without text keeps its heading, so a link to it has a target.
+
+An object without the marker is rendered as a bullet list, as before. The marker means nothing outside the value of a field or a section.
+
+A section is linked with `[[id#field/section]]` and included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules, docIgnore.path and DOC209 treat sections like fields. A kind schema describes the marker as `"properties": {"$sections": {"const": true}}`.
 
 ## Parent
 

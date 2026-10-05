@@ -8,7 +8,7 @@ One universal renderer produces a page per visible document at the path of its s
 
 The title is the first level heading. Under it comes one line with the kind, status, priority and tags separated by a middle dot, then the body without a heading of its own, then the free fields in file order, each as a second level section named after the field. At the end of the page come the sections Parent, Links, Referenced by (documents that point here through parent, links or references) and Covered by (code files with a covers tag, as file:line).
 
-A reference to a document becomes a relative link whose text is the title of the target; a reference to a field links to its section. Objects become bullet lists and arrays of objects become numbered lists; when every object has the same plain fields in the same order they become a table. Empty values create no section.
+A reference to a document becomes a relative link whose text is the title of the target; a reference to a field or to a section inside a field links to its heading. A field made of sections is a second level heading with third level headings (up to the sixth) for the sections; in the single HTML file they appear in the table of contents of the page. Objects become bullet lists and arrays of objects become numbered lists; when every object has the same plain fields in the same order they become a table. Empty values create no section.
 
 The file docs/out/_tree.md shows the documents nested by parent, starting with the roots. Pages with the same parent, and the pages without a parent, are sorted by title: ignoring case, numbers by value, Latin before Cyrillic, with the same rules on every machine; equal titles go by id.
 

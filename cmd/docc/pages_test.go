@@ -202,3 +202,106 @@ func TestTreeSortsSiblingsByTitle(t *testing.T) {
 		t.Errorf("order:\n got %s\nwant %s\n%s", strings.Join(got, " "), want, tree)
 	}
 }
+
+const sectionsAudit = `{"title":"Audit","parent":"index","body":"Intro.",
+	"17.1 Critical":{"$sections":true,
+		"17.1.2 No renewal date":["Rule needs a date.","Open: [[questions#Renewal date]]."],
+		"Empty one":"",
+		"Deeper":{"$sections":true,"Same":"deep text"},
+		"Same":"top text"},
+	"Plain":{"timeout":"5s"}}`
+
+func sectionsProject(t *testing.T, audit string) {
+	project(t, map[string]string{
+		"docs/src/index.json":     `{"title":"Index","links":["audit","questions"]}`,
+		"docs/src/audit.json":     audit,
+		"docs/src/questions.json": `{"title":"Questions","parent":"index","Renewal date":"See [[audit#17.1 Critical/17.1.2 No renewal date]] and [[audit#17.1 Critical/Deeper/Same]] and [[audit#17.1 Critical/Same]].","Copy":"{{audit#17.1 Critical/Deeper/Same}}"}`,
+	})
+}
+
+func TestSectionsRenderLinkAndInclude(t *testing.T) {
+	sectionsProject(t, sectionsAudit)
+	if code, out, errs := do("build", "--single"); code != 0 {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+	audit := readFile(t, "docs/out/audit.md")
+	for _, want := range []string{
+		"## 17.1 Critical\n\n### 17.1.2 No renewal date\n\nRule needs a date.",
+		"### Empty one\n\n### Deeper\n\n#### Same\n\ndeep text\n\n### Same\n\ntop text",
+		"## Plain\n\n- **timeout:** 5s", // a list object is unchanged
+	} {
+		if !strings.Contains(audit, want) {
+			t.Errorf("audit.md lacks %q:\n%s", want, audit)
+		}
+	}
+	if strings.Contains(audit, "$sections") {
+		t.Errorf("the marker leaks:\n%s", audit)
+	}
+	q := readFile(t, "docs/out/questions.md")
+	// the first Same is "same", the second "same-1", and each link follows its own
+	for _, want := range []string{
+		"(audit.md#1712-no-renewal-date)", "(audit.md#same)", "(audit.md#same-1)", "deep text",
+	} {
+		if !strings.Contains(q, want) {
+			t.Errorf("questions.md lacks %q:\n%s", want, q)
+		}
+	}
+	one := readFile(t, "docs/out.md")
+	for _, want := range []string{`<a id="audit--1712-no-renewal-date"></a>`, "(#audit--same-1)", "(#audit--1712-no-renewal-date)"} {
+		if !strings.Contains(one, want) {
+			t.Errorf("out.md lacks %q", want)
+		}
+	}
+	if code, out, errs := do("build", "--html"); code != 0 {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+	page := readFile(t, "docs/out.html")
+	for _, want := range []string{`<h3 id="audit--1712-no-renewal-date"`, `<h4 id="audit--same"`, `<h3 id="audit--same-1"`, `href="#audit--same-1"`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("out.html lacks %q", want)
+		}
+	}
+}
+
+func TestSectionsAnchorCheck(t *testing.T) {
+	sectionsProject(t, sectionsAudit)
+	if code, out, errs := do("validate"); code != 0 {
+		t.Fatalf("a valid path is rejected: %d %s %s", code, out, errs)
+	}
+	renamed := strings.Replace(sectionsAudit, "17.1.2 No renewal date", "17.1.2 Renamed", 1)
+	sectionsProject(t, renamed)
+	code, out, _ := do("validate")
+	if code == 0 || !strings.Contains(out, "DOC312") || !strings.Contains(out, "17.1 Critical/17.1.2 No renewal date") {
+		t.Errorf("a renamed section passes DOC312: %d %s", code, out)
+	}
+	// a plain object is not a set of sections: its keys are no anchors
+	sectionsProject(t, strings.Replace(sectionsAudit, `"Plain":{"timeout":"5s"}`, `"Plain":{"timeout":"5s"},"Other":"[[audit#Plain/timeout]]"`, 1))
+	if code, out, _ := do("validate"); code == 0 || !strings.Contains(out, "DOC312") {
+		t.Errorf("a key of a list object is an anchor: %d %s", code, out)
+	}
+}
+
+func TestSectionsIncludeCycle(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"Index","links":["a"],
+			"F":{"$sections":true,"one":"{{index#F/two}}","two":"{{index#F/one}}"}}`,
+		"docs/src/a.json": `{"title":"A","parent":"index"}`,
+	})
+	if code, out, _ := do("validate"); code == 0 || !strings.Contains(out, "DOC211") {
+		t.Errorf("a cycle between two sections of one field is missed: %d %s", code, out)
+	}
+}
+
+func TestSectionsIgnorePath(t *testing.T) {
+	sectionsProject(t, strings.Replace(sectionsAudit, `"Empty one":""`,
+		`"Empty one":"Very important text. [[audit#Nowhere]]"`, 1))
+	if code, out, _ := do("validate"); code == 0 || !strings.Contains(out, "DOC312") {
+		t.Fatalf("setup: %d %s", code, out)
+	}
+	ignored := strings.Replace(sectionsAudit, `"Empty one":""`, `"Empty one":"Very important text. [[audit#Nowhere]]"`, 1)
+	ignored = strings.Replace(ignored, `"Plain"`, `"docIgnore":[{"rule":"DOC312","reason":"r","path":"/17.1 Critical/Empty one"}],"Plain"`, 1)
+	sectionsProject(t, ignored)
+	if code, out, errs := do("validate"); code != 0 {
+		t.Errorf("docIgnore.path on a section: %d %s %s", code, out, errs)
+	}
+}

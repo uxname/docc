@@ -3,7 +3,7 @@
   "kind": "spec",
   "parent": "index",
   "links": ["config", "rendering"],
-  "reviewed": { "config": "30480bbf", "rendering": "56406e79" },
+  "reviewed": { "config": "30480bbf", "rendering": "16e60432" },
   "body": [
     "docc init creates docc.json, docs/schemas/page.json and docs/src/index.json (kind page) if they do not exist and builds docs/out, so the first check is green.",
     "docc validate checks the sources. With the flag fix it applies safe fixes; with fix and unsafe it applies the unsafe ones too.",

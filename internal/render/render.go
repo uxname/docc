@@ -4,6 +4,7 @@ package render
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -20,6 +21,7 @@ type Renderer struct {
 	Full bool
 
 	back    map[string][]*engine.Doc
+	slugs   map[*engine.Doc]map[*loader.Node]string
 	single  bool // single-file build: links are in-file anchors, no Header per page
 	anchors bool // single Markdown file: emit <a id> before pages and field headings
 	html    bool // single HTML file: pages carry only body and fields
@@ -145,4 +147,49 @@ func anchor(h string) string {
 		}
 	}
 	return b.String()
+}
+
+// anchorOf returns the anchor of a free field or section of d. Equal anchors on
+// one page are numbered -1, -2, ... in page order, as GitHub and the HTML build
+// do, so a link never lands on a namesake.
+// ponytail: Markdown headings written inside body are not counted.
+func (r *Renderer) anchorOf(d *engine.Doc, n *loader.Node) string {
+	if r.slugs == nil {
+		r.slugs = map[*engine.Doc]map[*loader.Node]string{}
+	}
+	m, ok := r.slugs[d]
+	if !ok {
+		m = map[*loader.Node]string{}
+		r.slugs[d] = m
+		used := map[string]bool{}
+		add := func(v *loader.Node, key string) {
+			base := anchor(heading(key))
+			id := base
+			for i := 1; used[id]; i++ {
+				id = base + "-" + strconv.Itoa(i)
+			}
+			used[id] = true
+			m[v] = id
+		}
+		var sections func(v *loader.Node)
+		sections = func(v *loader.Node) {
+			for _, mem := range v.Members {
+				if mem.Key != engine.SectionsKey {
+					add(mem.Value, mem.Key)
+					if engine.IsSections(mem.Value) {
+						sections(mem.Value)
+					}
+				}
+			}
+		}
+		for _, mem := range d.Root.Members {
+			if !reserved[mem.Key] && !isEmpty(mem.Value) {
+				add(mem.Value, mem.Key)
+				if engine.IsSections(mem.Value) {
+					sections(mem.Value)
+				}
+			}
+		}
+	}
+	return m[n]
 }

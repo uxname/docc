@@ -35,7 +35,7 @@
     "endLine": 4,
     "endColumn": 18,
     "message": "malformed include \"{{a}}\"",
-    "hint": "Write {{id#field}}: the id of an existing document, '#', and a top-level field with text.",
+    "hint": "Write {{id#field}}: the id of an existing document, '#', and a top-level field or field/section with text.",
     "fixable": "none"
   },
   {
@@ -61,7 +61,7 @@
     "endLine": 4,
     "endColumn": 52,
     "message": "document \"a\" has no field \"nope\"",
-    "hint": "Use the name of an existing top-level field.",
+    "hint": "Use an existing top-level field or field/section.",
     "fixable": "none"
   },
   {

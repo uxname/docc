@@ -240,7 +240,7 @@ func (p *Project) includes() {
 			}
 			if !u.OK {
 				bad(fmt.Sprintf("malformed include %q", "{{"+u.Inner+"}}"),
-					"Write {{id#field}}: the id of an existing document, '#', and a top-level field with text.")
+					"Write {{id#field}}: the id of an existing document, '#', and a top-level field or field/section with text.")
 				continue
 			}
 			t := p.Graph[u.Target]
@@ -256,9 +256,9 @@ func (p *Project) includes() {
 				bad(fmt.Sprintf("include cannot use the service field %q", u.Field), "Include a content field such as body or a free field.")
 				continue
 			}
-			v := t.Root.Get(u.Field)
+			v := Resolve(t.Root, u.Field)
 			if v == nil {
-				bad(fmt.Sprintf("document %q has no field %q", u.Target, u.Field), "Use the name of an existing top-level field.")
+				bad(fmt.Sprintf("document %q has no field %q", u.Target, u.Field), "Use an existing top-level field or field/section.")
 				continue
 			}
 			if !isText(v) {
