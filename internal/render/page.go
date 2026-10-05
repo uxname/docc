@@ -8,6 +8,8 @@ import (
 
 	"github.com/santiment/docc/internal/engine"
 	"github.com/santiment/docc/internal/loader"
+	"golang.org/x/text/collate"
+	"golang.org/x/text/language"
 )
 
 var reserved = map[string]bool{
@@ -152,8 +154,20 @@ type entry struct {
 	depth int
 }
 
-// layout nests the documents by parent: first those reachable from the roots,
-// then those without a visible parent (with their own children).
+// byTitle sorts siblings by the title shown on the page: case-insensitive,
+// numbers by value, Latin before Cyrillic. Equal titles fall back to the id, so
+// the order is the same on every build.
+func byTitle(c *collate.Collator, list []*engine.Doc) {
+	sort.Slice(list, func(i, j int) bool {
+		if n := c.CompareString(titleOf(list[i]), titleOf(list[j])); n != 0 {
+			return n < 0
+		}
+		return list[i].ID < list[j].ID
+	})
+}
+
+// layout nests the documents by parent (siblings by title): first those
+// reachable from the roots, then those without a visible parent (with their own children).
 func (r *Renderer) layout() (tree, orphans []entry) {
 	docs := r.docs()
 	isRoot := map[string]bool{}
@@ -180,10 +194,11 @@ func (r *Renderer) layout() (tree, orphans []entry) {
 			loose = append(loose, d)
 		}
 	}
+	c := collate.New(language.Und, collate.IgnoreCase, collate.Numeric) // a Collator is not safe for concurrent use
 	for _, list := range children {
-		sort.Slice(list, func(i, j int) bool { return list[i].ID < list[j].ID })
+		byTitle(c, list)
 	}
-	sort.Slice(loose, func(i, j int) bool { return loose[i].ID < loose[j].ID })
+	byTitle(c, loose)
 
 	seen := map[string]bool{}
 	var out *[]entry

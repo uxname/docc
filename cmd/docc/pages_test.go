@@ -173,3 +173,32 @@ func TestHTMLBuild(t *testing.T) {
 		t.Error("out-full.html lacks the hidden document")
 	}
 }
+
+func TestTreeSortsSiblingsByTitle(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"Index","body":"b"}`,
+		"docs/src/a1.json":    `{"title":"Яблоко","parent":"index"}`,
+		"docs/src/a2.json":    `{"title":"apple","parent":"index"}`,
+		"docs/src/a3.json":    `{"title":"Zebra","parent":"index"}`,
+		"docs/src/a4.json":    `{"title":"ёлка","parent":"index"}`,
+		"docs/src/a5.json":    `{"title":"Ель","parent":"index"}`,
+		"docs/src/a6.json":    `{"title":"10 Ten","parent":"index"}`,
+		"docs/src/a7.json":    `{"title":"2 Two","parent":"index"}`,
+		"docs/src/b2.json":    `{"title":"Same","parent":"index"}`,
+		"docs/src/b1.json":    `{"title":"Same","parent":"index"}`,
+	})
+	if code, out, errs := do("build"); code != 0 {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+	tree := readFile(t, "docs/out/_tree.md")
+	var got []string
+	for _, l := range strings.Split(tree, "\n") {
+		if m := regexp.MustCompile(`^\s+- \[(.+?)\]\((.+?)\.md\)`).FindStringSubmatch(l); m != nil {
+			got = append(got, m[1]+"="+m[2])
+		}
+	}
+	want := "2 Two=a7 10 Ten=a6 apple=a2 Same=b1 Same=b2 Zebra=a3 ёлка=a4 Ель=a5 Яблоко=a1"
+	if strings.Join(got, " ") != want {
+		t.Errorf("order:\n got %s\nwant %s\n%s", strings.Join(got, " "), want, tree)
+	}
+}
