@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 45,
     "message": "the string is empty",
-    "hint": "Fill it in or remove the field.",
-    "fixable": "none"
+    "hint": "Fill it in or remove the field."
   },
   {
     "code": "DOC304",
@@ -22,7 +21,6 @@
     "endLine": 1,
     "endColumn": 63,
     "message": "the string is empty",
-    "hint": "Fill it in or remove the field.",
-    "fixable": "none"
+    "hint": "Fill it in or remove the field."
   }
 ]

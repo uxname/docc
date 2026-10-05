@@ -1,10 +1,8 @@
 package config
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/santiment/docc/internal/diag"
@@ -14,15 +12,10 @@ import (
 
 // allowedParams lists the parameters each rule accepts besides "level".
 var allowedParams = map[string][]string{
-	"DOC301": {"words", "allow", "wordsFile", "allowFile"},
-	"DOC352": {"words", "allow", "wordsFile", "allowFile"},
-	"DOC353": {"words", "allow", "wordsFile", "allowFile"},
-	"DOC354": {"words", "allow", "wordsFile", "allowFile"},
-	"DOC306": {"allow", "allowFile", "threshold"},
-	"DOC313": {"allow", "allowFile"},
-	"DOC355": {"allow", "allowFile"},
-	"DOC302": {"max"},
-	"DOC351": {"max"},
+	"DOC301": {"words", "allow"},
+	"DOC352": {"words", "allow"},
+	"DOC353": {"words", "allow"},
+	"DOC313": {"allow"},
 }
 
 func parseLevel(s string) (diag.Level, bool) {
@@ -117,8 +110,6 @@ func (w *walker) entry(rk string, n *loader.Node) (*Entry, *Error) {
 		return nil, w.typeErr(n, `a level or an object with "level" and parameters`)
 	}
 	ent := &Entry{}
-	var wordsFile, allowFile []string
-	var wordsNode, allowNode *loader.Node
 	for _, m := range n.Members {
 		if m.Key == "level" {
 			l, e := w.level(m.Value)
@@ -128,7 +119,7 @@ func (w *walker) entry(rk string, n *loader.Node) (*Entry, *Error) {
 			ent.Level = &l
 			continue
 		}
-		if !contains(allowedParams[rk], m.Key) {
+		if !slices.Contains(allowedParams[rk], m.Key) {
 			return nil, w.errAt(m.KeyStart, "parameter %q is not supported by %s", m.Key, rk)
 		}
 		var e *Error
@@ -144,113 +135,12 @@ func (w *walker) entry(rk string, n *loader.Node) (*Entry, *Error) {
 			}
 		case "allow":
 			ent.Params.Allow, e = w.strs(m.Value)
-		case "wordsFile":
-			wordsFile, e = w.fileList(m.Value)
-			wordsNode = m.Value
-		case "allowFile":
-			allowFile, e = w.fileList(m.Value)
-			allowNode = m.Value
-		case "max":
-			ent.Params.Max, e = w.nonNegInt(m.Value)
-			ent.Params.HasMax = e == nil
-		case "threshold":
-			if m.Value.Kind != loader.Number {
-				e = w.typeErr(m.Value, "a number")
-			} else if _, err := fmt.Sscanf(m.Value.Str, "%g", &ent.Params.Threshold); err != nil || ent.Params.Threshold < 0 || ent.Params.Threshold > 1 {
-				e = w.errAt(m.Value.Start, "threshold must be between 0 and 1")
-			}
-			ent.Params.HasThreshold = e == nil
 		}
 		if e != nil {
 			return nil, e
 		}
 	}
-	for _, f := range wordsFile {
-		ws, err := readList(filepath.Join(w.root, filepath.FromSlash(f)))
-		if err != nil {
-			return nil, w.errAt(wordsNode.Start, "%s", err.Error())
-		}
-		ent.Params.Words = append(ent.Params.Words, ws...)
-	}
-	for _, f := range allowFile {
-		ws, err := readList(filepath.Join(w.root, filepath.FromSlash(f)))
-		if err != nil {
-			return nil, w.errAt(allowNode.Start, "%s", err.Error())
-		}
-		ent.Params.Allow = append(ent.Params.Allow, ws...)
-	}
 	return ent, nil
-}
-
-// fileList accepts one path or an array of paths.
-func (w *walker) fileList(n *loader.Node) ([]string, *Error) {
-	if n.Kind == loader.String {
-		return []string{n.Str}, nil
-	}
-	return w.strs(n)
-}
-
-// readList reads a word list: one entry per line, blank lines and lines
-// starting with '#' are ignored.
-func readList(p string) ([]string, error) {
-	data, err := os.ReadFile(p)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read word list: %v", err)
-	}
-	text := strings.TrimPrefix(string(data), "\xEF\xBB\xBF")
-	var out []string
-	for _, ln := range strings.Split(text, "\n") {
-		ln = strings.TrimSpace(ln)
-		if ln == "" || strings.HasPrefix(ln, "#") {
-			continue
-		}
-		out = append(out, ln)
-	}
-	return out, nil
-}
-
-func (w *walker) overrides(c *Config, n *loader.Node) *Error {
-	if n.Kind != loader.Array {
-		return w.typeErr(n, "an array")
-	}
-	for _, it := range n.Items {
-		if it.Kind != loader.Object {
-			return w.typeErr(it, "an object")
-		}
-		var ov Override
-		haveInclude := false
-		ov.Rules = RuleSet{ByRule: map[string]*Entry{}, ByGroup: map[string]diag.Level{}}
-		for _, m := range it.Members {
-			switch m.Key {
-			case "include":
-				masks, e := w.strs(m.Value)
-				if e != nil {
-					return e
-				}
-				haveInclude = true
-				for _, mk := range masks {
-					g, err := CompileGlob(mk)
-					if err != nil {
-						return w.errAt(m.Value.Start, "bad mask %q: %v", mk, err)
-					}
-					ov.Include = append(ov.Include, g)
-				}
-			case "rules":
-				rs, e := w.ruleSet(c, m.Value)
-				if e != nil {
-					return e
-				}
-				ov.Rules = rs
-			default:
-				return w.errAt(m.KeyStart, "unknown key %q", m.Key)
-			}
-		}
-		if !haveInclude {
-			return w.errAt(it.Start, `override needs "include"`)
-		}
-		c.Overrides = append(c.Overrides, ov)
-	}
-	return nil
 }
 
 var customID = regexp.MustCompile(`^custom/[a-z0-9-]+$`)
@@ -287,7 +177,6 @@ func (w *walker) customRules(c *Config, n *loader.Node) *Error {
 				cr.Hint, e = w.str(m.Value)
 			case "kind":
 				cr.Kind, e = w.str(m.Value)
-				cr.KindOff = m.Value.Start
 			case "given":
 				cr.Given, e = w.str(m.Value)
 				if e == nil && !strings.HasPrefix(cr.Given, "/") {

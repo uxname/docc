@@ -14,7 +14,6 @@ import (
 	"github.com/santiment/docc/internal/config"
 	"github.com/santiment/docc/internal/diag"
 	"github.com/santiment/docc/internal/engine"
-	"github.com/santiment/docc/internal/fixes"
 	"github.com/santiment/docc/internal/render"
 	"github.com/santiment/docc/internal/report"
 	"github.com/santiment/docc/internal/schema"
@@ -28,7 +27,7 @@ Usage: docc [flags] <command> [flags]
 
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
-  validate           check sources (--fix applies safe fixes)
+  validate           check sources
   build              build Markdown into docs/out (--full: audit, --single/--html: one file)
   check              read-only check for CI: validate + freshness of out/
   explain <code>     describe a rule
@@ -58,7 +57,6 @@ warnings than --max-warnings.
 
 Examples:
   docc validate --format json
-  docc validate --fix
 `,
 	"build": `Usage: docc build [flags]
 
@@ -96,7 +94,6 @@ Lists every rule with its effective level.
 
 Examples:
   docc rules
-  docc rules --file docs/src/index.json
 `,
 	"schema": `Usage: docc schema document|config
 
@@ -336,8 +333,6 @@ func emit(stdout, stderr io.Writer, c *common, p *engine.Project, ds []diag.Diag
 
 func cmdValidate(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	fs := newFlags("validate", c)
-	fix := fs.Bool("fix", false, "apply safe fixes")
-	unsafe := fs.Bool("unsafe", false, "with --fix: also unsafe fixes")
 	pos, err := parse(fs, args)
 	if err != nil {
 		return 2, err
@@ -348,21 +343,9 @@ func cmdValidate(c *common, args []string, stdout, stderr io.Writer) (int, error
 	if err := c.check(); err != nil {
 		return 2, err
 	}
-	if *unsafe && !*fix {
-		return 2, usageErr("--unsafe needs --fix")
-	}
 	cfg, err := loadConfig(c)
 	if err != nil {
 		return 2, err
-	}
-	if *fix {
-		edits, files, err := fixes.Run(func() (*engine.Project, error) { return engine.Load(cfg) }, *unsafe)
-		if err != nil {
-			return 2, err
-		}
-		if c.format == "text" && edits > 0 {
-			say(stdout, "applied %d fixes in %d files\n", edits, files)
-		}
 	}
 	p, err := engine.Load(cfg)
 	if err != nil {
@@ -504,18 +487,9 @@ func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 
 func cmdCheck(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	fs := newFlags("check", c)
-	fs.Bool("fix", false, "")
-	fs.Bool("unsafe", false, "")
 	pos, err := parse(fs, args)
 	if err == nil {
 		err = noArgs(pos)
-	}
-	if err == nil {
-		fs.Visit(func(f *flag.Flag) {
-			if f.Name == "fix" || f.Name == "unsafe" {
-				err = usageErr("--%s works only with validate", f.Name)
-			}
-		})
 	}
 	if err == nil {
 		err = c.check()

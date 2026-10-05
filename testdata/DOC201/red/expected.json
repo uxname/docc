@@ -9,7 +9,6 @@
     "endLine": 1,
     "endColumn": 1,
     "message": "id \"x\" is already used by docs/src/a/x.json",
-    "hint": "Rename one of the files: the file name (without .json) is the document id and must be unique.",
-    "fixable": "none"
+    "hint": "Rename one of the files: the file name (without .json) is the document id and must be unique."
   }
 ]

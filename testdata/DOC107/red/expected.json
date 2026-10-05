@@ -5,24 +5,10 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 29,
+    "column": 39,
     "endLine": 1,
-    "endColumn": 35,
-    "message": "kind \"memo\" is not in the kinds registry",
-    "hint": "Use one of: note; or add the value to \"kinds\" in docc.json.",
-    "fixable": "none"
-  },
-  {
-    "code": "DOC107",
-    "rule": "schema/unregistered",
-    "level": "error",
-    "file": "docs/src/index.json",
-    "line": 1,
-    "column": 55,
-    "endLine": 1,
-    "endColumn": 60,
+    "endColumn": 44,
     "message": "tag \"wip\" is not in the tags registry",
-    "hint": "Use one of: draft; or add the value to \"tags\" in docc.json.",
-    "fixable": "none"
+    "hint": "Use one of: draft; or add the value to \"tags\" in docc.json."
   }
 ]

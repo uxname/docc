@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 38,
     "message": "the word \"The\" is repeated",
-    "hint": "Remove the repeated word.",
-    "fixable": "unsafe"
+    "hint": "Remove the repeated word."
   },
   {
     "code": "DOC313",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 63,
     "message": "the word \"в\" is repeated",
-    "hint": "Remove the repeated word.",
-    "fixable": "unsafe"
+    "hint": "Remove the repeated word."
   },
   {
     "code": "DOC313",
@@ -35,7 +33,6 @@
     "endLine": 1,
     "endColumn": 84,
     "message": "the word \"Done\" is repeated",
-    "hint": "Remove the repeated word.",
-    "fixable": "unsafe"
+    "hint": "Remove the repeated word."
   }
 ]

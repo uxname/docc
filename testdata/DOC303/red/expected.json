@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 35,
     "message": "placeholder \"TODO\" is left in the text",
-    "hint": "Write the real text or remove the placeholder.",
-    "fixable": "none"
+    "hint": "Write the real text or remove the placeholder."
   },
   {
     "code": "DOC303",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 54,
     "message": "placeholder \"tbd\" is left in the text",
-    "hint": "Write the real text or remove the placeholder.",
-    "fixable": "none"
+    "hint": "Write the real text or remove the placeholder."
   },
   {
     "code": "DOC303",
@@ -35,8 +33,7 @@
     "endLine": 1,
     "endColumn": 63,
     "message": "placeholder \"Lorem\" is left in the text",
-    "hint": "Write the real text or remove the placeholder.",
-    "fixable": "none"
+    "hint": "Write the real text or remove the placeholder."
   },
   {
     "code": "DOC303",
@@ -48,7 +45,6 @@
     "endLine": 1,
     "endColumn": 90,
     "message": "placeholder \"???\" is left in the text",
-    "hint": "Write the real text or remove the placeholder.",
-    "fixable": "none"
+    "hint": "Write the real text or remove the placeholder."
   }
 ]

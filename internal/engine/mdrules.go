@@ -7,17 +7,13 @@ import (
 	"github.com/santiment/docc/internal/diag"
 )
 
-var vagueLinkText = map[string]bool{
-	"здесь": true, "тут": true, "ссылка": true, "here": true, "link": true, "click here": true,
-}
-
 // checkMarkdown runs DOC308-DOC312.
 func (p *Project) checkMarkdown() {
 	for _, d := range p.Docs {
 		if !d.Parsed() {
 			continue
 		}
-		res := p.Cfg.For(d.Rel)
+		res := p.Cfg.Resolve()
 		on := func(code string) bool { return res.Rule(code).Level != diag.Off }
 		strs := d.Strings()
 		for i := range strs {
@@ -53,19 +49,6 @@ func (p *Project) checkMarkdown() {
 					a, b := d.Range(sn.Node, tg.Start, tg.End)
 					p.emit(d, "DOC310", a, b, fmt.Sprintf("raw HTML tag <%s> in the text", tg.Name),
 						"Use Markdown instead of HTML; scripts are never allowed.")
-				}
-			}
-			if on("DOC311") {
-				for _, l := range sc.Links() {
-					if vagueLinkText[strings.ToLower(strings.TrimSpace(l.Text))] {
-						a, b := d.Range(sn.Node, l.TextStart, l.TextEnd)
-						p.emit(d, "DOC311", a, b, fmt.Sprintf("link text %q says nothing about the target", l.Text),
-							"Describe the target in the link text.")
-					}
-				}
-				for _, u := range sc.BareURLs() {
-					a, b := d.Range(sn.Node, u.Start, u.End)
-					p.emit(d, "DOC311", a, b, "bare URL in the text", "Wrap it as [description](url).")
 				}
 			}
 		}

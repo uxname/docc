@@ -13,7 +13,7 @@ import (
 )
 
 var reserved = map[string]bool{
-	"$schema": true, "title": true, "kind": true, "status": true, "parent": true,
+	"title": true, "kind": true, "status": true, "parent": true,
 	"links": true, "body": true, "tags": true, "priority": true, "notes": true, "hidden": true,
 	"reviewed": true, "docIgnore": true,
 }

@@ -5,7 +5,6 @@
   "type": "object",
   "required": ["title"],
   "properties": {
-    "$schema": { "type": "string", "description": "Path to a kind schema, for editor autocompletion; ignored by docc." },
     "title": { "type": "string", "pattern": "\\S", "description": "Non-empty heading of the document." },
     "kind": { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "Document kind; selects docs/schemas/<kind>.json." },
     "status": { "type": "string", "description": "Allowed values are set by the kind schema." },

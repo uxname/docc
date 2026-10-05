@@ -5,13 +5,11 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "$schema": { "type": "string" },
     "src": { "type": "string", "default": "docs/src", "description": "Source documents, relative to the project root." },
     "out": { "type": "string", "default": "docs/out", "description": "Generated Markdown (committed)." },
     "schemas": { "type": "string", "default": "docs/schemas", "description": "Kind schemas: <kind>.json." },
     "outFull": { "type": "string", "default": "docs/out-full", "description": "Audit build (docc build --full), not committed." },
     "roots": { "type": "array", "items": { "type": "string" }, "minItems": 1, "default": ["index"], "description": "Ids of the root documents; reachability is counted from them." },
-    "kinds": { "type": "array", "items": { "type": "string" }, "description": "Registry of allowed kinds; absent: no registry." },
     "tags": { "type": "array", "items": { "type": "string" }, "description": "Registry of allowed tags; absent: no registry." },
     "recommended": { "type": "boolean", "default": true, "description": "false turns the recommended preset off; core rules stay on." },
     "maxWarnings": { "type": "integer", "minimum": 0, "description": "Exit code 1 when there are more warnings than this." },
@@ -20,18 +18,6 @@
       "description": "Rule code, rule name or group name to a level or an object with parameters.",
       "propertyNames": { "enum": [] },
       "additionalProperties": { "$ref": "#/$defs/ruleSetting" }
-    },
-    "overrides": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["include"],
-        "additionalProperties": false,
-        "properties": {
-          "include": { "type": "array", "items": { "type": "string" }, "description": "Masks relative to src: * does not cross /, ** does." },
-          "rules": { "type": "object", "propertyNames": { "enum": [] }, "additionalProperties": { "$ref": "#/$defs/ruleSetting" } }
-        }
-      }
     },
     "customRules": {
       "type": "array",
@@ -71,11 +57,7 @@
           "properties": {
             "level": { "$ref": "#/$defs/level" },
             "words": { "type": "array", "items": { "type": "string" } },
-            "allow": { "type": "array", "items": { "type": "string" } },
-            "wordsFile": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] },
-            "allowFile": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] },
-            "max": { "type": "integer", "minimum": 0 },
-            "threshold": { "type": "number", "minimum": 0, "maximum": 1 }
+            "allow": { "type": "array", "items": { "type": "string" } }
           }
         }
       ]

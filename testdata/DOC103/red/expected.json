@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 17,
     "message": "the title is empty",
-    "hint": "Write a short, meaningful title.",
-    "fixable": "none"
+    "hint": "Write a short, meaningful title."
   },
   {
     "code": "DOC103",
@@ -22,7 +21,6 @@
     "endLine": 1,
     "endColumn": 2,
     "message": "the document has no title",
-    "hint": "Add a non-empty \"title\" string.",
-    "fixable": "none"
+    "hint": "Add a non-empty \"title\" string."
   }
 ]

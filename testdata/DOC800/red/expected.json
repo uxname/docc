@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 75,
     "message": "A requirement statement must contain \"must\"",
-    "hint": "",
-    "fixable": "none"
+    "hint": ""
   },
   {
     "code": "DOC800",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 1,
     "message": "A requirement statement must contain \"must\"",
-    "hint": "",
-    "fixable": "none"
+    "hint": ""
   },
   {
     "code": "DOC800",
@@ -35,8 +33,7 @@
     "endLine": 1,
     "endColumn": 87,
     "message": "Replace «множество» with a number",
-    "hint": "State an exact value",
-    "fixable": "none"
+    "hint": "State an exact value"
   },
   {
     "code": "DOC352",
@@ -48,8 +45,7 @@
     "endLine": 1,
     "endColumn": 104,
     "message": "hedging word \"maybe\"",
-    "hint": "State the fact plainly, or say exactly when it holds.",
-    "fixable": "none"
+    "hint": "State the fact plainly, or say exactly when it holds."
   },
   {
     "code": "DOC800",
@@ -61,8 +57,7 @@
     "endLine": 1,
     "endColumn": 104,
     "message": "No hedging in criteria",
-    "hint": "",
-    "fixable": "none"
+    "hint": ""
   },
   {
     "code": "DOC352",
@@ -74,8 +69,7 @@
     "endLine": 1,
     "endColumn": 137,
     "message": "hedging word \"maybe\"",
-    "hint": "State the fact plainly, or say exactly when it holds.",
-    "fixable": "none"
+    "hint": "State the fact plainly, or say exactly when it holds."
   },
   {
     "code": "DOC800",
@@ -87,7 +81,6 @@
     "endLine": 1,
     "endColumn": 137,
     "message": "No hedging in criteria",
-    "hint": "",
-    "fixable": "none"
+    "hint": ""
   }
 ]

@@ -9,8 +9,7 @@
     "endLine": 3,
     "endColumn": 24,
     "message": "parent points to a document that does not exist: \"no-parent\"",
-    "hint": "Create docs/src/no-parent.json or fix the id.",
-    "fixable": "none"
+    "hint": "Create docs/src/no-parent.json or fix the id."
   },
   {
     "code": "DOC202",
@@ -22,8 +21,7 @@
     "endLine": 4,
     "endColumn": 27,
     "message": "links points to a document that does not exist: \"no-link\"",
-    "hint": "Create docs/src/no-link.json or fix the id.",
-    "fixable": "none"
+    "hint": "Create docs/src/no-link.json or fix the id."
   },
   {
     "code": "DOC202",
@@ -35,8 +33,7 @@
     "endLine": 5,
     "endColumn": 26,
     "message": "reference [[no-ref]] points to a document that does not exist: \"no-ref\"",
-    "hint": "Create docs/src/no-ref.json or fix the id.",
-    "fixable": "none"
+    "hint": "Create docs/src/no-ref.json or fix the id."
   },
   {
     "code": "DOC202",
@@ -48,8 +45,7 @@
     "endLine": 5,
     "endColumn": 41,
     "message": "malformed reference \"[[Bad Id]]\"",
-    "hint": "Write [[id]] or [[id#field]]: the id uses only a-z, 0-9 and '-'.",
-    "fixable": "none"
+    "hint": "Write [[id]] or [[id#field]]: the id uses only a-z, 0-9 and '-'."
   },
   {
     "code": "DOC202",
@@ -61,7 +57,6 @@
     "endLine": 6,
     "endColumn": 31,
     "message": "reference [[no-note]] points to a document that does not exist: \"no-note\"",
-    "hint": "Create docs/src/no-note.json or fix the id.",
-    "fixable": "none"
+    "hint": "Create docs/src/no-note.json or fix the id."
   }
 ]

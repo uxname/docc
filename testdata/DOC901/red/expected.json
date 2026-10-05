@@ -9,8 +9,7 @@
     "endLine": 3,
     "endColumn": 37,
     "message": "forbidden word or phrase \"fast\"",
-    "hint": "Replace it with a specific, measurable statement.",
-    "fixable": "none"
+    "hint": "Replace it with a specific, measurable statement."
   },
   {
     "code": "DOC901",
@@ -22,8 +21,7 @@
     "endLine": 6,
     "endColumn": 73,
     "message": "this docIgnore entry suppresses nothing",
-    "hint": "Remove the entry: the rule is off here, or nothing triggers it.",
-    "fixable": "none"
+    "hint": "Remove the entry: the rule is off here, or nothing triggers it."
   },
   {
     "code": "DOC901",
@@ -35,8 +33,7 @@
     "endLine": 7,
     "endColumn": 66,
     "message": "the path \"/nope\" does not exist in this document",
-    "hint": "Fix the path or remove the docIgnore entry.",
-    "fixable": "none"
+    "hint": "Fix the path or remove the docIgnore entry."
   },
   {
     "code": "DOC901",
@@ -46,9 +43,8 @@
     "line": 8,
     "column": 5,
     "endLine": 8,
-    "endColumn": 66,
+    "endColumn": 60,
     "message": "this docIgnore entry suppresses nothing",
-    "hint": "Remove the entry: the rule is off here, or nothing triggers it.",
-    "fixable": "none"
+    "hint": "Remove the entry: the rule is off here, or nothing triggers it."
   }
 ]

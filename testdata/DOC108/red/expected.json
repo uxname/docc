@@ -9,8 +9,7 @@
     "endLine": 4,
     "endColumn": 25,
     "message": "a docIgnore entry needs a reason",
-    "hint": "Add \"reason\": explain why the rule does not apply here.",
-    "fixable": "none"
+    "hint": "Add \"reason\": explain why the rule does not apply here."
   },
   {
     "code": "DOC108",
@@ -22,8 +21,7 @@
     "endLine": 5,
     "endColumn": 23,
     "message": "DOC202 is a core rule and cannot be suppressed",
-    "hint": "Fix the problem instead of suppressing it.",
-    "fixable": "none"
+    "hint": "Fix the problem instead of suppressing it."
   },
   {
     "code": "DOC108",
@@ -35,8 +33,7 @@
     "endLine": 6,
     "endColumn": 23,
     "message": "unknown rule \"DOC999\"",
-    "hint": "Use a rule code (DOC301) or name (text/forbidden-words); see docc rules.",
-    "fixable": "none"
+    "hint": "Use a rule code (DOC301) or name (text/forbidden-words); see docc rules."
   },
   {
     "code": "DOC108",
@@ -48,8 +45,7 @@
     "endLine": 7,
     "endColumn": 51,
     "message": "a docIgnore entry needs a reason",
-    "hint": "Add \"reason\": explain why the rule does not apply here.",
-    "fixable": "none"
+    "hint": "Add \"reason\": explain why the rule does not apply here."
   },
   {
     "code": "DOC108",
@@ -61,8 +57,7 @@
     "endLine": 8,
     "endColumn": 55,
     "message": "path must be a JSON pointer string",
-    "hint": "Write a pointer such as \"/statement\" or \"/body/1\".",
-    "fixable": "none"
+    "hint": "Write a pointer such as \"/statement\" or \"/body/1\"."
   },
   {
     "code": "DOC108",
@@ -74,8 +69,7 @@
     "endLine": 9,
     "endColumn": 48,
     "message": "unknown key \"extra\" in a docIgnore entry",
-    "hint": "Use only rule, reason and path.",
-    "fixable": "none"
+    "hint": "Use only rule, reason and path."
   },
   {
     "code": "DOC108",
@@ -87,7 +81,6 @@
     "endLine": 10,
     "endColumn": 13,
     "message": "a docIgnore entry must be an object",
-    "hint": "Write { \"rule\": \"DOC301\", \"reason\": \"why\" }.",
-    "fixable": "none"
+    "hint": "Write { \"rule\": \"DOC301\", \"reason\": \"why\" }."
   }
 ]

@@ -1,19 +1,17 @@
 package config
 
 import (
-	"strings"
-
 	"github.com/santiment/docc/internal/diag"
 	"github.com/santiment/docc/internal/rules"
 )
 
-// Setting is the effective level and parameters of one rule for one file.
+// Setting is the effective level and parameters of one rule.
 type Setting struct {
 	Level  diag.Level
 	Params Params
 }
 
-// Resolved holds effective settings of every rule for one file (or none).
+// Resolved holds effective settings of every rule.
 type Resolved struct {
 	m map[string]Setting // key: rule code, or custom rule name
 }
@@ -37,9 +35,10 @@ func (c *Config) preset(r *rules.Rule) diag.Level {
 	return r.Default
 }
 
-// apply layers one RuleSet over the current setting of a rule.
-// Order of precision: rule entry, thematic group, nursery.
-func (c *Config) apply(cur Setting, r *rules.Rule, customName string, rs *RuleSet, preset diag.Level) Setting {
+// apply layers the rules section over the preset setting of a rule.
+// Order of precision: rule entry, thematic group.
+func (c *Config) apply(cur Setting, r *rules.Rule, customName string, preset diag.Level) Setting {
+	rs := &c.Rules
 	if r.Core {
 		return cur
 	}
@@ -60,11 +59,6 @@ func (c *Config) apply(cur Setting, r *rules.Rule, customName string, rs *RuleSe
 		cur.Level = l
 		return cur
 	}
-	if r.Nursery() && customName == "" {
-		if l, ok := rs.ByGroup["nursery"]; ok {
-			cur.Level = l
-		}
-	}
 	return cur
 }
 
@@ -76,44 +70,19 @@ func entrySetting(e *Entry, preset diag.Level) Setting {
 	return s
 }
 
-// For returns effective settings for a file path relative to src ("" means
-// no file: top-level settings only).
-func (c *Config) For(rel string) *Resolved {
-	var key strings.Builder
-	var matched []int
-	for i := range c.Overrides {
-		if rel != "" && MatchAny(c.Overrides[i].Include, rel) {
-			matched = append(matched, i)
-			key.WriteByte(byte('a' + i%26))
-			key.WriteByte(byte('A' + i/26))
-		}
-	}
-	if c.cache == nil {
-		c.cache = map[string]*Resolved{}
-	}
-	if r, ok := c.cache[key.String()]; ok {
-		return r
+// Resolve returns the effective settings of every rule.
+func (c *Config) Resolve() *Resolved {
+	if c.resolved != nil {
+		return c.resolved
 	}
 	res := &Resolved{m: map[string]Setting{}}
-	compute := func(r *rules.Rule, custom string, preset diag.Level) {
-		s := Setting{Level: preset}
-		s = c.apply(s, r, custom, &c.Rules, preset)
-		for _, i := range matched {
-			s = c.apply(s, r, custom, &c.Overrides[i].Rules, preset)
-		}
-		k := r.Code
-		if custom != "" {
-			k = custom
-		}
-		res.m[k] = s
-	}
 	for _, r := range rules.All() {
-		compute(r, "", c.preset(r))
+		res.m[r.Code] = c.apply(Setting{Level: c.preset(r)}, r, "", c.preset(r))
 	}
 	dc := rules.ByCode("DOC800")
 	for _, cr := range c.Custom {
-		compute(dc, cr.ID, cr.Level)
+		res.m[cr.ID] = c.apply(Setting{Level: cr.Level}, dc, cr.ID, cr.Level)
 	}
-	c.cache[key.String()] = res
+	c.resolved = res
 	return res
 }

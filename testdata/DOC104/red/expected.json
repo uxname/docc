@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 1,
     "message": "folder name \"Bad_Dir\" is not a valid id",
-    "hint": "Use only a-z, 0-9 and '-' in folder names, not starting or ending with '-', and avoid reserved Windows names.",
-    "fixable": "none"
+    "hint": "Use only a-z, 0-9 and '-' in folder names, not starting or ending with '-', and avoid reserved Windows names."
   },
   {
     "code": "DOC104",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 1,
     "message": "file name \"My Doc\" is not a valid id",
-    "hint": "Rename the file: use only a-z, 0-9 and '-', not starting or ending with '-', and avoid reserved Windows names.",
-    "fixable": "none"
+    "hint": "Rename the file: use only a-z, 0-9 and '-', not starting or ending with '-', and avoid reserved Windows names."
   },
   {
     "code": "DOC104",
@@ -35,7 +33,6 @@
     "endLine": 1,
     "endColumn": 1,
     "message": "file name \"con\" is not a valid id",
-    "hint": "Rename the file: use only a-z, 0-9 and '-', not starting or ending with '-', and avoid reserved Windows names.",
-    "fixable": "none"
+    "hint": "Rename the file: use only a-z, 0-9 and '-', not starting or ending with '-', and avoid reserved Windows names."
   }
 ]

@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/santiment/docc/internal/diag"
 	"github.com/santiment/docc/internal/loader"
 )
 
@@ -25,20 +24,12 @@ func (p *Project) checkLinks() {
 
 func (p *Project) selfLinks(d *Doc) {
 	if n := parentOf(d); n != nil && n.Str == d.ID {
-		if dg := p.emit(d, "DOC206", n.Start, n.End, "the document names itself as its parent", "Remove the parent field."); dg != nil {
-			for i, m := range d.Root.Members {
-				if m.Value == n {
-					dg.Fix = &diag.Fix{Edits: []diag.Edit{removeMember(d.Root, i)}}
-				}
-			}
-		}
+		p.emit(d, "DOC206", n.Start, n.End, "the document names itself as its parent", "Remove the parent field.")
 	}
 	if arr := d.Root.Get("links"); arr != nil && arr.Kind == loader.Array {
-		for i, it := range arr.Items {
+		for _, it := range arr.Items {
 			if it.Kind == loader.String && it.Str == d.ID {
-				if dg := p.emit(d, "DOC206", it.Start, it.End, "the document links to itself", "Remove its own id from links."); dg != nil {
-					dg.Fix = &diag.Fix{Edits: []diag.Edit{removeItem(arr, i)}}
-				}
+				p.emit(d, "DOC206", it.Start, it.End, "the document links to itself", "Remove its own id from links.")
 			}
 		}
 	}
@@ -71,27 +62,17 @@ func (p *Project) undeclaredLinks(d *Doc) {
 		if !r.OK || r.Notes || r.Target == d.ID || have[r.Target] || seen[r.Target] {
 			continue
 		}
-		t := p.Graph[r.Target]
-		if t == nil {
+		if p.Graph[r.Target] == nil {
 			continue // DOC202 speaks
 		}
 		seen[r.Target] = true
-		dg := p.emit(d, "DOC208", r.Start, r.End, fmt.Sprintf("[[%s]] is used in the text but %q is not in links or parent", r.Inner, r.Target),
+		p.emit(d, "DOC208", r.Start, r.End, fmt.Sprintf("[[%s]] is used in the text but %q is not in links or parent", r.Inner, r.Target),
 			fmt.Sprintf("Add %q to links.", r.Target))
-		if dg != nil && (d.Hidden || !t.Hidden) { // a visible document must not link to a hidden one (DOC210)
-			quoted := `"` + r.Target + `"`
-			if arr := d.Root.Get("links"); arr != nil && arr.Kind == loader.Array {
-				dg.Fix = &diag.Fix{Edits: []diag.Edit{appendItem(arr, quoted)}}
-			} else if arr == nil {
-				dg.Fix = &diag.Fix{Edits: []diag.Edit{addMember(d.Res.Src, d.Root, "links", "["+quoted+"]")}}
-			}
-			// links of a wrong type (DOC105): no fix
-		}
 	}
 }
 
 // Fingerprint is the first 8 hex digits of SHA-256 of the canonical JSON of a
-// document without reviewed, docIgnore, $schema and notes.
+// document without reviewed, docIgnore and notes.
 func Fingerprint(root *loader.Node) string {
 	var b strings.Builder
 	canonical(&b, root, true)
@@ -126,7 +107,7 @@ func canonical(b *strings.Builder, n *loader.Node, top bool) {
 				continue
 			}
 			seen[m.Key] = true
-			if top && (m.Key == "reviewed" || m.Key == "docIgnore" || m.Key == "$schema" || m.Key == "notes") {
+			if top && (m.Key == "reviewed" || m.Key == "docIgnore" || m.Key == "notes") {
 				continue
 			}
 			items = append(items, kv{m.Key, m.Value})

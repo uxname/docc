@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 47,
     "message": "hedging word \"probably\"",
-    "hint": "State the fact plainly, or say exactly when it holds.",
-    "fixable": "none"
+    "hint": "State the fact plainly, or say exactly when it holds."
   },
   {
     "code": "DOC352",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 65,
     "message": "hedging word \"Возможно\"",
-    "hint": "State the fact plainly, or say exactly when it holds.",
-    "fixable": "none"
+    "hint": "State the fact plainly, or say exactly when it holds."
   },
   {
     "code": "DOC352",
@@ -35,7 +33,6 @@
     "endLine": 1,
     "endColumn": 87,
     "message": "hedging word \"как правило\"",
-    "hint": "State the fact plainly, or say exactly when it holds.",
-    "fixable": "none"
+    "hint": "State the fact plainly, or say exactly when it holds."
   }
 ]

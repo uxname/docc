@@ -51,11 +51,11 @@ func TestPositionsWithEscapesAndNewlines(t *testing.T) {
 	if err := json.Unmarshal(diagnosticsOf(out), &ds); err != nil || ds[0].Line != 3 || ds[0].Column != 14 {
 		t.Fatalf("%v %+v", err, ds)
 	}
-	// a diagnostic that spans lines: a sentence over the limit across escaped newlines
+	// a diagnostic that spans lines: a match across escaped newlines
 	multi := "{\n  \"title\": \"I\",\n  \"body\": \"one two three" + bs + "nfour five six\"\n}\n"
 	project(t, map[string]string{
 		"docs/src/index.json": multi,
-		"docc.json":           `{"rules":{"DOC351":{"level":"warn","max":3}}}`,
+		"docc.json":           `{"customRules":[{"id":"custom/x","level":"warn","message":"m","given":"/body","forbid":"three\\nfour"}]}`,
 	})
 	_, out, _ = do("validate", "--format", "json")
 	if err := json.Unmarshal(diagnosticsOf(out), &ds); err != nil || len(ds) != 1 || ds[0].Line != 3 || ds[0].EndLine != 3 {

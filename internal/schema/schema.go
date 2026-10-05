@@ -173,7 +173,7 @@ func (s *Set) CheckKind(kindName string, root *loader.Node) []Violation {
 	inst := map[string]any{}
 	for _, m := range root.Members {
 		switch m.Key {
-		case "$schema", "docIgnore", "reviewed", "notes", "hidden":
+		case "docIgnore", "reviewed", "notes", "hidden":
 			continue
 		}
 		if _, ok := inst[m.Key]; !ok {

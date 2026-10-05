@@ -129,8 +129,8 @@ func TestFlagsAfterArguments(t *testing.T) {
 	if code, _, _ := do("validate", "--bogus"); code != 2 {
 		t.Fatal("unknown flag")
 	}
-	if code, _, _ := do("validate", "--unsafe"); code != 2 {
-		t.Fatal("--unsafe without --fix")
+	if code, _, _ := do("validate", "--fix"); code != 2 {
+		t.Fatal("--fix is gone")
 	}
 	if code, _, _ := do("nope"); code != 2 {
 		t.Fatal("unknown command")
@@ -425,7 +425,7 @@ func TestHelpPerCommand(t *testing.T) {
 		}
 	}
 	_, out, _ := do("validate", "--help")
-	if !strings.Contains(out, "-unsafe") || !strings.Contains(out, `(default "text")`) {
+	if !strings.Contains(out, "-max-warnings") || !strings.Contains(out, `(default "text")`) {
 		t.Errorf("flags with defaults missing:\n%s", out)
 	}
 	if code, out, _ := do("--format", "json", "--help"); code != 0 || !strings.HasPrefix(out, "docc - ") {
@@ -443,7 +443,7 @@ func TestGlobalFlagsBeforeCommand(t *testing.T) {
 	if code != 1 || !strings.Contains(out, `"truncated": true`) || strings.Count(out, `"code"`) != 1 {
 		t.Fatalf("%d %s", code, out)
 	}
-	if code, out, _ := do("--format", "json", "explain", "DOC301"); code != 0 || !strings.Contains(out, `"fixable": "none"`) {
+	if code, out, _ := do("--format", "json", "explain", "DOC301"); code != 0 || !strings.Contains(out, `"group": "text"`) || strings.Contains(out, "fixable") {
 		t.Fatalf("explain: %d %s", code, out)
 	}
 	if code, out, _ := do("--format", "json", "rules"); code != 0 || !strings.HasPrefix(out, "[") {

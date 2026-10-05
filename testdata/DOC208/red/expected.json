@@ -9,8 +9,7 @@
     "endLine": 4,
     "endColumn": 53,
     "message": "reference [[ghost]] points to a document that does not exist: \"ghost\"",
-    "hint": "Create docs/src/ghost.json or fix the id.",
-    "fixable": "none"
+    "hint": "Create docs/src/ghost.json or fix the id."
   },
   {
     "code": "DOC208",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 55,
     "message": "[[b]] is used in the text but \"b\" is not in links or parent",
-    "hint": "Add \"b\" to links.",
-    "fixable": "safe"
+    "hint": "Add \"b\" to links."
   },
   {
     "code": "DOC208",
@@ -35,7 +33,6 @@
     "endLine": 4,
     "endColumn": 21,
     "message": "[[b]] is used in the text but \"b\" is not in links or parent",
-    "hint": "Add \"b\" to links.",
-    "fixable": "safe"
+    "hint": "Add \"b\" to links."
   }
 ]

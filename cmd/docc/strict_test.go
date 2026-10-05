@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// DOC109 is on by default and is switched off in docc.json, for all files or for some.
+// DOC109 is on by default and is switched off in docc.json.
 func TestKindSchemaRequiredUnlessSwitchedOff(t *testing.T) {
 	files := map[string]string{
 		"docs/src/index.json": `{"title":"I","links":["a"]}`,
@@ -20,11 +20,6 @@ func TestKindSchemaRequiredUnlessSwitchedOff(t *testing.T) {
 	rawProject(t, files)
 	if code, out, _ := do("validate"); code != 0 || strings.Contains(out, "DOC109") {
 		t.Fatalf("off: %d %s", code, out)
-	}
-	files["docc.json"] = `{"overrides":[{"include":["a.json"],"rules":{"DOC109":"off"}}]}`
-	rawProject(t, files)
-	if code, out, _ := do("validate"); code != 1 || strings.Count(out, "error DOC109") != 1 || !strings.Contains(out, "index.json:1:1") {
-		t.Fatalf("override: only index.json must fail: %d %s", code, out)
 	}
 	files["docs/schemas/page.json"] = `{"type":"object","required":["title"]}`
 	files["docs/schemas/ghost.json"] = `{"type":"object","required":["title"]}`

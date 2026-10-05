@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 43,
     "message": "time-bound word \"currently\"",
-    "hint": "Say what is true regardless of the moment, or give a date.",
-    "fixable": "none"
+    "hint": "Say what is true regardless of the moment, or give a date."
   },
   {
     "code": "DOC353",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 59,
     "message": "time-bound word \"Новая\"",
-    "hint": "Say what is true regardless of the moment, or give a date.",
-    "fixable": "none"
+    "hint": "Say what is true regardless of the moment, or give a date."
   },
   {
     "code": "DOC353",
@@ -35,7 +33,6 @@
     "endLine": 1,
     "endColumn": 81,
     "message": "time-bound word \"недавно\"",
-    "hint": "Say what is true regardless of the moment, or give a date.",
-    "fixable": "none"
+    "hint": "Say what is true regardless of the moment, or give a date."
   }
 ]

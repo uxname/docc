@@ -9,7 +9,6 @@
     "endLine": 3,
     "endColumn": 1,
     "message": "invalid JSON: expected a string key",
-    "hint": "Fix the JSON syntax: strict JSON only, no comments or trailing commas.",
-    "fixable": "none"
+    "hint": "Fix the JSON syntax: strict JSON only, no comments or trailing commas."
   }
 ]

@@ -15,17 +15,10 @@ func (p *Project) Validate() []diag.Diagnostic {
 	p.checkKinds()
 	p.checkText()
 	p.checkMarkdown()
-	p.checkStyle()
-	p.checkTitles()
 	p.checkLinks()
 	p.checkCustom()
 	p.checkTrace()
 	p.suppress()
-	for i := range p.Diags {
-		if p.Diags[i].Fix == nil {
-			p.Diags[i].Fixable = diag.FixNone // the registry says what a rule can fix, the diagnostic what it can fix here
-		}
-	}
 	diag.Sort(p.Diags)
 	return p.Diags
 }

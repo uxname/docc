@@ -183,7 +183,7 @@ func (p *Project) read(d *Doc, srcAbs string) {
 
 func (p *Project) newDiag(file, code string) (*diag.Diagnostic, *rules.Rule) {
 	r := rules.ByCode(code)
-	return &diag.Diagnostic{Code: code, Rule: r.Name, File: file, Fixable: r.Fix}, r
+	return &diag.Diagnostic{Code: code, Rule: r.Name, File: file}, r
 }
 
 func (p *Project) push(dg *diag.Diagnostic, lvl diag.Level) *diag.Diagnostic {
@@ -194,10 +194,10 @@ func (p *Project) push(dg *diag.Diagnostic, lvl diag.Level) *diag.Diagnostic {
 }
 
 // emit adds a diagnostic on a document, at the byte range [start,end).
-// Returns nil when the rule is off for the document; the pointer is valid
+// Returns nil when the rule is off; the pointer is valid
 // only until the next emit.
 func (p *Project) emit(d *Doc, code string, start, end int, msg, hint string) *diag.Diagnostic {
-	lvl := p.Cfg.For(d.Rel).Rule(code).Level
+	lvl := p.Cfg.Resolve().Rule(code).Level
 	if lvl == diag.Off {
 		return nil
 	}
@@ -219,7 +219,7 @@ func (p *Project) emitAt(d *Doc, code, name string, lvl diag.Level, start, end i
 
 // emitNoPos adds a document diagnostic that has no place in the JSON text.
 func (p *Project) emitNoPos(d *Doc, code, msg, hint string) *diag.Diagnostic {
-	lvl := p.Cfg.For(d.Rel).Rule(code).Level
+	lvl := p.Cfg.Resolve().Rule(code).Level
 	if lvl == diag.Off {
 		return nil
 	}
@@ -233,7 +233,7 @@ func (p *Project) emitNoPos(d *Doc, code, msg, hint string) *diag.Diagnostic {
 
 // emitFile adds a diagnostic on a non-document file (config, folder, code, out).
 func (p *Project) emitFile(file, code string, line, col int, msg, hint string) *diag.Diagnostic {
-	lvl := p.Cfg.For("").Rule(code).Level
+	lvl := p.Cfg.Resolve().Rule(code).Level
 	if lvl == diag.Off {
 		return nil
 	}
@@ -247,11 +247,8 @@ func (p *Project) emitFile(file, code string, line, col int, msg, hint string) *
 // DocByFile returns the document for a project-relative file path.
 func (p *Project) DocByFile(file string) *Doc { return p.byFile[file] }
 
-// Off reports whether a rule is disabled for every file, so a whole pass can
-// be skipped. With overrides present it is conservative and returns false.
-func (p *Project) Off(code string) bool {
-	return len(p.Cfg.Overrides) == 0 && p.Cfg.For("").Rule(code).Level == diag.Off
-}
+// Off reports whether a rule is disabled, so a whole pass can be skipped.
+func (p *Project) Off(code string) bool { return !p.Cfg.Resolve().On(code) }
 
 // ReportFile adds a diagnostic on a generated or scanned file (DOC501, DOC401)
 // and keeps the list sorted.

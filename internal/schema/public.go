@@ -14,7 +14,7 @@ var configSchema []byte
 func Document() []byte { return DocumentSchema }
 
 // Config returns the docc.json schema printed by `docc schema config`. The
-// allowed keys of the rules sections are taken from the rule registry.
+// allowed keys of the rules section are taken from the rule registry.
 func Config() []byte {
 	var m map[string]any
 	if err := json.Unmarshal(configSchema, &m); err != nil {
@@ -36,8 +36,6 @@ func Config() []byte {
 	}}
 	props := m["properties"].(map[string]any)
 	props["rules"].(map[string]any)["propertyNames"] = keys
-	ov := props["overrides"].(map[string]any)["items"].(map[string]any)["properties"].(map[string]any)
-	ov["rules"].(map[string]any)["propertyNames"] = keys
 	b, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		panic(err)

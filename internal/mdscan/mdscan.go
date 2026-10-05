@@ -199,16 +199,6 @@ func (sc *Scan) Refs() []Ref { return sc.delimited("[[", "]]") }
 // Includes returns {{...}} occurrences outside code.
 func (sc *Scan) Includes() []Ref { return sc.includes }
 
-// InPlain reports whether offset lies in plain (non-code) text.
-func (sc *Scan) InPlain(off int) bool {
-	for _, sp := range sc.Plain {
-		if off >= sp.Start && off < sp.End {
-			return true
-		}
-	}
-	return false
-}
-
 // Headings returns the offsets of lines that start with 1-6 '#' and a space,
 // outside code blocks.
 func (sc *Scan) Headings() []Span {

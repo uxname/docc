@@ -9,7 +9,6 @@
     "endLine": 1,
     "endColumn": 1,
     "message": "document \"lonely\" is not reachable from the roots [index]",
-    "hint": "Link it from a reachable document (links or [[id]] in the text) or set its parent.",
-    "fixable": "none"
+    "hint": "Link it from a reachable document (links or [[id]] in the text) or set its parent."
   }
 ]

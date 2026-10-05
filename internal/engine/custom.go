@@ -77,7 +77,7 @@ func (p *Project) checkCustom() {
 			if !d.Parsed() {
 				continue
 			}
-			lvl := p.Cfg.For(d.Rel).Custom(cr.ID).Level
+			lvl := p.Cfg.Resolve().Custom(cr.ID).Level
 			if lvl == diag.Off {
 				continue
 			}

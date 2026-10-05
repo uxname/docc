@@ -5,6 +5,6 @@
     { "rule": "DOC301", "reason": "first paragraph only", "path": "/body/0" },
     { "rule": "text/placeholder", "reason": "nothing to suppress here" },
     { "rule": "DOC301", "reason": "wrong path", "path": "/nope" },
-    { "rule": "DOC302", "reason": "this rule is off by default" }
+    { "rule": "DOC352", "reason": "this rule is off here" }
   ]
 }

@@ -9,7 +9,6 @@
     "endLine": 2,
     "endColumn": 12,
     "message": "root \"start\" does not exist",
-    "hint": "Create docs/src/start.json, or change roots in docc.json.",
-    "fixable": "none"
+    "hint": "Create docs/src/start.json, or change roots in docc.json."
   }
 ]

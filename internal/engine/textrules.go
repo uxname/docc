@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/santiment/docc/internal/config"
 	"github.com/santiment/docc/internal/diag"
@@ -46,7 +45,7 @@ func (p *Project) checkText() {
 		if !d.Parsed() {
 			continue
 		}
-		res := p.Cfg.For(d.Rel)
+		res := p.Cfg.Resolve()
 		on := func(code string) bool { return res.Rule(code).Level != diag.Off }
 		strs := d.Strings()
 		for i := range strs {
@@ -59,23 +58,10 @@ func (p *Project) checkText() {
 				p.emit(d, "DOC304", sn.Node.Start, sn.Node.End, "the string is empty", "Fill it in or remove the field.")
 				continue
 			}
-			if on("DOC302") {
-				max := 2000
-				if st := res.Rule("DOC302").Params; st.HasMax {
-					max = st.Max
-				}
-				if n := utf8.RuneCountInString(s); n > max {
-					p.emit(d, "DOC302", sn.Node.Start, sn.Node.End, fmt.Sprintf("the text is %d characters long, the limit is %d", n, max),
-						"Split the text into several paragraphs or shorten it.")
-				}
-			}
 			for _, lr := range listRules {
 				if on(lr.code) {
 					p.listHits(d, sn, lr, res.Rule(lr.code))
 				}
-			}
-			if on("DOC354") {
-				p.pronouns(d, sn, res.Rule("DOC354"))
 			}
 			if on("DOC313") {
 				p.repeatedWords(d, sn, res.Rule("DOC313"))
@@ -108,30 +94,7 @@ func (p *Project) listHits(d *Doc, sn *StrNode, lr listRule, st config.Setting) 
 	}
 }
 
-// pronouns implements DOC354: a value that starts with a bare pronoun.
-func (p *Project) pronouns(d *Doc, sn *StrNode, st config.Setting) {
-	s := sn.Node.Str
-	ws := text.Words(s)
-	if len(ws) == 0 || !sn.Scan().InPlain(ws[0].Start) {
-		return
-	}
-	first := ws[0]
-	if strings.TrimSpace(s[:first.Start]) != "" {
-		return
-	}
-	hits := p.matcher(text.Pronouns, st.Params.Words).Find(s[first.Start:first.End])
-	if len(hits) == 0 || hits[0].Start != 0 || hits[0].End != first.End-first.Start {
-		return
-	}
-	if len(st.Params.Allow) > 0 && len(p.matcher(nil, st.Params.Allow).Find(s[first.Start:first.End])) > 0 {
-		return
-	}
-	a, b := d.Range(sn.Node, first.Start, first.End)
-	p.emit(d, "DOC354", a, b, fmt.Sprintf("the text starts with the pronoun %q", first.Text),
-		"Name the subject instead of a pronoun.")
-}
-
-// repeatedWords implements DOC313 with an unsafe fix that deletes the repeat.
+// repeatedWords implements DOC313.
 func (p *Project) repeatedWords(d *Doc, sn *StrNode, st config.Setting) {
 	var allow *text.Matcher
 	if len(st.Params.Allow) > 0 {
@@ -153,11 +116,8 @@ func (p *Project) repeatedWords(d *Doc, sn *StrNode, st config.Setting) {
 			if allow != nil && len(allow.Find(seg[a.Start:b.End])) > 0 {
 				continue
 			}
-			from, to := d.Range(sn.Node, sp.Start+a.End, sp.Start+b.End)
 			ra, rb := d.Range(sn.Node, sp.Start+a.Start, sp.Start+b.End)
-			if dg := p.emit(d, "DOC313", ra, rb, fmt.Sprintf("the word %q is repeated", a.Text), "Remove the repeated word."); dg != nil {
-				dg.Fix = &diag.Fix{Edits: []diag.Edit{{Start: from, End: to}}}
-			}
+			p.emit(d, "DOC313", ra, rb, fmt.Sprintf("the word %q is repeated", a.Text), "Remove the repeated word.")
 		}
 	}
 }

@@ -1,5 +1,5 @@
 // Package config reads docc.json (strict JSON, errors with positions) and
-// resolves effective rule levels and parameters per file.
+// resolves effective rule levels and parameters.
 package config
 
 import (
@@ -30,10 +30,6 @@ func (e *Error) Error() string {
 
 type Params struct {
 	Words, Allow []string
-	Max          int
-	HasMax       bool
-	Threshold    float64
-	HasThreshold bool
 }
 
 // Entry is one value of the rules section: a level and/or parameters.
@@ -42,21 +38,15 @@ type Entry struct {
 	Params Params
 }
 
-// RuleSet is the content of a rules section (top level or an override).
+// RuleSet is the content of the rules section.
 // ByRule is keyed by rule code, or by name for custom rules (DOC800 for all custom).
 type RuleSet struct {
 	ByRule  map[string]*Entry
 	ByGroup map[string]diag.Level
 }
 
-type Override struct {
-	Include []*Glob
-	Rules   RuleSet
-}
-
 type Custom struct {
 	ID, Message, Hint, Kind, Given string
-	KindOff                        int // source offset of the kind value
 	Level                          diag.Level
 	Forbid, Require                *regexp.Regexp
 }
@@ -71,19 +61,18 @@ type Config struct {
 	Roots    []string
 	RootsPos [2]int // line, column of the roots value (0: default)
 
-	Kinds, Tags       []string
-	HasKinds, HasTags bool
+	Tags    []string
+	HasTags bool
 
 	Recommended   bool
 	MaxWarnings   int
 	HasMaxWarning bool
 
 	Rules     RuleSet
-	Overrides []Override
 	Custom    []*Custom
 	TraceScan []*Glob
 
-	cache map[string]*Resolved
+	resolved *Resolved
 }
 
 func Default(root string) *Config {
@@ -119,7 +108,6 @@ func Load(file string, explicit bool) (*Config, error) {
 type walker struct {
 	src  *loader.Source
 	file string
-	root string
 }
 
 func (w *walker) errAt(off int, format string, a ...any) *Error {
@@ -168,7 +156,7 @@ func (w *walker) path(n *loader.Node) (string, *Error) {
 // Parse parses docc.json content. root is the project root.
 func Parse(data []byte, root, file string) (*Config, error) {
 	r := loader.Parse(data)
-	w := &walker{src: r.Src, file: file, root: root}
+	w := &walker{src: r.Src, file: file}
 	if r.Err != nil {
 		return nil, w.errAt(r.Err.Offset, "%s", r.Err.Msg)
 	}
@@ -178,7 +166,7 @@ func Parse(data []byte, root, file string) (*Config, error) {
 	c := Default(root)
 	c.File = file
 
-	// custom rules first: rules and overrides refer to their names
+	// custom rules first: rules refer to their names
 	if n := r.Root.Get("customRules"); n != nil {
 		if err := w.customRules(c, n); err != nil {
 			return nil, err
@@ -187,7 +175,7 @@ func Parse(data []byte, root, file string) (*Config, error) {
 	for _, m := range r.Root.Members {
 		var e *Error
 		switch m.Key {
-		case "$schema", "customRules":
+		case "customRules":
 		case "src":
 			c.Src, e = w.path(m.Value)
 		case "out":
@@ -202,9 +190,6 @@ func Parse(data []byte, root, file string) (*Config, error) {
 				e = w.errAt(m.Value.Start, "roots must not be empty")
 			}
 			c.RootsPos[0], c.RootsPos[1] = r.Src.Position(m.Value.Start)
-		case "kinds":
-			c.Kinds, e = w.strs(m.Value)
-			c.HasKinds = true
 		case "tags":
 			c.Tags, e = w.strs(m.Value)
 			c.HasTags = true
@@ -219,8 +204,6 @@ func Parse(data []byte, root, file string) (*Config, error) {
 			c.HasMaxWarning = e == nil
 		case "rules":
 			c.Rules, e = w.ruleSet(c, m.Value)
-		case "overrides":
-			e = w.overrides(c, m.Value)
 		case "trace":
 			e = w.trace(c, m.Value)
 		default:
@@ -230,21 +213,7 @@ func Parse(data []byte, root, file string) (*Config, error) {
 			return nil, e
 		}
 	}
-	for _, cr := range c.Custom {
-		if cr.Kind != "" && c.HasKinds && !contains(c.Kinds, cr.Kind) {
-			return nil, w.errAt(cr.KindOff, "custom rule %s: kind %q is not in kinds", cr.ID, cr.Kind)
-		}
-	}
 	return c, nil
-}
-
-func contains(xs []string, s string) bool {
-	for _, x := range xs {
-		if x == s {
-			return true
-		}
-	}
-	return false
 }
 
 func (w *walker) nonNegInt(n *loader.Node) (int, *Error) {

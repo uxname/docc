@@ -19,11 +19,6 @@ var (
 		"сейчас", "недавно", "пока", "в настоящее время", "скоро", "в будущем", "новый", "новая", "новое", "новые",
 		"currently", "recently", "soon", "new", "at the moment",
 	}
-	// Pronouns: DOC354, first word of a value without an explanation.
-	Pronouns = []string{
-		"Это", "Он", "Она", "Оно", "Они", "Данный", "Данная", "Данное", "Данные", "Такой", "Такая",
-		"This", "It", "They", "These", "That",
-	}
 	// Placeholders: DOC303.
 	Placeholders = []string{"TODO", "TBD", "FIXME", "lorem", "???"}
 )

@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 36,
     "message": "document does not match the built-in schema: /parent: got array, want string",
-    "hint": "Field \"parent\" must be string, not array.",
-    "fixable": "none"
+    "hint": "Field \"parent\" must be string, not array."
   },
   {
     "code": "DOC105",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 66,
     "message": "document does not match the built-in schema: /reviewed/index: 'xyz' does not match pattern '^[0-9a-f]{8}$'",
-    "hint": "Change the value so that it matches the schema.",
-    "fixable": "none"
+    "hint": "Change the value so that it matches the schema."
   },
   {
     "code": "DOC105",
@@ -35,8 +33,7 @@
     "endLine": 3,
     "endColumn": 21,
     "message": "document does not match the built-in schema: /kind: 'Bad Kind' does not match pattern '^[a-z0-9-]+$'",
-    "hint": "Change the value so that it matches the schema.",
-    "fixable": "none"
+    "hint": "Change the value so that it matches the schema."
   },
   {
     "code": "DOC105",
@@ -48,8 +45,7 @@
     "endLine": 4,
     "endColumn": 21,
     "message": "document does not match the built-in schema: /links/1: items at 0 and 1 are equal",
-    "hint": "Remove the repeated element.",
-    "fixable": "none"
+    "hint": "Remove the repeated element."
   },
   {
     "code": "DOC105",
@@ -61,8 +57,7 @@
     "endLine": 5,
     "endColumn": 25,
     "message": "document does not match the built-in schema: /tags/2: items at 0 and 2 are equal",
-    "hint": "Remove the repeated element.",
-    "fixable": "none"
+    "hint": "Remove the repeated element."
   },
   {
     "code": "DOC105",
@@ -74,8 +69,7 @@
     "endLine": 6,
     "endColumn": 18,
     "message": "document does not match the built-in schema: /hidden: got string, want boolean",
-    "hint": "Field \"hidden\" must be boolean, not string.",
-    "fixable": "none"
+    "hint": "Field \"hidden\" must be boolean, not string."
   },
   {
     "code": "DOC105",
@@ -87,7 +81,6 @@
     "endLine": 7,
     "endColumn": 12,
     "message": "document does not match the built-in schema: /body: value does not match any allowed shape",
-    "hint": "Use one of the shapes the schema allows for this field.",
-    "fixable": "none"
+    "hint": "Use one of the shapes the schema allows for this field."
   }
 ]

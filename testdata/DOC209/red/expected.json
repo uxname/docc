@@ -9,8 +9,7 @@
     "endLine": 3,
     "endColumn": 21,
     "message": "the target \"b\" changed after the link was reviewed",
-    "hint": "Check the target again, then set reviewed \"b\" to \"04b48c1c\".",
-    "fixable": "none"
+    "hint": "Check the target again, then set reviewed \"b\" to \"04b48c1c\"."
   },
   {
     "code": "DOC209",
@@ -22,7 +21,6 @@
     "endLine": 3,
     "endColumn": 26,
     "message": "the link to \"c\" is not confirmed",
-    "hint": "Check the target, then add \"c\": \"1789f10f\" to reviewed.",
-    "fixable": "none"
+    "hint": "Check the target, then add \"c\": \"1789f10f\" to reviewed."
   }
 ]

@@ -172,17 +172,15 @@ func parse2(t *testing.T, b []byte) *loader.Result {
 
 const specConfig = `{
   "src": "docs/src", "out": "docs/out", "schemas": "docs/schemas", "outFull": "docs/out-full",
-  "roots": ["index"], "kinds": ["note", "requirement"], "tags": ["draft"], "recommended": true,
+  "roots": ["index"], "tags": ["draft"], "recommended": true,
   "rules": {
     "text/forbidden-words": { "level": "warn", "words": ["a"], "allow": [] },
-    "style/sentence-length": { "level": "warn", "max": 30 },
-    "text/max-length": { "level": "warn", "max": 2000 },
-    "markdown/raw-html": "off", "nursery": "warn", "custom/x": "off", "DOC800": "off"
+    "text/repeated-word": { "level": "warn", "allow": ["that"] },
+    "markdown/raw-html": "off", "style": "warn", "custom/x": "off", "DOC800": "off"
   },
-  "overrides": [{ "include": ["drafts/**"], "rules": { "text/placeholder": "off" } }],
   "customRules": [{ "id": "custom/no-vague", "level": "warn", "kind": "requirement", "given": "/statement",
     "forbid": "x", "message": "m", "hint": "h" }],
-  "trace": { "scan": ["tests/**"] }, "maxWarnings": 3, "$schema": "x"
+  "trace": { "scan": ["tests/**"] }, "maxWarnings": 3
 }`
 
 func TestConfigSchema(t *testing.T) {
@@ -195,6 +193,12 @@ func TestConfigSchema(t *testing.T) {
 		"unknown key":   `{"foo":1}`,
 		"bad level":     `{"rules":{"DOC301":"loud"}}`,
 		"unknown rule":  `{"rules":{"nonsense":"off"}}`,
+		"retired rule":  `{"rules":{"DOC302":"off"}}`,
+		"nursery":       `{"rules":{"nursery":"warn"}}`,
+		"overrides":     `{"overrides":[]}`,
+		"kinds":         `{"kinds":["note"]}`,
+		"schema key":    `{"$schema":"x"}`,
+		"max param":     `{"rules":{"DOC301":{"max":1}}}`,
 		"empty roots":   `{"roots":[]}`,
 		"both rx":       `{"customRules":[{"id":"custom/a","level":"warn","message":"m","given":"/x","forbid":"a","require":"b"}]}`,
 		"bad custom id": `{"customRules":[{"id":"a","level":"warn","message":"m","given":"/x","forbid":"a"}]}`,

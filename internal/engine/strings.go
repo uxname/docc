@@ -11,14 +11,14 @@ import (
 // reservedKeys are top-level keys with a meaning of their own; all other keys
 // are free fields that hold prose.
 var reservedKeys = map[string]bool{
-	"$schema": true, "title": true, "kind": true, "status": true, "parent": true,
+	"title": true, "kind": true, "status": true, "parent": true,
 	"links": true, "body": true, "tags": true, "notes": true, "hidden": true,
 	"reviewed": true, "docIgnore": true,
 }
 
 // ServiceFields cannot be anchors or include sources.
 var ServiceFields = map[string]bool{
-	"notes": true, "docIgnore": true, "reviewed": true, "hidden": true, "$schema": true,
+	"notes": true, "docIgnore": true, "reviewed": true, "hidden": true,
 }
 
 // StrNode is one string value of a document with its location.

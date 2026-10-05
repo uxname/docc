@@ -40,9 +40,9 @@ func TestFingerprintReference(t *testing.T) {
 }
 
 func TestFingerprintCanonicalForm(t *testing.T) {
-	// service fields are dropped at the top level only; keys sorted at every level
+	// reviewed, notes and docIgnore are dropped at the top level only; keys sorted at every level
 	got := canon(t, `{"b":{"z":1,"a":2},"a":[3,"x"],"reviewed":{"q":"r"},"notes":["n"],"$schema":"s","docIgnore":[],"c":{"notes":1}}`)
-	want := `{"a":[3,"x"],"b":{"a":2,"z":1},"c":{"notes":1}}`
+	want := `{"$schema":"s","a":[3,"x"],"b":{"a":2,"z":1},"c":{"notes":1}}`
 	if got != want {
 		t.Errorf("got %s want %s", got, want)
 	}
@@ -58,13 +58,5 @@ func TestFingerprintCanonicalForm(t *testing.T) {
 	// key order in the file does not matter, whitespace does not matter
 	if fp(t, `{"a":1,"b":2}`) != fp(t, "{\n  \"b\": 2,\n  \"a\": 1\n}") {
 		t.Error("order or whitespace changed the fingerprint")
-	}
-}
-
-func TestIsAcronym(t *testing.T) {
-	for w, want := range map[string]bool{"ML": true, "ИИ": true, "NLP": true, "A": false, "DOC101": false, "Ml": false, "ml": false, "API2": false} {
-		if got := isAcronym(w); got != want {
-			t.Errorf("%q: got %v", w, got)
-		}
 	}
 }

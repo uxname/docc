@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 51,
     "message": "raw HTML tag \u003cdiv\u003e in the text",
-    "hint": "Use Markdown instead of HTML; scripts are never allowed.",
-    "fixable": "none"
+    "hint": "Use Markdown instead of HTML; scripts are never allowed."
   },
   {
     "code": "DOC310",
@@ -22,7 +21,6 @@
     "endLine": 1,
     "endColumn": 74,
     "message": "raw HTML tag \u003cscript\u003e in the text",
-    "hint": "Use Markdown instead of HTML; scripts are never allowed.",
-    "fixable": "none"
+    "hint": "Use Markdown instead of HTML; scripts are never allowed."
   }
 ]

@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 39,
     "message": "links points to the hidden document \"secret\"",
-    "hint": "A visible document cannot link to a hidden one: make the target visible, or move the reference into notes.",
-    "fixable": "none"
+    "hint": "A visible document cannot link to a hidden one: make the target visible, or move the reference into notes."
   },
   {
     "code": "DOC210",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 65,
     "message": "reference [[secret]] points to the hidden document \"secret\"",
-    "hint": "A visible document cannot link to a hidden one: make the target visible, or move the reference into notes.",
-    "fixable": "none"
+    "hint": "A visible document cannot link to a hidden one: make the target visible, or move the reference into notes."
   },
   {
     "code": "DOC210",
@@ -35,7 +33,6 @@
     "endLine": 1,
     "endColumn": 82,
     "message": "include points to the hidden document \"secret\"",
-    "hint": "A visible document cannot include text from a hidden one: make the target visible or remove the include.",
-    "fixable": "none"
+    "hint": "A visible document cannot include text from a hidden one: make the target visible or remove the include."
   }
 ]

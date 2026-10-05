@@ -9,7 +9,6 @@
     "endLine": 1,
     "endColumn": 28,
     "message": "duplicate key \"title\"",
-    "hint": "Remove one of the repeated keys or merge their values.",
-    "fixable": "none"
+    "hint": "Remove one of the repeated keys or merge their values."
   }
 ]

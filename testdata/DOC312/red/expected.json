@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 60,
     "message": "document \"a\" has no field \"nope\"",
-    "hint": "Use an existing top-level field or field/section.",
-    "fixable": "none"
+    "hint": "Use an existing top-level field or field/section."
   },
   {
     "code": "DOC312",
@@ -22,8 +21,7 @@
     "endLine": 1,
     "endColumn": 76,
     "message": "\"notes\" is a service field and cannot be an anchor",
-    "hint": "Point to a content field such as body or a free field.",
-    "fixable": "none"
+    "hint": "Point to a content field such as body or a free field."
   },
   {
     "code": "DOC312",
@@ -35,7 +33,6 @@
     "endLine": 1,
     "endColumn": 109,
     "message": "document \"a\" has no field \"missing\"",
-    "hint": "Use an existing top-level field or field/section.",
-    "fixable": "none"
+    "hint": "Use an existing top-level field or field/section."
   }
 ]

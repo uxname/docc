@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 41,
     "message": "a heading line inside a field breaks the structure of the output",
-    "hint": "Remove the leading # characters; the field name already becomes a heading.",
-    "fixable": "none"
+    "hint": "Remove the leading # characters; the field name already becomes a heading."
   },
   {
     "code": "DOC309",
@@ -22,7 +21,6 @@
     "endLine": 1,
     "endColumn": 72,
     "message": "a heading line inside a field breaks the structure of the output",
-    "hint": "Remove the leading # characters; the field name already becomes a heading.",
-    "fixable": "none"
+    "hint": "Remove the leading # characters; the field name already becomes a heading."
   }
 ]

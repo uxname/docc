@@ -16,22 +16,22 @@ func TestRulesList(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &rows); err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 40 { // 41 codes minus the generic DOC800 row
+	if len(rows) != 32 { // 33 codes minus the generic DOC800 row
 		t.Fatalf("%d rules", len(rows))
 	}
 	got := map[string]map[string]string{}
 	for _, r := range rows {
 		got[r["code"]] = r
 	}
-	if r := got["DOC301"]; r["level"] != "warn" || r["group"] != "text" || r["rule"] != "text/forbidden-words" || r["fixable"] != "none" || r["description"] == "" {
+	if r := got["DOC301"]; r["level"] != "warn" || r["group"] != "text" || r["rule"] != "text/forbidden-words" || r["description"] == "" {
 		t.Errorf("DOC301: %v", r)
 	}
-	if got["DOC208"]["fixable"] != "safe" || got["DOC313"]["fixable"] != "unsafe" || got["DOC302"]["level"] != "off" || got["DOC101"]["level"] != "error" {
-		t.Error("levels or fix kinds wrong")
+	if got["DOC352"]["level"] != "warn" || got["DOC101"]["level"] != "error" || got["DOC302"] != nil || strings.Contains(out, "fixable") {
+		t.Error("levels wrong, a retired rule or the fixable column is listed")
 	}
 	_, text, _ := do("rules")
 	lines := strings.Split(strings.TrimSpace(text), "\n")
-	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 41 {
+	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 33 || strings.Contains(lines[0], "FIXABLE") {
 		t.Fatalf("table:\n%s", text)
 	}
 	for _, ln := range lines {
@@ -41,11 +41,10 @@ func TestRulesList(t *testing.T) {
 	}
 }
 
-func TestRulesEffectiveLevelsAndFile(t *testing.T) {
+func TestRulesEffectiveLevels(t *testing.T) {
 	project(t, map[string]string{
 		"docc.json": `{
-		  "rules": { "DOC302": "warn", "text/forbidden-words": "error" },
-		  "overrides": [{ "include": ["drafts/**"], "rules": { "text/placeholder": "off", "DOC302": "off" } }],
+		  "rules": { "DOC313": "off", "text/forbidden-words": "error" },
 		  "customRules": [{ "id": "custom/x", "level": "warn", "message": "m", "given": "/a", "forbid": "q" }]
 		}`,
 	})
@@ -62,30 +61,11 @@ func TestRulesEffectiveLevelsAndFile(t *testing.T) {
 		return m
 	}
 	base := level()
-	if base["text/max-length"] != "warn" || base["text/forbidden-words"] != "error" || base["text/placeholder"] != "warn" || base["custom/x"] != "warn" {
+	if base["text/repeated-word"] != "off" || base["text/forbidden-words"] != "error" || base["text/placeholder"] != "warn" || base["custom/x"] != "warn" {
 		t.Errorf("config levels: %v", base)
 	}
-	for _, f := range []string{"drafts/a.json", "docs/src/drafts/deep/a.json"} {
-		d := level("--file", f)
-		if d["text/placeholder"] != "off" || d["text/max-length"] != "off" || d["text/forbidden-words"] != "error" {
-			t.Errorf("--file %s: %v", f, d)
-		}
-	}
-	if o := level("--file", "docs/src/other.json"); o["text/placeholder"] != "warn" {
-		t.Errorf("override leaked: %v", o)
-	}
-}
-
-func TestOverridesAffectValidate(t *testing.T) {
-	project(t, map[string]string{
-		"docc.json":                         `{"overrides":[{"include":["drafts/**"],"rules":{"text/placeholder":"off"}}]}`,
-		"docs/src/index.json":               `{"title":"I","links":["w","drafts-index"],"body":"TODO"}`,
-		"docs/src/w.json":                   `{"title":"W","parent":"index"}`,
-		"docs/src/drafts/drafts-index.json": `{"title":"D","parent":"index","body":"TODO here"}`,
-	})
-	_, out, _ := do("validate", "--format", "json")
-	if strings.Count(out, `"DOC303"`) != 1 || !strings.Contains(out, "docs/src/index.json") {
-		t.Fatalf("override must silence only drafts/**:\n%s", out)
+	if code, _, _ := do("rules", "--file", "docs/src/index.json"); code != 2 {
+		t.Error("--file is gone")
 	}
 }
 
@@ -95,7 +75,7 @@ func TestExplain(t *testing.T) {
 	})
 	code, out, _ := do("explain", "DOC301")
 	if code != 0 || !strings.HasPrefix(out, "DOC301 text/forbidden-words\nGroup: text\nLevel: warn\n") ||
-		!strings.Contains(out, "Violation:") || !strings.Contains(out, "Fixed:") || !strings.Contains(out, "Automatic fix: none") {
+		!strings.Contains(out, "Violation:") || !strings.Contains(out, "Fixed:") || strings.Contains(out, "Automatic fix") {
 		t.Fatalf("%d\n%s", code, out)
 	}
 	if _, byName, _ := do("explain", "text/forbidden-words"); byName != out {
@@ -103,7 +83,7 @@ func TestExplain(t *testing.T) {
 	}
 	code, out, _ = do("explain", "DOC208", "--format", "json")
 	var e map[string]string
-	if err := json.Unmarshal([]byte(out), &e); err != nil || code != 0 || e["fixable"] != "safe" || e["code"] != "DOC208" || e["fixDescription"] == "" {
+	if err := json.Unmarshal([]byte(out), &e); err != nil || code != 0 || e["code"] != "DOC208" || strings.Contains(out, "fix") {
 		t.Fatalf("%v %v", err, e)
 	}
 	if code, out, _ := do("explain", "custom/x"); code != 0 || !strings.Contains(out, "DOC800 custom/x") || !strings.Contains(out, "x+") {
@@ -113,26 +93,6 @@ func TestExplain(t *testing.T) {
 		if code, _, errs := do(bad...); code != 2 || errs == "" {
 			t.Errorf("%v: %d %q", bad, code, errs)
 		}
-	}
-}
-
-func TestWordsFiles(t *testing.T) {
-	project(t, map[string]string{
-		"docc.json":           `{"rules":{"DOC301":{"wordsFile":"lists/bad.txt","allowFile":"lists/ok.txt"}}}`,
-		"lists/bad.txt":       "# comment\n\nсрочн*\n",
-		"lists/ok.txt":        "срочная доставка\n",
-		"docs/src/index.json": `{"title":"I","body":["Нужно срочно.","срочная доставка","Это fast."]}`,
-	})
-	_, out, _ := do("validate", "--format", "json")
-	if strings.Count(out, `"DOC301"`) != 2 || strings.Contains(out, "доставка") {
-		t.Fatalf("wordsFile adds to the built-ins, allowFile excludes:\n%s", out)
-	}
-	project(t, map[string]string{
-		"docc.json":           `{"rules":{"DOC301":{"wordsFile":"missing.txt"}}}`,
-		"docs/src/index.json": `{"title":"I"}`,
-	})
-	if code, _, errs := do("validate"); code != 2 || !strings.Contains(errs, "config error") {
-		t.Fatalf("%d %s", code, errs)
 	}
 }
 
@@ -166,13 +126,10 @@ func TestExplainCustomRequire(t *testing.T) {
 
 func TestExplainShowsEffectiveLevelAndConfigure(t *testing.T) {
 	project(t, map[string]string{
-		"docc.json": `{"rules":{"DOC302":"warn"},"overrides":[{"include":["drafts/**"],"rules":{"DOC302":"off"}}],"customRules":[{"id":"custom/x","level":"warn","message":"No x","hint":"Use y","given":"/a","forbid":"x+"}]}`,
+		"docc.json": `{"rules":{"DOC313":"error"},"customRules":[{"id":"custom/x","level":"warn","message":"No x","hint":"Use y","given":"/a","forbid":"x+"}]}`,
 	})
-	_, out, _ := do("explain", "DOC302")
-	if !strings.Contains(out, "Level: warn (default: off)") || !strings.Contains(out, `"rules": { "DOC302": "off" }`) || !strings.Contains(out, `"docIgnore"`) {
-		t.Fatalf("%s", out)
-	}
-	if _, out, _ = do("explain", "DOC302", "--file", "docs/src/drafts/a.json"); !strings.Contains(out, "Level: off\n") {
+	_, out, _ := do("explain", "DOC313")
+	if !strings.Contains(out, "Level: error (default: warn)") || !strings.Contains(out, `"rules": { "DOC313": "off" }`) || !strings.Contains(out, `"docIgnore"`) {
 		t.Fatalf("%s", out)
 	}
 	if _, out, _ = do("explain", "DOC101"); !strings.Contains(out, "cannot be disabled") {

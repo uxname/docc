@@ -9,7 +9,6 @@
     "endLine": 1,
     "endColumn": 41,
     "message": "a code fence is opened but never closed",
-    "hint": "Close the block with a matching fence line.",
-    "fixable": "none"
+    "hint": "Close the block with a matching fence line."
   }
 ]

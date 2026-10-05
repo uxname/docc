@@ -9,8 +9,7 @@
     "endLine": 1,
     "endColumn": 30,
     "message": "the parent chain of \"a\" forms a cycle",
-    "hint": "Break the cycle: point one document in it to a different parent.",
-    "fixable": "none"
+    "hint": "Break the cycle: point one document in it to a different parent."
   },
   {
     "code": "DOC204",
@@ -22,7 +21,6 @@
     "endLine": 1,
     "endColumn": 30,
     "message": "the parent chain of \"b\" forms a cycle",
-    "hint": "Break the cycle: point one document in it to a different parent.",
-    "fixable": "none"
+    "hint": "Break the cycle: point one document in it to a different parent."
   }
 ]

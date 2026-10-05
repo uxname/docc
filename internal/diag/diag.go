@@ -22,12 +22,6 @@ func (l Level) String() string {
 	return "off"
 }
 
-const (
-	FixNone   = "none"
-	FixSafe   = "safe"
-	FixUnsafe = "unsafe"
-)
-
 // Diagnostic is one finding. Fields below the JSON block are internal.
 type Diagnostic struct {
 	Code      string `json:"code"`
@@ -40,23 +34,11 @@ type Diagnostic struct {
 	EndColumn int    `json:"endColumn"`
 	Message   string `json:"message"`
 	Hint      string `json:"hint"`
-	Fixable   string `json:"fixable"`
 
 	Lvl        Level  `json:"-"`
 	Start, End int    `json:"-"` // byte offsets in the source file; meaningless when NoPos
 	NoPos      bool   `json:"-"` // no position in the JSON text (reported at 1:1)
 	DocID      string `json:"-"` // owner document id ("" for config/code/out files)
-	Fix        *Fix   `json:"-"`
-}
-
-// Fix is a patch applied by --fix: replace Data[Start:End] with Text.
-type Fix struct {
-	Edits []Edit
-}
-
-type Edit struct {
-	Start, End int
-	Text       string
 }
 
 // Sort orders diagnostics deterministically: level, file path (bytes), line,
