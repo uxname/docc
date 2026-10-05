@@ -2,11 +2,13 @@ package engine
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
 
 	"github.com/santiment/docc/internal/config"
 	"github.com/santiment/docc/internal/diag"
+	"github.com/santiment/docc/internal/loader"
 	"github.com/santiment/docc/internal/text"
 )
 
@@ -47,6 +49,9 @@ func (p *Project) checkText() {
 		}
 		res := p.Cfg.Resolve()
 		on := func(code string) bool { return res.Rule(code).Level != diag.Off }
+		if p.Cfg.Numbering && on("DOC314") {
+			p.manualNumbers(d)
+		}
 		strs := d.Strings()
 		for i := range strs {
 			sn := &strs[i]
@@ -129,4 +134,34 @@ func hasLetter(s string) bool {
 		}
 	}
 	return false
+}
+
+var manualNumber = regexp.MustCompile(`^\d+(\.\d+)*\.?\s`)
+
+// manualNumbers implements DOC314: with numbering on, a title or a section
+// key must not carry its own number. Field text is not checked.
+func (p *Project) manualNumbers(d *Doc) {
+	const msg, hint = "the number is added by docc; remove it from the title", "Set the position with the order field; docc numbers pages and sections itself."
+	if t := d.Root.Get("title"); t != nil && t.Kind == loader.String && manualNumber.MatchString(t.Str) {
+		p.emit(d, "DOC314", t.Start, t.End, msg, hint)
+	}
+	var walk func(n *loader.Node)
+	walk = func(n *loader.Node) {
+		for _, m := range n.Members {
+			if m.Key == SectionsKey {
+				continue
+			}
+			if manualNumber.MatchString(m.Key) {
+				p.emit(d, "DOC314", m.KeyStart, m.KeyEnd, msg, hint)
+			}
+			if IsSections(m.Value) {
+				walk(m.Value)
+			}
+		}
+	}
+	for _, m := range d.Root.Members {
+		if !ServiceFields[m.Key] && IsSections(m.Value) {
+			walk(m.Value)
+		}
+	}
 }

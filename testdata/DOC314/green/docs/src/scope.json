@@ -1,0 +1,9 @@
+{
+  "title": "Scope",
+  "kind": "page",
+  "parent": "index",
+  "order": 1,
+  "body": "3 items, see item 3 of article 152.",
+  "spec": { "$sections": true, "Limits": { "$sections": true, "Size": "Up to 5 files." }, "2024": "12 people." },
+  "3 notes": "A free field key is not a section."
+}

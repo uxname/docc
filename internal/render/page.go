@@ -3,6 +3,7 @@ package render
 import (
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -28,7 +29,7 @@ func (r *Renderer) page(d *engine.Doc) string {
 		blocks = append(blocks, pg.anchorTag(""))
 	}
 	if !r.html { // the HTML file draws title, badges and relations from the data itself
-		blocks = append(blocks, "# "+pg.refs(oneLine.Replace(rawTitle(d))))
+		blocks = append(blocks, "# "+numbered(r.numberOf(d), pg.refs(oneLine.Replace(rawTitle(d)))))
 		if meta := metaLine(d); meta != "" {
 			blocks = append(blocks, meta)
 		}
@@ -142,10 +143,14 @@ func (pg *page) sections(v *loader.Node, level int) string {
 		if m.Key == engine.SectionsKey {
 			continue
 		}
-		if pg.r.anchors {
-			blocks = append(blocks, pg.anchorTag(pg.r.anchorOf(pg.doc, m.Value).anchor))
+		a := pg.r.anchorOf(pg.doc, m.Value)
+		switch {
+		case pg.r.anchors:
+			blocks = append(blocks, pg.anchorTag(a.anchor))
+		case a.num != "" && !pg.r.single: // the numbered heading gets another id on GitHub; links keep the plain anchor
+			blocks = append(blocks, `<a id="`+a.anchor+`"></a>`)
 		}
-		blocks = append(blocks, strings.Repeat("#", level)+" "+heading(m.Key))
+		blocks = append(blocks, strings.Repeat("#", level)+" "+numbered(a.num, heading(m.Key)))
 		if c := pg.fieldContent(m.Value, min(level+1, 6)); c != "" {
 			blocks = append(blocks, c)
 		}
@@ -178,11 +183,29 @@ type entry struct {
 	depth int
 }
 
-// byTitle sorts siblings by the title shown on the page: case-insensitive,
-// numbers by value, Latin before Cyrillic. Equal titles fall back to the id, so
-// the order is the same on every build.
-func byTitle(c *collate.Collator, list []*engine.Doc) {
+// orderOf returns the order field of a document, if it is a number.
+func orderOf(d *engine.Doc) (float64, bool) {
+	if n := d.Root.Get("order"); n != nil && n.Kind == loader.Number {
+		v, err := strconv.ParseFloat(n.Str, 64)
+		return v, err == nil
+	}
+	return 0, false
+}
+
+// byOrder sorts siblings by order (documents without it come last), then by
+// the title without its number: case-insensitive, numbers by value, Latin
+// before Cyrillic. Equal titles fall back to the id, so the order is the same
+// on every build.
+func byOrder(c *collate.Collator, list []*engine.Doc) {
 	sort.Slice(list, func(i, j int) bool {
+		oi, hi := orderOf(list[i])
+		oj, hj := orderOf(list[j])
+		if hi != hj {
+			return hi
+		}
+		if hi && oi != oj {
+			return oi < oj
+		}
 		if n := c.CompareString(titleOf(list[i]), titleOf(list[j])); n != 0 {
 			return n < 0
 		}
@@ -190,7 +213,7 @@ func byTitle(c *collate.Collator, list []*engine.Doc) {
 	})
 }
 
-// layout nests the documents by parent (siblings by title): first those
+// layout nests the documents by parent (siblings by order, then title): first those
 // reachable from the roots, then those without a visible parent (with their own children).
 func (r *Renderer) layout() (tree, orphans []entry) {
 	docs := r.docs()
@@ -220,9 +243,9 @@ func (r *Renderer) layout() (tree, orphans []entry) {
 	}
 	c := collate.New(language.Und, collate.IgnoreCase, collate.Numeric) // a Collator is not safe for concurrent use
 	for _, list := range children {
-		byTitle(c, list)
+		byOrder(c, list)
 	}
-	byTitle(c, loose)
+	byOrder(c, loose)
 
 	seen := map[string]bool{}
 	var out *[]entry
@@ -261,7 +284,7 @@ func (r *Renderer) href(d *engine.Doc) string {
 func (r *Renderer) treeLines(es []entry) string {
 	var lines []string
 	for _, e := range es {
-		line := strings.Repeat("  ", e.depth) + "- [" + titleOf(e.d) + "](" + r.href(e.d) + ")"
+		line := strings.Repeat("  ", e.depth) + "- [" + r.title(e.d) + "](" + r.href(e.d) + ")"
 		if r.Full && e.d.Hidden {
 			line += " (hidden)"
 		}
@@ -287,7 +310,7 @@ func (r *Renderer) treeBlocks() []string {
 	if un := r.uncovered(); len(un) > 0 {
 		var lines []string
 		for _, d := range un {
-			lines = append(lines, "- ["+titleOf(d)+"]("+r.href(d)+")")
+			lines = append(lines, "- ["+r.title(d)+"]("+r.href(d)+")")
 		}
 		out = append(out, "## Documents without code coverage", strings.Join(lines, "\n"))
 	}
@@ -389,12 +412,12 @@ func (pg *page) relations(blocks *[]string) {
 	}
 	if v := d.Root.Get("parent"); v != nil && v.Kind == loader.String {
 		if t := r.P.Graph[v.Str]; r.hasPage(t) {
-			add("Parent", pg.link(t, titleOf(t), ""))
+			add("Parent", pg.link(t, r.title(t), ""))
 		}
 	}
 	var items []string
 	for _, s := range r.backrefs()[d.ID] {
-		items = append(items, "- "+pg.link(s, titleOf(s), ""))
+		items = append(items, "- "+pg.link(s, r.title(s), ""))
 	}
 	add("Referenced by", strings.Join(items, "\n"))
 	items = nil

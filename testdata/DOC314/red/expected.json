@@ -1,0 +1,50 @@
+[
+  {
+    "code": "DOC314",
+    "rule": "style/manual-number",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 12,
+    "endLine": 1,
+    "endColumn": 21,
+    "message": "the number is added by docc; remove it from the title",
+    "hint": "Set the position with the order field; docc numbers pages and sections itself."
+  },
+  {
+    "code": "DOC314",
+    "rule": "style/manual-number",
+    "level": "warn",
+    "file": "docs/src/scope.json",
+    "line": 2,
+    "column": 12,
+    "endLine": 2,
+    "endColumn": 24,
+    "message": "the number is added by docc; remove it from the title",
+    "hint": "Set the position with the order field; docc numbers pages and sections itself."
+  },
+  {
+    "code": "DOC314",
+    "rule": "style/manual-number",
+    "level": "warn",
+    "file": "docs/src/scope.json",
+    "line": 6,
+    "column": 32,
+    "endLine": 6,
+    "endColumn": 42,
+    "message": "the number is added by docc; remove it from the title",
+    "hint": "Set the position with the order field; docc numbers pages and sections itself."
+  },
+  {
+    "code": "DOC314",
+    "rule": "style/manual-number",
+    "level": "warn",
+    "file": "docs/src/scope.json",
+    "line": 6,
+    "column": 65,
+    "endLine": 6,
+    "endColumn": 75,
+    "message": "the number is added by docc; remove it from the title",
+    "hint": "Set the position with the order field; docc numbers pages and sections itself."
+  }
+]

@@ -49,7 +49,7 @@ func (pg *page) refs(s string) string {
 		if t == nil || !pg.r.hasPage(t) {
 			continue // validation rejects this; keep the text
 		}
-		anc, text := "", titleOf(t)
+		anc, text := "", pg.r.title(t)
 		if name, ok := strings.CutPrefix(field, "^"); ok {
 			anc = name // a block anchor link reads as the document title
 		} else if hasField && field != "body" && field != "title" {
@@ -58,7 +58,7 @@ func (pg *page) refs(s string) string {
 				anc = engine.HeadingAnchor(field[strings.LastIndexByte(field, '/')+1:])
 			}
 			if a.title != "" { // a section is named by its own title
-				text = a.title
+				text = numbered(a.num, a.title)
 			}
 		}
 		b.WriteString(s[last:ref.Start])

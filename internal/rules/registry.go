@@ -51,6 +51,7 @@ var all = []Rule{
 	{"DOC310", "markdown/raw-html", "markdown", W, false, "Raw HTML or script in text.", `"body": "<div>x</div>"`, `"body": "x"`},
 	{"DOC312", "markdown/broken-anchor", "markdown", E, false, "[[id#field]] points to a field that does not exist or is a service field.", `[[b#missing]]`, `[[b#statement]]`},
 	{"DOC313", "text/repeated-word", "text", W, false, "The same word twice in a row.", `"body": "the the system"`, `"body": "the system"`},
+	{"DOC314", "style/manual-number", "style", W, false, "With \"numbering\": true in docc.json, a document title or a section key starts with its own number (\"2.1 Scope\"); docc adds the numbers. Field text is not checked.", `"title": "2.1 Scope"`, `"title": "Scope", "order": 1`},
 	{"DOC352", "style/hedging", "style", W, false, "Hedging and vague-quantity words: maybe, probably, usually, several, various.", `"body": "It will probably work."`, `"body": "It works."`},
 	{"DOC353", "style/timeless-words", "style", W, false, "Words that age: currently, recently, soon, new.", `"body": "Currently we use X."`, `"body": "We use X."`},
 	{"DOC401", "trace/unknown-id", "trace", E, true, "A bad code tag: a docc: target that does not resolve (document, field, section or anchor), or a docc:begin region that is not closed, is nested, or a stray docc:end. Works only when trace.scan is set.", "// docc: missing-doc", "// docc: existing-doc#^limit"},

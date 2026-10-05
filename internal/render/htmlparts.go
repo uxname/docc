@@ -56,8 +56,8 @@ func (r *Renderer) badges(d *engine.Doc) string {
 	return `<div class="badges">` + b.String() + "</div>\n"
 }
 
-func chip(d *engine.Doc) string {
-	return `<a class="chip" href="#` + esc(d.ID) + `">` + esc(titleOf(d)) + `</a>`
+func (r *Renderer) chip(d *engine.Doc) string {
+	return `<a class="chip" href="#` + esc(d.ID) + `">` + esc(r.title(d)) + `</a>`
 }
 
 // crumbs is the chain of parents above the title, outermost first.
@@ -82,7 +82,7 @@ func (r *Renderer) crumbs(d *engine.Doc) string {
 	}
 	var parts []string
 	for _, p := range chain {
-		parts = append(parts, `<a href="#`+esc(p.ID)+`">`+esc(titleOf(p))+`</a>`)
+		parts = append(parts, `<a href="#`+esc(p.ID)+`">`+esc(r.title(p))+`</a>`)
 	}
 	return `<nav class="crumbs" aria-label="Breadcrumb">` + strings.Join(parts, `<span aria-hidden="true">›</span>`) + "</nav>\n"
 }
@@ -131,7 +131,7 @@ func (r *Renderer) rows(kids []*engine.Doc) string {
 	var b strings.Builder
 	b.WriteString("<h2 class=\"rh\">Pages in this section</h2>\n<div class=\"rows\">\n")
 	for _, k := range kids {
-		b.WriteString(`<a class="row" href="#` + esc(k.ID) + `"><span class="ct">` + esc(titleOf(k)))
+		b.WriteString(`<a class="row" href="#` + esc(k.ID) + `"><span class="ct">` + esc(r.title(k)))
 		if kind := strField(k, "kind"); kind != "" {
 			b.WriteString(` <span class="badge kind">` + esc(kind) + `</span>`)
 		}
@@ -161,13 +161,13 @@ func (r *Renderer) related(d *engine.Doc, kids []*engine.Doc) string {
 	if n := d.Root.Get("parent"); n != nil && n.Kind == loader.String {
 		if p := r.P.Graph[n.Str]; r.hasPage(p) {
 			shown[p.ID] = true
-			group("Parent", chip(p))
+			group("Parent", r.chip(p))
 		}
 	}
 	var refs, cov []string
 	for _, s := range r.backrefs()[d.ID] {
 		if !shown[s.ID] {
-			refs = append(refs, chip(s))
+			refs = append(refs, r.chip(s))
 		}
 	}
 	for _, c := range r.P.Covers[d.ID] {
@@ -182,13 +182,13 @@ func (r *Renderer) related(d *engine.Doc, kids []*engine.Doc) string {
 }
 
 // prevNext links to the neighbours in tree order.
-func prevNext(docs []*engine.Doc, i int) string {
+func (r *Renderer) prevNext(docs []*engine.Doc, i int) string {
 	var b strings.Builder
 	if i > 0 {
-		b.WriteString(`<a class="prev" href="#` + esc(docs[i-1].ID) + `"><small>Previous</small><span>` + esc(titleOf(docs[i-1])) + `</span></a>`)
+		b.WriteString(`<a class="prev" href="#` + esc(docs[i-1].ID) + `"><small>Previous</small><span>` + esc(r.title(docs[i-1])) + `</span></a>`)
 	}
 	if i+1 < len(docs) {
-		b.WriteString(`<a class="next" href="#` + esc(docs[i+1].ID) + `"><small>Next</small><span>` + esc(titleOf(docs[i+1])) + `</span></a>`)
+		b.WriteString(`<a class="next" href="#` + esc(docs[i+1].ID) + `"><small>Next</small><span>` + esc(r.title(docs[i+1])) + `</span></a>`)
 	}
 	if b.Len() == 0 {
 		return ""
@@ -235,7 +235,7 @@ func (r *Renderer) navList(es []entry) string {
 		} else {
 			b.WriteString("<li>")
 		}
-		b.WriteString(`<a href="#` + esc(e.d.ID) + `">` + esc(titleOf(e.d)))
+		b.WriteString(`<a href="#` + esc(e.d.ID) + `">` + esc(r.title(e.d)))
 		if r.Full && e.d.Hidden {
 			b.WriteString(` <span class="badge bad">hidden</span>`)
 		}
@@ -267,7 +267,7 @@ func (r *Renderer) navHTML() string {
 		var l strings.Builder
 		l.WriteString("<ul>")
 		for _, d := range un {
-			l.WriteString(`<li><a href="#` + esc(d.ID) + `">` + esc(titleOf(d)) + `</a></li>`)
+			l.WriteString(`<li><a href="#` + esc(d.ID) + `">` + esc(r.title(d)) + `</a></li>`)
 		}
 		l.WriteString("</ul>")
 		group("Documents without code coverage", len(un), l.String())

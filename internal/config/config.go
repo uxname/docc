@@ -65,6 +65,7 @@ type Config struct {
 	HasTags bool
 
 	Recommended   bool
+	Numbering     bool
 	MaxWarnings   int
 	HasMaxWarning bool
 
@@ -198,6 +199,12 @@ func Parse(data []byte, root, file string) (*Config, error) {
 				e = w.typeErr(m.Value, "true or false")
 			} else {
 				c.Recommended = m.Value.Str == "true"
+			}
+		case "numbering":
+			if m.Value.Kind != loader.Bool {
+				e = w.typeErr(m.Value, "true or false")
+			} else {
+				c.Numbering = m.Value.Str == "true"
 			}
 		case "maxWarnings":
 			c.MaxWarnings, e = w.nonNegInt(m.Value)

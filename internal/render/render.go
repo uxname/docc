@@ -22,9 +22,10 @@ type Renderer struct {
 
 	back    map[string][]*engine.Doc
 	slugs   map[*engine.Doc]map[*loader.Node]anchorInfo
-	single  bool // single-file build: links are in-file anchors, no Header per page
-	anchors bool // single Markdown file: emit <a id> before pages and field headings
-	html    bool // single HTML file: pages carry only body and fields
+	nums    map[string]string // page numbers by document id; nil until numberOf runs
+	single  bool              // single-file build: links are in-file anchors, no Header per page
+	anchors bool              // single Markdown file: emit <a id> before pages and field headings
+	html    bool              // single HTML file: pages carry only body and fields
 }
 
 // Files returns every generated file: path relative to the output directory
@@ -101,6 +102,50 @@ func titleOf(d *engine.Doc) string {
 	return d.ID
 }
 
+// numberOf returns the number of a page ("2.1"), or "" when numbering is off
+// or the page has none: roots, pages without a visible parent chain, hidden
+// pages. Numbers come from the tree without hidden documents, so the full
+// build shows the same numbers.
+func (r *Renderer) numberOf(d *engine.Doc) string {
+	if !r.P.Cfg.Numbering {
+		return ""
+	}
+	if r.nums == nil {
+		r.nums = map[string]string{}
+		v := *r
+		v.Full = false
+		tree, _ := v.layout()
+		var stack []string // number of the current entry at each depth
+		count := map[string]int{}
+		for _, e := range tree {
+			stack = stack[:e.depth]
+			num := ""
+			if e.depth > 0 {
+				parent := stack[e.depth-1] // "" for a root: its children count across all roots
+				count[parent]++
+				num = strconv.Itoa(count[parent])
+				if parent != "" {
+					num = parent + "." + num
+				}
+				r.nums[e.d.ID] = num
+			}
+			stack = append(stack, num)
+		}
+	}
+	return r.nums[d.ID]
+}
+
+// numbered puts a number before a title.
+func numbered(num, title string) string {
+	if num == "" {
+		return title
+	}
+	return num + " " + title
+}
+
+// title is the displayed title of a page: its number, if any, and title.
+func (r *Renderer) title(d *engine.Doc) string { return numbered(r.numberOf(d), titleOf(d)) }
+
 // lf makes line breaks in generated text \n only.
 func lf(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", "\n"), "\r", "\n")
@@ -136,8 +181,9 @@ func heading(key string) string {
 
 var anchor = engine.Anchor
 
-// anchorInfo is the anchor of a field or section; title is set for a section.
-type anchorInfo struct{ anchor, title string }
+// anchorInfo is the anchor of a field or section; title is set for a section,
+// num for a section of a numbered page. The anchor never depends on the number.
+type anchorInfo struct{ anchor, title, num string }
 
 // anchorOf returns the anchor of a free field or section of d (and, for a
 // section, its title). Equal anchors on one page are numbered -1, -2, ... in
@@ -152,7 +198,7 @@ func (r *Renderer) anchorOf(d *engine.Doc, n *loader.Node) anchorInfo {
 		m = map[*loader.Node]anchorInfo{}
 		r.slugs[d] = m
 		used := map[string]bool{}
-		add := func(v *loader.Node, key string, section bool) {
+		add := func(v *loader.Node, key string, section bool, num string) {
 			base := engine.HeadingAnchor(key)
 			id := base
 			for i := 1; used[id]; i++ {
@@ -161,25 +207,33 @@ func (r *Renderer) anchorOf(d *engine.Doc, n *loader.Node) anchorInfo {
 			used[id] = true
 			m[v] = anchorInfo{anchor: id}
 			if section {
-				m[v] = anchorInfo{id, oneLine.Replace(key)}
+				m[v] = anchorInfo{id, oneLine.Replace(key), num}
 			}
 		}
-		var sections func(v *loader.Node)
-		sections = func(v *loader.Node) {
+		// sections are numbered under the page number, continuously across the fields of the page
+		var sections func(v *loader.Node, prefix string, count *int)
+		sections = func(v *loader.Node, prefix string, count *int) {
 			for _, mem := range v.Members {
 				if mem.Key != engine.SectionsKey {
-					add(mem.Value, mem.Key, true)
+					num := ""
+					if prefix != "" {
+						*count++
+						num = prefix + "." + strconv.Itoa(*count)
+					}
+					add(mem.Value, mem.Key, true, num)
 					if engine.IsSections(mem.Value) {
-						sections(mem.Value)
+						sub := 0
+						sections(mem.Value, num, &sub)
 					}
 				}
 			}
 		}
+		top := 0
 		for _, mem := range d.Root.Members {
 			if !reserved[mem.Key] && !isEmpty(mem.Value) {
-				add(mem.Value, mem.Key, false)
+				add(mem.Value, mem.Key, false, "")
 				if engine.IsSections(mem.Value) {
-					sections(mem.Value)
+					sections(mem.Value, r.numberOf(d), &top)
 				}
 			}
 		}

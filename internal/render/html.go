@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/santiment/docc/internal/engine"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -38,9 +39,15 @@ func (r *Renderer) HTML() string {
 		// no WithUnsafe: raw HTML written by agents is dropped, only <br> survives
 		goldmark.WithRendererOptions(renderer.WithNodeRenderers(util.Prioritized(brOnly{}, 100))),
 	)
-	conv := func(prefix, src string) string {
+	conv := func(d *engine.Doc, src string) string {
+		g := &ids{prefix: d.ID, used: map[string]bool{}, nums: map[string]bool{}}
+		for _, a := range s.slugs[d] { // filled by s.page
+			if a.num != "" {
+				g.nums[a.num] = true
+			}
+		}
 		var b bytes.Buffer
-		ctx := parser.NewContext(parser.WithIDs(&ids{prefix: prefix, used: map[string]bool{}}))
+		ctx := parser.NewContext(parser.WithIDs(g))
 		if err := md.Convert([]byte(src), &b, parser.WithContext(ctx)); err != nil {
 			return html.EscapeString(src) // goldmark does not fail on a string; keep the text anyway
 		}
@@ -53,12 +60,12 @@ func (r *Renderer) HTML() string {
 	var content strings.Builder
 	for i, d := range docs {
 		if i == 0 {
-			title = titleOf(d)
+			title = s.title(d)
 		}
-		content.WriteString(`<section class="page" id="` + esc(d.ID) + `" data-title="` + esc(titleOf(d)) + "\">\n")
-		content.WriteString(s.crumbs(d) + "<h1>" + esc(titleOf(d)) + "</h1>\n" + s.badges(d))
-		content.WriteString("<div class=\"doc\">\n" + conv(d.ID, s.page(d)) + "</div>\n")
-		content.WriteString(s.rows(kids[d.ID]) + s.related(d, kids[d.ID]) + prevNext(docs, i))
+		content.WriteString(`<section class="page" id="` + esc(d.ID) + `" data-title="` + esc(s.title(d)) + "\">\n")
+		content.WriteString(s.crumbs(d) + "<h1>" + esc(s.title(d)) + "</h1>\n" + s.badges(d))
+		content.WriteString("<div class=\"doc\">\n" + conv(d, s.page(d)) + "</div>\n")
+		content.WriteString(s.rows(kids[d.ID]) + s.related(d, kids[d.ID]) + s.prevNext(docs, i))
 		content.WriteString("</section>\n")
 	}
 	banner := ""
@@ -77,14 +84,20 @@ func (r *Renderer) HTML() string {
 }
 
 // ids gives heading ids <prefix>--<anchor>: the page id plus the same anchor
-// that [[id#field]] links use, unique within the page.
+// that [[id#field]] links use, unique within the page. A section number
+// (from nums) is left out, so numbering does not move the anchors.
 type ids struct {
 	prefix string
 	used   map[string]bool
+	nums   map[string]bool
 }
 
 func (g *ids) Generate(value []byte, _ ast.NodeKind) []byte {
-	base := g.prefix + "--" + anchor(string(value))
+	v := string(value)
+	if num, rest, ok := strings.Cut(v, " "); ok && g.nums[num] {
+		v = rest
+	}
+	base := g.prefix + "--" + anchor(v)
 	id := base
 	for n := 1; g.used[id]; n++ {
 		id = base + "-" + strconv.Itoa(n)
