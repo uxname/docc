@@ -151,9 +151,13 @@ type Hit struct {
 // Find returns all matches in s ordered by position. The text is compared in
 // NFC, so a word typed with combining marks ("й" as и + U+0306) is found too;
 // the offsets are those of s.
-func (m *Matcher) Find(s string) []Hit {
-	if norm.NFC.IsNormalString(s) {
-		return m.find(s)
+func (m *Matcher) Find(s string) []Hit { return m.FindLower(s, strings.ToLower(s)) }
+
+// FindLower is Find with strings.ToLower(s) given, so several matchers can
+// share it.
+func (m *Matcher) FindLower(s, lower string) []Hit {
+	if IsNFC(s) {
+		return m.find(s, lower)
 	}
 	// segN[i] and segO[i] are the starts of the i-th normalization segment in the NFC text and in s
 	var b strings.Builder
@@ -165,7 +169,8 @@ func (m *Matcher) Find(s string) []Hit {
 		b.Write(it.Next())
 	}
 	segN, segO = append(segN, b.Len()), append(segO, len(s))
-	hits := m.find(b.String())
+	n := b.String()
+	hits := m.find(n, strings.ToLower(n))
 	for i := range hits {
 		k := sort.SearchInts(segN, hits[i].Start+1) - 1 // the segment that holds the start
 		hits[i].Start = segO[k]
@@ -174,8 +179,7 @@ func (m *Matcher) Find(s string) []Hit {
 	return hits
 }
 
-func (m *Matcher) find(s string) []Hit {
-	lower := strings.ToLower(s)
+func (m *Matcher) find(s, lower string) []Hit {
 	fast := len(lower) == len(s)
 	var hits []Hit
 	for i := range m.entries {

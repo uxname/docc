@@ -4,7 +4,7 @@
 
 spec
 
-The pipeline is: load the JSON files, check the built-in and kind schemas, build the reference graph, run the rules, render, and compare the output folder.
+The pipeline is: load the JSON files, check the built-in and kind schemas, build the reference graph, run the rules, render, and compare the output folder and `docc.lock`.
 
 The code is a Go module with a single binary and a small set of packages under internal.
 
@@ -14,23 +14,25 @@ The speed targets are in [Performance](performance.md).
 
 loader: a strict JSON parser that keeps offsets, positions and duplicate keys.
 
-config: reads docc.json and resolves effective levels per file.
+config: reads `docc.json` and resolves effective levels.
 
-schema: compiles JSON Schema (draft 2020-12), restricts references to the schemas folder and maps errors to source positions.
+schema: compiles JSON Schema (draft 2020-12), restricts references to the schemas folder and maps errors to source positions. `kind.go` reads a kind schema: whether it is strict, the allowed top-level names, `x-docc-target` and `x-docc-covered`.
 
-mdscan and text: scanners for code blocks, references, includes, words and sentences.
+mdscan and text: scanners for code blocks, references, includes, block anchors, words and sentences.
 
-engine: loads a project and runs all checks, including the graph and the suppressions.
+engine: loads a project and runs all checks, including the graph and the suppressions. `lock.go` computes the links with their hashes, reads and writes `docc.lock` and reports DOC209, DOC402 and DOC503.
 
 rules: the registry of all rules; explain, rules and the skill are built from it.
 
-render, fixes, trace, report: Markdown output, fix patches, code tags and the text and JSON reports.
+render: Markdown pages, the tree, the single Markdown and HTML files, numbering and images. `lang.go` holds the Russian labels for `"lang": "ru"`.
+
+trace and report: `docc:` tags in code files, and the text and JSON reports.
 
 cmd/docc: the command line.
 
 ## Principles
 
-Golden tests, a pure core with input and output at the edges, stable codes and an idempotent fix. The only dependency besides the standard library is the JSON Schema library.
+Golden tests, a pure core with input and output at the edges, and stable codes. The dependencies besides the standard library are the JSON Schema library, goldmark for the single HTML file and golang.org/x/text.
 
 ## Parent
 

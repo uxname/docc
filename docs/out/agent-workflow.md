@@ -4,17 +4,19 @@
 
 spec
 
-A person states a task in words. An agent edits the JSON, runs docc validate and fixes what it reports, then runs docc build. The person reads the generated Markdown and checks meaning and readability, and CI runs docc check before the merge.
+A person states a task in words. An agent edits the JSON, runs `docc validate` and fixes what it reports, then runs `docc build`. The person reads the generated Markdown and checks meaning and readability, and CI or the pre-commit hook runs `docc check` before the merge.
 
-The skill in skills/docc/SKILL.md teaches an agent the format, the loop, the diagnostics and the rules of conduct. The main rule: fix the cause of a diagnostic instead of hiding it with docIgnore, and link only to ids that exist.
+The skill in `skills/docc/SKILL.md` teaches an agent the format, the loop, the diagnostics and the rules of conduct. The main rule: fix the cause of a diagnostic instead of hiding it with `docIgnore`, and link only to ids that exist.
 
-A review comment on the Markdown is applied to the sources by the agent or by a person, never to docs/out. A merge conflict in docs/out is resolved by running docc build; a conflict in a source file shows up as DOC101 and is resolved first.
+When DOC209 reports a link whose target changed, the agent reads the source document, brings it in line with the target if needed and then runs `docc ack` with the target. DOC402 works the same way for a code region and the document it points to. `docc build` writes `docc.lock`, which is committed with the sources and `docs/out`.
+
+A review comment on the Markdown is applied to the sources by the agent or by a person, never to `docs/out`. A merge conflict in `docs/out` or `docc.lock` is resolved by running `docc build`; a conflict in a source file shows up as DOC101 and is resolved first.
 
 The commands are described in [Commands](commands.md) and the rules in [Rules and diagnostics](rules.md).
 
 ## Limit
 
-Reachability checks only the shape of the graph. Whether a link means something is left to the reviewer.
+Reachability checks only the shape of the graph. Whether a link means something is left to the reviewer; `docc.lock` only shows that a linked text changed.
 
 ## Parent
 

@@ -6,11 +6,14 @@
     "These choices were made where the specification left room. Each can be changed.",
     "The reachability check (DOC203) is skipped when none of the roots exists, because every document would then be an orphan; DOC205 already reports the missing roots.",
     "Custom rules keep their own level when the recommended preset is switched off, because they exist only when the project defines them.",
-    "The acronym rule DOC355 reports only the first use of an unexplained acronym in a document.",
-    "The comparison in the rule DOC306 uses the Jaccard coefficient of character trigrams; a match is reported on the document with the larger id.",
-    "The single files docs/out.md and docs/out.html take their names from the output folder (out and outFull plus an extension), so no settings exist for them. They are not checked by docc check and are meant to stay out of git.",
+    "The single files `docs/out.md` and `docs/out.html` take their names from the output folder (`out` and `outFull` plus an extension), so no settings exist for them. They are not checked by `docc check` and are meant to stay out of git.",
     "The single HTML file is built from the same Markdown as the single Markdown file, converted by the library goldmark with the GitHub extensions. Page anchors are the document id and field anchors are the document id, two hyphens and the field anchor.",
-    "The kind schema is required by default (DOC109) and the check is flat: a document is checked by the schema of its own kind only, schemas do not inherit from each other. The setting is a rule, so it is switched off in the rules section of docc.json like any other rule that is not core.",
+    "Every document has a kind schema (DOC109 is core) and the check is flat: a document is checked by the schema of its own kind only, schemas do not inherit from each other.",
+    "A strict kind is closed by docc, not by `unevaluatedProperties`: the schema states a boolean `additionalProperties`, and docc collects the allowed names from the top-level properties, `allOf` branches and local `$ref` targets. This way an unknown field gets one clear message with a suggested name, instead of a validator error about a keyword the author did not write.",
+    "`docc build` confirms the links that are not yet in `docc.lock` on its own. A separate confirmation of every added link would be a ritual that people run without reading; the lock only has to notice when a target changes after a link exists.",
+    "Code gets a hash only inside `docc:begin` and `docc:end` regions. A hash of a whole file would warn on every unrelated edit, and warnings nobody acts on teach people to ignore them.",
+    "Numbers of pages and sections are computed from the tree when `numbering` is on, so they never go out of date. Only a number typed at the start of a title or a section key is reported (DOC314); the text of fields is not checked, because a number there is part of the content.",
+    "A link exists only as a reference in the text. A separate list of links would repeat the text and drift from it, and a reference in a sentence also says why the documents are related.",
     "The rules are listed in [[rules]] and the settings in [[config]]."
   ],
   "not_verified": [

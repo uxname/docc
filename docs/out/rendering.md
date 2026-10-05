@@ -4,13 +4,19 @@
 
 spec
 
-One universal renderer produces a page per visible document at the path of its source: docs/src/a/b.json becomes docs/out/a/b.md. Pages start with a comment saying they are generated.
+One universal renderer produces a page per visible document at the path of its source: `docs/src/a/b.json` becomes `docs/out/a/b.md`. Pages start with a comment saying they are generated.
 
-The title is the first level heading. Under it comes one line with the kind, status, priority and tags separated by a middle dot, then the body without a heading of its own, then the free fields in file order, each as a second level section named after the field. At the end of the page come the sections Parent, Referenced by (documents that point here through parent or through references outside notes) and Covered by (code files with a covers tag, as file:line).
+The title is the first level heading. Under it comes one line with the kind, status, priority and tags separated by a middle dot, then the body without a heading of its own, then the free fields in file order, each as a second level section named after the field. At the end of the page come the sections Parent, Referenced by (documents that point here through `parent` or through references outside `notes`) and Covered by (the paths of code files with a `docc:` tag, without line numbers). There is no separate section of links: the references stay in the text.
 
 A reference to a document becomes a relative link whose text is the title of the target; a reference to a field or to a section inside a field links to its heading. A field made of sections is a second level heading with third level headings (up to the sixth) for the sections; in the single HTML file they appear in the table of contents of the page. Objects become bullet lists and arrays of objects become numbered lists; when every object has the same plain fields in the same order they become a table. Empty values create no section.
 
-The file docs/out/_tree.md shows the documents nested by parent, starting with the roots. Pages with the same parent, and the pages without a parent, are sorted by title: ignoring case, numbers by value, Latin before Cyrillic, with the same rules on every machine; equal titles go by id.
+The file `docs/out/_tree.md` shows the documents nested by parent, starting with the roots. Pages with the same parent, and the pages without a parent, are sorted by `order`, and the pages without it come after the rest, sorted by title: ignoring case, numbers by value, Latin before Cyrillic, with the same rules on every machine; equal titles go by id.
+
+With `"numbering": true` in `docc.json` docc numbers the pages: the children of the roots get 1, 2 and so on, deeper pages 2.1, and the sections of a field 2.1.1. The numbers appear in headings, in the tree, in the navigation and in the text of links; anchors do not change. Hidden documents are left out of the count, so the audit build shows the same numbers. A number typed into a title or a section key is reported as DOC314.
+
+`"lang": "ru"` in `docc.json` translates the fixed labels of the pages and of the single HTML file, such as Parent, Referenced by and Covered by; the default is English.
+
+An image `![alt](path)` with a relative path is resolved from the folder of the document, checked by DOC213 and copied into the output folder at the same path as in the sources; the single HTML file embeds it as a data URI. Markdown footnotes are rendered in the HTML file.
 
 The flags single and html of docc build also write all pages into one file next to the folder: docs/out.md and docs/out.html. The pages follow the order of the tree, and links between them are anchors inside the file, so the file works on its own. The Markdown file starts with the tree and puts an invisible anchor before every page and field section. The HTML file needs no network: styles and scripts are inside. It shows one page at a time, with the document tree and a search box on the left and the headings of the page on the right. A page has a breadcrumb trail, badges for kind, status, priority and tags, one-line fields collected into a property list, a list of its child pages with the start of their text, links to related pages and to the neighbours in tree order. Search lists pages with the matching text, the keys / and Ctrl+K open it. In the tree, titles of pages of one level line up and the fold arrow sits in its own strip on the left, so a page with children does not look nested in its neighbour. The tree starts folded and opens only the way to the current page; long lists show a window of items with buttons for the rest, so a thousand documents stay usable. The theme follows the system, and print styles put every page on its own sheet. Without scripts all pages follow each other. Raw HTML written in the documents is dropped, only the line break in table cells is kept. The look is fixed, there are no templates.
 
@@ -29,5 +35,6 @@ The flag full on build adds hidden documents, notes and suppressions as service 
 ## Referenced by
 
 - [Commands](commands.md)
+- [Configuration](config.md)
 - [Document model](document-model.md)
 - [docc](index.md)

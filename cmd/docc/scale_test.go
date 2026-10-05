@@ -27,11 +27,12 @@ func genScale(t testing.TB, dir string, n int) {
 			t.Fatal(err)
 		}
 	}
-	write("docs/schemas/note.json", `{"type":"object","properties":{"status":{"enum":["draft","accepted"]},"statement":{"type":"string","minLength":5}}}`)
+	write("docs/schemas/note.json", `{"type":"object","properties":{"status":{"enum":["draft","accepted"]},"statement":{"type":"string","minLength":5}},"additionalProperties":true}`)
+	write("docs/schemas/page.json", `{"type":"object","additionalProperties":true}`)
 	sections := 10
-	write("docs/src/index.json", `{"title":"Индекс"}`)
+	write("docs/src/index.json", `{"title":"Индекс","kind":"page"}`)
 	for s := 0; s < sections; s++ {
-		write(fmt.Sprintf("docs/src/sec-%d.json", s), fmt.Sprintf(`{"title":"Раздел %d","parent":"index"}`, s))
+		write(fmt.Sprintf("docs/src/sec-%d.json", s), fmt.Sprintf(`{"title":"Раздел %d","kind":"page","parent":"index"}`, s))
 	}
 	for i := 0; i < n-1-sections; i++ {
 		var b strings.Builder

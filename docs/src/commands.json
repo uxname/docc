@@ -3,19 +3,20 @@
   "kind": "spec",
   "parent": "index",
   "body": [
-    "docc init creates docc.json, docs/schemas/page.json and docs/src/index.json (kind page) if they do not exist and builds docs/out, so the first check is green.",
-    "docc validate checks the sources. With the flag fix it applies safe fixes; with fix and unsafe it applies the unsafe ones too.",
-    "docc build writes the Markdown into docs/out and removes everything else from that folder. When the sources have errors of the groups 1xx or 2xx it writes nothing and exits with code 1. With the flag full it writes the audit build into docs/out-full and leaves docs/out alone.",
-    "The flags single and html add one file next to the folder, both can be combined with full: docc build --single writes all pages into one Markdown file (docs/out.md) and docc build --html into one self-contained HTML file (docs/out.html). The folder of pages is built as before. These files are for reading, are not committed and are not checked by docc check. With full they are docs/out-full.md and docs/out-full.html.",
-    "docc check is read-only and made for CI. It runs validate and then compares docs/out with what the sources produce (DOC501). With errors of the groups 1xx or 2xx the comparison is skipped.",
-    "Every command accepts --help and prints its flags with an example. The global flags may stand before or after the command. docc init ends with a Next block of three steps.",
-    "docc explain takes a code (DOC301) or a name (style/hedging), not a group. It prints a rule with an example, docc rules lists the rules with their effective levels (the flag file adds the overrides of one file), docc schema document and docc schema config print the JSON Schemas.",
+    "`docc init` creates `docc.json`, `docs/schemas/page.json` and `docs/src/index.json` (kind page) if they do not exist and builds `docs/out`, so the first check is green. In a git repository without a pre-commit hook it also writes `.git/hooks/pre-commit`, which runs `docc check`, so a commit with invalid documentation is refused; an existing hook is never touched.",
+    "`docc validate` checks the sources and prints the diagnostics. It changes no files.",
+    "`docc build` writes the Markdown into `docs/out`, removes everything else from that folder and updates `docc.lock`: links that are not in the lock are recorded as confirmed, links that are gone are dropped. When the sources have errors of the groups 1xx or 2xx it writes nothing and exits with code 1. With the flag full it writes the audit build into `docs/out-full` and leaves `docs/out` alone.",
+    "The flags single and html add one file next to the folder, both can be combined with full: `docc build --single` writes all pages into one Markdown file (`docs/out.md`) and `docc build --html` into one self-contained HTML file (`docs/out.html`). The folder of pages is built as before. These files are for reading, are not committed and are not checked by `docc check`. With full they are `docs/out-full.md` and `docs/out-full.html`.",
+    "`docc check` is read-only and made for CI. It runs validate, then compares `docs/out` with what the sources produce (DOC501) and `docc.lock` with the links in the sources (DOC503). With errors of the groups 1xx or 2xx the comparison is skipped.",
+    "`docc ack` takes document ids, link targets or code files and sets the stored hashes in `docc.lock` to the current ones for every line whose source or target is the argument, or whose target lies in the document with that id. It is run after a person has checked the sources flagged by DOC209 or DOC402. `docc ack --all` confirms every link.",
+    "Every command accepts --help and prints its flags with an example. The global flags may stand before or after the command. `docc init` ends with a Next block of steps.",
+    "`docc explain` takes a code (DOC301) or a name (style/hedging), not a group. It prints a rule with an example; `docc rules` lists the rules with their effective levels; `docc schema document` and `docc schema config` print the JSON Schemas.",
     "The settings are in [[config]] and the generated pages in [[rendering]]."
   ],
   "flags": "format text or json, config, max-diagnostics (default 20, errors first, applies to both formats, 0 means no limit, negative values are rejected), max-warnings.",
   "exit_codes": [
     "0: clean.",
     "1: errors, or more effective warnings than the limit.",
-    "2: wrong usage or configuration, including a missing source folder. The message goes to stderr."
+    "2: wrong usage or configuration, including a missing source folder or a kind schema that does not load. The message goes to stderr."
   ]
 }

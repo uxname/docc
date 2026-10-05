@@ -101,10 +101,23 @@ func (p *Project) targetHash(target string) (h string, ok bool) {
 // out; a pair seen twice keeps its first place.
 func (p *Project) Links() []Link {
 	seen := map[string]bool{}
+	type hashed struct {
+		h  string
+		ok bool
+	}
+	cache := map[string]hashed{} // many links share a target
 	var out []Link
 	add := func(l Link) {
-		h, ok := p.targetHash(l.Target)
-		if !ok || seen[l.key()] {
+		if seen[l.key()] {
+			return
+		}
+		c, done := cache[l.Target]
+		if !done {
+			c.h, c.ok = p.targetHash(l.Target)
+			cache[l.Target] = c
+		}
+		h, ok := c.h, c.ok
+		if !ok {
 			return
 		}
 		seen[l.key()] = true

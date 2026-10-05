@@ -4,24 +4,40 @@
   "parent": "index",
   "body": [
     "A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected.",
-    "The built-in schema requires only title. The reserved fields are kind, status, parent, tags, body, notes, hidden and docIgnore. Every other field is free and holds prose.",
-    "Every document must have a kind, and the folder of schemas must hold <kind>.json for it: the kind schema says which fields are required and which statuses are allowed. A document without a kind, or with a kind that has no schema, is reported as DOC109. A project that wants free documents switches DOC109 off in docc.json.",
+    "The built-in schema requires only `title`. The reserved fields are `title`, `kind`, `status`, `parent`, `order`, `tags`, `body`, `notes`, `hidden` and `docIgnore`. Every other field is free and holds prose. `order` is a number that sorts a document among its siblings.",
     "The checks are listed in [[rules]] and the generated pages in [[rendering]]."
   ],
+  "typing": [
+    "Every document has a `kind`, and the folder of schemas holds `<kind>.json` for it. A document without a kind, or with a kind that has no schema, is reported as DOC109, a core rule that cannot be switched off.",
+    "A kind schema must set a boolean `additionalProperties` at the top level: `true` makes the kind flexible, `false` makes it strict. Without it the schema does not load and docc exits with code 2. For a strict kind docc checks the field names itself: the allowed names are the reserved fields, the top-level `properties` and the `properties` of the top-level `allOf` branches and of local `$ref` targets; names under `if` and `then` are not counted. An unknown field is DOC106 with the message `unknown field X` and a suggestion of the closest allowed name.",
+    "The kind schema sees the whole document, reserved fields included, so it can require `parent` or limit the values of `status`.",
+    "`\"x-docc-target\": [\"goal\"]` on a property, `parent` included, limits the kinds of the documents its references point to; a reference to another kind is DOC214. `\"x-docc-covered\": true` at the top level of a kind schema means that every visible document of the kind needs a `docc:` tag in code, otherwise DOC403 warns when `trace.scan` is set.",
+    "`docc init` writes `page.json` with `\"additionalProperties\": true`."
+  ],
   "references": [
-    "Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one of its fields. Both are checked like parent. A reference outside notes is what relates two documents: it joins them in the graph and puts the source under Referenced by on the target page. Code blocks and inline code are ignored.",
+    "Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one of its fields. Both are checked like `parent`. A reference in the text is the link: it joins two documents in the graph and puts the source under Referenced by on the target page; there is no separate list of links. References inside `notes` are checked but give no reachability. Code blocks and inline code are ignored.",
     "A long text is an array of paragraphs, one per line of the file. The rules are applied to each element on its own.",
-    "A reference can name a section inside a field: `[[id#field/section]]`. Sections are described below. DOC312 checks the whole path."
+    "A reference can name a section inside a field, `[[id#field/section]]`, or a block anchor, `[[id#^name]]`. DOC312 checks the whole path and reports an unknown field, section or anchor."
+  ],
+  "block_anchors": [
+    "A paragraph, a list item or a one-line field that ends with a space and `^name` gets a block anchor; the name starts with a letter. `[[id#^name]]` links to that paragraph and `{{id#^name}}` includes it without the marker. The page gets an HTML anchor at that place.",
+    "A name used twice in one document, or equal to the anchor of a field or section heading of the page, is DOC212, a core rule."
+  ],
+  "change_tracking": [
+    "The file `docc.lock` lies next to `docc.json` and is committed. It holds one line per link, sorted: `<source> <target> <targetHash> [<codeHash>]`. The source is a document id or a code file; spaces in a target are written as `%20`. Links in `notes` and in hidden documents are recorded too.",
+    "The target hash covers only what the link points to: a block anchor hashes its paragraph, a field or section hashes its value, and a whole document is hashed without `notes`, `docIgnore`, `hidden`, `order` and `parent`. The code hash exists only for a `docc:begin` region and covers its trimmed text in NFC.",
+    "`docc build` without errors records the links that are not in the lock with their hashes, so they count as confirmed, drops the links that are gone and keeps the stored hashes of the rest. When a target changes after that, DOC209 warns on the source: read it and check that it still agrees. When a code region changes, DOC402 warns: check the document it points to. `docc ack` stores the current hashes and clears both warnings.",
+    "`docc check` reports DOC503, a core rule, when `docc.lock` does not match the links in the sources; `docc build` fixes it."
   ],
   "hidden_material": [
-    "notes are for agents and never reach the Markdown. References inside notes are checked but give no reachability.",
-    "A document with hidden set to true is checked like any other, gets no page and cannot be linked from a visible document.",
-    "The include `{{id#field}}` or `{{id#field/section}}` is replaced at build time by the text of that field or section, so a fact is stored once."
+    "`notes` are for agents and never reach the Markdown.",
+    "A document with `hidden` set to `true` is checked like any other, gets no page and cannot be linked from a visible document.",
+    "The include `{{id#field}}`, `{{id#field/section}}` or `{{id#^name}}` is replaced at build time by the text it names, so a fact is stored once."
   ],
-  "suppression": "docIgnore lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.",
+  "suppression": "`docIgnore` lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.",
   "sections": [
     "A free field can hold named sections: an object with the member `\"$sections\": true`, whose other keys are section titles. A value is text, an array of paragraphs, a list object or another set of sections. It is rendered as a second level heading for the field, third level for a section, and so on up to the sixth, in file order. A section without text keeps its heading, so a link to it has a target.",
-    "An object without the marker is rendered as a bullet list, as before. The marker means nothing outside the value of a field or a section.",
-    "A section is linked with `[[id#field/section]]`; the link text is the section title, not the title of the document. A section is included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules and docIgnore.path treat sections like fields. A kind schema describes the marker as `\"properties\": {\"$sections\": {\"const\": true}}`."
+    "An object without the marker is rendered as a bullet list. The marker means nothing outside the value of a field or a section.",
+    "A section is linked with `[[id#field/section]]`; the link text is the section title, not the title of the document. A section is included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules and `docIgnore` paths treat sections like fields. A kind schema describes the marker as `\"properties\": {\"$sections\": {\"const\": true}}`."
   ]
 }

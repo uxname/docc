@@ -67,9 +67,10 @@ func (p *Project) checkText() {
 				p.emit(d, "DOC303", sn.Node.Start, sn.Node.End, fmt.Sprintf(listRules[1].msg, strings.TrimSpace(s)), "Write the real text or remove the field.")
 				continue
 			}
+			segs := proseOf(sn)
 			for _, lr := range listRules {
 				if on(lr.code) {
-					p.listHits(d, sn, lr, res.Rule(lr.code))
+					p.listHits(d, sn, segs, lr, res.Rule(lr.code))
 				}
 			}
 			if on("DOC313") {
@@ -79,7 +80,23 @@ func (p *Project) checkText() {
 	}
 }
 
-func (p *Project) listHits(d *Doc, sn *StrNode, lr listRule, st config.Setting) {
+// prose is one prose segment of a string with its lower case, shared by the
+// word lists.
+type prose struct {
+	start      int
+	seg, lower string
+}
+
+func proseOf(sn *StrNode) []prose {
+	var out []prose
+	for _, sp := range sn.Scan().Prose() {
+		seg := sn.Node.Str[sp.Start:sp.End]
+		out = append(out, prose{sp.Start, seg, strings.ToLower(seg)})
+	}
+	return out
+}
+
+func (p *Project) listHits(d *Doc, sn *StrNode, segs []prose, lr listRule, st config.Setting) {
 	var m, allow *text.Matcher
 	if lr.code == "DOC303" {
 		m = p.matcher(lr.builtin, nil)
@@ -89,15 +106,14 @@ func (p *Project) listHits(d *Doc, sn *StrNode, lr listRule, st config.Setting) 
 	if len(st.Params.Allow) > 0 {
 		allow = p.matcher(nil, st.Params.Allow)
 	}
-	s := sn.Node.Str
-	for _, sp := range sn.Scan().Prose() {
-		seg := s[sp.Start:sp.End]
-		hits := m.Find(seg)
+	for _, sp := range segs {
+		seg := sp.seg
+		hits := m.FindLower(seg, sp.lower)
 		if allow != nil {
-			hits = text.Without(hits, allow.Find(seg))
+			hits = text.Without(hits, allow.FindLower(seg, sp.lower))
 		}
 		for _, h := range hits {
-			a, b := d.Range(sn.Node, sp.Start+h.Start, sp.Start+h.End)
+			a, b := d.Range(sn.Node, sp.start+h.Start, sp.start+h.End)
 			p.emit(d, lr.code, a, b, fmt.Sprintf(lr.msg, seg[h.Start:h.End]), lr.hint)
 		}
 	}

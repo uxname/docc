@@ -10,11 +10,13 @@ Data is the source of truth and Markdown is generated output. Invalid documentat
 
 ## Goals
 
-Strict checks like a code linter: schemas, broken links, orphans, duplicate ids and cycles are errors.
+Strict checks like a code linter: kind schemas, broken links, orphans, duplicate ids and cycles are errors.
 
-Rules with codes and groups, levels error, warn and off, a recommended preset, overrides by folder, automatic fixes, explain, and JSON output for agents and CI.
+Rules with codes and groups, levels error, warn and off, a recommended preset, explain, and JSON output for agents and CI.
 
-Diagnostics that tell an agent how to fix the problem, the command docc schema and the skill docc.
+Links that notice change: `docc.lock` records what every link and code region pointed to, and a warning appears when the target changes after it was confirmed.
+
+Diagnostics that tell an agent how to fix the problem, the command `docc schema` and the skill docc.
 
 Deterministic output and a single static binary for Linux, macOS and Windows.
 
@@ -23,6 +25,8 @@ Deterministic output and a single static binary for Linux, macOS and Windows.
 A wiki, an editor, a site generator (a server, one HTML file per page, styling options) or a task tracker. One self-contained HTML file for reading is not a site and is allowed.
 
 Checking meaning: the core never calls a language model, a human reviewer checks meaning and readability of the Markdown.
+
+Changing the sources: docc reports problems and has no automatic fixes.
 
 Output templates: one universal renderer is used, and the single HTML file has one fixed look without custom themes or styles.
 

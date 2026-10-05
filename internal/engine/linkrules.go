@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/text/unicode/norm"
+	"github.com/santiment/docc/internal/text"
 
 	"github.com/santiment/docc/internal/loader"
 )
@@ -75,7 +75,7 @@ func canonical(b *strings.Builder, n *loader.Node, skip map[string]bool) {
 // control characters as \u00XX.
 func quote(b *strings.Builder, s string) {
 	b.WriteByte('"')
-	for _, r := range norm.NFC.String(s) {
+	for _, r := range text.NFC(s) {
 		switch {
 		case r == '"':
 			b.WriteString(`\"`)
