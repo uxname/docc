@@ -36,18 +36,18 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 }
 ```
 
-- `title` is required. `kind`, `status`, `parent` (one id), `links` (ids), `tags`, `body`, `notes`, `hidden`, `reviewed`, `docIgnore` are the reserved fields. Any other field is free and holds prose.
+- `title` is required by the built-in schema, and `kind` is required by DOC109 (see below). `kind`, `status`, `parent` (one id), `links` (ids), `tags`, `body`, `notes`, `hidden`, `reviewed`, `docIgnore` are the reserved fields. Any other field is free and holds prose.
 - Write long text as an array of paragraphs, one paragraph per line of the file: `"body": ["One.", "Two."]`. Inside a paragraph a line break is `\n`.
 - Link to another document inside text with `[[id]]`, or to one of its fields with `[[id#field]]`. The id must exist. Put every document you link in the text also into `links` (or `parent`); `docc validate --fix` can add the missing ones.
 - Every visible document must be reachable from a root (default root: the document `index`) through `parent`, `links` or `[[id]]`. Reachability checks only the shape of the graph. Whether a link makes sense is for a human reviewer, so link a document where a reader would look for it, not only to silence the error.
-- A kind schema `docs/schemas/<kind>.json` (JSON Schema 2020-12) checks every document of that kind. You may write such schemas yourself. A schema can `$ref` other files inside the schemas folder and nothing else (no remote or outside references).
+- Every document has a `kind`, and `docs/schemas/<kind>.json` (JSON Schema 2020-12) must exist: it checks every document of that kind. A document without `kind`, or with a kind that has no schema, is an error (DOC109); if a project switched DOC109 off in `docc.json`, free documents are allowed. You may write such schemas yourself, and you must when you introduce a new kind. A schema can `$ref` other files inside the schemas folder and nothing else (no remote or outside references).
 
 ## Hidden material
 
 - `notes`: an array of strings for agents, printed only by the audit build (`docc build --full`). Read the notes of a document before you edit it. Links `[[id]]` in notes are checked but do not make a document reachable.
 - `"hidden": true`: the document is checked but gets no page in `docs/out`, and is not required to be reachable. A visible document cannot link to a hidden one (DOC210).
 - `{{id#field}}` inside `body` or a free field is replaced at build time by the text of that field of another document, so a fact is stored once. Write the whole paragraph as `"{{id#field}}"` to insert all paragraphs of the target. Not allowed: `{{id}}` without a field, service fields, cycles.
-- `reviewed`: `{"target-id": "8-hex-fingerprint"}` confirms a link after you checked the target. Rule DOC209 (off by default) prints the expected fingerprint in its hint. Never write a fingerprint without actually reading the target.
+- `reviewed`: `{"target-id": "8-hex-fingerprint"}` confirms a link after you checked the target. Rule DOC209 is a warning by default: every id in `links` (and every `[[id]]` in `notes`) needs an entry, and an entry goes stale when the target changes. The hint prints the expected fingerprint. Never copy it without actually reading the target and checking that the link still makes sense; a copied fingerprint defeats the check.
 - `docc build --single` and `docc build --html` also write all pages into one Markdown file (`docs/out.md`) and one self-contained HTML file (`docs/out.html`) for a person to read or to send. They are generated, not committed and not checked by `docc check`; do not edit them. They combine with `--full` (`docs/out-full.md`, `docs/out-full.html`).
 - `docc build --full` writes everything into `docs/out-full` (not committed): hidden documents, notes, suppressions, reviewed entries and include boundaries. Use it to audit what agents work with.
 
@@ -64,7 +64,7 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 
 ## Starting a project
 
-`docc init` creates `docc.json` and `docs/src/index.json` (the root). Then declare the vocabulary in `docc.json`, otherwise a typo in `kind` or a tag is not caught:
+`docc init` creates `docc.json`, `docs/schemas/page.json` (a schema that requires only `title`) and `docs/src/index.json` (the root, `"kind": "page"`). Then declare the vocabulary in `docc.json`, otherwise a typo in `kind` or a tag is not caught:
 
 ```json
 { "kinds": ["goal", "requirement", "decision", "question"], "tags": ["security", "ux"] }
@@ -72,7 +72,7 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 
 Add the generated single files to `.gitignore`: `docs/out.md`, `docs/out.html`, `docs/out-full/`, `docs/out-full.md`, `docs/out-full.html`.
 
-Suggested kinds: `goal`, `requirement`, `decision`, `question`. Suggested statuses: `draft`, `accepted`, `superseded` (a question: `open`, `closed`). To enforce fields and statuses write `docs/schemas/<kind>.json`. One fact is one document: do not put several requirements into one file; each gets its own file with its own `parent`.
+Suggested kinds: `goal`, `requirement`, `decision`, `question`. Suggested statuses: `draft`, `accepted`, `superseded` (a question: `open`, `closed`). Write `docs/schemas/<kind>.json` for each kind to enforce its fields and statuses; a kind without a schema is DOC109.
 
 ## Changing a decision
 
@@ -97,7 +97,6 @@ With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// @covers req-
 5. Keep facts in one place: use `{{id#field}}` or a link instead of copying text.
 6. State facts. Replace words such as "fast", "easy", "soon" with measurable statements; leave no TODO or ??? in committed text.
 7. Do **not** invent numbers, dates, reasons or decisions that the source does not contain. If the source says "a few weeks", do not write "4 weeks": put the doubt into `notes` or create a question document (`"kind": "question"`, `"status": "open"`).
-8. One fact, one document. Never pack several requirements into one file.
 9. A literal `[[id]]`, `{{ }}` or `<tag>` in prose goes into backticks; otherwise docc reads it as a link, an include or HTML.
 
 ## Before you finish
