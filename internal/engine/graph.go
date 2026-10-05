@@ -66,9 +66,6 @@ func (p *Project) brokenRefs() {
 		if n := parentOf(d); n != nil {
 			check(n.Str, n.Start, n.End, "parent", true)
 		}
-		for _, n := range StringList(d.Root.Get("links")) {
-			check(n.Str, n.Start, n.End, "links", true)
-		}
 		for _, r := range d.Refs {
 			if !r.OK {
 				p.emit(d, "DOC202", r.Start, r.End, fmt.Sprintf("malformed reference %q", "[["+r.Inner+"]]"),
@@ -132,9 +129,6 @@ func (p *Project) parentCycles() {
 	for _, d := range p.Docs {
 		if onCycle[d.ID] && p.inGraph(d) {
 			n := parentOf(d)
-			if n.Str == d.ID {
-				continue // a self-parent is reported once, as DOC206
-			}
 			p.emit(d, "DOC204", n.Start, n.End, fmt.Sprintf("the parent chain of %q forms a cycle", d.ID),
 				"Break the cycle: point one document in it to a different parent.")
 		}
@@ -184,11 +178,6 @@ func (p *Project) roots() {
 		if n := parentOf(d); n != nil && visible(n.Str) {
 			link(d.ID, n.Str)
 		}
-		for _, n := range StringList(d.Root.Get("links")) {
-			if visible(n.Str) {
-				link(d.ID, n.Str)
-			}
-		}
 		for _, r := range d.Refs {
 			if r.OK && !r.Notes && visible(r.Target) {
 				link(d.ID, r.Target)
@@ -215,12 +204,12 @@ func (p *Project) roots() {
 		if !d.Parsed() || !p.inGraph(d) || d.Hidden || seen[d.ID] {
 			continue
 		}
-		// a broken parent is already reported (DOC105 / DOC206): no cascade
+		// a broken parent is already reported (DOC105 / DOC204): no cascade
 		if pn := d.Root.Get("parent"); pn != nil && (pn.Kind != loader.String || pn.Str == d.ID) {
 			continue
 		}
 		p.emitNoPos(d, "DOC203", fmt.Sprintf("document %q is not reachable from the roots %v", d.ID, p.Cfg.Roots),
-			"Link it from a reachable document (links or [[id]] in the text) or set its parent.")
+			"Link it from a reachable document ([[id]] in the text) or set its parent.")
 	}
 }
 

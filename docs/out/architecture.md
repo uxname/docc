@@ -8,6 +8,8 @@ The pipeline is: load the JSON files, check the built-in and kind schemas, build
 
 The code is a Go module with a single binary and a small set of packages under internal.
 
+The speed targets are in [Performance](performance.md).
+
 ## Packages
 
 loader: a strict JSON parser that keeps offsets, positions and duplicate keys.
@@ -33,10 +35,6 @@ Golden tests, a pure core with input and output at the edges, stable codes and a
 ## Parent
 
 [docc](index.md)
-
-## Links
-
-- [Performance](performance.md)
 
 ## Referenced by
 

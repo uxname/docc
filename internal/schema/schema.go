@@ -173,7 +173,7 @@ func oneLine(err error) string {
 func (s *Set) HasKind(kindName string) bool { return s.kinds[kindName] != nil }
 
 // builtinFields are the fields the built-in schema is applied to (DOC105).
-var builtinFields = []string{"title", "kind", "status", "parent", "links", "tags", "reviewed", "body", "notes", "hidden", "order"}
+var builtinFields = []string{"title", "kind", "status", "parent", "tags", "body", "notes", "hidden", "order"}
 
 // CheckBuiltin validates the built-in fields of a document (DOC105).
 // A missing or blank title is left to DOC103 and is not reported here.

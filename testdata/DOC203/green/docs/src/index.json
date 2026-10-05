@@ -1,1 +1,1 @@
-{ "title": "Index", "links": ["a", "b"], "body": "See [[b]].", "kind": "page" }
+{ "title": "Index", "body": "See [[a]] and [[b]].", "kind": "page" }

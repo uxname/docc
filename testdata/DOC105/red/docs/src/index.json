@@ -1,7 +1,6 @@
 {
   "title": "Index",
   "kind": "Bad Kind",
-  "links": ["a", "a"],
   "tags": ["x", "y", "x"],
   "hidden": "yes",
   "body": 5

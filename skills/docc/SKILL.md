@@ -30,16 +30,15 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
   "kind": "requirement",
   "status": "accepted",
   "parent": "goal-secure-login",
-  "links": ["adr-lockout-policy"],
   "body": ["First paragraph.", "Second paragraph."],
   "statement": "After five wrong passwords in a row the system locks sign-in for 15 minutes. See [[adr-lockout-policy]]."
 }
 ```
 
-- `title` is required by the built-in schema, and `kind` is required by DOC109 (see below). `kind`, `status`, `parent` (one id), `links` (ids), `tags`, `body`, `notes`, `hidden`, `reviewed`, `docIgnore` are the reserved fields. Any other field is free and holds prose.
+- `title` is required by the built-in schema, and `kind` is required by DOC109 (see below). `kind`, `status`, `parent` (one id), `order` (number), `tags`, `body`, `notes`, `hidden`, `docIgnore` are the reserved fields. Any other field is free and holds prose.
 - Write long text as an array of paragraphs, one paragraph per line of the file: `"body": ["One.", "Two."]`. Inside a paragraph a line break is `\n`.
-- Link to another document inside text with `[[id]]`, or to one of its fields with `[[id#field]]` (to a section inside a field: `[[id#field/section]]`). The id must exist. Put every document you link in the text also into `links` (or `parent`); `docc validate --fix` can add the missing ones.
-- Every visible document must be reachable from a root (default root: the document `index`) through `parent`, `links` or `[[id]]`. Reachability checks only the shape of the graph. Whether a link makes sense is for a human reviewer, so link a document where a reader would look for it, not only to silence the error.
+- Link to another document inside text with `[[id]]`, or to one of its fields with `[[id#field]]` (to a section inside a field: `[[id#field/section]]`). The id must exist. A reference in the text is the link: there is no separate list of links.
+- Every visible document must be reachable from a root (default root: the document `index`) through `parent` or `[[id]]`. Reachability checks only the shape of the graph. Whether a link makes sense is for a human reviewer, so link a document where a reader would look for it, not only to silence the error.
 - Every document has a `kind`, and `docs/schemas/<kind>.json` (JSON Schema 2020-12) must exist: it checks every document of that kind. A document without `kind`, or with a kind that has no schema, is an error (DOC109); if a project switched DOC109 off in `docc.json`, free documents are allowed. You may write such schemas yourself, and you must when you introduce a new kind. A schema can `$ref` other files inside the schemas folder and nothing else (no remote or outside references).
 
 ## Hidden material
@@ -48,17 +47,15 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 - `"hidden": true`: the document is checked but gets no page in `docs/out`, and is not required to be reachable. A visible document cannot link to a hidden one (DOC210).
 - `{{id#field}}` inside `body` or a free field is replaced at build time by the text of that field of another document, so a fact is stored once. Write the whole paragraph as `"{{id#field}}"` to insert all paragraphs of the target. Not allowed: `{{id}}` without a field, service fields, cycles.
 - A free field can hold named sections: an object with `"$sections": true` whose other keys are section titles (value: text, array of paragraphs, or another such object). It renders as `##` field, `###` section, `####` below. Link with `[[id#field/section]]` (the link text is the section title, so do not retype it), include with `{{id#field/section}}`; DOC312 reports a renamed or removed section. A schema for the kind must allow the marker: `"properties": {"$sections": {"const": true}}`.
-- `reviewed`: `{"target-id": "8-hex-fingerprint"}` confirms a link after you checked the target. Rule DOC209 is a warning by default: every id in `links` (and every `[[id]]` in `notes`) needs an entry, and an entry goes stale when the target changes. The hint prints the expected fingerprint. Never copy it without actually reading the target and checking that the link still makes sense; a copied fingerprint defeats the check.
 - `docc build --single` and `docc build --html` also write all pages into one Markdown file (`docs/out.md`) and one self-contained HTML file (`docs/out.html`) for a person to read or to send. They are generated, not committed and not checked by `docc check`; do not edit them. They combine with `--full` (`docs/out-full.md`, `docs/out-full.html`).
-- `docc build --full` writes everything into `docs/out-full` (not committed): hidden documents, notes, suppressions, reviewed entries and include boundaries. Use it to audit what agents work with.
+- `docc build --full` writes everything into `docs/out-full` (not committed): hidden documents, notes, suppressions and include boundaries. Use it to audit what agents work with.
 
 ## Reading diagnostics
 
-`docc validate --format json` prints an envelope: `{"summary": {checked, errors, warnings, shown, truncated}, "diagnostics": [{code, rule, level, file, line, column, endLine, endColumn, message, hint, fixable}]}`. Positions point into the JSON source. Each `hint` says how to fix the problem. The text format prints one line per finding: `file:line:col: level CODE (group/name) message`.
+`docc validate --format json` prints an envelope: `{"summary": {checked, errors, warnings, shown, truncated}, "diagnostics": [{code, rule, level, file, line, column, endLine, endColumn, message, hint}]}`. Positions point into the JSON source. Each `hint` says how to fix the problem. The text format prints one line per finding: `file:line:col: level CODE (group/name) message`.
 
 - By default only the first 20 diagnostics are shown. If `summary.truncated` is true, fix those and run again, or run `docc validate --format json --max-diagnostics 0` for all of them.
 - `docc explain DOC301` or `docc explain style/hedging` describes one rule with a violating and a fixed example (a code or a name, not a group). `docc rules` lists every rule with its level.
-- `fixable: "safe"` is applied by `docc validate --fix`; `"unsafe"` needs `--fix --unsafe`. Review the diff afterwards.
 - Warnings do not fail the run unless `--max-warnings` or `maxWarnings` is set. Vague words (`style/hedging`, DOC352) and time-bound words (`style/timeless-words`, DOC353) are warnings: fix them when the cause is real.
 - `docc <command> --help` prints the flags of a command.
 - DOC901 means a `docIgnore` entry suppresses nothing: delete it.
@@ -94,7 +91,7 @@ With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// @covers req-
    Core rules (syntax, graph, build) cannot be suppressed.
 2. Link only to ids that exist. Never invent an id to remove DOC202; create the document or remove the link.
 3. Do not edit `docs/out` or `docs/out-full`. Edit `docs/src`, then `docc validate` and `docc build`.
-4. Do not rename a document without updating every `parent`, `links` and `[[id]]` that points to it.
+4. Do not rename a document without updating every `parent` and `[[id]]` that points to it.
 5. Keep facts in one place: use `{{id#field}}` or a link instead of copying text.
 6. State facts. Replace words such as "fast", "easy", "soon" with measurable statements; leave no TODO or ??? in committed text.
 7. Do **not** invent numbers, dates, reasons or decisions that the source does not contain. If the source says "a few weeks", do not write "4 weeks": put the doubt into `notes` or create a question document (`"kind": "question"`, `"status": "open"`).
@@ -105,7 +102,7 @@ With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// @covers req-
 1. `docc validate --format json`: `summary.errors` is 0, and every warning is fixed or justified.
 2. `docc build`, then `docc check` passes.
 3. No invented facts: every number and reason comes from the source.
-4. Every document you linked is in `links` or `parent`; no document is left unreachable.
+4. No document is left unreachable.
 5. After changing a decision, the old values are gone from `docs/src`, code and config.
 
 ## Hooks for Claude Code

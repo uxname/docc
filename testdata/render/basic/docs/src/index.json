@@ -3,7 +3,6 @@
   "kind": "note",
   "status": "accepted",
   "tags": ["draft", "x"],
-  "links": ["deep", "req"],
   "body": [
     "Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].",
     "{{req#statement}}"

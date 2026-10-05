@@ -11,7 +11,7 @@ func TestPageMetaRelationsAndTable(t *testing.T) {
 	project(t, map[string]string{
 		"docc.json":           `{"trace":{"scan":["code/**"]}}`,
 		"code/a.go":           "package a\n\n// @covers req\n",
-		"docs/src/index.json": `{"title":"Index","body":"Start.","links":["req"]}`,
+		"docs/src/index.json": `{"title":"Index","body":"Start with [[req]]."}`,
 		"docs/src/req.json": `{"title":"Req","kind":"requirement","status":"accepted","priority":2,"tags":["x","y"],
 			"parent":"index","body":"Text.",
 			"acceptance":[{"given":"A","when":"B","then":"C | D"},{"given":"E","when":"F","then":"G"}]}`,
@@ -48,7 +48,7 @@ func TestPageMetaRelationsAndTable(t *testing.T) {
 
 func TestOutputHasNoCyrillic(t *testing.T) {
 	project(t, map[string]string{
-		"docs/src/index.json": `{"title":"I","notes":["n"],"reviewed":{"index":"00000000"},"docIgnore":[{"rule":"DOC303","reason":"r","path":"/body"}],"body":"b"}`,
+		"docs/src/index.json": `{"title":"I","notes":["n"],"docIgnore":[{"rule":"DOC303","reason":"r","path":"/body"}],"body":"b"}`,
 		"docs/src/h.json":     `{"title":"H","hidden":true,"parent":"index"}`,
 	})
 	do("build")
@@ -72,7 +72,7 @@ func TestOutputHasNoCyrillic(t *testing.T) {
 
 func TestSingleFileBuild(t *testing.T) {
 	project(t, map[string]string{
-		"docs/src/index.json": `{"title":"Index","body":"See [[req#statement]] and [[req]].","links":["req"]}`,
+		"docs/src/index.json": `{"title":"Index","body":"See [[req#statement]] and [[req]]."}`,
 		"docs/src/req.json":   `{"title":"Req","parent":"index","statement":"Fact."}`,
 		"docs/src/h.json":     `{"title":"Hid","hidden":true,"parent":"index","body":"Secret","notes":["n"]}`,
 	})
@@ -128,7 +128,7 @@ func TestSingleFileNotWrittenOnStructuralErrors(t *testing.T) {
 
 func TestHTMLBuild(t *testing.T) {
 	project(t, map[string]string{
-		"docs/src/index.json": `{"title":"Index <b>","body":["See [[req#statement]] and [[req]].","<script>alert(1)</script> text"],"links":["req"]}`,
+		"docs/src/index.json": `{"title":"Index <b>","body":["See [[req#statement]] and [[req]].","<script>alert(1)</script> text"]}`,
 		"docs/src/req.json": `{"title":"Req","kind":"requirement","status":"accepted","priority":2,"tags":["t1"],
 			"parent":"index","statement":["Fact.","More."],"owner":"Team","stage":"alpha",
 			"body":"Click <a id=\"x\" onclick=\"evil()\">here</a>.","rows":[{"a":"one\ntwo","b":"x"}]}`,
@@ -215,7 +215,7 @@ const sectionsAudit = `{"title":"Audit","parent":"index","body":"Intro.",
 
 func sectionsProject(t *testing.T, audit string) {
 	project(t, map[string]string{
-		"docs/src/index.json":     `{"title":"Index","links":["audit","questions"]}`,
+		"docs/src/index.json":     `{"title":"Index","body":"See [[audit]] and [[questions]]."}`,
 		"docs/src/audit.json":     audit,
 		"docs/src/questions.json": `{"title":"Questions","parent":"index","Renewal date":"See [[audit#17.1 Critical/17.1.2 No renewal date]] and [[audit#17.1 Critical/Deeper/Same]] and [[audit#17.1 Critical/Same]].","Copy":"{{audit#17.1 Critical/Deeper/Same}}"}`,
 	})
@@ -286,7 +286,7 @@ func TestSectionsAnchorCheck(t *testing.T) {
 
 func TestSectionsIncludeCycle(t *testing.T) {
 	project(t, map[string]string{
-		"docs/src/index.json": `{"title":"Index","links":["a"],
+		"docs/src/index.json": `{"title":"Index","body":"See [[a]].",
 			"F":{"$sections":true,"one":"{{index#F/two}}","two":"{{index#F/one}}"}}`,
 		"docs/src/a.json": `{"title":"A","parent":"index"}`,
 	})

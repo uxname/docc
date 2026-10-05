@@ -1,7 +1,6 @@
 {
   "title": "Deep doc",
   "parent": "index",
-  "links": ["index"],
   "acceptance_criteria": ["Given X.", "Then Y with [[req#statement]]."],
   "body": "Back to [[index]] and [[index#owner_name]].",
   "kind": "page"

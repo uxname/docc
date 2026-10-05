@@ -75,11 +75,6 @@ Text Requirement here and `{{literal}}` code and [Deep doc](#deep).
 - 1
 - 2.50
 
-## Links
-
-- [Deep doc](#deep)
-- [Requirement](#req)
-
 ## Referenced by
 
 - [Deep doc](#deep)
@@ -108,10 +103,6 @@ Then Y with [Requirement](#req--statement).
 
 [Index](#index)
 
-## Links
-
-- [Index](#index)
-
 ## Referenced by
 
 - [Index](#index)
@@ -139,10 +130,6 @@ Second fact.
 ## Parent
 
 [Index](#index)
-
-## Links
-
-- [Deep doc](#deep)
 
 ## Referenced by
 

@@ -6,7 +6,7 @@ spec
 
 One universal renderer produces a page per visible document at the path of its source: docs/src/a/b.json becomes docs/out/a/b.md. Pages start with a comment saying they are generated.
 
-The title is the first level heading. Under it comes one line with the kind, status, priority and tags separated by a middle dot, then the body without a heading of its own, then the free fields in file order, each as a second level section named after the field. At the end of the page come the sections Parent, Links, Referenced by (documents that point here through parent, links or references) and Covered by (code files with a covers tag, as file:line).
+The title is the first level heading. Under it comes one line with the kind, status, priority and tags separated by a middle dot, then the body without a heading of its own, then the free fields in file order, each as a second level section named after the field. At the end of the page come the sections Parent, Referenced by (documents that point here through parent or through references outside notes) and Covered by (code files with a covers tag, as file:line).
 
 A reference to a document becomes a relative link whose text is the title of the target; a reference to a field or to a section inside a field links to its heading. A field made of sections is a second level heading with third level headings (up to the sixth) for the sections; in the single HTML file they appear in the table of contents of the page. Objects become bullet lists and arrays of objects become numbered lists; when every object has the same plain fields in the same order they become a table. Empty values create no section.
 
@@ -16,17 +16,15 @@ The flags single and html of docc build also write all pages into one file next 
 
 The output is deterministic: stable sorting, no timestamps, line feeds only, UTF-8 without a byte order mark. Carriage returns and byte order marks in input files and in the output folder are normalized when reading and comparing.
 
+The source format is in [Document model](document-model.md).
+
 ## Audit build
 
-The flag full on build adds hidden documents, notes, suppressions and confirmed links as service sections, and wraps every include in comments that show where the inserted text starts and ends.
+The flag full on build adds hidden documents, notes and suppressions as service sections, and wraps every include in comments that show where the inserted text starts and ends.
 
 ## Parent
 
 [docc](index.md)
-
-## Links
-
-- [Document model](document-model.md)
 
 ## Referenced by
 

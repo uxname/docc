@@ -16,7 +16,7 @@ func TestRulesList(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &rows); err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 33 { // 34 codes minus the generic DOC800 row
+	if len(rows) != 30 { // 31 codes minus the generic DOC800 row
 		t.Fatalf("%d rules", len(rows))
 	}
 	got := map[string]map[string]string{}
@@ -31,7 +31,7 @@ func TestRulesList(t *testing.T) {
 	}
 	_, text, _ := do("rules")
 	lines := strings.Split(strings.TrimSpace(text), "\n")
-	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 34 || strings.Contains(lines[0], "FIXABLE") {
+	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 31 || strings.Contains(lines[0], "FIXABLE") {
 		t.Fatalf("table:\n%s", text)
 	}
 	for _, ln := range lines {
@@ -81,9 +81,9 @@ func TestExplain(t *testing.T) {
 	if _, byName, _ := do("explain", "text/forbidden-words"); byName != out {
 		t.Error("explain by name differs from explain by code")
 	}
-	code, out, _ = do("explain", "DOC208", "--format", "json")
+	code, out, _ = do("explain", "DOC214", "--format", "json")
 	var e map[string]string
-	if err := json.Unmarshal([]byte(out), &e); err != nil || code != 0 || e["code"] != "DOC208" || strings.Contains(out, "fix") {
+	if err := json.Unmarshal([]byte(out), &e); err != nil || code != 0 || e["code"] != "DOC214" || strings.Contains(out, "fix") {
 		t.Fatalf("%v %v", err, e)
 	}
 	if code, out, _ := do("explain", "custom/x"); code != 0 || !strings.Contains(out, "DOC800 custom/x") || !strings.Contains(out, "x+") {

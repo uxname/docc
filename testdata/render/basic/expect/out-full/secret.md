@@ -6,7 +6,7 @@ page
 
 > Hidden document.
 
-Hidden text with <!-- include req#statement -->First fact. Second fact.<!-- /include -->
+Hidden text about [Index](index.md) with <!-- include req#statement -->First fact. Second fact.<!-- /include -->
 
 ## Notes (hidden)
 
@@ -21,13 +21,3 @@ Hidden text with <!-- include req#statement -->First fact. Second fact.<!-- /inc
 1. - **rule:** DOC303
    - **reason:** demo
    - **path:** /body
-
-## Reviewed
-
-> Service information.
-
-- **index:** 00000000
-
-## Links
-
-- [Index](index.md)

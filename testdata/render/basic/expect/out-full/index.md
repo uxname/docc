@@ -61,11 +61,6 @@ Text <!-- include req#title -->Requirement<!-- /include --> here and `{{literal}
 
 - note about [Deep doc](a/deep.md) stays hidden
 
-## Links
-
-- [Deep doc](a/deep.md)
-- [Requirement](req.md)
-
 ## Referenced by
 
 - [Deep doc](a/deep.md)

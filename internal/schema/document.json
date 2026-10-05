@@ -9,7 +9,6 @@
     "kind": { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "Document kind; selects docs/schemas/<kind>.json." },
     "status": { "type": "string", "description": "Allowed values are set by the kind schema." },
     "parent": { "type": "string", "description": "Id of the parent document." },
-    "links": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Ids of related documents." },
     "body": {
       "anyOf": [
         { "type": "string" },
@@ -21,11 +20,6 @@
     "notes": { "type": "array", "items": { "type": "string" }, "description": "Hidden notes for agents; printed only by the audit build (build --full)." },
     "hidden": { "type": "boolean", "description": "true: checked but not printed to out/." },
     "order": { "type": "number", "description": "Position among siblings." },
-    "reviewed": {
-      "type": "object",
-      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
-      "description": "Confirmed links: target id to the 8-hex fingerprint of the target when it was checked."
-    },
     "docIgnore": {
       "type": "array",
       "items": {

@@ -1,1 +1,1 @@
-{ "title": "Index", "links": ["req-a", "req-b", "req-c", "req-d"], "kind": "page" }
+{ "title": "Index", "body": "See [[req-a]], [[req-b]], [[req-c]] and [[req-d]].", "kind": "page" }

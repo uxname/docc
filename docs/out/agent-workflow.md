@@ -10,6 +10,8 @@ The skill in skills/docc/SKILL.md teaches an agent the format, the loop, the dia
 
 A review comment on the Markdown is applied to the sources by the agent or by a person, never to docs/out. A merge conflict in docs/out is resolved by running docc build; a conflict in a source file shows up as DOC101 and is resolved first.
 
+The commands are described in [Commands](commands.md) and the rules in [Rules and diagnostics](rules.md).
+
 ## Limit
 
 Reachability checks only the shape of the graph. Whether a link means something is left to the reviewer.
@@ -17,11 +19,6 @@ Reachability checks only the shape of the graph. Whether a link means something 
 ## Parent
 
 [docc](index.md)
-
-## Links
-
-- [Commands](commands.md)
-- [Rules and diagnostics](rules.md)
 
 ## Referenced by
 

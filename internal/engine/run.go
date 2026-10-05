@@ -15,7 +15,6 @@ func (p *Project) Validate() []diag.Diagnostic {
 	p.checkKinds()
 	p.checkText()
 	p.checkMarkdown()
-	p.checkLinks()
 	p.checkCustom()
 	p.checkTrace()
 	p.suppress()

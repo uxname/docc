@@ -144,7 +144,7 @@ func (r *Renderer) rows(kids []*engine.Doc) string {
 	return b.String() + "</div>\n"
 }
 
-// related is the closing block of a page: Parent, Links, Referenced by and
+// related is the closing block of a page: Parent, Referenced by and
 // Covered by as compact chips. Documents already shown as parent or as child
 // cards are not repeated.
 func (r *Renderer) related(d *engine.Doc, kids []*engine.Doc) string {
@@ -164,12 +164,7 @@ func (r *Renderer) related(d *engine.Doc, kids []*engine.Doc) string {
 			group("Parent", chip(p))
 		}
 	}
-	var links, refs, cov []string
-	for _, n := range engine.StringList(d.Root.Get("links")) {
-		if t := r.P.Graph[n.Str]; r.hasPage(t) && !shown[t.ID] {
-			links = append(links, chip(t))
-		}
-	}
+	var refs, cov []string
 	for _, s := range r.backrefs()[d.ID] {
 		if !shown[s.ID] {
 			refs = append(refs, chip(s))
@@ -178,7 +173,6 @@ func (r *Renderer) related(d *engine.Doc, kids []*engine.Doc) string {
 	for _, c := range r.P.Covers[d.ID] {
 		cov = append(cov, `<code>`+esc(c)+`</code>`)
 	}
-	group("Links", strings.Join(links, ""))
 	group("Referenced by", strings.Join(refs, ""))
 	group("Covered by", strings.Join(cov, ""))
 	if b.Len() == 0 {

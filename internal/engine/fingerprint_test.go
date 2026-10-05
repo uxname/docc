@@ -40,8 +40,8 @@ func TestFingerprintReference(t *testing.T) {
 }
 
 func TestFingerprintCanonicalForm(t *testing.T) {
-	// reviewed, notes and docIgnore are dropped at the top level only; keys sorted at every level
-	got := canon(t, `{"b":{"z":1,"a":2},"a":[3,"x"],"reviewed":{"q":"r"},"notes":["n"],"$schema":"s","docIgnore":[],"c":{"notes":1}}`)
+	// notes and docIgnore are dropped at the top level only; keys sorted at every level
+	got := canon(t, `{"b":{"z":1,"a":2},"a":[3,"x"],"notes":["n"],"$schema":"s","docIgnore":[],"c":{"notes":1}}`)
 	want := `{"$schema":"s","a":[3,"x"],"b":{"a":2,"z":1},"c":{"notes":1}}`
 	if got != want {
 		t.Errorf("got %s want %s", got, want)

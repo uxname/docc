@@ -10,18 +10,7 @@ Data is the source of truth and Markdown is generated output. Invalid documentat
 
 Start with [Document model](document-model.md) to see what a document looks like, then [Agent workflow](agent-workflow.md) for the loop an agent follows.
 
-## Links
-
-- [Goals and non-goals](goals.md)
-- [Document model](document-model.md)
-- [Rules and diagnostics](rules.md)
-- [Commands](commands.md)
-- [Configuration](config.md)
-- [Rendering](rendering.md)
-- [Architecture](architecture.md)
-- [Agent workflow](agent-workflow.md)
-- [Performance](performance.md)
-- [Decisions and assumptions](decisions.md)
+The rest of the description: [Goals and non-goals](goals.md), [Rules and diagnostics](rules.md), [Commands](commands.md), [Configuration](config.md), [Rendering](rendering.md), [Architecture](architecture.md), [Performance](performance.md) and [Decisions and assumptions](decisions.md).
 
 ## Referenced by
 

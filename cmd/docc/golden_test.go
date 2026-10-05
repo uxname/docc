@@ -54,7 +54,6 @@ func runGolden(t *testing.T, dir, code, kind string) {
 	if err := copyTree(dir, work); err != nil {
 		t.Fatal(err)
 	}
-	relax(work)
 	t.Chdir(work)
 	var envelope, errb bytes.Buffer
 	exit := run(args, &envelope, &errb)
@@ -139,7 +138,6 @@ func TestRenderGolden(t *testing.T) {
 				b, _ := os.ReadFile(filepath.Join(src, "docc.json"))
 				_ = os.WriteFile(filepath.Join(work, "docc.json"), b, 0o644)
 			}
-			relax(work)
 			t.Chdir(work)
 			for _, mode := range []struct {
 				args        []string

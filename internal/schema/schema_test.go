@@ -39,7 +39,7 @@ func TestBuiltin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok := parse(t, `{"title":"A","kind":"note","links":["a","b"],"body":["x","y"],"hidden":true,"reviewed":{"b":"0a1b2c3d"},"free":{"any":1}}`)
+	ok := parse(t, `{"title":"A","kind":"note","tags":["a","b"],"body":["x","y"],"hidden":true,"free":{"any":1}}`)
 	if vs := s.CheckBuiltin(ok.Root); len(vs) != 0 {
 		t.Fatalf("unexpected: %+v", vs)
 	}
@@ -49,14 +49,13 @@ func TestBuiltin(t *testing.T) {
 		want string // substring of the message
 		at   string // expected line:col of the start
 	}{
-		"dup link":    {"{\n\"title\":\"A\",\n\"links\":[\"b\",\"c\",\"b\"]}", "items at 0 and 2", "3:18"},
+		"dup tag pos": {"{\n\"title\":\"A\",\n\"tags\":[\"b\",\"c\",\"b\"]}", "items at 0 and 2", "3:17"},
 		"dup tag":     {`{"title":"A","tags":["x","x"]}`, "equal", "1:26"},
 		"title type":  {`{"title":5}`, "/title", "1:10"},
 		"kind chars":  {`{"title":"A","kind":"Bad Kind"}`, "/kind", "1:21"},
 		"body shape":  {`{"title":"A","body":5}`, "does not match any allowed shape", "1:21"},
 		"parent type": {`{"title":"A","parent":["x"]}`, "/parent", "1:23"},
 		"hidden type": {`{"title":"A","hidden":"yes"}`, "/hidden", "1:23"},
-		"reviewed":    {`{"title":"A","reviewed":{"b":"xyz"}}`, "/reviewed/b", "1:30"},
 	}
 	for name, c := range cases {
 		vs := s.CheckBuiltin(parse(t, c.in).Root)
@@ -113,7 +112,7 @@ func TestKindSchema(t *testing.T) {
 		}
 	}
 	ok := parse(t, `{"title":"A","kind":"requirement","status":"draft","statement":"abcd","notes":["n"],"hidden":true,
-		"parent":"x","links":["y"],"tags":["t"],"body":"b","order":2,"reviewed":{},"docIgnore":[]}`)
+		"parent":"x","tags":["t"],"body":"b","order":2,"docIgnore":[]}`)
 	if vs := s.CheckKind("requirement", ok.Root); len(vs) != 0 {
 		t.Errorf("service fields must be allowed by a closed kind: %+v", vs)
 	}

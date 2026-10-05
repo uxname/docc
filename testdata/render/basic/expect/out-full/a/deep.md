@@ -16,10 +16,6 @@ Then Y with [Requirement](../req.md#statement).
 
 [Index](../index.md)
 
-## Links
-
-- [Index](../index.md)
-
 ## Referenced by
 
 - [Index](../index.md)

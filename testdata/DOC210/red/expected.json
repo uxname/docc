@@ -5,21 +5,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 31,
+    "column": 34,
     "endLine": 1,
-    "endColumn": 39,
-    "message": "links points to the hidden document \"secret\"",
-    "hint": "A visible document cannot link to a hidden one: make the target visible, or move the reference into notes."
-  },
-  {
-    "code": "DOC210",
-    "rule": "graph/link-to-hidden",
-    "level": "error",
-    "file": "docs/src/index.json",
-    "line": 1,
-    "column": 55,
-    "endLine": 1,
-    "endColumn": 65,
+    "endColumn": 44,
     "message": "reference [[secret]] points to the hidden document \"secret\"",
     "hint": "A visible document cannot link to a hidden one: make the target visible, or move the reference into notes."
   },
@@ -29,9 +17,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 67,
+    "column": 46,
     "endLine": 1,
-    "endColumn": 82,
+    "endColumn": 61,
     "message": "include points to the hidden document \"secret\"",
     "hint": "A visible document cannot include text from a hidden one: make the target visible or remove the include."
   }

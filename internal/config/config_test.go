@@ -53,7 +53,7 @@ func TestGroupDoesNotTouchCore(t *testing.T) {
 	if r.Rule("DOC101").Level != diag.Error || r.Rule("DOC201").Level != diag.Error {
 		t.Fatal("core changed by group")
 	}
-	if r.Rule("DOC206").Level != diag.Off {
+	if r.Rule("DOC214").Level != diag.Off {
 		t.Fatal("non-core graph rule should be off")
 	}
 }

@@ -10,7 +10,7 @@ The reachability check (DOC203) is skipped when none of the roots exists, becaus
 
 Custom rules keep their own level when the recommended preset is switched off, because they exist only when the project defines them.
 
-The acronym rule DOC355 reports only the first use of an unexplained acronym in a document. The undeclared link rule DOC208 reports the first use of each id.
+The acronym rule DOC355 reports only the first use of an unexplained acronym in a document.
 
 The comparison in the rule DOC306 uses the Jaccard coefficient of character trigrams; a match is reported on the document with the larger id.
 
@@ -20,9 +20,7 @@ The single HTML file is built from the same Markdown as the single Markdown file
 
 The kind schema is required by default (DOC109) and the check is flat: a document is checked by the schema of its own kind only, schemas do not inherit from each other. The setting is a rule, so it is switched off in the rules section of docc.json like any other rule that is not core.
 
-The rule DOC209 is a warning by default. Its hint prints the expected fingerprint, so an agent can copy it without reading the target; the skill forbids this, and the tool cannot check it.
-
-Fixes are applied in passes: the first added link creates the links field and the next pass appends further ids, so two fixes never write the same place.
+The rules are listed in [Rules and diagnostics](rules.md) and the settings in [Configuration](config.md).
 
 ## Not verified
 
@@ -33,11 +31,6 @@ The criterion that an agent fixes 9 of 10 synthetic errors in two iterations was
 ## Parent
 
 [docc](index.md)
-
-## Links
-
-- [Rules and diagnostics](rules.md)
-- [Configuration](config.md)
 
 ## Referenced by
 

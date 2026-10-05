@@ -18,6 +18,8 @@ Every command accepts --help and prints its flags with an example. The global fl
 
 docc explain takes a code (DOC301) or a name (style/hedging), not a group. It prints a rule with an example, docc rules lists the rules with their effective levels (the flag file adds the overrides of one file), docc schema document and docc schema config print the JSON Schemas.
 
+The settings are in [Configuration](config.md) and the generated pages in [Rendering](rendering.md).
+
 ## Flags
 
 format text or json, config, max-diagnostics (default 20, errors first, applies to both formats, 0 means no limit, negative values are rejected), max-warnings.
@@ -33,11 +35,6 @@ format text or json, config, max-diagnostics (default 20, errors first, applies 
 ## Parent
 
 [docc](index.md)
-
-## Links
-
-- [Configuration](config.md)
-- [Rendering](rendering.md)
 
 ## Referenced by
 

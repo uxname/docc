@@ -51,11 +51,6 @@ Text Requirement here and `{{literal}}` code and [Deep doc](a/deep.md).
 - 1
 - 2.50
 
-## Links
-
-- [Deep doc](a/deep.md)
-- [Requirement](req.md)
-
 ## Referenced by
 
 - [Deep doc](a/deep.md)

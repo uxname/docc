@@ -1,1 +1,1 @@
-{ "title": "Index", "links": ["a"], "body": ["Intro.", "{{a#statement}}", "Inline {{a#title}} here."], "kind": "page" }
+{ "title": "Index", "body": ["Intro, see [[a]].", "{{a#statement}}", "Inline {{a#title}} here."], "kind": "page" }

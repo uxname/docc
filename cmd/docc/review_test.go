@@ -7,7 +7,7 @@ import (
 
 func TestBrokenFileStaysANode(t *testing.T) {
 	project(t, map[string]string{
-		"docs/src/index.json":  `{"title":"I","links":["broken"]}`,
+		"docs/src/index.json":  `{"title":"I","body":"See [[broken]]."}`,
 		"docs/src/broken.json": `{`,
 		"docs/src/x.json":      `{"title":"X","parent":"broken"}`,
 	})
@@ -40,7 +40,7 @@ func TestTraceIgnoresBOMAndConfigPositions(t *testing.T) {
 func TestCoversWithoutComma(t *testing.T) {
 	project(t, map[string]string{
 		"docc.json":           `{"trace":{"scan":["*.go"]}}`,
-		"docs/src/index.json": `{"title":"I","links":["a","b"]}`,
+		"docs/src/index.json": `{"title":"I","body":"See [[a]] and [[b]]."}`,
 		"docs/src/a.json":     `{"title":"A"}`,
 		"docs/src/b.json":     `{"title":"B"}`,
 		"x.go":                "// @covers a b\n// @covers a, b\n",
@@ -58,12 +58,12 @@ func TestBrokenParentNoCascade(t *testing.T) {
 		"docs/src/s.json":     `{"title":"S","parent":"s"}`,
 	})
 	_, out, _ := do("validate", "--format", "json")
-	for _, bad := range []string{"DOC203", "DOC204"} {
+	for _, bad := range []string{"DOC203"} {
 		if strings.Contains(out, bad) {
 			t.Fatalf("%s is a cascade here:\n%s", bad, out)
 		}
 	}
-	if !strings.Contains(out, "DOC105") || strings.Count(out, "DOC206") != 1 {
+	if !strings.Contains(out, "DOC105") || strings.Count(out, `"DOC204"`) != 1 {
 		t.Fatalf("one signal each:\n%s", out)
 	}
 }

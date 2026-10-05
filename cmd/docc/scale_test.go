@@ -29,18 +29,14 @@ func genScale(t testing.TB, dir string, n int) {
 	}
 	write("docs/schemas/note.json", `{"type":"object","properties":{"status":{"enum":["draft","accepted"]},"statement":{"type":"string","minLength":5}}}`)
 	sections := 10
-	var idxLinks []string
-	for s := 0; s < sections; s++ {
-		idxLinks = append(idxLinks, fmt.Sprintf(`"sec-%d"`, s))
-	}
-	write("docs/src/index.json", fmt.Sprintf(`{"title":"Индекс","links":[%s]}`, strings.Join(idxLinks, ",")))
+	write("docs/src/index.json", `{"title":"Индекс"}`)
 	for s := 0; s < sections; s++ {
 		write(fmt.Sprintf("docs/src/sec-%d.json", s), fmt.Sprintf(`{"title":"Раздел %d","parent":"index"}`, s))
 	}
 	for i := 0; i < n-1-sections; i++ {
 		var b strings.Builder
 		paras := 5 + i%12 // about 0.35 KB of Cyrillic text (2 bytes per letter) per paragraph
-		fmt.Fprintf(&b, `{"title":"Документ %d","kind":"note","status":"accepted","parent":"sec-%d","links":["doc-%d"],"tags":["x"],"statement":"Факт номер %d.","body":[`, i, i%sections, (i+1)%(n-1-sections), i)
+		fmt.Fprintf(&b, `{"title":"Документ %d","kind":"note","status":"accepted","parent":"sec-%d","tags":["x"],"statement":"Факт номер %d, см. [[doc-%d]].","body":[`, i, i%sections, i, (i+1)%(n-1-sections))
 		for k := 0; k < paras; k++ {
 			if k > 0 {
 				b.WriteString(",")

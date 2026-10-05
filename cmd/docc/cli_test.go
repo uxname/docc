@@ -11,13 +11,12 @@ import (
 )
 
 // project creates a temp project from path -> content and chdirs into it.
-// Documents without a kind get the kind "page" (see pageKind) and DOC209 is
-// switched off (see relax); rawProject keeps the files as given.
+// Documents without a kind get the kind "page" (see pageKind); rawProject
+// keeps the files as given.
 func project(t *testing.T, files map[string]string) string {
 	t.Helper()
 	pageKind(files)
 	dir := rawProject(t, files)
-	relax(dir)
 	return dir
 }
 
@@ -107,9 +106,9 @@ func TestTextFormatAndLimit(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	want := []string{
 		`docs/src/o0.json:1:1: error DOC203 (graph/orphan) document "o0" is not reachable from the roots [index]`,
-		"  hint: Link it from a reachable document (links or [[id]] in the text) or set its parent.",
+		"  hint: Link it from a reachable document ([[id]] in the text) or set its parent.",
 		`docs/src/o1.json:1:1: error DOC203 (graph/orphan) document "o1" is not reachable from the roots [index]`,
-		"  hint: Link it from a reachable document (links or [[id]] in the text) or set its parent.",
+		"  hint: Link it from a reachable document ([[id]] in the text) or set its parent.",
 		"showing 2 of 5",
 		"checked 6 files: 5 errors, 0 warnings",
 		"Run docc explain <rule> for details",
@@ -221,7 +220,7 @@ func readFile(t *testing.T, name string) string {
 
 func TestBuildCleansOutAndIsIdempotent(t *testing.T) {
 	project(t, map[string]string{
-		"docs/src/index.json":    `{"title":"I","links":["a"]}`,
+		"docs/src/index.json":    `{"title":"I","body":"See [[a]]."}`,
 		"docs/src/a.json":        `{"title":"A","parent":"index"}`,
 		"docs/out/foreign.txt":   "mine",
 		"docs/out/old/deep/x.md": "old",
@@ -254,7 +253,7 @@ func TestBuildCleansOutAndIsIdempotent(t *testing.T) {
 
 func TestBuildStopsOnStructuralErrors(t *testing.T) {
 	project(t, map[string]string{
-		"docs/src/index.json": `{"title":"I","links":["nope"]}`,
+		"docs/src/index.json": `{"title":"I","body":"See [[nope]]."}`,
 		"docs/out/keep.md":    "keep",
 	})
 	code, out, _ := do("build")
@@ -301,7 +300,7 @@ func TestCheckNormalizesCRLFAndBOM(t *testing.T) {
 func TestFullBuildLeavesOutAlone(t *testing.T) {
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"I","notes":["see [[h]]"]}`,
-		"docs/src/h.json":     `{"title":"H","hidden":true,"links":["index"],"notes":["secret"]}`,
+		"docs/src/h.json":     `{"title":"H","hidden":true,"notes":["secret"]}`,
 	})
 	if code, _, errs := do("build"); code != 0 {
 		t.Fatalf("%d %s", code, errs)
@@ -496,7 +495,7 @@ func TestTooManyWarningsExplained(t *testing.T) {
 }
 
 func TestBuildSkippedAndInitNext(t *testing.T) {
-	project(t, map[string]string{"docs/src/index.json": `{"title":"I","links":["nope"]}`})
+	project(t, map[string]string{"docs/src/index.json": `{"title":"I","body":"See [[nope]]."}`})
 	code, out, _ := do("build")
 	if code != 1 || !strings.Contains(out, "build skipped: 1 errors, docs/out not changed\n") {
 		t.Fatalf("%d %s", code, out)
@@ -511,7 +510,7 @@ func TestBuildSkippedAndInitNext(t *testing.T) {
 func TestConfigFoundInParentFolder(t *testing.T) {
 	dir := project(t, map[string]string{
 		"docc.json":           `{"src":"docs/src","out":"docs/out"}`,
-		"docs/src/index.json": `{"title":"I","links":["gone"]}`,
+		"docs/src/index.json": `{"title":"I","body":"See [[gone]]."}`,
 		"docs/src/sub/x.txt":  "",
 	})
 	t.Chdir(filepath.Join(dir, "docs", "src", "sub"))

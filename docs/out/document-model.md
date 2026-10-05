@@ -6,13 +6,15 @@ spec
 
 A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected.
 
-The built-in schema requires only title. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docIgnore. Every other field is free and holds prose.
+The built-in schema requires only title. The reserved fields are kind, status, parent, tags, body, notes, hidden and docIgnore. Every other field is free and holds prose.
 
 Every document must have a kind, and the folder of schemas must hold <kind>.json for it: the kind schema says which fields are required and which statuses are allowed. A document without a kind, or with a kind that has no schema, is reported as DOC109. A project that wants free documents switches DOC109 off in docc.json.
 
+The checks are listed in [Rules and diagnostics](rules.md) and the generated pages in [Rendering](rendering.md).
+
 ## References
 
-Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one of its fields. Both are checked like parent and links. Code blocks and inline code are ignored.
+Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one of its fields. Both are checked like parent. A reference outside notes is what relates two documents: it joins them in the graph and puts the source under Referenced by on the target page. Code blocks and inline code are ignored.
 
 A long text is an array of paragraphs, one per line of the file. The rules are applied to each element on its own.
 
@@ -26,10 +28,6 @@ A document with hidden set to true is checked like any other, gets no page and c
 
 The include `{{id#field}}` or `{{id#field/section}}` is replaced at build time by the text of that field or section, so a fact is stored once.
 
-## Confirmed links
-
-The field reviewed confirms a link: it maps the id of a linked document to the fingerprint of that document, taken when the link was checked. When the target changes the fingerprint no longer matches, and DOC209 warns that the link must be checked again. The fingerprint is written only after the target has been read.
-
 ## Suppression
 
 docIgnore lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.
@@ -40,16 +38,11 @@ A free field can hold named sections: an object with the member `"$sections": tr
 
 An object without the marker is rendered as a bullet list, as before. The marker means nothing outside the value of a field or a section.
 
-A section is linked with `[[id#field/section]]`; the link text is the section title, not the title of the document. A section is included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules, docIgnore.path and DOC209 treat sections like fields. A kind schema describes the marker as `"properties": {"$sections": {"const": true}}`.
+A section is linked with `[[id#field/section]]`; the link text is the section title, not the title of the document. A section is included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules and docIgnore.path treat sections like fields. A kind schema describes the marker as `"properties": {"$sections": {"const": true}}`.
 
 ## Parent
 
 [docc](index.md)
-
-## Links
-
-- [Rules and diagnostics](rules.md)
-- [Rendering](rendering.md)
 
 ## Referenced by
 

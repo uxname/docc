@@ -16,10 +16,6 @@ Second fact.
 
 [Index](index.md)
 
-## Links
-
-- [Deep doc](a/deep.md)
-
 ## Referenced by
 
 - [Deep doc](a/deep.md)

@@ -91,11 +91,6 @@ Text <!-- include req#title -->Requirement<!-- /include --> here and `{{literal}
 
 - note about [Deep doc](#deep) stays hidden
 
-## Links
-
-- [Deep doc](#deep)
-- [Requirement](#req)
-
 ## Referenced by
 
 - [Deep doc](#deep)
@@ -125,10 +120,6 @@ Then Y with [Requirement](#req--statement).
 
 [Index](#index)
 
-## Links
-
-- [Index](#index)
-
 ## Referenced by
 
 - [Index](#index)
@@ -157,10 +148,6 @@ Second fact.
 
 [Index](#index)
 
-## Links
-
-- [Deep doc](#deep)
-
 ## Referenced by
 
 - [Deep doc](#deep)
@@ -177,7 +164,7 @@ page
 
 > Hidden document.
 
-Hidden text with <!-- include req#statement -->First fact. Second fact.<!-- /include -->
+Hidden text about [Index](#index) with <!-- include req#statement -->First fact. Second fact.<!-- /include -->
 
 ## Notes (hidden)
 
@@ -192,14 +179,4 @@ Hidden text with <!-- include req#statement -->First fact. Second fact.<!-- /inc
 1. - **rule:** DOC303
    - **reason:** demo
    - **path:** /body
-
-## Reviewed
-
-> Service information.
-
-- **index:** 00000000
-
-## Links
-
-- [Index](#index)
 

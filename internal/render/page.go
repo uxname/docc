@@ -14,8 +14,8 @@ import (
 
 var reserved = map[string]bool{
 	"title": true, "kind": true, "status": true, "parent": true,
-	"links": true, "body": true, "tags": true, "priority": true, "notes": true, "hidden": true,
-	"reviewed": true, "docIgnore": true, "order": true,
+	"body": true, "tags": true, "priority": true, "notes": true, "hidden": true,
+	"docIgnore": true, "order": true,
 }
 
 func (r *Renderer) page(d *engine.Doc) string {
@@ -153,7 +153,7 @@ func (pg *page) sections(v *loader.Node, level int) string {
 	return strings.Join(blocks, "\n\n")
 }
 
-// serviceSections adds notes, docIgnore and reviewed to the audit build.
+// serviceSections adds notes and docIgnore to the audit build.
 func (pg *page) serviceSections(blocks *[]string) {
 	add := func(title, content string) {
 		if content != "" {
@@ -169,9 +169,6 @@ func (pg *page) serviceSections(blocks *[]string) {
 	}
 	if n := pg.doc.Root.Get("docIgnore"); n != nil && !isEmpty(n) {
 		add("Suppressions (docIgnore)", strings.Join(pg.listLines(n, "", false), "\n"))
-	}
-	if n := pg.doc.Root.Get("reviewed"); n != nil && !isEmpty(n) {
-		add("Reviewed", strings.Join(pg.listLines(n, "", false), "\n"))
 	}
 }
 
@@ -384,7 +381,7 @@ func (pg *page) table(v *loader.Node) string {
 	return strings.Join(rows, "\n")
 }
 
-// relations adds the closing block: Parent, Links, Referenced by, Covered by.
+// relations adds the closing block: Parent, Referenced by, Covered by.
 func (pg *page) relations(blocks *[]string) {
 	r, d := pg.r, pg.doc
 	add := func(title, content string) {
@@ -398,13 +395,6 @@ func (pg *page) relations(blocks *[]string) {
 		}
 	}
 	var items []string
-	for _, n := range engine.StringList(d.Root.Get("links")) {
-		if t := r.P.Graph[n.Str]; r.hasPage(t) {
-			items = append(items, "- "+pg.link(t, titleOf(t), ""))
-		}
-	}
-	add("Links", strings.Join(items, "\n"))
-	items = nil
 	for _, s := range r.backrefs()[d.ID] {
 		items = append(items, "- "+pg.link(s, titleOf(s), ""))
 	}
@@ -423,7 +413,7 @@ func (pg *page) relations(blocks *[]string) {
 }
 
 // backrefs maps a document id to the documents that point at it by parent,
-// links or [[id]] in the text (notes excluded), ordered by path.
+// or [[id]] in the text (notes excluded), ordered by path.
 func (r *Renderer) backrefs() map[string][]*engine.Doc {
 	if r.back != nil {
 		return r.back
@@ -438,9 +428,6 @@ func (r *Renderer) backrefs() map[string][]*engine.Doc {
 			}
 		}
 		if n := d.Root.Get("parent"); n != nil && n.Kind == loader.String {
-			add(n.Str)
-		}
-		for _, n := range engine.StringList(d.Root.Get("links")) {
 			add(n.Str)
 		}
 		for _, ref := range d.Refs {

@@ -12,13 +12,13 @@ import (
 // are free fields that hold prose.
 var reservedKeys = map[string]bool{
 	"title": true, "kind": true, "status": true, "parent": true,
-	"links": true, "body": true, "tags": true, "notes": true, "hidden": true,
-	"reviewed": true, "docIgnore": true, "order": true,
+	"body": true, "tags": true, "notes": true, "hidden": true,
+	"docIgnore": true, "order": true,
 }
 
 // ServiceFields cannot be anchors or include sources.
 var ServiceFields = map[string]bool{
-	"notes": true, "docIgnore": true, "reviewed": true, "hidden": true,
+	"notes": true, "docIgnore": true, "hidden": true,
 }
 
 // StrNode is one string value of a document with its location.
