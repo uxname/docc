@@ -386,6 +386,32 @@ func TestInit(t *testing.T) {
 	}
 }
 
+func TestInitHook(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if code, out, _ := do("init"); code != 0 || strings.Contains(out, "pre-commit") {
+		t.Fatalf("no .git, no hook: %d %s", code, out)
+	}
+	if err := os.MkdirAll(".git/hooks", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, _ := do("init"); code != 0 || !strings.Contains(out, "created .git/hooks/pre-commit") || !strings.Contains(out, "4. git commit runs docc check") {
+		t.Fatalf("%d %s", code, out)
+	}
+	st, err := os.Stat(".git/hooks/pre-commit")
+	if err != nil || st.Mode().Perm() != 0o755 || readFile(t, ".git/hooks/pre-commit") != initHook {
+		t.Fatalf("hook: %v %v", st, err)
+	}
+	if err := os.WriteFile(".git/hooks/pre-commit", []byte("#!/bin/sh\nmine\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, _ := do("init"); code != 0 || !strings.Contains(out, "skipped .git/hooks/pre-commit") || strings.Contains(out, "4. git") {
+		t.Fatalf("%d %s", code, out)
+	}
+	if readFile(t, ".git/hooks/pre-commit") != "#!/bin/sh\nmine\n" {
+		t.Fatal("init must not overwrite a hook")
+	}
+}
+
 func TestLineBreaksInValuesStayLF(t *testing.T) {
 	bs := "\\"
 	project(t, map[string]string{"docs/src/index.json": `{"title":"I` + bs + `r` + bs + `nx","body":"a` + bs + `r` + bs + `nb` + bs + `rc"}`})

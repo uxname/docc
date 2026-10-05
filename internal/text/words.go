@@ -4,9 +4,12 @@ package text
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 func isWordRune(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' }
@@ -107,7 +110,7 @@ type entry struct {
 func NewMatcher(list []string) *Matcher {
 	m := &Matcher{}
 	for _, e := range list {
-		e = strings.TrimSpace(e)
+		e = norm.NFC.String(strings.TrimSpace(e))
 		if e == "" {
 			continue
 		}
@@ -145,8 +148,33 @@ type Hit struct {
 	Entry      string
 }
 
-// Find returns all matches in s ordered by position.
+// Find returns all matches in s ordered by position. The text is compared in
+// NFC, so a word typed with combining marks ("й" as и + U+0306) is found too;
+// the offsets are those of s.
 func (m *Matcher) Find(s string) []Hit {
+	if norm.NFC.IsNormalString(s) {
+		return m.find(s)
+	}
+	// segN[i] and segO[i] are the starts of the i-th normalization segment in the NFC text and in s
+	var b strings.Builder
+	var segN, segO []int
+	var it norm.Iter
+	it.InitString(norm.NFC, s)
+	for o := 0; !it.Done(); o = it.Pos() {
+		segN, segO = append(segN, b.Len()), append(segO, o)
+		b.Write(it.Next())
+	}
+	segN, segO = append(segN, b.Len()), append(segO, len(s))
+	hits := m.find(b.String())
+	for i := range hits {
+		k := sort.SearchInts(segN, hits[i].Start+1) - 1 // the segment that holds the start
+		hits[i].Start = segO[k]
+		hits[i].End = segO[sort.SearchInts(segN, hits[i].End)] // the end of the segment that holds the end
+	}
+	return hits
+}
+
+func (m *Matcher) find(s string) []Hit {
 	lower := strings.ToLower(s)
 	fast := len(lower) == len(s)
 	var hits []Hit

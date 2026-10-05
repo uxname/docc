@@ -2,10 +2,14 @@ package engine
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/santiment/docc/internal/loader"
+	"github.com/santiment/docc/internal/mdscan"
 )
 
 // inGraph reports whether d is the graph node of its id (the first document
@@ -23,7 +27,7 @@ func parentOf(d *Doc) *loader.Node {
 	return nil
 }
 
-// checkGraph emits DOC201-DOC205 and DOC210-DOC212.
+// checkGraph emits DOC201-DOC205 and DOC210-DOC213.
 func (p *Project) checkGraph() {
 	p.dupIDs()
 	p.dupAnchors()
@@ -31,6 +35,51 @@ func (p *Project) checkGraph() {
 	p.parentCycles()
 	p.roots()
 	p.includes()
+	p.brokenFiles()
+}
+
+// ImageExt lists the image types docc copies into the output.
+var ImageExt = map[string]string{".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp"}
+
+// ImagePath resolves a relative image path written in the document rel (a
+// path relative to src) to a path relative to src; ok is false when it
+// leaves src.
+func ImagePath(rel, img string) (string, bool) {
+	p := path.Clean(path.Join(path.Dir(rel), img))
+	return p, p != ".." && !strings.HasPrefix(p, "../")
+}
+
+// brokenFiles emits DOC213 for relative image paths that name no image file in src.
+// ponytail: paths are taken literally; %20 and other URL escapes are not decoded.
+func (p *Project) brokenFiles() {
+	src := p.Cfg.Abs(p.Cfg.Src)
+	for _, d := range p.Docs {
+		if !d.Parsed() || !p.inGraph(d) {
+			continue
+		}
+		strs := d.Strings()
+		for i := range strs {
+			sn := &strs[i]
+			for _, im := range sn.Scan().Images() {
+				if !mdscan.LocalImage(im.Inner) {
+					continue
+				}
+				a, b := d.Range(sn.Node, im.Start, im.End)
+				rel, ok := ImagePath(d.Rel, im.Inner)
+				msg := ""
+				if st, err := os.Stat(filepath.Join(src, filepath.FromSlash(rel))); !ok {
+					msg = "the image path leaves " + p.Cfg.Src
+				} else if err != nil || st.IsDir() {
+					msg = "the image file does not exist: " + p.Cfg.Src + "/" + rel
+				} else if ImageExt[strings.ToLower(path.Ext(rel))] == "" {
+					msg = "not an image file docc copies (png, jpg, jpeg, gif, svg, webp): " + im.Inner
+				}
+				if msg != "" {
+					p.emit(d, "DOC213", a, b, msg, "Put the image under "+p.Cfg.Src+" and write its path relative to the folder of this document.")
+				}
+			}
+		}
+	}
 }
 
 func (p *Project) dupIDs() {

@@ -66,6 +66,7 @@ type Config struct {
 
 	Recommended   bool
 	Numbering     bool
+	Lang          string // "en" or "ru": language of the fixed labels in the output
 	MaxWarnings   int
 	HasMaxWarning bool
 
@@ -80,7 +81,7 @@ func Default(root string) *Config {
 	return &Config{
 		Root: root, File: "docc.json",
 		Src: "docs/src", Out: "docs/out", Schemas: "docs/schemas", OutFull: "docs/out-full",
-		Roots: []string{"index"}, Recommended: true,
+		Roots: []string{"index"}, Recommended: true, Lang: "en",
 		Rules: RuleSet{ByRule: map[string]*Entry{}, ByGroup: map[string]diag.Level{}},
 	}
 }
@@ -205,6 +206,11 @@ func Parse(data []byte, root, file string) (*Config, error) {
 				e = w.typeErr(m.Value, "true or false")
 			} else {
 				c.Numbering = m.Value.Str == "true"
+			}
+		case "lang":
+			c.Lang, e = w.str(m.Value)
+			if e == nil && c.Lang != "en" && c.Lang != "ru" {
+				e = w.errAt(m.Value.Start, "lang must be \"en\" or \"ru\"")
 			}
 		case "maxWarnings":
 			c.MaxWarnings, e = w.nonNegInt(m.Value)

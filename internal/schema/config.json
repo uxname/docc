@@ -13,6 +13,7 @@
     "tags": { "type": "array", "items": { "type": "string" }, "description": "Registry of allowed tags; absent: no registry." },
     "recommended": { "type": "boolean", "default": true, "description": "false turns the recommended preset off; core rules stay on." },
     "numbering": { "type": "boolean", "default": false, "description": "true numbers pages below the roots (1, 1.2) and the sections of their $sections fields (1.2.1) in headings, navigation and link text." },
+    "lang": { "enum": ["en", "ru"], "default": "en", "description": "Language of the fixed labels in the generated Markdown and HTML (Parent, Referenced by, On this page...)." },
     "maxWarnings": { "type": "integer", "minimum": 0, "description": "Exit code 1 when there are more warnings than this." },
     "rules": {
       "type": "object",

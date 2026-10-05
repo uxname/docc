@@ -571,6 +571,8 @@ const initSchema = `{
 }
 `
 
+const initHook = "#!/bin/sh\n# docc: refuse a commit with invalid documentation\nexec docc check\n"
+
 func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	fs := newFlags("init", c)
 	pos, err := parse(fs, args)
@@ -583,7 +585,7 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	create := func(name, content string) error {
+	create := func(name, content string, mode os.FileMode) error {
 		if _, err := os.Stat(name); err == nil {
 			say(stdout, "skipped %s: already exists\n", name)
 			return nil
@@ -591,20 +593,29 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 		if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(name, []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(name, []byte(content), mode); err != nil {
 			return err
 		}
 		say(stdout, "created %s\n", name)
-		return nil
+		return os.Chmod(name, mode) // WriteFile leaves the umask on
 	}
-	if err := create("docc.json", initConfig); err != nil {
+	if err := create("docc.json", initConfig, 0o644); err != nil {
 		return 2, err
 	}
-	if err := create(filepath.Join("docs", "schemas", "page.json"), initSchema); err != nil {
+	if err := create(filepath.Join("docs", "schemas", "page.json"), initSchema, 0o644); err != nil {
 		return 2, err
 	}
-	if err := create(filepath.Join("docs", "src", "index.json"), "{ \"title\": \"Index\", \"kind\": \"page\" }\n"); err != nil {
+	if err := create(filepath.Join("docs", "src", "index.json"), "{ \"title\": \"Index\", \"kind\": \"page\" }\n", 0o644); err != nil {
 		return 2, err
+	}
+	hook := false // a pre-commit hook is created now; an existing one is never touched
+	if st, err := os.Stat(".git"); err == nil && st.IsDir() {
+		name := filepath.Join(".git", "hooks", "pre-commit")
+		_, err := os.Stat(name)
+		hook = err != nil
+		if err := create(name, initHook, 0o755); err != nil {
+			return 2, err
+		}
 	}
 	cfg, p, err := loadProject(c)
 	if err != nil {
@@ -620,6 +631,9 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	code, err := emit(stdout, stderr, c, p, p.Sorted())
 	if err == nil && c.format == "text" {
 		say(stdout, "Next:\n  1. edit docs/src/index.json and add documents (each needs a kind with a schema in docs/schemas)\n  2. docc validate --format json\n  3. agents: read skills/docc/SKILL.md in the docc repository\n")
+		if hook {
+			say(stdout, "  4. git commit runs docc check (.git/hooks/pre-commit) and refuses invalid documentation\n")
+		}
 	}
 	return code, err
 }

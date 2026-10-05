@@ -33,8 +33,10 @@ var htmlJS string
 func (r *Renderer) HTML() string {
 	s := *r
 	s.single, s.html = true, true // in-file links; the headings get their ids from the converter
+	fnPrefix := ""                // footnote ids are <page id>--fn:1, unique across the pages of the file
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.DefinitionList), // GFM as on GitHub: tables, autolinks, strikethrough
+		goldmark.WithExtensions(extension.GFM, extension.DefinitionList, // GFM as on GitHub: tables, autolinks, strikethrough
+			extension.NewFootnote(extension.WithFootnoteIDPrefixFunction(func(ast.Node) []byte { return []byte(fnPrefix) }))),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		// no WithUnsafe: raw HTML written by agents is dropped, only <br> survives
 		goldmark.WithRendererOptions(renderer.WithNodeRenderers(util.Prioritized(brOnly{}, 100))),
@@ -47,6 +49,7 @@ func (r *Renderer) HTML() string {
 			}
 		}
 		var b bytes.Buffer
+		fnPrefix = d.ID + "--"
 		ctx := parser.NewContext(parser.WithIDs(g))
 		if err := md.Convert([]byte(src), &b, parser.WithContext(ctx)); err != nil {
 			return html.EscapeString(src) // goldmark does not fail on a string; keep the text anyway
@@ -70,16 +73,16 @@ func (r *Renderer) HTML() string {
 	}
 	banner := ""
 	if s.Full {
-		banner = `<p class="banner">Full build: includes hidden documents and notes. Do not publish.</p>`
+		banner = `<p class="banner">` + s.t("Full build: includes hidden documents and notes. Do not publish.") + `</p>`
 	}
 	out := strings.NewReplacer(
 		"{{TITLE}}", esc(title),
 		"{{CSS}}", htmlCSS,
-		"{{JS}}", htmlJS,
+		"{{JS}}", s.localize(htmlJS, "'", "'"),
 		"{{BANNER}}", banner,
 		"{{NAV}}", s.navHTML(),
 		"{{CONTENT}}", content.String(),
-	).Replace(htmlTemplate)
+	).Replace(s.localize(htmlTemplate, `"`, `"`, ">", "<"))
 	return lf(out)
 }
 

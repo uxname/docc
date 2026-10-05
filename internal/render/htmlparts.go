@@ -42,10 +42,10 @@ func (r *Renderer) badges(d *engine.Doc) string {
 		b.WriteString(`<span class="badge ` + statusClass(st) + `">` + esc(st) + `</span>`)
 	}
 	if p := strField(d, "priority"); p != "" {
-		b.WriteString(`<span class="badge">priority ` + esc(p) + `</span>`)
+		b.WriteString(`<span class="badge">` + r.t("priority") + " " + esc(p) + `</span>`)
 	}
 	if r.Full && d.Hidden {
-		b.WriteString(`<span class="badge bad">hidden</span>`)
+		b.WriteString(`<span class="badge bad">` + r.t("hidden") + `</span>`)
 	}
 	for _, t := range engine.StringList(d.Root.Get("tags")) {
 		b.WriteString(`<span class="tag">#` + esc(t.Str) + `</span>`)
@@ -84,7 +84,7 @@ func (r *Renderer) crumbs(d *engine.Doc) string {
 	for _, p := range chain {
 		parts = append(parts, `<a href="#`+esc(p.ID)+`">`+esc(r.title(p))+`</a>`)
 	}
-	return `<nav class="crumbs" aria-label="Breadcrumb">` + strings.Join(parts, `<span aria-hidden="true">›</span>`) + "</nav>\n"
+	return `<nav class="crumbs" aria-label="` + r.t("Breadcrumb") + `">` + strings.Join(parts, `<span aria-hidden="true">›</span>`) + "</nav>\n"
 }
 
 var (
@@ -129,7 +129,7 @@ func (r *Renderer) rows(kids []*engine.Doc) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("<h2 class=\"rh\">Pages in this section</h2>\n<div class=\"rows\">\n")
+	b.WriteString("<h2 class=\"rh\">" + r.t("Pages in this section") + "</h2>\n<div class=\"rows\">\n")
 	for _, k := range kids {
 		b.WriteString(`<a class="row" href="#` + esc(k.ID) + `"><span class="ct">` + esc(r.title(k)))
 		if kind := strField(k, "kind"); kind != "" {
@@ -155,7 +155,7 @@ func (r *Renderer) related(d *engine.Doc, kids []*engine.Doc) string {
 	var b strings.Builder
 	group := func(label, content string) {
 		if content != "" {
-			b.WriteString(`<div class="rg"><span class="rl">` + label + `</span>` + content + "</div>\n")
+			b.WriteString(`<div class="rg"><span class="rl">` + r.t(label) + `</span>` + content + "</div>\n")
 		}
 	}
 	if n := d.Root.Get("parent"); n != nil && n.Kind == loader.String {
@@ -178,22 +178,22 @@ func (r *Renderer) related(d *engine.Doc, kids []*engine.Doc) string {
 	if b.Len() == 0 {
 		return ""
 	}
-	return "<h2 class=\"rh\">Related</h2>\n<div class=\"related\">\n" + b.String() + "</div>\n"
+	return "<h2 class=\"rh\">" + r.t("Related") + "</h2>\n<div class=\"related\">\n" + b.String() + "</div>\n"
 }
 
 // prevNext links to the neighbours in tree order.
 func (r *Renderer) prevNext(docs []*engine.Doc, i int) string {
 	var b strings.Builder
 	if i > 0 {
-		b.WriteString(`<a class="prev" href="#` + esc(docs[i-1].ID) + `"><small>Previous</small><span>` + esc(r.title(docs[i-1])) + `</span></a>`)
+		b.WriteString(`<a class="prev" href="#` + esc(docs[i-1].ID) + `"><small>` + r.t("Previous") + `</small><span>` + esc(r.title(docs[i-1])) + `</span></a>`)
 	}
 	if i+1 < len(docs) {
-		b.WriteString(`<a class="next" href="#` + esc(docs[i+1].ID) + `"><small>Next</small><span>` + esc(r.title(docs[i+1])) + `</span></a>`)
+		b.WriteString(`<a class="next" href="#` + esc(docs[i+1].ID) + `"><small>` + r.t("Next") + `</small><span>` + esc(r.title(docs[i+1])) + `</span></a>`)
 	}
 	if b.Len() == 0 {
 		return ""
 	}
-	return `<nav class="pn" aria-label="Neighbouring pages">` + b.String() + "</nav>\n"
+	return `<nav class="pn" aria-label="` + r.t("Neighbouring pages") + `">` + b.String() + "</nav>\n"
 }
 
 // childrenOf maps a document id to its children, read from tree entries.
@@ -231,13 +231,13 @@ func (r *Renderer) navList(es []entry) string {
 		}
 		parent := i+1 < len(es) && es[i+1].depth > e.depth
 		if parent {
-			b.WriteString(`<li class="parent"><button class="tw" type="button" aria-expanded="true" aria-label="Collapse"></button>`)
+			b.WriteString(`<li class="parent"><button class="tw" type="button" aria-expanded="true" aria-label="` + r.t("Collapse") + `"></button>`)
 		} else {
 			b.WriteString("<li>")
 		}
 		b.WriteString(`<a href="#` + esc(e.d.ID) + `">` + esc(r.title(e.d)))
 		if r.Full && e.d.Hidden {
-			b.WriteString(` <span class="badge bad">hidden</span>`)
+			b.WriteString(` <span class="badge bad">` + r.t("hidden") + `</span>`)
 		}
 		b.WriteString("</a>")
 		prev = e.depth
@@ -254,11 +254,11 @@ func (r *Renderer) navHTML() string {
 	tree, orphans := r.layout()
 	var b strings.Builder
 	if len(tree) > 0 {
-		b.WriteString("<h2>Pages</h2>\n" + r.navList(tree) + "\n")
+		b.WriteString("<h2>" + r.t("Pages") + "</h2>\n" + r.navList(tree) + "\n")
 	}
 	// groups that fold: with many documents they would push the tree off the screen
 	group := func(label string, n int, body string) {
-		b.WriteString(`<h2 class="gh"><button class="gt" type="button" aria-expanded="true">` + label + ` <span>` + strconv.Itoa(n) + "</span></button></h2>\n<div class=\"gb\">" + body + "</div>\n")
+		b.WriteString(`<h2 class="gh"><button class="gt" type="button" aria-expanded="true">` + r.t(label) + ` <span>` + strconv.Itoa(n) + "</span></button></h2>\n<div class=\"gb\">" + body + "</div>\n")
 	}
 	if len(orphans) > 0 {
 		group("Without parent", len(orphans), r.navList(orphans))

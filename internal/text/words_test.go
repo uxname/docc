@@ -72,3 +72,32 @@ func TestSlowPathAgrees(t *testing.T) {
 		}
 	}
 }
+
+func TestNewPlaceholders(t *testing.T) {
+	m := NewMatcher(Placeholders)
+	got := found(m, "Значение N/A, см. Выше. Всё Работает корректно, по необходимости. See above: it works correctly. NA, n/ab")
+	want := []string{"N/A", "см. Выше", "Работает корректно", "по необходимости", "See above", "works correctly"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%q", got)
+	}
+	for s, want := range map[string]bool{" — ": true, "-": true, "–": true, "a — b": false, "--": false, "": false} {
+		if IsDashOnly(s) != want {
+			t.Errorf("IsDashOnly(%q) = %v", s, !want)
+		}
+	}
+}
+
+// A word typed with a combining mark (й as и + U+0306, é as e + U+0301) is
+// found, and the offsets cover the original bytes.
+func TestMatcherNFC(t *testing.T) {
+	m := NewMatcher([]string{"новый", "café"})
+	s := "Это новыи\u0306 и cafe\u0301 и новый."
+	got := found(m, s)
+	want := []string{"новыи\u0306", "cafe\u0301", "новый"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%+q", got)
+	}
+	if got := found(NewMatcher([]string{"новыи\u0306"}), "это новый"); !reflect.DeepEqual(got, []string{"новый"}) {
+		t.Errorf("decomposed entry: %+q", got)
+	}
+}

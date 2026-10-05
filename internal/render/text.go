@@ -1,7 +1,10 @@
 package render
 
 import (
+	"encoding/base64"
 	"fmt"
+	"os"
+	"path"
 	"strings"
 
 	"github.com/santiment/docc/internal/engine"
@@ -34,8 +37,52 @@ func (pg *page) link(target *engine.Doc, text, anchor string) string {
 	return "[" + text + "](" + href + ")"
 }
 
-// refs replaces [[id]] and [[id#field]] outside code with Markdown links.
+// images replaces the relative paths of Markdown images outside code with
+// to(path relative to src); a path that leaves src stays as written.
+func images(s, docRel string, to func(rel string) string) string {
+	var b strings.Builder
+	last := 0
+	for _, im := range mdscan.New(s).Images() {
+		if rel, ok := engine.ImagePath(docRel, im.Inner); ok && mdscan.LocalImage(im.Inner) {
+			b.WriteString(s[last:im.Start])
+			b.WriteString(to(rel))
+			last = im.End
+		}
+	}
+	if last == 0 {
+		return s
+	}
+	return b.String() + s[last:]
+}
+
+// image is the link to an image (path relative to src) from the page at
+// pagePath: the copy next to the pages, the copy in the output directory for
+// the single Markdown file, a data URI in the single HTML file.
+func (r *Renderer) image(pagePath, rel string) string {
+	switch {
+	case r.html:
+		b, err := os.ReadFile(r.srcFile(rel))
+		if err != nil {
+			return rel
+		}
+		return "data:" + engine.ImageExt[strings.ToLower(path.Ext(rel))] + ";base64," + base64.StdEncoding.EncodeToString(b)
+	case r.single:
+		out := r.P.Cfg.Out
+		if r.Full {
+			out = r.P.Cfg.OutFull
+		}
+		return path.Base(out) + "/" + rel
+	}
+	if r.imgs != nil {
+		r.imgs[rel] = true
+	}
+	return relPath(pagePath, rel)
+}
+
+// refs replaces [[id]] and [[id#field]] outside code with Markdown links and
+// points relative image paths at the output.
 func (pg *page) refs(s string) string {
+	s = images(s, pg.doc.Rel, func(rel string) string { return pg.r.image(pg.path, rel) })
 	sc := mdscan.New(s)
 	rs := sc.Refs()
 	if len(rs) == 0 {
@@ -79,7 +126,7 @@ func (pg *page) target(id, field string) ([]string, bool) {
 	if name, ok := strings.CutPrefix(field, "^"); ok {
 		if sn := t.Blocks[name]; sn != nil {
 			text, _ := t.Block(sn.Node)
-			return []string{text}, true
+			return []string{pg.rebase(text, t)}, true
 		}
 		return nil, false
 	}
@@ -90,7 +137,7 @@ func (pg *page) target(id, field string) ([]string, bool) {
 	switch v.Kind {
 	case loader.String:
 		text, _ := t.Block(v)
-		return []string{text}, true
+		return []string{pg.rebase(text, t)}, true
 	case loader.Array:
 		var out []string
 		for _, it := range v.Items {
@@ -98,18 +145,27 @@ func (pg *page) target(id, field string) ([]string, bool) {
 				return nil, false
 			}
 			text, _ := t.Block(it)
-			out = append(out, text)
+			out = append(out, pg.rebase(text, t))
 		}
 		return out, len(out) > 0
 	}
 	return nil, false
 }
 
+// rebase rewrites the image paths of text included from t relative to the
+// folder of this page's document, so refs resolves them like its own.
+func (pg *page) rebase(text string, t *engine.Doc) string {
+	if t.Rel == pg.doc.Rel {
+		return text
+	}
+	return images(text, t.Rel, func(rel string) string { return relPath(pg.doc.Rel, rel) })
+}
+
 func (pg *page) comment(open bool, inner string) string {
 	if open {
-		return "<!-- include " + inner + " -->"
+		return "<!-- " + pg.r.t("include") + " " + inner + " -->"
 	}
-	return "<!-- /include -->"
+	return "<!-- /" + pg.r.t("include") + " -->"
 }
 
 // expand resolves {{id#field}} in one element. A whole-element include turns

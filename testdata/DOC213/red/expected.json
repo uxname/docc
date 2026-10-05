@@ -1,0 +1,26 @@
+[
+  {
+    "code": "DOC213",
+    "rule": "graph/broken-file",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 56,
+    "endLine": 1,
+    "endColumn": 71,
+    "message": "the image file does not exist: docs/src/img/missing.png",
+    "hint": "Put the image under docs/src and write its path relative to the folder of this document."
+  },
+  {
+    "code": "DOC213",
+    "rule": "graph/broken-file",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 90,
+    "endLine": 1,
+    "endColumn": 98,
+    "message": "the image path leaves docs/src",
+    "hint": "Put the image under docs/src and write its path relative to the folder of this document."
+  }
+]

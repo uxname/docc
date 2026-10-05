@@ -30,11 +30,11 @@ func (r *Renderer) page(d *engine.Doc) string {
 	}
 	if !r.html { // the HTML file draws title, badges and relations from the data itself
 		blocks = append(blocks, "# "+numbered(r.numberOf(d), pg.refs(oneLine.Replace(rawTitle(d)))))
-		if meta := metaLine(d); meta != "" {
+		if meta := r.metaLine(d); meta != "" {
 			blocks = append(blocks, meta)
 		}
 		if r.Full && d.Hidden {
-			blocks = append(blocks, "> Hidden document.")
+			blocks = append(blocks, "> "+r.t("Hidden document."))
 		}
 	}
 	if body := d.Root.Get("body"); body != nil {
@@ -162,7 +162,7 @@ func (pg *page) sections(v *loader.Node, level int) string {
 func (pg *page) serviceSections(blocks *[]string) {
 	add := func(title, content string) {
 		if content != "" {
-			*blocks = append(*blocks, "## "+title, "> Service information.", content)
+			*blocks = append(*blocks, "## "+pg.r.t(title), "> "+pg.r.t("Service information."), content)
 		}
 	}
 	if n := pg.doc.Root.Get("notes"); n != nil && n.Kind == loader.Array {
@@ -286,7 +286,7 @@ func (r *Renderer) treeLines(es []entry) string {
 	for _, e := range es {
 		line := strings.Repeat("  ", e.depth) + "- [" + r.title(e.d) + "](" + r.href(e.d) + ")"
 		if r.Full && e.d.Hidden {
-			line += " (hidden)"
+			line += " (" + r.t("hidden") + ")"
 		}
 		lines = append(lines, line)
 	}
@@ -298,21 +298,21 @@ func (r *Renderer) treeBlocks() []string {
 	tree, orphans := r.layout()
 	var out []string
 	if r.Full {
-		out = append(out, "> full build: includes hidden documents and notes — do not publish")
+		out = append(out, "> "+r.t("full build: includes hidden documents and notes — do not publish"))
 	}
-	out = append(out, "# Document tree")
+	out = append(out, "# "+r.t("Document tree"))
 	if len(tree) > 0 {
 		out = append(out, r.treeLines(tree))
 	}
 	if len(orphans) > 0 {
-		out = append(out, "## Without parent", r.treeLines(orphans))
+		out = append(out, "## "+r.t("Without parent"), r.treeLines(orphans))
 	}
 	if un := r.uncovered(); len(un) > 0 {
 		var lines []string
 		for _, d := range un {
 			lines = append(lines, "- ["+r.title(d)+"]("+r.href(d)+")")
 		}
-		out = append(out, "## Documents without code coverage", strings.Join(lines, "\n"))
+		out = append(out, "## "+r.t("Documents without code coverage"), strings.Join(lines, "\n"))
 	}
 	return out
 }
@@ -342,7 +342,7 @@ func rawTitle(d *engine.Doc) string {
 }
 
 // metaLine is the one-line summary under the title: kind · status · priority N · tags.
-func metaLine(d *engine.Doc) string {
+func (r *Renderer) metaLine(d *engine.Doc) string {
 	var parts []string
 	for _, k := range []string{"kind", "status"} {
 		if v := d.Root.Get(k); v != nil && v.Kind == loader.String && v.Str != "" {
@@ -350,7 +350,7 @@ func metaLine(d *engine.Doc) string {
 		}
 	}
 	if v := d.Root.Get("priority"); v != nil && (v.Kind == loader.Number || v.Kind == loader.String) && v.Str != "" {
-		parts = append(parts, "priority "+oneLine.Replace(v.Str))
+		parts = append(parts, r.t("priority")+" "+oneLine.Replace(v.Str))
 	}
 	var tags []string
 	for _, n := range engine.StringList(d.Root.Get("tags")) {
@@ -407,7 +407,7 @@ func (pg *page) relations(blocks *[]string) {
 	r, d := pg.r, pg.doc
 	add := func(title, content string) {
 		if content != "" {
-			*blocks = append(*blocks, "## "+title, content)
+			*blocks = append(*blocks, "## "+r.t(title), content)
 		}
 	}
 	if v := d.Root.Get("parent"); v != nil && v.Kind == loader.String {
@@ -427,7 +427,7 @@ func (pg *page) relations(blocks *[]string) {
 	add("Covered by", strings.Join(items, "\n"))
 	for _, id := range r.P.Cfg.Roots {
 		if id == d.ID && !r.single {
-			*blocks = append(*blocks, "Document tree: [_tree.md](_tree.md)")
+			*blocks = append(*blocks, r.t("Document tree")+": [_tree.md](_tree.md)")
 			break
 		}
 	}

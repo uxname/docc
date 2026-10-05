@@ -1,0 +1,1 @@
+{ "title": "Index", "kind": "page", "body": ["See ![A](img/missing.png).", "Outside ![B](../x.png).", "Code `![C](nope.png)` and ![D](https://x.org/d.png)."] }

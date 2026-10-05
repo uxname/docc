@@ -205,6 +205,27 @@ func (sc *Scan) delimited(open, close string) []Ref {
 // Refs returns [[...]] occurrences outside code.
 func (sc *Scan) Refs() []Ref { return sc.delimited("[[", "]]") }
 
+var imageRe = regexp.MustCompile(`!\[[^\]\n]*\]\(([^()\s]+)(?:\s+"[^"\n]*")?\)`)
+
+// Images returns the paths of Markdown images ![alt](path) outside code:
+// Start and End cover the path only.
+func (sc *Scan) Images() []Ref {
+	var out []Ref
+	for _, sp := range sc.Plain {
+		for _, m := range imageRe.FindAllStringSubmatchIndex(sc.S[sp.Start:sp.End], -1) {
+			a, b := sp.Start+m[2], sp.Start+m[3]
+			out = append(out, Ref{a, b, sc.S[a:b]})
+		}
+	}
+	return out
+}
+
+var scheme = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9+.-]*:`)
+
+// LocalImage reports whether an image path names a file of the project: not
+// a URL (http:, data:, ...) and not an absolute path.
+func LocalImage(p string) bool { return !scheme.MatchString(p) && !strings.HasPrefix(p, "/") }
+
 // Includes returns {{...}} occurrences outside code.
 func (sc *Scan) Includes() []Ref { return sc.includes }
 

@@ -156,7 +156,10 @@ func CheckFresh(p *engine.Project, outRel string, files map[string]string) {
 			return nil
 		}
 		got, err := os.ReadFile(path)
-		if err != nil || !bytes.Equal(normalize(got), []byte(want)) {
+		if err == nil && engine.ImageExt[strings.ToLower(filepath.Ext(rel))] == "" { // pages compare as text, images byte for byte
+			got = normalize(got)
+		}
+		if err != nil || !bytes.Equal(got, []byte(want)) {
 			p.ReportFile(file, "DOC501", 1, 1, "the generated file is outdated"+src(p, rel), "Run docc build and commit the result.")
 		}
 		return nil

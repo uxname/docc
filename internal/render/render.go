@@ -3,6 +3,8 @@
 package render
 
 import (
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,18 +28,32 @@ type Renderer struct {
 	single  bool              // single-file build: links are in-file anchors, no Header per page
 	anchors bool              // single Markdown file: emit <a id> before pages and field headings
 	html    bool              // single HTML file: pages carry only body and fields
+	imgs    map[string]bool   // images the pages show, paths relative to src; collected by Files
 }
 
 // Files returns every generated file: path relative to the output directory
-// ('/' separators) to content. Call it only when validation found no errors
-// of groups 1xx and 2xx.
+// ('/' separators) to content. The images the pages show are copied from src
+// at the same path; their content is the bytes of the file. Call it only when
+// validation found no errors of groups 1xx and 2xx.
 func (r *Renderer) Files() map[string]string {
 	out := map[string]string{}
+	r.imgs = map[string]bool{}
+	defer func() { r.imgs = nil }()
 	for _, d := range r.docs() {
 		out[PagePath(d)] = lf(r.page(d))
 	}
 	out["_tree.md"] = lf(r.tree())
+	for rel := range r.imgs {
+		if b, err := os.ReadFile(r.srcFile(rel)); err == nil { // DOC213 reports a missing file
+			out[rel] = string(b)
+		}
+	}
 	return out
+}
+
+// srcFile is the OS path of a file given relative to src.
+func (r *Renderer) srcFile(rel string) string {
+	return filepath.Join(r.P.Cfg.Abs(r.P.Cfg.Src), filepath.FromSlash(rel))
 }
 
 // Single returns every page in one Markdown file: the document tree first,

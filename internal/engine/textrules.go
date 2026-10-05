@@ -63,6 +63,10 @@ func (p *Project) checkText() {
 				p.emit(d, "DOC304", sn.Node.Start, sn.Node.End, "the string is empty", "Fill it in or remove the field.")
 				continue
 			}
+			if on("DOC303") && text.IsDashOnly(s) {
+				p.emit(d, "DOC303", sn.Node.Start, sn.Node.End, fmt.Sprintf(listRules[1].msg, strings.TrimSpace(s)), "Write the real text or remove the field.")
+				continue
+			}
 			for _, lr := range listRules {
 				if on(lr.code) {
 					p.listHits(d, sn, lr, res.Rule(lr.code))
