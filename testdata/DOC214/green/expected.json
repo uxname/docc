@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC208",
+    "rule": "graph/undeclared-link",
+    "level": "warn",
+    "file": "docs/src/req.json",
+    "line": 6,
+    "column": 19,
+    "endLine": 6,
+    "endColumn": 29,
+    "message": "[[note-a]] is used in the text but \"note-a\" is not in links or parent",
+    "hint": "Add \"note-a\" to links."
+  }
+]

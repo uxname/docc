@@ -1,1 +1,1 @@
-{ "title": "Index", "links": ["req-a", "req-b"] }
+{ "title": "Index", "links": ["req-a", "req-b"], "kind": "page" }

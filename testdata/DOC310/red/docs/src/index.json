@@ -1,1 +1,1 @@
-{ "title": "Index", "body": "Raw <div class=\"x\">html</div> and <script>alert(1)</script>." }
+{ "title": "Index", "body": "Raw <div class=\"x\">html</div> and <script>alert(1)</script>.", "kind": "page" }

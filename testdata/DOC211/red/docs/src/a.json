@@ -1,1 +1,1 @@
-{ "title": "A", "notes": ["x"], "count": 3, "body": "{{b#body}}" }
+{ "title": "A", "notes": ["x"], "count": 3, "body": "{{b#body}}", "kind": "page" }

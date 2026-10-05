@@ -6,5 +6,6 @@
     "status": { "enum": ["draft", "accepted"] },
     "statement": { "type": "string", "minLength": 10 },
     "priority": { "type": "integer", "minimum": 1, "maximum": 3 }
-  }
+  },
+  "additionalProperties": true
 }

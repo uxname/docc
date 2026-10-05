@@ -1,5 +1,6 @@
 {
   "title": "Index",
   "links": ["a", "b"],
-  "body": ["{{a}}", "{{missing#body}}", "{{a#nope}}", "{{a#notes}}", "{{a#count}}", "{{b#body}}"]
+  "body": ["{{a}}", "{{missing#body}}", "{{a#nope}}", "{{a#notes}}", "{{a#count}}", "{{b#body}}"],
+  "kind": "page"
 }

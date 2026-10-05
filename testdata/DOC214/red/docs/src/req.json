@@ -1,0 +1,7 @@
+{
+  "title": "Req",
+  "kind": "requirement",
+  "parent": "note-a",
+  "why": "Serves [[note-a]] and [[goal-a]].",
+  "body": "Unlike [[note-a]], any kind here."
+}

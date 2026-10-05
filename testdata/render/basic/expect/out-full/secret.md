@@ -2,6 +2,8 @@
 
 # Secret
 
+page
+
 > Hidden document.
 
 Hidden text with <!-- include req#statement -->First fact. Second fact.<!-- /include -->

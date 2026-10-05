@@ -1,1 +1,1 @@
-{ "title": "Index", "body": "Text\n```go\nfmt.Println()" }
+{ "title": "Index", "body": "Text\n```go\nfmt.Println()", "kind": "page" }

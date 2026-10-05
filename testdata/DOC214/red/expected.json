@@ -1,0 +1,38 @@
+[
+  {
+    "code": "DOC214",
+    "rule": "graph/wrong-target-kind",
+    "level": "error",
+    "file": "docs/src/req.json",
+    "line": 4,
+    "column": 13,
+    "endLine": 4,
+    "endColumn": 21,
+    "message": "parent points to \"note-a\" of kind \"page\", but field \"parent\" takes only kind goal",
+    "hint": "Point it to a document of kind goal, or change \"x-docc-target\" of \"parent\" in docs/schemas/requirement.json."
+  },
+  {
+    "code": "DOC214",
+    "rule": "graph/wrong-target-kind",
+    "level": "error",
+    "file": "docs/src/req.json",
+    "line": 5,
+    "column": 18,
+    "endLine": 5,
+    "endColumn": 28,
+    "message": "reference [[note-a]] points to \"note-a\" of kind \"page\", but field \"why\" takes only kind goal",
+    "hint": "Point it to a document of kind goal, or change \"x-docc-target\" of \"why\" in docs/schemas/requirement.json."
+  },
+  {
+    "code": "DOC208",
+    "rule": "graph/undeclared-link",
+    "level": "warn",
+    "file": "docs/src/req.json",
+    "line": 5,
+    "column": 33,
+    "endLine": 5,
+    "endColumn": 43,
+    "message": "[[goal-a]] is used in the text but \"goal-a\" is not in links or parent",
+    "hint": "Add \"goal-a\" to links."
+  }
+]

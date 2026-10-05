@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "required": ["parent", "why"],
+  "properties": {
+    "parent": { "x-docc-target": ["goal"] },
+    "why": { "type": "string", "x-docc-target": ["goal"] }
+  },
+  "additionalProperties": false
+}

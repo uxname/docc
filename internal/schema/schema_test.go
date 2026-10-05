@@ -88,38 +88,137 @@ func TestKindSchema(t *testing.T) {
 	s, err := load(t, map[string]string{
 		"requirement.json": `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object",
 		  "required":["statement"],"properties":{"status":{"enum":["draft","accepted"]},"statement":{"$ref":"common.json#/$defs/text"}},
-		  "additionalProperties":false,"patternProperties":{"^(title|kind|parent|links|tags|body)$":true}}`,
-		"common.json": `{"$defs":{"text":{"type":"string","minLength":3}}}`,
+		  "additionalProperties":false}`,
+		"common.json": `{"$defs":{"text":{"type":"string","minLength":3}},"additionalProperties":true}`,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !s.HasKind("requirement") || s.HasKind("common") == false {
+	if !s.HasKind("requirement") || !s.HasKind("common") {
 		t.Fatal("kinds loaded")
 	}
 	doc := parse(t, "{\n\"title\":\"A\",\"kind\":\"requirement\",\n\"status\":\"wip\",\"extra\":1}")
 	vs := s.CheckKind("requirement", doc.Root)
-	var msgs []string
-	for _, v := range vs {
-		msgs = append(msgs, v.Message)
-	}
-	joined := strings.Join(msgs, "\n")
-	for _, w := range []string{`missing property "statement"`, "/status", `property "extra" is not allowed`} {
+	joined := messages(vs)
+	for _, w := range []string{`missing property "statement"`, "/status", `unknown field "extra"`} {
 		if !strings.Contains(joined, w) {
 			t.Errorf("missing %q in:\n%s", w, joined)
 		}
 	}
-	// additionalProperties points at the key
 	for _, v := range vs {
-		if strings.Contains(v.Message, "'extra'") {
+		if strings.Contains(v.Message, `"extra"`) {
 			if l, c := doc.Src.Position(v.Start); l != 3 || c != 16 {
 				t.Errorf("extra key position %d:%d", l, c)
 			}
 		}
 	}
-	ok := parse(t, `{"title":"A","kind":"requirement","status":"draft","statement":"abcd","notes":["n"],"hidden":true}`)
+	ok := parse(t, `{"title":"A","kind":"requirement","status":"draft","statement":"abcd","notes":["n"],"hidden":true,
+		"parent":"x","links":["y"],"tags":["t"],"body":"b","order":2,"reviewed":{},"docIgnore":[]}`)
 	if vs := s.CheckKind("requirement", ok.Root); len(vs) != 0 {
-		t.Errorf("service fields must be ignored: %+v", vs)
+		t.Errorf("service fields must be allowed by a closed kind: %+v", vs)
+	}
+}
+
+func messages(vs []Violation) string {
+	var msgs []string
+	for _, v := range vs {
+		msgs = append(msgs, v.Message+" | "+v.Hint)
+	}
+	return strings.Join(msgs, "\n")
+}
+
+// The allowed names come from properties, allOf branches and local $ref
+// targets (followed recursively), not from if/then.
+func TestAllowedNames(t *testing.T) {
+	s, err := load(t, map[string]string{
+		"req.json": `{"properties":{"a":{}},"allOf":[{"properties":{"b":{}}},{"$ref":"parts/c.json"}],
+			"if":{"required":["a"]},"then":{"properties":{"hidden-x":{}}},"additionalProperties":false}`,
+		"parts/c.json": `{"properties":{"c":{"x-docc-target":["goal"]}},"$ref":"d.json"}`,
+		"parts/d.json": `{"properties":{"d":{}},"allOf":[{"$ref":"#/$defs/e"}],"$defs":{"e":{"properties":{"e":{}}}}}`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	k := s.Kind("req")
+	for _, n := range []string{"a", "b", "c", "d", "e"} {
+		if !k.allowed[n] {
+			t.Errorf("%s is not allowed: %v", n, k.allowed)
+		}
+	}
+	if k.allowed["hidden-x"] {
+		t.Error("if/then properties must not count")
+	}
+	if got := k.Targets("c"); len(got) != 1 || got[0] != "goal" {
+		t.Errorf("targets of c: %v", got)
+	}
+	vs := s.CheckKind("req", parse(t, `{"title":"T","a":1,"b":1,"c":1,"d":1,"e":1,"hidden-x":1}`).Root)
+	if len(vs) != 1 || !strings.Contains(vs[0].Message, `unknown field "hidden-x"`) {
+		t.Errorf("%s", messages(vs))
+	} // a $ref cycle does not hang the walk
+	_, _ = load(t, map[string]string{"loop.json": `{"allOf":[{"$ref":"#"}],"$ref":"loop.json","additionalProperties":true}`})
+}
+
+// A typo in a closed kind is reported once with the closest name.
+func TestUnknownFieldSuggestion(t *testing.T) {
+	s, err := load(t, map[string]string{
+		"req.json":  `{"properties":{"statement":{"type":"string"}},"additionalProperties":false,"x-docc-covered":true}`,
+		"open.json": `{"additionalProperties":true}`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.Kind("req").Covered || s.Kind("open").Covered {
+		t.Error("x-docc-covered")
+	}
+	vs := s.CheckKind("req", parse(t, `{"title":"T","statment":"x","zzzzzzzz":1,"parnt":"p"}`).Root)
+	joined := messages(vs)
+	if len(vs) != 3 || !strings.Contains(joined, `Did you mean "statement"?`) || !strings.Contains(joined, `Did you mean "parent"?`) ||
+		strings.Count(joined, "Did you mean") != 2 {
+		t.Errorf("%s", joined)
+	}
+	if vs := s.CheckKind("open", parse(t, `{"title":"T","statment":"x"}`).Root); len(vs) != 0 {
+		t.Errorf("open kind: %s", messages(vs))
+	}
+}
+
+// A failing allOf branch must not turn its properties into unknown fields:
+// the document missing "parent" gets exactly one error.
+func TestClosedKindNoCascade(t *testing.T) {
+	s, err := load(t, map[string]string{
+		"req.json": `{"type":"object","allOf":[{"required":["parent"],"properties":{"statement":{"type":"string"},"status":{"enum":["draft"]}}}],
+			"additionalProperties":false}`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	vs := s.CheckKind("req", parse(t, `{"title":"T","statement":"s","status":"draft","notes":["n"]}`).Root)
+	if len(vs) != 1 || !strings.Contains(vs[0].Message, `missing property "parent"`) {
+		t.Errorf("%s", messages(vs))
+	}
+	vs = s.CheckKind("req", parse(t, `{"title":"T","parent":"p","statement":"s","status":"wip"}`).Root)
+	if len(vs) != 1 || !strings.Contains(vs[0].Message, "/status") {
+		t.Errorf("status restricted: %s", messages(vs))
+	}
+}
+
+func TestAdditionalPropertiesRequired(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"missing":     {"a.json": `{"type":"object"}`},
+		"not boolean": {"a.json": `{"additionalProperties":{"type":"string"}}`},
+		"bad target":  {"a.json": `{"properties":{"p":{"x-docc-target":"goal"}},"additionalProperties":true}`},
+		"bad covered": {"a.json": `{"x-docc-covered":"yes","additionalProperties":true}`},
+	} {
+		_, err := load(t, files)
+		if err == nil {
+			t.Errorf("%s: expected error", name)
+			continue
+		}
+		if name != "bad target" && name != "bad covered" && !strings.Contains(err.Error(), "additionalProperties") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if _, err := load(t, map[string]string{"a.json": `{"additionalProperties":true}`, "sub/b.json": `{"type":"string"}`}); err != nil {
+		t.Errorf("a file in a subfolder is not a kind: %v", err)
 	}
 }
 
@@ -219,7 +318,7 @@ func TestDocumentSchemaIsValid(t *testing.T) {
 }
 
 func TestFormatIsAnAssertion(t *testing.T) {
-	s, err := load(t, map[string]string{"event.json": `{"properties":{"due":{"type":"string","format":"date"}}}`})
+	s, err := load(t, map[string]string{"event.json": `{"properties":{"due":{"type":"string","format":"date"}},"additionalProperties":true}`})
 	if err != nil {
 		t.Fatal(err)
 	}

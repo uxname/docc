@@ -1,6 +1,7 @@
 {
   "title": "Index",
   "links": ["a", "b", "c"],
-  "reviewed": { "a": "52a40e88", "b": "00000000", "zzz": "11111111" },
-  "notes": ["Also relates to [[b]]."]
+  "reviewed": { "a": "c81917d5", "b": "00000000", "zzz": "11111111" },
+  "notes": ["Also relates to [[b]]."],
+  "kind": "page"
 }

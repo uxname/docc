@@ -1,5 +1,6 @@
 {
   "title": "Index",
   "links": ["a"],
-  "body": "See [[b]] and [[b]] again, also [[ghost]]."
+  "body": "See [[b]] and [[b]] again, also [[ghost]].",
+  "kind": "page"
 }

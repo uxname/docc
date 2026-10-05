@@ -6,5 +6,6 @@
     { "rule": "text/placeholder", "reason": "nothing to suppress here" },
     { "rule": "DOC301", "reason": "wrong path", "path": "/nope" },
     { "rule": "DOC352", "reason": "this rule is off here" }
-  ]
+  ],
+  "kind": "page"
 }

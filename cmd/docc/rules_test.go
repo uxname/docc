@@ -16,7 +16,7 @@ func TestRulesList(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &rows); err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 32 { // 33 codes minus the generic DOC800 row
+	if len(rows) != 33 { // 34 codes minus the generic DOC800 row
 		t.Fatalf("%d rules", len(rows))
 	}
 	got := map[string]map[string]string{}
@@ -31,7 +31,7 @@ func TestRulesList(t *testing.T) {
 	}
 	_, text, _ := do("rules")
 	lines := strings.Split(strings.TrimSpace(text), "\n")
-	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 33 || strings.Contains(lines[0], "FIXABLE") {
+	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 34 || strings.Contains(lines[0], "FIXABLE") {
 		t.Fatalf("table:\n%s", text)
 	}
 	for _, ln := range lines {

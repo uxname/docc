@@ -4,5 +4,6 @@
   "docIgnore": [
     { "rule": "DOC301", "reason": "customer wording", "path": "/body" },
     { "rule": "text/placeholder", "reason": "whole document" }
-  ]
+  ],
+  "kind": "page"
 }

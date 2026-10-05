@@ -13,7 +13,7 @@ import (
 var reservedKeys = map[string]bool{
 	"title": true, "kind": true, "status": true, "parent": true,
 	"links": true, "body": true, "tags": true, "notes": true, "hidden": true,
-	"reviewed": true, "docIgnore": true,
+	"reviewed": true, "docIgnore": true, "order": true,
 }
 
 // ServiceFields cannot be anchors or include sources.

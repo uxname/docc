@@ -8,5 +8,6 @@
     { "rule": "DOC303", "reason": "ok", "path": "body" },
     { "rule": "DOC303", "reason": "ok", "extra": 1 },
     "DOC301"
-  ]
+  ],
+  "kind": "page"
 }

@@ -1,4 +1,5 @@
 {
   "title": "Index",
-  "body": ["The app is fast and easy, etc.", "Работает быстро и удобно, и т.д.", "Нужно срочно."]
+  "body": ["The app is fast and easy, etc.", "Работает быстро и удобно, и т.д.", "Нужно срочно."],
+  "kind": "page"
 }

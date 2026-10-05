@@ -1,5 +1,6 @@
 {
   "title": "A",
   "links": ["a", "index"],
-  "body": "I mention [[a]] myself."
+  "body": "I mention [[a]] myself.",
+  "kind": "page"
 }

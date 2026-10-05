@@ -2,6 +2,8 @@
 
 # Index
 
+page
+
 Hello
 
 Document tree: [_tree.md](_tree.md)

@@ -15,7 +15,7 @@ import (
 var reserved = map[string]bool{
 	"title": true, "kind": true, "status": true, "parent": true,
 	"links": true, "body": true, "tags": true, "priority": true, "notes": true, "hidden": true,
-	"reviewed": true, "docIgnore": true,
+	"reviewed": true, "docIgnore": true, "order": true,
 }
 
 func (r *Renderer) page(d *engine.Doc) string {

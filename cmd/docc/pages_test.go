@@ -15,7 +15,8 @@ func TestPageMetaRelationsAndTable(t *testing.T) {
 		"docs/src/req.json": `{"title":"Req","kind":"requirement","status":"accepted","priority":2,"tags":["x","y"],
 			"parent":"index","body":"Text.",
 			"acceptance":[{"given":"A","when":"B","then":"C | D"},{"given":"E","when":"F","then":"G"}]}`,
-		"docs/src/bare.json": `{"title":"Bare","kind":"requirement","parent":"index"}`,
+		"docs/src/bare.json":            `{"title":"Bare","kind":"requirement","parent":"index"}`,
+		"docs/schemas/requirement.json": `{"additionalProperties":true}`,
 	})
 	if code, out, errs := do("build"); code != 0 {
 		t.Fatalf("%d %s %s", code, out, errs)
@@ -131,7 +132,8 @@ func TestHTMLBuild(t *testing.T) {
 		"docs/src/req.json": `{"title":"Req","kind":"requirement","status":"accepted","priority":2,"tags":["t1"],
 			"parent":"index","statement":["Fact.","More."],"owner":"Team","stage":"alpha",
 			"body":"Click <a id=\"x\" onclick=\"evil()\">here</a>.","rows":[{"a":"one\ntwo","b":"x"}]}`,
-		"docs/src/h.json": `{"title":"Hid","hidden":true,"parent":"index","body":"Secret"}`,
+		"docs/src/h.json":               `{"title":"Hid","hidden":true,"parent":"index","body":"Secret"}`,
+		"docs/schemas/requirement.json": `{"additionalProperties":true}`,
 	})
 	if code, out, errs := do("build", "--html"); code != 0 || !strings.Contains(out, "built docs/out.html") {
 		t.Fatalf("%d %s %s", code, out, errs)
@@ -228,7 +230,7 @@ func TestSectionsRenderLinkAndInclude(t *testing.T) {
 	for _, want := range []string{
 		"## 17.1 Critical\n\n### 17.1.2 No renewal date\n\nRule needs a date.",
 		"### Empty one\n\n### Deeper\n\n#### Same\n\ndeep text\n\n### Same\n\ntop text",
-		"## Plain\n\n- **timeout:** 5s", // a list object is unchanged
+		"## Plain\n\n- **timeout:** 5s",                 // a list object is unchanged
 		"Open: [Questions](questions.md#renewal-date).", // a link to a field keeps the title of the document
 	} {
 		if !strings.Contains(audit, want) {

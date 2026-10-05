@@ -1,1 +1,1 @@
-{ "title": "A", "parent": "index", "notes": ["private"], "statement": "S" }
+{ "title": "A", "parent": "index", "notes": ["private"], "statement": "S", "kind": "page" }

@@ -1,1 +1,1 @@
-{ "title": "A", "statement": ["First fact.", "Second fact."], "body": "`{{not-an-include}}`" }
+{ "title": "A", "statement": ["First fact.", "Second fact."], "body": "`{{not-an-include}}`", "kind": "page" }

@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -40,7 +41,19 @@ type Violation struct {
 // Set holds the compiled built-in schema and the kind schemas.
 type Set struct {
 	builtin *jsonschema.Schema
-	kinds   map[string]*jsonschema.Schema
+	kinds   map[string]*Kind
+}
+
+// Kind is a compiled kind schema with what docc reads from its raw JSON:
+// the top-level "additionalProperties" (checked by docc, not by the
+// validator), the names it allows, "x-docc-target" of properties and
+// "x-docc-covered".
+type Kind struct {
+	schema  *jsonschema.Schema
+	closed  bool
+	allowed map[string]bool
+	targets map[string][]string
+	Covered bool
 }
 
 // memLoader serves only preloaded resources: no network, no files outside
@@ -71,6 +84,7 @@ func Load(dir, displayDir string) (*Set, error) {
 	}
 	l := memLoader{builtinURL: loader.Value(res.Root)}
 	files := map[string]string{} // rel path -> url
+	raw := map[string]*loader.Node{}
 	if st, err := os.Stat(dir); err == nil && st.IsDir() {
 		var rels []string
 		err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
@@ -103,12 +117,29 @@ func Load(dir, displayDir string) (*Set, error) {
 				return nil, &config.Error{File: shown, Line: ln, Col: col, Msg: fmt.Sprintf("duplicate key %q", r.Dups[0].Key)}
 			}
 			u := schemasURL + rel
-			l[u] = loader.Value(r.Root)
+			v := loader.Value(r.Root)
+			if !strings.Contains(rel, "/") {
+				ap := r.Root.Get("additionalProperties")
+				if ap == nil || ap.Kind != loader.Bool {
+					e := &config.Error{File: shown, Msg: `a kind schema must set "additionalProperties" to true or false at the top level: true allows fields that are not listed in "properties", false allows only the listed fields and the service fields`}
+					if ap != nil {
+						e.Line, e.Col = r.Src.Position(ap.Start)
+					}
+					return nil, e
+				}
+				raw[rel] = r.Root
+				if m, ok := v.(map[string]any); ok {
+					m = maps.Clone(m)
+					delete(m, "additionalProperties")
+					v = m
+				}
+			}
+			l[u] = v
 			files[rel] = u
 		}
 	}
 	c := newCompiler(l)
-	s := &Set{kinds: map[string]*jsonschema.Schema{}}
+	s := &Set{kinds: map[string]*Kind{}}
 	var err error
 	if s.builtin, err = c.Compile(builtinURL); err != nil {
 		return nil, fmt.Errorf("built-in schema: %v", err)
@@ -123,8 +154,12 @@ func Load(dir, displayDir string) (*Set, error) {
 		if err != nil {
 			return nil, &config.Error{File: displayDir + "/" + rel, Msg: "cannot compile schema: " + oneLine(err)}
 		}
-		if !strings.Contains(rel, "/") {
-			s.kinds[strings.TrimSuffix(rel, ".json")] = sc
+		if root := raw[rel]; root != nil {
+			k, err := newKind(sc, root, files[rel], l)
+			if err != nil {
+				return nil, &config.Error{File: displayDir + "/" + rel, Msg: err.Error()}
+			}
+			s.kinds[strings.TrimSuffix(rel, ".json")] = k
 		}
 	}
 	return s, nil
@@ -138,7 +173,7 @@ func oneLine(err error) string {
 func (s *Set) HasKind(kindName string) bool { return s.kinds[kindName] != nil }
 
 // builtinFields are the fields the built-in schema is applied to (DOC105).
-var builtinFields = []string{"title", "kind", "status", "parent", "links", "tags", "reviewed", "body", "notes", "hidden"}
+var builtinFields = []string{"title", "kind", "status", "parent", "links", "tags", "reviewed", "body", "notes", "hidden", "order"}
 
 // CheckBuiltin validates the built-in fields of a document (DOC105).
 // A missing or blank title is left to DOC103 and is not reported here.
@@ -164,23 +199,22 @@ func (s *Set) CheckBuiltin(root *loader.Node) []Violation {
 }
 
 // CheckKind validates a whole document against the schema of its kind
-// (DOC106). Service fields are removed first.
+// (DOC106), service fields included, and reports fields a closed kind does
+// not allow.
 func (s *Set) CheckKind(kindName string, root *loader.Node) []Violation {
-	sc := s.kinds[kindName]
-	if sc == nil {
+	k := s.kinds[kindName]
+	if k == nil {
 		return nil
 	}
 	inst := map[string]any{}
 	for _, m := range root.Members {
-		switch m.Key {
-		case "docIgnore", "reviewed", "notes", "hidden":
-			continue
-		}
 		if _, ok := inst[m.Key]; !ok {
 			inst[m.Key] = loader.Value(m.Value)
 		}
 	}
-	return s.run(sc, inst, root)
+	vs := append(s.run(k.schema, inst, root), k.unknownFields(root)...)
+	sortViolations(vs)
+	return vs
 }
 
 var printer = message.NewPrinter(language.English)
@@ -196,12 +230,7 @@ func (s *Set) run(sc *jsonschema.Schema, inst any, root *loader.Node) []Violatio
 	}
 	var out []Violation
 	collect(ve, root, &out)
-	sort.SliceStable(out, func(i, j int) bool {
-		if out[i].Start != out[j].Start {
-			return out[i].Start < out[j].Start
-		}
-		return out[i].Message < out[j].Message
-	})
+	sortViolations(out)
 	// drop exact duplicates
 	uniq := out[:0]
 	for i, v := range out {
@@ -211,6 +240,15 @@ func (s *Set) run(sc *jsonschema.Schema, inst any, root *loader.Node) []Violatio
 		uniq = append(uniq, v)
 	}
 	return uniq
+}
+
+func sortViolations(vs []Violation) {
+	sort.SliceStable(vs, func(i, j int) bool {
+		if vs[i].Start != vs[j].Start {
+			return vs[i].Start < vs[j].Start
+		}
+		return vs[i].Message < vs[j].Message
+	})
 }
 
 func collect(ve *jsonschema.ValidationError, root *loader.Node, out *[]Violation) {

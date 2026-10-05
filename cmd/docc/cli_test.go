@@ -11,9 +11,11 @@ import (
 )
 
 // project creates a temp project from path -> content and chdirs into it.
-// DOC109 and DOC209 are switched off in it, see relax; rawProject keeps the files as given.
+// Documents without a kind get the kind "page" (see pageKind) and DOC209 is
+// switched off (see relax); rawProject keeps the files as given.
 func project(t *testing.T, files map[string]string) string {
 	t.Helper()
+	pageKind(files)
 	dir := rawProject(t, files)
 	relax(dir)
 	return dir
@@ -176,7 +178,7 @@ func TestBrokenSchemaFilesAreExit2(t *testing.T) {
 
 func TestKindSchemaFileWithLocalRef(t *testing.T) {
 	project(t, map[string]string{
-		"docs/schemas/note.json":          `{"properties":{"status":{"$ref":"common/status.json"}}}`,
+		"docs/schemas/note.json":          `{"properties":{"status":{"$ref":"common/status.json"}},"additionalProperties":true}`,
 		"docs/schemas/common/status.json": `{"enum":["a","b"]}`,
 		"docs/src/index.json":             `{"title":"I","kind":"note","status":"c"}`,
 	})
@@ -241,7 +243,7 @@ func TestBuildCleansOutAndIsIdempotent(t *testing.T) {
 		t.Fatal("two builds differ")
 	}
 	// stale: change a source without building
-	if err := os.WriteFile("docs/src/a.json", []byte(`{"title":"A2","parent":"index"}`), 0o644); err != nil {
+	if err := os.WriteFile("docs/src/a.json", []byte(`{"title":"A2","parent":"index","kind":"page"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	code, out, _ := do("check", "--format", "json")
@@ -288,7 +290,7 @@ func TestCheckNormalizesCRLFAndBOM(t *testing.T) {
 		t.Fatalf("CRLF and BOM must compare equal: %d %s", code, out)
 	}
 	// and a CRLF source works too
-	if err := os.WriteFile("docs/src/index.json", []byte("\xEF\xBB\xBF{\r\n  \"title\": \"I\"\r\n}\r\n"), 0o644); err != nil {
+	if err := os.WriteFile("docs/src/index.json", []byte("\xEF\xBB\xBF{\r\n  \"title\": \"I\",\r\n  \"kind\": \"page\"\r\n}\r\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if code, out, _ := do("check"); code != 0 {
@@ -533,9 +535,10 @@ func TestConfigErrorInParentFolderNamesTheFile(t *testing.T) {
 
 func TestConfigExplicitBeatsParent(t *testing.T) {
 	dir := project(t, map[string]string{
-		"docc.json":                 `{"src":"nope"}`,
-		"other/docc.json":           `{"src":"docs/src","rules":{"DOC109":"off"}}`,
-		"other/docs/src/index.json": `{"title":"I"}`,
+		"docc.json":                    `{"src":"nope"}`,
+		"other/docc.json":              `{"src":"docs/src"}`,
+		"other/docs/src/index.json":    `{"title":"I","kind":"page"}`,
+		"other/docs/schemas/page.json": `{"additionalProperties":true}`,
 	})
 	t.Chdir(filepath.Join(dir, "other"))
 	if code, out, errs := do("validate", "--config", "docc.json"); code != 0 {
