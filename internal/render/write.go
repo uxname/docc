@@ -48,7 +48,7 @@ func CheckDir(p *engine.Project, rel string) error {
 func SingleFile(p *engine.Project, outRel, ext string) (string, error) {
 	cfg := p.Cfg
 	f := cfg.Abs(outRel) + ext
-	if inside(cfg.Abs(cfg.Src), f) || inside(cfg.Abs(cfg.Schemas), f) ||
+	if inside(f, cfg.Abs(cfg.Src)) || inside(f, cfg.Abs(cfg.Schemas)) ||
 		filepath.Clean(f) == filepath.Join(cfg.Root, filepath.Base(cfg.File)) {
 		return "", &engine.UsageError{Msg: fmt.Sprintf("single file %q overlaps the project (config, sources or schemas); choose another output directory", f)}
 	}
