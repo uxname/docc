@@ -2,6 +2,8 @@
 
 # Goals and non-goals
 
+spec
+
 ## Summary
 
 Data is the source of truth and Markdown is generated output. Invalid documentation never reaches the main branch, in the same way as invalid code.

@@ -1,0 +1,28 @@
+[
+  {
+    "code": "DOC109",
+    "rule": "schema/missing-kind-schema",
+    "level": "error",
+    "file": "docs/src/ghost-kind.json",
+    "line": 1,
+    "column": 34,
+    "endLine": 1,
+    "endColumn": 41,
+    "message": "there is no schema for kind \"ghost\"",
+    "hint": "Create docs/schemas/ghost.json, use a kind that has a schema, or switch DOC109 off in docc.json.",
+    "fixable": "none"
+  },
+  {
+    "code": "DOC109",
+    "rule": "schema/missing-kind-schema",
+    "level": "error",
+    "file": "docs/src/no-kind.json",
+    "line": 1,
+    "column": 1,
+    "endLine": 1,
+    "endColumn": 2,
+    "message": "the document has no kind",
+    "hint": "Add \"kind\" with the name of a schema from docs/schemas, or switch DOC109 off in docc.json.",
+    "fixable": "none"
+  }
+]

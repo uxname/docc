@@ -7,7 +7,7 @@ import (
 )
 
 func TestRulesList(t *testing.T) {
-	project(t, map[string]string{})
+	rawProject(t, map[string]string{})
 	code, out, _ := do("rules", "--format", "json")
 	if code != 0 {
 		t.Fatal(code)
@@ -16,7 +16,7 @@ func TestRulesList(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &rows); err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 39 { // 40 codes minus the generic DOC800 row
+	if len(rows) != 40 { // 41 codes minus the generic DOC800 row
 		t.Fatalf("%d rules", len(rows))
 	}
 	got := map[string]map[string]string{}
@@ -31,7 +31,7 @@ func TestRulesList(t *testing.T) {
 	}
 	_, text, _ := do("rules")
 	lines := strings.Split(strings.TrimSpace(text), "\n")
-	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 40 {
+	if !strings.HasPrefix(lines[0], "CODE") || len(lines) != 41 {
 		t.Fatalf("table:\n%s", text)
 	}
 	for _, ln := range lines {

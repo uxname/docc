@@ -2,6 +2,8 @@
 
 # Architecture
 
+spec
+
 The pipeline is: load the JSON files, check the built-in and kind schemas, build the reference graph, run the rules, render, and compare the output folder.
 
 The code is a Go module with a single binary and a small set of packages under internal.

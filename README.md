@@ -4,7 +4,7 @@ Compiler and linter for documentation written as JSON. AI agents write the docum
 
 Install: download a release archive (binary and `skills/docc/SKILL.md`), or `go install github.com/santiment/docc/cmd/docc@latest`.
 
-    docc init        # docc.json, docs/src/index.json, docs/out
+    docc init        # docc.json, docs/schemas/page.json, docs/src/index.json, docs/out
     docc validate    # check the sources (--format json for agents and CI)
     docc build       # write docs/out (--single, --html: also one .md and one .html file for reading)
     docc check       # for CI: validate + docs/out is up to date
@@ -19,6 +19,8 @@ A document is one JSON file in `docs/src`; its id is the file name (`docs/src/re
   "statement": "After five wrong passwords the system locks sign-in for 15 minutes."
 }
 ```
+
+Every document needs a `kind` and a schema `docs/schemas/<kind>.json` (rule DOC109; switch it off in `docc.json` with `"rules": { "DOC109": "off" }` to allow free documents).
 
 A problem is reported with the position, the rule and a hint:
 

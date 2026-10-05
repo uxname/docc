@@ -1,7 +1,9 @@
 {
   "title": "Decisions and assumptions",
+  "kind": "spec",
   "parent": "index",
   "links": ["rules", "config"],
+  "reviewed": { "rules": "c1d2bf7d", "config": "30480bbf" },
   "body": [
     "These choices were made where the specification left room. Each can be changed.",
     "The reachability check (DOC203) is skipped when none of the roots exists, because every document would then be an orphan; DOC205 already reports the missing roots.",
@@ -10,6 +12,8 @@
     "The comparison in the rule DOC306 uses the Jaccard coefficient of character trigrams; a match is reported on the document with the larger id.",
     "The single files docs/out.md and docs/out.html take their names from the output folder (out and outFull plus an extension), so no settings exist for them. They are not checked by docc check and are meant to stay out of git.",
     "The single HTML file is built from the same Markdown as the single Markdown file, converted by the library goldmark with the GitHub extensions. Page anchors are the document id and field anchors are the document id, two hyphens and the field anchor.",
+    "The kind schema is required by default (DOC109) and the check is flat: a document is checked by the schema of its own kind only, schemas do not inherit from each other. The setting is a rule, so it is switched off in the rules section of docc.json like any other rule that is not core.",
+    "The rule DOC209 is a warning by default. Its hint prints the expected fingerprint, so an agent can copy it without reading the target; the skill forbids this, and the tool cannot check it.",
     "Fixes are applied in passes: the first added link creates the links field and the next pass appends further ids, so two fixes never write the same place."
   ],
   "not_verified": [

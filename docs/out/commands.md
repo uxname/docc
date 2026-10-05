@@ -2,7 +2,9 @@
 
 # Commands
 
-docc init creates docc.json and docs/src/index.json if they do not exist and builds docs/out, so the first check is green.
+spec
+
+docc init creates docc.json, docs/schemas/page.json and docs/src/index.json (kind page) if they do not exist and builds docs/out, so the first check is green.
 
 docc validate checks the sources. With the flag fix it applies safe fixes; with fix and unsafe it applies the unsafe ones too.
 

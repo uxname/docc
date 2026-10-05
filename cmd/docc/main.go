@@ -45,7 +45,8 @@ Run docc <command> --help for the flags and examples of a command.
 var cmdUsage = map[string]string{
 	"init": `Usage: docc init
 
-Creates docc.json and docs/src/index.json (existing files are kept) and builds docs/out.
+Creates docc.json, docs/schemas/page.json and docs/src/index.json (existing files are kept)
+and builds docs/out.
 
 Example:
   docc init
@@ -539,6 +540,13 @@ const initConfig = `{
 }
 `
 
+const initSchema = `{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["title"]
+}
+`
+
 func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	fs := newFlags("init", c)
 	pos, err := parse(fs, args)
@@ -568,7 +576,10 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err := create("docc.json", initConfig); err != nil {
 		return 2, err
 	}
-	if err := create(filepath.Join("docs", "src", "index.json"), "{ \"title\": \"Index\" }\n"); err != nil {
+	if err := create(filepath.Join("docs", "schemas", "page.json"), initSchema); err != nil {
+		return 2, err
+	}
+	if err := create(filepath.Join("docs", "src", "index.json"), "{ \"title\": \"Index\", \"kind\": \"page\" }\n"); err != nil {
 		return 2, err
 	}
 	cfg, p, err := loadProject(c)
@@ -584,7 +595,7 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	code, err := emit(stdout, stderr, c, p, p.Sorted())
 	if err == nil && c.format == "text" {
-		say(stdout, "Next:\n  1. edit docs/src/index.json and add documents\n  2. docc validate --format json\n  3. agents: read skills/docc/SKILL.md in the docc repository\n")
+		say(stdout, "Next:\n  1. edit docs/src/index.json and add documents (each needs a kind with a schema in docs/schemas)\n  2. docc validate --format json\n  3. agents: read skills/docc/SKILL.md in the docc repository\n")
 	}
 	return code, err
 }

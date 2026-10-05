@@ -1,7 +1,9 @@
 {
   "title": "Rendering",
+  "kind": "spec",
   "parent": "index",
   "links": ["document-model"],
+  "reviewed": { "document-model": "4ae538d6" },
   "body": [
     "One universal renderer produces a page per visible document at the path of its source: docs/src/a/b.json becomes docs/out/a/b.md. Pages start with a comment saying they are generated.",
     "The title is the first level heading. Under it comes one line with the kind, status, priority and tags separated by a middle dot, then the body without a heading of its own, then the free fields in file order, each as a second level section named after the field. At the end of the page come the sections Parent, Links, Referenced by (documents that point here through parent, links or references) and Covered by (code files with a covers tag, as file:line).",

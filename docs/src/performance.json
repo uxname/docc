@@ -1,5 +1,6 @@
 {
   "title": "Performance",
+  "kind": "spec",
   "parent": "index",
   "body": [
     "The target is a docc check on 1000 documents in under one second. It is measured with a generated project of 1000 files with 5 to 20 KB of Russian text each (about 7 MB), with links, a parent tree and a kind schema.",

@@ -2,9 +2,11 @@
 
 # Rules and diagnostics
 
+spec
+
 Rules are grouped like in Biome: syntax, schema, graph, text, markdown, style, trace, build, meta and custom. A code such as DOC301 is a public contract and never changes; retired codes are not reused. Messages are in English and every message has a hint.
 
-The rules style/hedging (DOC352) and style/timeless-words (DOC353) warn about vague and time-bound words by default.
+The rule schema/missing-kind-schema (DOC109) is an error by default: every document needs a kind with a schema. The rule graph/suspect-link (DOC209) warns by default about links that were not confirmed in reviewed. The rules style/hedging (DOC352) and style/timeless-words (DOC353) warn about vague and time-bound words by default.
 
 The preset recommended gives every rule a default level. Rules that are off by default form the nursery group: they are noisy on Russian text or need a deliberate choice, and are enabled in the configuration, one by one or as a group.
 

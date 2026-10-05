@@ -2,6 +2,8 @@
 
 # Performance
 
+spec
+
 The target is a docc check on 1000 documents in under one second. It is measured with a generated project of 1000 files with 5 to 20 KB of Russian text each (about 7 MB), with links, a parent tree and a kind schema.
 
 On Linux (Intel Core i7-1165G7) the whole check takes about 0.31 seconds: loading 30 ms, rules 245 ms, rendering 22 ms and comparing the output folder 10 ms.

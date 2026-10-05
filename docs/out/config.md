@@ -2,11 +2,13 @@
 
 # Configuration
 
+spec
+
 docc.json is optional and every field has a default. The nearest docc.json is used: it is looked up in the current folder, then in the parent folders, and its folder becomes the project root, so docc can run from a subfolder. If there is none, the current folder is the root and the defaults apply; docc init does not look upward. Unknown keys are errors, reported as docc.json:line:column: config error: message with exit code 2.
 
 Paths: src, out, schemas and outFull. The folder out is owned by docc: the build deletes every file in it that no source produced. Folders that overlap the sources, the schemas or the project root are refused.
 
-roots lists the ids from which reachability is counted, default index. kinds and tags are optional registries of allowed values.
+roots lists the ids from which reachability is counted, default index. kinds and tags are optional registries of allowed values. Every kind needs a schema file in the schemas folder; to allow documents without one, set DOC109 to off in rules, for all files or for some through overrides.
 
 rules maps a code, a rule name or a group name to a level or to an object with a level and parameters (words, allow, wordsFile, allowFile, max, threshold). A rule is more specific than its group, a group is more specific than nursery, and nursery is more specific than the preset.
 

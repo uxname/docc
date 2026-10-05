@@ -2,9 +2,13 @@
 
 # Document model
 
+spec
+
 A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected.
 
-Only title is required. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docIgnore. Every other field is free and holds prose, so no document types are built in.
+The built-in schema requires only title. The reserved fields are kind, status, parent, links, tags, body, notes, hidden, reviewed and docIgnore. Every other field is free and holds prose.
+
+Every document must have a kind, and the folder of schemas must hold <kind>.json for it: the kind schema says which fields are required and which statuses are allowed. A document without a kind, or with a kind that has no schema, is reported as DOC109. A project that wants free documents switches DOC109 off in docc.json.
 
 ## References
 
@@ -19,6 +23,10 @@ notes are for agents and never reach the Markdown. References inside notes are c
 A document with hidden set to true is checked like any other, gets no page and cannot be linked from a visible document.
 
 The include `{{id#field}}` is replaced at build time by the text of that field, so a fact is stored once.
+
+## Confirmed links
+
+The field reviewed confirms a link: it maps the id of a linked document to the fingerprint of that document, taken when the link was checked. When the target changes the fingerprint no longer matches, and DOC209 warns that the link must be checked again. The fingerprint is written only after the target has been read.
 
 ## Suppression
 

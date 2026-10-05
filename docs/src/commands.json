@@ -1,9 +1,11 @@
 {
   "title": "Commands",
+  "kind": "spec",
   "parent": "index",
   "links": ["config", "rendering"],
+  "reviewed": { "config": "30480bbf", "rendering": "7d1763c9" },
   "body": [
-    "docc init creates docc.json and docs/src/index.json if they do not exist and builds docs/out, so the first check is green.",
+    "docc init creates docc.json, docs/schemas/page.json and docs/src/index.json (kind page) if they do not exist and builds docs/out, so the first check is green.",
     "docc validate checks the sources. With the flag fix it applies safe fixes; with fix and unsafe it applies the unsafe ones too.",
     "docc build writes the Markdown into docs/out and removes everything else from that folder. When the sources have errors of the groups 1xx or 2xx it writes nothing and exits with code 1. With the flag full it writes the audit build into docs/out-full and leaves docs/out alone.",
     "The flags single and html add one file next to the folder, both can be combined with full: docc build --single writes all pages into one Markdown file (docs/out.md) and docc build --html into one self-contained HTML file (docs/out.html). The folder of pages is built as before. These files are for reading, are not committed and are not checked by docc check. With full they are docs/out-full.md and docs/out-full.html.",

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A section of the description of docc: it hangs under a parent page.",
+  "type": "object",
+  "required": ["parent"]
+}

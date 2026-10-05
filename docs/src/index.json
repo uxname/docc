@@ -2,6 +2,7 @@
   "title": "docc",
   "kind": "overview",
   "links": ["goals", "document-model", "rules", "commands", "config", "rendering", "architecture", "agent-workflow", "performance", "decisions"],
+  "reviewed": { "goals": "c4a7db3d", "document-model": "4ae538d6", "rules": "c1d2bf7d", "commands": "a9619c49", "config": "30480bbf", "rendering": "7d1763c9", "architecture": "86df36d3", "agent-workflow": "a680f812", "performance": "f13271e8", "decisions": "4791888e" },
   "body": [
     "docc is a compiler and linter for documentation written as JSON. It checks structure, links, content and style, and builds Markdown for people to read.",
     "{{goals#summary}}",

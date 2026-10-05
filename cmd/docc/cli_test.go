@@ -11,7 +11,15 @@ import (
 )
 
 // project creates a temp project from path -> content and chdirs into it.
+// DOC109 and DOC209 are switched off in it, see relax; rawProject keeps the files as given.
 func project(t *testing.T, files map[string]string) string {
+	t.Helper()
+	dir := rawProject(t, files)
+	relax(dir)
+	return dir
+}
+
+func rawProject(t *testing.T, files map[string]string) string {
 	t.Helper()
 	dir := t.TempDir()
 	for name, content := range files {
@@ -363,7 +371,7 @@ func TestInit(t *testing.T) {
 	if code, out, _ := do("check"); code != 0 {
 		t.Fatalf("init output must pass check: %d %s", code, out)
 	}
-	if err := os.WriteFile("docs/src/index.json", []byte(`{"title":"Mine"}`), 0o644); err != nil {
+	if err := os.WriteFile("docs/src/index.json", []byte(`{"title":"Mine","kind":"page"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if code, out, _ := do("init"); code != 0 || !strings.Contains(out, "skipped docs/src/index.json") {
@@ -526,7 +534,7 @@ func TestConfigErrorInParentFolderNamesTheFile(t *testing.T) {
 func TestConfigExplicitBeatsParent(t *testing.T) {
 	dir := project(t, map[string]string{
 		"docc.json":                 `{"src":"nope"}`,
-		"other/docc.json":           `{"src":"docs/src"}`,
+		"other/docc.json":           `{"src":"docs/src","rules":{"DOC109":"off"}}`,
 		"other/docs/src/index.json": `{"title":"I"}`,
 	})
 	t.Chdir(filepath.Join(dir, "other"))
