@@ -1,0 +1,8 @@
+{
+  "title": "Вход по почте",
+  "kind": "requirement",
+  "parent": "index",
+  "statement": "Пользователь входит по адресу почты и паролю.",
+  "priorty": "high",
+  "owner": "N/A"
+}

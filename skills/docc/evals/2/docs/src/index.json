@@ -1,0 +1,7 @@
+{
+  "title": "Личный кабинет",
+  "kind": "page",
+  "body": [
+    "Правила безопасности: [[security-policy]]. Экран входа: [[login-screen]]."
+  ]
+}

@@ -42,7 +42,7 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 - Link inside text with `[[id]]`, `[[id#field]]`, `[[id#field/section]]` or `[[id#^name]]`. The target must exist. A reference in the text is the link: there is no separate list of links.
 - A block anchor ` ^name` (a space, `^`, a name of `a-z`, `0-9`, `-` starting with a letter) at the end of a paragraph, a list item or a one-line field names that piece of text. `[[id#^name]]` links to it, `{{id#^name}}` inserts the paragraph without the marker. DOC212 reports a repeated anchor, DOC312 an anchor or field that does not exist.
 - Every visible document must be reachable from a root (default root: the document `index`) through `parent` or `[[id]]`. Reachability checks only the shape of the graph. Whether a link makes sense is for a human reviewer, so link a document where a reader would look for it, not only to silence the error.
-- Siblings are sorted by `order`, then by title. With `"numbering": true` in `docc.json`, docc numbers pages (1, 2, 9.1) and sections (9.1.1) in headings, the tree and link text. Never type a number into a title or a section key: DOC314 reports it; set `order` instead.
+- Siblings are sorted by `order`, then by title. With `"numbering": true` in `docc.json`, docc numbers pages (1, 2, 9.1) and sections (9.1.1) in headings, the tree and link text. Never type a number into a title or a section key: DOC314 reports it; set `order` instead. To put a page between two others, give it an `order` between theirs (between 2 and 3: `2.5`); do not renumber the neighbours.
 - Images: `![alt](img/plan.png)` with a path relative to the folder of the document, the file inside `docs/src` (png, jpg, jpeg, gif, svg, webp). DOC213 reports a missing file. The build copies images into `docs/out` and embeds them into the single HTML file.
 - Markdown footnotes (`text[^1]` and a paragraph `[^1]: source`) render in the HTML output.
 
@@ -91,7 +91,7 @@ A strict schema for a kind invented for this example, `docs/schemas/endpoint.jso
 
 `docc build` writes one line per link into `docc.lock`: source (document id or code file), target, a hash of the target fragment and, for a code region, a hash of the code. A link to `#^name` or `#field` hashes only that fragment, so a link to the exact paragraph is less noisy than a link to the whole document. New links are confirmed by the build; the stored hashes of old links stay until you confirm them.
 
-- DOC209: the target of a link changed after the link was confirmed. Read the changed target, compare it with the source, fix the source if it no longer matches, then run `docc ack <target>` (for example `docc ack security-policy#^limit`).
+- DOC209: the target of a link changed after the link was confirmed. Read the changed target, compare it with the source, fix the source if it no longer matches, then run `docc ack <target>` (for example `docc ack security-policy#^limit`). One `ack` of the changed target confirms every link to it; do not ack the sources one by one. When the source is a code file, the code is part of the same change: if it still holds the old value, fix it too. Leave the code alone only when the user said not to touch code, and then name the open DOC209 in your answer.
 - DOC402: the code inside a `docc:begin` … `docc:end` region changed. Read the code, compare it with the document, fix the document if needed, then `docc ack <code file>`.
 - Never run `docc ack` (and never `docc ack --all`) without reading both sides: it only records that a person or agent checked the link.
 - DOC503 in `docc check`: `docc.lock` does not match the links (a missing or extra line, often after a merge). Run `docc build`. Do not edit `docc.lock` by hand.
@@ -124,7 +124,7 @@ Add the generated single files to `.gitignore`: `docs/out.md`, `docs/out.html`, 
 
 ## Changing a decision
 
-Do not rewrite history by editing the old text. If the project's schemas have a status for a replaced document, write a new document, set that status on the old one and link the old one to the new one. `docc` does not compare numbers in free fields, so after the change search for the old value yourself: `grep -rn "old value" docs/src code config`, then fix every hit. DOC209 then points at the links whose target changed: read each source and fix it or confirm it with `docc ack`.
+Do not rewrite history by editing the old text. If the project's schemas have a status for a replaced document, write a new document, set that status on the old one and link the old one to the new one. `docc` does not compare numbers in free fields, so after the change search for the old value yourself: `grep -rn "old value" docs/src code config`, then fix every hit, code included, unless the user said not to touch code. DOC209 then points at the links whose target changed: read each source and fix it or confirm it with `docc ack`.
 
 ## notes or hidden
 
@@ -137,7 +137,7 @@ Do not rewrite history by editing the old text. If the project's schemas have a 
 1. Fix the cause. Do **not** add `docIgnore` to silence a diagnostic you could fix. Use it only for a real exception and always give a `reason` that a reviewer can accept:
    `"docIgnore": [{ "rule": "DOC301", "reason": "term from the customer's spec", "path": "/statement" }]`.
    Core rules (syntax, most graph rules, DOC109, DOC401, build) cannot be suppressed: DOC108 reports such an entry.
-2. Link only to ids that exist. Never invent an id to remove DOC202; create the document or remove the link.
+2. Link only to ids that exist. Never invent an id to remove DOC202. First look for the intended id: a near spelling in `docs/src`, or the old target in `docc.lock`. Otherwise create the document or remove the link.
 3. Do not edit `docs/out`, `docs/out-full` or `docc.lock`. Edit `docs/src`, then `docc validate` and `docc build`.
 4. Do not rename a document without updating every `parent`, `[[id]]` and `docc:` tag that points to it.
 5. Keep facts in one place: use `{{id#field}}` or a link instead of copying text.
