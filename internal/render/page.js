@@ -19,17 +19,17 @@
         h.dataset.t = h.textContent;
         var a = document.createElement('a');
         a.className = 'anchor'; a.href = '#' + h.id; a.textContent = '#';
-        a.setAttribute('aria-label', 'Link to this section');
+        a.setAttribute('aria-label', '{{t:Link to this section}}');
         h.insertBefore(a, h.firstChild);
       });
       $$('pre', p).forEach(function (pre) {
         var b = document.createElement('button');
-        b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+        b.type = 'button'; b.className = 'copy'; b.textContent = '{{t:Copy}}';
         b.addEventListener('click', function () {
           var code = $('code', pre), text = (code || pre).textContent;
-          var done = function (m) { b.textContent = m; setTimeout(function () { b.textContent = 'Copy'; }, 1500); };
-          if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { done('Copied'); }, function () { done('Failed'); }); }
-          else { done('Failed'); }
+          var done = function (m) { b.textContent = m; setTimeout(function () { b.textContent = '{{t:Copy}}'; }, 1500); };
+          if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { done('{{t:Copied}}'); }, function () { done('{{t:Failed}}'); }); }
+          else { done('{{t:Failed}}'); }
         });
         pre.appendChild(b);
       });
@@ -38,7 +38,7 @@
     // sidebar tree
     function setOpen(tw, open) {
       tw.setAttribute('aria-expanded', open ? 'true' : 'false');
-      tw.setAttribute('aria-label', open ? 'Collapse' : 'Expand');
+      tw.setAttribute('aria-label', open ? '{{t:Collapse}}' : '{{t:Expand}}');
     }
     function setGroup(h, open) {
       h.classList.toggle('closed', !open);
@@ -70,8 +70,8 @@
         all.forEach(function (x, k) { x.classList.toggle('extra', k < lo || k >= hi); });
         up.el.style.display = lo > 0 ? '' : 'none';
         down.el.style.display = hi < all.length ? '' : 'none';
-        up.set('↑ ' + lo + ' earlier');
-        down.set((all.length - hi) + ' more ' + (label || '') + '↓');
+        up.set('↑ ' + lo + ' {{t:earlier}}');
+        down.set((all.length - hi) + ' {{t:more}} ' + (label || '') + '↓');
       }
       list.reveal = function (el) {
         var k = -1;
@@ -113,7 +113,7 @@
       tocBox.textContent = '';
       if (hs.length < 2) { tocBox.hidden = true; return; }
       var h = document.createElement('h2');
-      h.textContent = 'On this page';
+      h.textContent = '{{t:On this page}}';
       tocBox.appendChild(h);
       var map = {};
       hs.forEach(function (x) {
@@ -205,7 +205,7 @@
       hits = hits.slice(0, 20);
       if (!hits.length) {
         var none = document.createElement('li');
-        none.className = 'none'; none.textContent = 'Nothing found';
+        none.className = 'none'; none.textContent = '{{t:Nothing found}}';
         res.appendChild(none);
       }
       hits.forEach(function (h) {

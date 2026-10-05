@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -108,6 +110,36 @@ func TestFootnotesInHTML(t *testing.T) {
 		if !strings.Contains(html, want) {
 			t.Errorf("out.html lacks %q", want)
 		}
+	}
+}
+
+// Custom rules and DOC313 see "й" typed as и + U+0306 like the composed
+// letter, and report the column of the source text.
+func TestCustomRulesAndRepeatsInNFC(t *testing.T) {
+	project(t, map[string]string{
+		"docc.json": `{"customRules":[
+			{"id":"custom/no-new","level":"warn","given":"/body/*","forbid":"новый","message":"no new"},
+			{"id":"custom/needs-key","level":"warn","given":"/key","require":"ключ","message":"needs key"}]}`,
+		"docs/src/index.json": `{"title":"Index","key":"ключ","body":["Это новыи\u0306 текст.","Слово новыи\u0306 новый подряд."]}`,
+	})
+	_, out, _ := do("validate", "--format", "json")
+	var ds []struct {
+		Rule   string
+		Column int
+	}
+	if err := json.Unmarshal(diagnosticsOf(out), &ds); err != nil {
+		t.Fatal(err)
+	}
+	at := map[string][]int{}
+	for _, x := range ds {
+		at[x.Rule] = append(at[x.Rule], x.Column)
+	}
+	// the custom rule hits the same three places as the built-in DOC353 word list
+	if got, want := fmt.Sprint(at["custom/no-new"]), fmt.Sprint(at["style/timeless-words"]); got != want || len(at["custom/no-new"]) != 3 {
+		t.Errorf("custom/no-new at %s, DOC353 at %s", got, want)
+	}
+	if len(at["custom/needs-key"]) != 0 || len(at["text/repeated-word"]) != 1 {
+		t.Errorf("want one DOC313 and no custom/needs-key: %v", at)
 	}
 }
 

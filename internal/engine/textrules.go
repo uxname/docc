@@ -131,7 +131,7 @@ func (p *Project) repeatedWords(d *Doc, sn *StrNode, st config.Setting) {
 		ws := text.Words(seg)
 		for i := 1; i < len(ws); i++ {
 			a, b := ws[i-1], ws[i]
-			if !strings.EqualFold(a.Text, b.Text) || !hasLetter(a.Text) {
+			if !strings.EqualFold(text.NFC(a.Text), text.NFC(b.Text)) || !hasLetter(a.Text) {
 				continue
 			}
 			gap := seg[a.End:b.Start]

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/santiment/docc/internal/text"
 	"regexp"
 	"strconv"
 	"strings"
@@ -107,11 +108,13 @@ func (p *Project) runCustom(d *Doc, cr *config.Custom, tokens []string, lvl diag
 		sc := mdscan.New(n.Str)
 		if cr.Forbid != nil {
 			for _, sp := range sc.Plain {
-				for _, m := range cr.Forbid.FindAllStringIndex(n.Str[sp.Start:sp.End], -1) {
+				seg, back := text.NFCMap(n.Str[sp.Start:sp.End])
+				for _, m := range cr.Forbid.FindAllStringIndex(seg, -1) {
 					if m[0] == m[1] {
 						continue
 					}
-					a, b := d.Range(n, sp.Start+m[0], sp.Start+m[1])
+					s, e := back(m[0], m[1])
+					a, b := d.Range(n, sp.Start+s, sp.Start+e)
 					p.emitAt(d, "DOC800", cr.ID, lvl, a, b, cr.Message, cr.Hint)
 				}
 			}
@@ -125,7 +128,7 @@ func (p *Project) runCustom(d *Doc, cr *config.Custom, tokens []string, lvl diag
 
 func matchesAny(re *regexp.Regexp, s string, sc *mdscan.Scan) bool {
 	for _, sp := range sc.Plain {
-		if re.MatchString(s[sp.Start:sp.End]) {
+		if re.MatchString(text.NFC(s[sp.Start:sp.End])) {
 			return true
 		}
 	}

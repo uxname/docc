@@ -1,11 +1,15 @@
 package render
 
-import "strings"
+import (
+	"html"
+	"regexp"
+	"strings"
+)
 
 // ru translates the fixed labels of the output ("lang": "ru" in docc.json).
 // The English text is the key, so the default build needs no table and stays
-// as it was. page.html and page.js keep their English text; localize replaces
-// the quoted labels there.
+// as it was. page.html and page.js mark their labels as {{t:English text}}.
+// Every key must have a Russian entry: TestLabelsTranslated checks it.
 var ru = map[string]string{
 	// Markdown pages and the document tree
 	"Parent":                          "Родитель",
@@ -46,8 +50,8 @@ var ru = map[string]string{
 	"Copied":               "Скопировано",
 	"Failed":               "Не удалось",
 	"Nothing found":        "Ничего не найдено",
-	" earlier":             " выше",
-	" more ":               " ещё ",
+	"earlier":              "выше",
+	"more":                 "ещё",
 }
 
 // t returns a fixed label in the language of the project.
@@ -60,17 +64,27 @@ func (r *Renderer) t(s string) string {
 	return s
 }
 
-// localize replaces the labels of page.html ("x" and >x<) or page.js ('x')
-// written between the given quote pairs.
-func (r *Renderer) localize(s string, quotes ...string) string {
-	if r.P.Cfg.Lang != "ru" {
-		return s
+var labelRe = regexp.MustCompile(`\{\{t:([^}]+)\}\}`)
+
+// Labels returns the {{t:...}} keys of a template.
+func Labels(s string) []string {
+	var keys []string
+	for _, m := range labelRe.FindAllStringSubmatch(s, -1) {
+		keys = append(keys, m[1])
 	}
-	var pairs []string
-	for en, tr := range ru {
-		for i := 0; i+1 < len(quotes); i += 2 {
-			pairs = append(pairs, quotes[i]+en+quotes[i+1], quotes[i]+tr+quotes[i+1])
+	return keys
+}
+
+var jsQuote = strings.NewReplacer(`\`, `\\`, `'`, `\'`)
+
+// labels replaces {{t:...}} in page.html (js false) or page.js (js true) with
+// the label in the language of the project, escaped for that file.
+func (r *Renderer) labels(s string, js bool) string {
+	return labelRe.ReplaceAllStringFunc(s, func(m string) string {
+		v := r.t(labelRe.FindStringSubmatch(m)[1])
+		if js {
+			return jsQuote.Replace(v)
 		}
-	}
-	return strings.NewReplacer(pairs...).Replace(s)
+		return html.EscapeString(v)
+	})
 }

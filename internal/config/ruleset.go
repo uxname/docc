@@ -8,6 +8,7 @@ import (
 	"github.com/santiment/docc/internal/diag"
 	"github.com/santiment/docc/internal/loader"
 	"github.com/santiment/docc/internal/rules"
+	"github.com/santiment/docc/internal/text"
 )
 
 // allowedParams lists the parameters each rule accepts besides "level".
@@ -186,7 +187,7 @@ func (w *walker) customRules(c *Config, n *loader.Node) *Error {
 				var s string
 				s, e = w.str(m.Value)
 				if e == nil {
-					re, err := regexp.Compile(s)
+					re, err := regexp.Compile(text.NFC(s)) // the text is matched in NFC too
 					if err != nil {
 						e = w.errAt(m.Value.Start, "bad regular expression: %v", err)
 					} else if m.Key == "forbid" {

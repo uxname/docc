@@ -78,11 +78,11 @@ func (r *Renderer) HTML() string {
 	out := strings.NewReplacer(
 		"{{TITLE}}", esc(title),
 		"{{CSS}}", htmlCSS,
-		"{{JS}}", s.localize(htmlJS, "'", "'"),
+		"{{JS}}", s.labels(htmlJS, true),
 		"{{BANNER}}", banner,
 		"{{NAV}}", s.navHTML(),
 		"{{CONTENT}}", content.String(),
-	).Replace(s.localize(htmlTemplate, `"`, `"`, ">", "<"))
+	).Replace(s.labels(htmlTemplate, false))
 	return lf(out)
 }
 
