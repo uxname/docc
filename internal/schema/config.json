@@ -40,6 +40,20 @@
         "oneOf": [{ "required": ["forbid"] }, { "required": ["require"] }]
       }
     },
+    "branding": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "description": "Company branding of the HTML build (docc build --html); absent: no branding. The Markdown output is not branded.",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "description": "Company name in the header, the footer and the printed first page." },
+        "url": { "type": "string", "pattern": "^https?://", "description": "Company site; the logo and the name in the footer link to it." },
+        "logo": { "type": "string", "description": "Logo file from the project root (png, jpg, jpeg, gif, svg, webp), embedded in the HTML. It sits on the dark header, so a light logo is expected." },
+        "accent": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", "description": "Accent colour for the dark theme and the header; links in the page body use it too when accentLight is absent." },
+        "accentLight": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", "description": "Accent colour on the light theme; must read on white (contrast 4.5 and more)." },
+        "header": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", "default": "#1f1f1f", "description": "Background of the header with the logo." }
+      }
+    },
     "trace": {
       "type": "object",
       "additionalProperties": false,

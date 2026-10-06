@@ -75,9 +75,13 @@ func (r *Renderer) HTML() string {
 	if s.Full {
 		banner = `<p class="banner">` + s.t("Full build: includes hidden documents and notes. Do not publish.") + `</p>`
 	}
+	brandCSS, brandHead, brandPrint, brandFoot := s.brand()
 	out := strings.NewReplacer(
 		"{{TITLE}}", esc(title),
-		"{{CSS}}", htmlCSS,
+		"{{CSS}}", htmlCSS+brandCSS,
+		"{{BRAND_HEAD}}", brandHead,
+		"{{BRAND_PRINT}}", brandPrint,
+		"{{BRAND_FOOT}}", brandFoot,
 		"{{JS}}", s.labels(htmlJS, true),
 		"{{BANNER}}", banner,
 		"{{NAV}}", s.navHTML(),

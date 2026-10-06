@@ -8,11 +8,11 @@
 </style>
 <a class="skip" href="#main">{{t:Skip to content}}</a>
 <header class="bar">
-<button id="menu" type="button" aria-label="{{t:Menu}}" aria-expanded="false" aria-controls="side">☰</button>
+<button id="menu" type="button" aria-label="{{t:Menu}}" aria-expanded="false" aria-controls="side">☰</button>{{BRAND_HEAD}}
 <span id="bar-title"></span>
 </header>
 <div class="shell">
-<aside id="side">
+<aside id="side">{{BRAND_HEAD}}
 <div class="search">
 <input type="search" id="q" placeholder="{{t:Search  ( / )}}" aria-label="{{t:Search the documentation}}" autocomplete="off">
 <ul id="results" role="listbox" aria-label="{{t:Search results}}" hidden></ul>
@@ -22,8 +22,8 @@
 {{NAV}}
 </nav>
 </aside>
-<main id="main" tabindex="-1">
-{{CONTENT}}
+<main id="main" tabindex="-1">{{BRAND_PRINT}}
+{{CONTENT}}{{BRAND_FOOT}}
 </main>
 <aside id="toc" aria-label="{{t:On this page}}" hidden></aside>
 </div>

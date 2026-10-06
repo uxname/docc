@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -51,6 +52,16 @@ type Custom struct {
 	Forbid, Require                *regexp.Regexp
 }
 
+// Branding is the branding section: the name, site, logo and colours of the
+// company the HTML build is made for. Nil: the page is unbranded.
+type Branding struct {
+	Name, URL   string
+	Logo        string // path relative to Root; png, jpg, jpeg, gif, svg or webp
+	Accent      string // links and marks in the dark theme and on the dark header
+	AccentLight string // links and marks on a light page; falls back to Accent
+	Header      string // background of the header with the logo
+}
+
 type Config struct {
 	Root     string // absolute project root
 	File     string // display name of the config file
@@ -73,6 +84,7 @@ type Config struct {
 	Rules     RuleSet
 	Custom    []*Custom
 	TraceScan []*Glob
+	Brand     *Branding
 
 	resolved *Resolved
 }
@@ -219,6 +231,8 @@ func Parse(data []byte, root, file string) (*Config, error) {
 			c.Rules, e = w.ruleSet(c, m.Value)
 		case "trace":
 			e = w.trace(c, m.Value)
+		case "branding":
+			c.Brand, e = w.branding(m.Value, root)
 		default:
 			e = w.errAt(m.KeyStart, "unknown key %q", m.Key)
 		}
@@ -261,4 +275,62 @@ func (w *walker) trace(c *Config, n *loader.Node) *Error {
 		}
 	}
 	return nil
+}
+
+var colorRe = regexp.MustCompile(`^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
+
+var logoExt = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".svg": true, ".webp": true} // as engine.ImageExt
+
+func (w *walker) branding(n *loader.Node, root string) (*Branding, *Error) {
+	if n.Kind != loader.Object {
+		return nil, w.typeErr(n, "an object")
+	}
+	b := &Branding{}
+	for _, m := range n.Members {
+		var e *Error
+		switch m.Key {
+		case "name":
+			b.Name, e = w.str(m.Value)
+			if e == nil && strings.TrimSpace(b.Name) == "" {
+				e = w.errAt(m.Value.Start, "name must not be empty")
+			}
+		case "url":
+			b.URL, e = w.str(m.Value)
+			if u, err := url.Parse(b.URL); e == nil && (err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "") {
+				e = w.errAt(m.Value.Start, "url must be an http or https address")
+			}
+		case "logo":
+			b.Logo, e = w.path(m.Value)
+			if e == nil && !logoExt[strings.ToLower(path.Ext(b.Logo))] {
+				e = w.errAt(m.Value.Start, "logo must be a png, jpg, jpeg, gif, svg or webp file")
+			}
+			if e == nil {
+				if st, err := os.Stat(filepath.Join(root, filepath.FromSlash(b.Logo))); err != nil || st.IsDir() {
+					e = w.errAt(m.Value.Start, "logo file %q does not exist", b.Logo)
+				}
+			}
+		case "accent", "accentLight", "header":
+			var v string
+			if v, e = w.str(m.Value); e == nil && !colorRe.MatchString(v) {
+				e = w.errAt(m.Value.Start, "%s must be a colour like #57e9c7", m.Key)
+			}
+			switch m.Key {
+			case "accent":
+				b.Accent = v
+			case "accentLight":
+				b.AccentLight = v
+			default:
+				b.Header = v
+			}
+		default:
+			e = w.errAt(m.KeyStart, "unknown key %q", m.Key)
+		}
+		if e != nil {
+			return nil, e
+		}
+	}
+	if b.Name == "" {
+		return nil, w.errAt(n.Start, "branding needs a name")
+	}
+	return b, nil
 }

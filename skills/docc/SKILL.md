@@ -118,7 +118,7 @@ With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// docc: req-lo
 { "tags": ["security", "ux"], "lang": "en", "numbering": true }
 ```
 
-`tags` is the tag registry: a tag outside it is DOC107. `lang` (`en` or `ru`) sets the fixed labels of the generated pages. `numbering` is described above.
+`tags` is the tag registry: a tag outside it is DOC107. `lang` (`en` or `ru`) sets the fixed labels of the generated pages. `numbering` is described above. `branding` (`name`, `url`, `logo`, `accent`, `accentLight`, `header`; schema: `docc schema config`) puts a company header with a logo and a footer into the HTML file only; set it once and do not touch it when editing documents.
 
 Add the generated single files to `.gitignore`: `docs/out.md`, `docs/out.html`, `docs/out-full/`, `docs/out-full.md`, `docs/out-full.html`. Commit `docc.lock`.
 
