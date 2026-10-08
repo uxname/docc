@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/santiment/docc/internal/diag"
+	"github.com/uxname/docc/internal/diag"
 )
 
 // checkMarkdown runs DOC308-DOC312.

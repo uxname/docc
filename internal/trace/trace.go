@@ -16,7 +16,7 @@ import (
 
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/santiment/docc/internal/config"
+	"github.com/uxname/docc/internal/config"
 )
 
 const maxFileSize = 1 << 20

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santiment/docc/internal/rules"
+	"github.com/uxname/docc/internal/rules"
 )
 
 // Every code has a red and a green golden case (the definition of done).
@@ -81,7 +81,7 @@ func TestSkillMatchesRegistryAndCommands(t *testing.T) {
 	}
 	for _, cmd := range regexp.MustCompile("`docc ([a-z]+)").FindAllStringSubmatch(text, -1) {
 		switch cmd[1] {
-		case "validate", "build", "check", "explain", "rules", "schema", "init", "ack":
+		case "validate", "build", "check", "explain", "rules", "schema", "init", "ack", "update":
 		default:
 			t.Errorf("skill mentions unknown command docc %s", cmd[1])
 		}

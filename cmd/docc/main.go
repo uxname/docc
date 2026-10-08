@@ -11,12 +11,12 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/santiment/docc/internal/config"
-	"github.com/santiment/docc/internal/diag"
-	"github.com/santiment/docc/internal/engine"
-	"github.com/santiment/docc/internal/render"
-	"github.com/santiment/docc/internal/report"
-	"github.com/santiment/docc/internal/schema"
+	"github.com/uxname/docc/internal/config"
+	"github.com/uxname/docc/internal/diag"
+	"github.com/uxname/docc/internal/engine"
+	"github.com/uxname/docc/internal/render"
+	"github.com/uxname/docc/internal/report"
+	"github.com/uxname/docc/internal/schema"
 )
 
 var version = "dev"
@@ -34,6 +34,7 @@ Commands:
   explain <code>     describe a rule
   rules              list rules with effective levels
   schema document|config   print a JSON Schema
+  update             replace docc with the latest release (--check: only look, --version vX.Y.Z)
 
 Flags: --format text|json, --config <file>, --max-diagnostics N, --max-warnings N
 (they may stand before or after the command)
@@ -226,6 +227,8 @@ func dispatch(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 		return cmdExplain(c, args[1:], stdout)
 	case "schema":
 		return 0, cmdSchema(args[1:], stdout)
+	case "update":
+		return cmdUpdate(args[1:], stdout)
 	}
 	return 2, usageErr("unknown command %q (try docc --help)", args[0])
 }

@@ -3,7 +3,7 @@ package engine
 import (
 	"strings"
 
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/loader"
 )
 
 // checkSyntax runs the per-document structure checks: DOC103 and DOC105.

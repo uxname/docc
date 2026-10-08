@@ -1,4 +1,4 @@
-module github.com/santiment/docc
+module github.com/uxname/docc
 
 go 1.27.1
 

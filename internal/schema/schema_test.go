@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/loader"
 )
 
 func parse(t *testing.T, s string) *loader.Result {

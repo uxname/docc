@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/loader"
 )
 
 // pageKind gives every document under a src/ folder that parses and has no

@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/santiment/docc/internal/engine"
+	"github.com/uxname/docc/internal/engine"
 )
 
 //go:embed brand.css

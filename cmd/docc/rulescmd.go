@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/santiment/docc/internal/rules"
+	"github.com/uxname/docc/internal/rules"
 )
 
 type ruleRow struct {

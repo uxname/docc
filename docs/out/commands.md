@@ -16,6 +16,8 @@ The flags single and html add one file next to the folder, both can be combined 
 
 `docc ack` takes document ids, link targets or code files and sets the stored hashes in `docc.lock` to the current ones for every line whose source or target is the argument, or whose target lies in the document with that id. It is run after a person has checked the sources flagged by DOC209 or DOC402. `docc ack --all` confirms every link.
 
+`docc update` replaces the running binary with a release from GitHub. It reads `checksums.txt` of the release, picks the archive for this system, refuses it when the SHA-256 differs and only then swaps the file. The flag check only reports whether a newer release exists (exit code 1: there is one), the flag version takes a given tag. A development build without a release version refuses to update. The variable DOCC_BASE_URL replaces the releases address, `install.sh` and `install.ps1` read it too.
+
 Every command accepts --help and prints its flags with an example. The global flags may stand before or after the command. `docc init` ends with a Next block of steps.
 
 `docc explain` takes a code (DOC301) or a name (style/hedging), not a group. It prints a rule with an example; `docc rules` lists the rules with their effective levels; `docc schema document` and `docc schema config` print the JSON Schemas.

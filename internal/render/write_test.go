@@ -3,8 +3,8 @@ package render
 import (
 	"testing"
 
-	"github.com/santiment/docc/internal/config"
-	"github.com/santiment/docc/internal/engine"
+	"github.com/uxname/docc/internal/config"
+	"github.com/uxname/docc/internal/engine"
 )
 
 func TestSingleFileRefusesSourcesAndSchemas(t *testing.T) {

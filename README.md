@@ -1,8 +1,36 @@
 # docc
 
-Compiler and linter for documentation written as JSON. AI agents write the documents, `docc` checks them like a code linter (structure, links, content, style) and builds Markdown for people.
+Compiler and linter for documentation written as JSON. AI agents write the documents, `docc` checks them like a code linter (structure, links, content, style) and builds Markdown (and one HTML file) for people.
 
-Install: download a release archive (binary and `skills/docc/SKILL.md`), or `go install github.com/santiment/docc/cmd/docc@latest`.
+## Install
+
+Linux and macOS:
+
+    curl -fsSL https://raw.githubusercontent.com/uxname/docc/main/install.sh | sh
+
+Windows (PowerShell):
+
+    irm https://raw.githubusercontent.com/uxname/docc/main/install.ps1 | iex
+
+This downloads the release binary for your system, checks its SHA-256 and puts `docc` into `~/.local/bin` (Windows: `%LOCALAPPDATA%\docc\bin`). Set `DOCC_INSTALL_DIR` to change the folder and `DOCC_VERSION=v0.1.0` to pin a version.
+
+With Go 1.27.1 or newer you can build it yourself: `go install github.com/uxname/docc/cmd/docc@latest`, or clone the repository and run `go build -o docc ./cmd/docc`.
+
+## Update
+
+    docc update            # latest release; docc update --check only looks, --version v0.1.0 pins
+
+Running the install command again does the same. A `go install` build is updated with `go install ...@latest`.
+
+## Agent skill
+
+The skill teaches an AI agent (Claude Code, Codex, Cursor and others) to write documents and read diagnostics:
+
+    npx skills add uxname/docc
+
+Update it with `npx skills update`. The skill needs the `docc` binary from above.
+
+## Quick start
 
     docc init        # docc.json, docs/schemas/page.json, docs/src/index.json, docs/out, a git pre-commit hook
     docc validate    # check the sources (--format json for agents and CI)
@@ -35,4 +63,8 @@ A problem is reported with the position, the rule and a hint:
 
 `docc validate --format json` prints `{"summary": {...}, "diagnostics": [...]}`; `docc explain DOC202` describes a rule; `docc <command> --help` lists the flags.
 
-The documentation of the project is in `docs/src` (JSON) and `docs/out` (generated Markdown, start at `docs/out/index.md`). Agents: copy `skills/docc/SKILL.md` into your project.
+The documentation of the project is in `docs/src` (JSON) and `docs/out` (generated Markdown, start at `docs/out/index.md`). The full description is in `docc_spec.md`.
+
+## License
+
+MIT, see `LICENSE`.

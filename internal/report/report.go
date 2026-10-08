@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/santiment/docc/internal/diag"
+	"github.com/uxname/docc/internal/diag"
 )
 
 // Counts returns the number of errors and warnings.

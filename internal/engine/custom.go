@@ -1,15 +1,15 @@
 package engine
 
 import (
-	"github.com/santiment/docc/internal/text"
+	"github.com/uxname/docc/internal/text"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/santiment/docc/internal/config"
-	"github.com/santiment/docc/internal/diag"
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/mdscan"
+	"github.com/uxname/docc/internal/config"
+	"github.com/uxname/docc/internal/diag"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/mdscan"
 )
 
 // pointerTokens splits a JSON pointer; "*" stays as the wildcard token.

@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/santiment/docc/internal/diag"
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/rules"
-	"github.com/santiment/docc/internal/text"
+	"github.com/uxname/docc/internal/diag"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/rules"
+	"github.com/uxname/docc/internal/text"
 )
 
 // allowedParams lists the parameters each rule accepts besides "level".

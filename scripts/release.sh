@@ -22,4 +22,5 @@ for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; d
   fi
   rm -rf "dist/$name"
 done
+(cd dist && sha256sum docc_* > checksums.txt)
 ls -l dist

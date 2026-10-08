@@ -6,10 +6,10 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/santiment/docc/internal/config"
-	"github.com/santiment/docc/internal/diag"
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/text"
+	"github.com/uxname/docc/internal/config"
+	"github.com/uxname/docc/internal/diag"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/text"
 )
 
 // matcher returns a compiled word list, cached by content.

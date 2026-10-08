@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/mdscan"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/mdscan"
 )
 
 // inGraph reports whether d is the graph node of its id (the first document

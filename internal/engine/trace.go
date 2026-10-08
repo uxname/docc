@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/trace"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/trace"
 )
 
 // checkTrace reads the docc: tags in code: DOC401 for a malformed tag or

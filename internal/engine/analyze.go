@@ -3,8 +3,8 @@ package engine
 import (
 	"strings"
 
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/mdscan"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/mdscan"
 )
 
 // RefUse is one [[id]] or [[id#field]] occurrence in prose.

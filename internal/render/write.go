@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/santiment/docc/internal/engine"
+	"github.com/uxname/docc/internal/engine"
 )
 
 // inside reports whether path a is b or lies under b.

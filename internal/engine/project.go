@@ -11,13 +11,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/santiment/docc/internal/config"
-	"github.com/santiment/docc/internal/diag"
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/rules"
-	"github.com/santiment/docc/internal/schema"
-	"github.com/santiment/docc/internal/text"
-	"github.com/santiment/docc/internal/trace"
+	"github.com/uxname/docc/internal/config"
+	"github.com/uxname/docc/internal/diag"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/rules"
+	"github.com/uxname/docc/internal/schema"
+	"github.com/uxname/docc/internal/text"
+	"github.com/uxname/docc/internal/trace"
 )
 
 var idRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)

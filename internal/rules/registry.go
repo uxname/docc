@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/santiment/docc/internal/diag"
+	"github.com/uxname/docc/internal/diag"
 )
 
 type Rule struct {

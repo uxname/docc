@@ -1,4 +1,4 @@
-agent-workflow commands 38c85841
+agent-workflow commands 18021fa6
 agent-workflow rules e85b97e2
 architecture performance c73b3f58
 commands config 386a31ba
@@ -10,7 +10,7 @@ document-model rendering f6489fe8
 document-model rules e85b97e2
 index agent-workflow 5562c98a
 index architecture 84e0f988
-index commands 38c85841
+index commands 18021fa6
 index config 386a31ba
 index decisions 39399bdc
 index document-model c3440ce0
@@ -19,6 +19,6 @@ index performance c73b3f58
 index rendering f6489fe8
 index rules e85b97e2
 rendering document-model c3440ce0
-rules commands 38c85841
+rules commands 18021fa6
 rules config 386a31ba
 rules document-model#change_tracking 6468b4c0

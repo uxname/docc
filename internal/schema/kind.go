@@ -10,7 +10,7 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/loader"
 )
 
 func newKind(sc *jsonschema.Schema, root *loader.Node, u string, l memLoader) (*Kind, error) {

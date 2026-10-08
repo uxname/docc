@@ -3,7 +3,7 @@ package engine
 import (
 	"strings"
 
-	"github.com/santiment/docc/internal/diag"
+	"github.com/uxname/docc/internal/diag"
 )
 
 // Validate runs every check and returns the diagnostics, sorted.

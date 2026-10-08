@@ -6,8 +6,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/mdscan"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/mdscan"
 )
 
 // reservedKeys are top-level keys with a meaning of their own; all other keys

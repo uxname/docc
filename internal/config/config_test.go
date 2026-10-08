@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santiment/docc/internal/diag"
+	"github.com/uxname/docc/internal/diag"
 )
 
 func mustParse(t *testing.T, s string) *Config {

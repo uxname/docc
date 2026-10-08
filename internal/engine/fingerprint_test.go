@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/loader"
 )
 
 func fp(t *testing.T, s string) string {

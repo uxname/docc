@@ -7,8 +7,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/santiment/docc/internal/engine"
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/engine"
+	"github.com/uxname/docc/internal/loader"
 	"golang.org/x/text/collate"
 	"golang.org/x/text/language"
 )

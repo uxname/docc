@@ -7,9 +7,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/santiment/docc/internal/engine"
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/mdscan"
+	"github.com/uxname/docc/internal/engine"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/mdscan"
 )
 
 // page is the rendering context of one document.

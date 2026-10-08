@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/santiment/docc/internal/text"
+	"github.com/uxname/docc/internal/text"
 
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/loader"
 )
 
 // Fingerprint is the first 8 hex digits of SHA-256 of the canonical JSON of a

@@ -18,8 +18,8 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/santiment/docc/internal/config"
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/config"
+	"github.com/uxname/docc/internal/loader"
 )
 
 //go:embed document.json

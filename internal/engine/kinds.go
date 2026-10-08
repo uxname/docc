@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/santiment/docc/internal/loader"
-	"github.com/santiment/docc/internal/schema"
+	"github.com/uxname/docc/internal/loader"
+	"github.com/uxname/docc/internal/schema"
 )
 
 // checkKinds emits DOC106 (kind schema), DOC107 (tags registry), DOC109 (no

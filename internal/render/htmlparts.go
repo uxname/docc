@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/santiment/docc/internal/engine"
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/engine"
+	"github.com/uxname/docc/internal/loader"
 )
 
 var esc = html.EscapeString

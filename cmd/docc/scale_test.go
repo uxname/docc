@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/santiment/docc/internal/config"
-	"github.com/santiment/docc/internal/engine"
-	"github.com/santiment/docc/internal/render"
+	"github.com/uxname/docc/internal/config"
+	"github.com/uxname/docc/internal/engine"
+	"github.com/uxname/docc/internal/render"
 )
 
 // genScale writes n documents of 5-20 KB of Russian text into dir/docs/src:

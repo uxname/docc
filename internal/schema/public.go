@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 
-	"github.com/santiment/docc/internal/rules"
+	"github.com/uxname/docc/internal/rules"
 )
 
 //go:embed config.json

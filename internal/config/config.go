@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/santiment/docc/internal/diag"
-	"github.com/santiment/docc/internal/loader"
+	"github.com/uxname/docc/internal/diag"
+	"github.com/uxname/docc/internal/loader"
 )
 
 // Error is a configuration error (exit code 2).

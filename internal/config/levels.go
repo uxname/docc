@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/santiment/docc/internal/diag"
-	"github.com/santiment/docc/internal/rules"
+	"github.com/uxname/docc/internal/diag"
+	"github.com/uxname/docc/internal/rules"
 )
 
 // Setting is the effective level and parameters of one rule.

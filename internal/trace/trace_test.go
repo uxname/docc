@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/santiment/docc/internal/config"
+	"github.com/uxname/docc/internal/config"
 )
 
 func TestCommentPrefix(t *testing.T) {
