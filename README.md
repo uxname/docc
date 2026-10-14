@@ -1,5 +1,13 @@
 # docc
 
+```text
+       █
+ ▄██████   ▄████▄   ▄████▄   ▄████▄
+██    ██  ██    ██ ██       ██
+██    ██  ██    ██ ██       ██
+ ▀██████   ▀████▀   ▀████▀   ▀████▀
+```
+
 Compiler and linter for documentation written as JSON. AI agents write the documents, `docc` checks them like a code linter (structure, links, content, style) and builds Markdown (and one HTML file) for people.
 
 ## Install
