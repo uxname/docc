@@ -315,8 +315,8 @@
           ev.error === 'network' ? '{{t:Speech service unreachable}}' :
           ev.error === 'no-speech' ? '{{t:No speech heard}}' : '{{t:Dictation failed, type the text instead}}');
       };
-      r.onend = function () { rec.current = null; on[1](false); };
-      try { r.start(); rec.current = r; on[1](true); st[1](''); } catch (err) { st[1]('{{t:Dictation failed, type the text instead}}'); }
+      r.onend = function () { rec.current = null; on[1](false); props.listen(false); };
+      try { r.start(); rec.current = r; on[1](true); props.listen(true); st[1](''); } catch (err) { st[1]('{{t:Dictation failed, type the text instead}}'); }
     }
     useEffect(function () { return function () { if (rec.current) { rec.current.abort(); } }; }, []);
     function toggle() { if (rec.current) { rec.current.stop(); } else { start(); } }
@@ -333,6 +333,7 @@
     var edit = props.edit;
     var text = useState(edit ? edit.text : ''), author = useState(edit ? edit.author || '' : store('author') || ''), ta = useRef(null);
     var cur = useRef(''); cur.current = text[0];
+    var listening = useState(false); // dictation rewrites the text, so typing waits
     draft = text[0].trim() !== (edit ? edit.text : '');
     useEffect(function () { return function () { draft = false; }; }, []);
     function cancel() { if (leaveDraft()) { props.close(); } }
@@ -352,14 +353,14 @@
     return html`<div class="editor">
       <label class="who-l">{{t:From}} <input class="who" autocomplete="name" enterkeyhint="next" placeholder="{{t:Your name}}" value=${author[0]}
         onInput=${function (e) { author[1](e.target.value); }} /></label>
-      <textarea ref=${ta} rows="3" aria-label="{{t:Comment on this paragraph}}" placeholder="{{t:Comment on this paragraph}}" value=${text[0]}
+      <textarea ref=${ta} rows="3" aria-label="{{t:Comment on this paragraph}}" placeholder="{{t:Comment on this paragraph}}" value=${text[0]} readOnly=${listening[0]}
         onInput=${function (e) { text[1](e.target.value); }}
         onKeyDown=${function (e) {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { ok(); }
           if (e.key === 'Escape') { cancel(); }
         }}></textarea>
       <div class="ed-row">
-        <${Mic} get=${function () { return cur.current; }} set=${text[1]} />
+        <${Mic} get=${function () { return cur.current; }} set=${text[1]} listen=${listening[1]} />
         <span class="sp"></span>
         <button type="button" onClick=${cancel}>{{t:Cancel}}</button>
         <button type="button" class="pri" onClick=${ok} disabled=${!text[0].trim()}>{{t:Save}}</button>
