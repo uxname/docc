@@ -22,6 +22,26 @@ type Error struct {
 	Msg       string
 }
 
+// Errors are several config errors found in one run, in file order.
+type Errors []*Error
+
+func (es Errors) Error() string {
+	lines := make([]string, len(es))
+	for i, e := range es {
+		lines[i] = e.Error()
+	}
+	return strings.Join(lines, "\n")
+}
+
+// Unwrap lets errors.As find the single *Error.
+func (es Errors) Unwrap() []error {
+	out := make([]error, len(es))
+	for i, e := range es {
+		out[i] = e
+	}
+	return out
+}
+
 func (e *Error) Error() string {
 	if e.Line == 0 {
 		return fmt.Sprintf("%s: config error: %s", e.File, e.Msg)
@@ -175,15 +195,20 @@ func Parse(data []byte, root, file string) (*Config, error) {
 		return nil, w.errAt(r.Err.Offset, "%s", r.Err.Msg)
 	}
 	if len(r.Dups) > 0 {
-		return nil, w.errAt(r.Dups[0].Start, "duplicate key %q", r.Dups[0].Key)
+		var errs Errors
+		for _, d := range r.Dups {
+			errs = append(errs, w.errAt(d.Start, "duplicate key %q", d.Key))
+		}
+		return nil, errs.one()
 	}
 	c := Default(root)
 	c.File = file
+	var errs Errors
 
 	// custom rules first: rules refer to their names
 	if n := r.Root.Get("customRules"); n != nil {
 		if err := w.customRules(c, n); err != nil {
-			return nil, err
+			return nil, err // the other errors may only follow from it
 		}
 	}
 	for _, m := range r.Root.Members {
@@ -237,10 +262,21 @@ func Parse(data []byte, root, file string) (*Config, error) {
 			e = w.errAt(m.KeyStart, "unknown key %q", m.Key)
 		}
 		if e != nil {
-			return nil, e
+			errs = append(errs, e)
 		}
 	}
+	if len(errs) > 0 {
+		return nil, errs.one()
+	}
 	return c, nil
+}
+
+// one returns the only error itself, else the list.
+func (es Errors) one() error {
+	if len(es) == 1 {
+		return es[0]
+	}
+	return es
 }
 
 func (w *walker) nonNegInt(n *loader.Node) (int, *Error) {

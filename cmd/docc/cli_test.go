@@ -533,19 +533,36 @@ func TestGlobalFlagsBeforeCommand(t *testing.T) {
 
 func TestErrorsAreJSONWithFormatJSON(t *testing.T) {
 	project(t, map[string]string{"docc.json": "{\n  \"rules\": { \"DOC101\": \"off\" }\n}", "docs/src/index.json": `{"title":"I"}`})
-	for _, args := range [][]string{{"validate", "--format", "json"}, {"--format", "json", "validate"}} {
-		code, out, errs := do(args...)
-		var e struct {
+	type report struct {
+		Summary     struct{ Errors, Warnings int }
+		Diagnostics []struct {
 			Code, Message, Hint, File string
 			Line, Column              int
 		}
-		if err := json.Unmarshal([]byte(out), &e); err != nil || code != 2 || errs != "" || e.Code != "config" || e.File != "docc.json" || e.Line != 2 || e.Column == 0 || e.Message == "" {
-			t.Fatalf("%v: %d %v %+v %q", args, code, err, e, errs)
+	}
+	for _, args := range [][]string{{"validate", "--format", "json"}, {"--format", "json", "validate"}} {
+		code, out, errs := do(args...)
+		var r report
+		if err := json.Unmarshal([]byte(out), &r); err != nil || code != 2 || errs != "" || r.Summary.Errors != 1 || len(r.Diagnostics) != 1 {
+			t.Fatalf("%v: %d %v %s %q", args, code, err, out, errs)
+		}
+		if e := r.Diagnostics[0]; e.Code != "config" || e.File != "docc.json" || e.Line != 2 || e.Column == 0 || e.Message == "" || e.Hint == "" {
+			t.Fatalf("%v: %+v", args, e)
 		}
 	}
 	code, out, _ := do("validate", "--format", "json", "--bogus")
-	if code != 2 || !strings.Contains(out, `"code": "usage"`) {
+	if code != 2 || !strings.Contains(out, `"code": "usage"`) || !strings.Contains(out, `"summary"`) {
 		t.Fatalf("%d %s", code, out)
+	}
+	// every problem of docc.json at once, in both forms
+	project(t, map[string]string{"docc.json": "{\n  \"maxWarning\": 0,\n  \"lang\": \"fr\",\n  \"roots\": \"index\"\n}", "docs/src/index.json": `{"title":"I"}`})
+	code, out, _ = do("validate", "--format", "json")
+	var r report
+	if err := json.Unmarshal([]byte(out), &r); err != nil || code != 2 || len(r.Diagnostics) != 3 || r.Summary.Errors != 3 {
+		t.Fatalf("want three config errors: %d %v %s", code, err, out)
+	}
+	if code, _, errs := do("validate"); code != 2 || strings.Count(errs, "config error") != 3 || !strings.HasPrefix(errs, "docc: error: docc.json:2:") {
+		t.Fatalf("text form: %d %q", code, errs)
 	}
 }
 
@@ -626,5 +643,17 @@ func TestTyposGetSuggestions(t *testing.T) {
 	}
 	if !strings.Contains(out, `DOC110`) || !strings.Contains(out, `misspelled "parent"`) {
 		t.Errorf("want DOC110 for parnet:\n%s", out)
+	}
+}
+
+func TestFileProblemsGetSpecificHints(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"I","body":"[[win]] [[big]]"}`,
+		"docs/src/win.json":   "{\"title\":\"\xcf\xf0\xe8\xe2\xe5\xf2\"}",
+		"docs/src/big.json":   `{"title":"B","body":"` + strings.Repeat("x", 5<<20) + `"}`,
+	})
+	_, out, _ := do("validate")
+	if !strings.Contains(out, "save it again as UTF-8") || !strings.Contains(out, "split it into several documents") {
+		t.Fatalf("hints for encoding and size:\n%s", out)
 	}
 }

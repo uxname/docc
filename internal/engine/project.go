@@ -168,6 +168,10 @@ func (p *Project) read(d *Doc, srcAbs string) {
 		switch msg := d.Res.Err.Msg; {
 		case strings.Contains(msg, "file is empty"):
 			hint = `The file is empty: write an object such as {"title": "..."} or delete the file.`
+		case strings.Contains(msg, "larger than 5 MB"):
+			hint = "The file is too big for one document: split it into several documents and link them with [[id]]."
+		case strings.Contains(msg, "not valid UTF-8"):
+			hint = "The file is not UTF-8 (for example Windows-1251 or UTF-16): save it again as UTF-8."
 		case strings.Contains(msg, "must be an object"):
 			hint = `The top-level value must be an object: wrap it as {"title": "..."}.`
 		}

@@ -176,7 +176,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	if c.format == "json" {
-		if werr := writeJSON(stdout, errorObject(err)); werr != nil {
+		if werr := report.JSON(stdout, errorReport(err), 0, 0, ""); werr != nil {
 			say(stderr, "docc: error: %v\n", werr)
 		}
 	} else {
@@ -185,19 +185,29 @@ func run(args []string, stdout, stderr io.Writer) int {
 	return 2
 }
 
-// errorObject is the JSON form of a launch or config error.
-func errorObject(err error) map[string]any {
-	o := map[string]any{"code": "error", "message": err.Error(), "hint": "", "file": "", "line": 0, "column": 0}
+// errorReport is the JSON form of a launch or config error: the same report as
+// a check, with one error diagnostic per problem (code "config", "usage" or "error").
+func errorReport(err error) []diag.Diagnostic {
+	mk := func(code, rule, file string, line, col int, msg, hint string) diag.Diagnostic {
+		return diag.Diagnostic{Code: code, Rule: rule, Level: "error", File: file, Line: line, Column: col, EndLine: line, EndColumn: col, Message: msg, Hint: hint}
+	}
 	var ue *usageError
 	var eu *engine.UsageError
+	var ces config.Errors
 	var ce *config.Error
 	switch {
+	case errors.As(err, &ces):
+		out := make([]diag.Diagnostic, len(ces))
+		for i, e := range ces {
+			out[i] = mk("config", "config/invalid", e.File, e.Line, e.Col, e.Msg, "Fix docc.json; docc schema config prints its schema.")
+		}
+		return out
 	case errors.As(err, &ce):
-		o["code"], o["message"], o["file"], o["line"], o["column"] = "config", ce.Msg, ce.File, ce.Line, ce.Col
+		return []diag.Diagnostic{mk("config", "config/invalid", ce.File, ce.Line, ce.Col, ce.Msg, "Fix docc.json; docc schema config prints its schema.")}
 	case errors.As(err, &ue), errors.As(err, &eu):
-		o["code"], o["hint"] = "usage", "run docc --help"
+		return []diag.Diagnostic{mk("usage", "cli/usage", "", 0, 0, err.Error(), "Run docc --help.")}
 	}
-	return o
+	return []diag.Diagnostic{mk("error", "cli/error", "", 0, 0, err.Error(), "")}
 }
 
 // dispatch takes the global flags that stand before the command, then runs it.
