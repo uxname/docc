@@ -54,7 +54,7 @@ func TestBrandingNameOnly(t *testing.T) {
 			t.Errorf("out.html lacks %q", want)
 		}
 	}
-	if !strings.Contains(html, ":root{--brand-bg:#1f1f1f;--brand-line:var(--accent)}\n#side .brand") || strings.Contains(html, "--brand-logo:") {
+	if !strings.Contains(html, ":root{--brand-bg:#1f1f1f;--brand-line:var(--accent)}\n:root{--hbg:var(--brand-bg)") || strings.Contains(html, "--brand-logo:") {
 		t.Error("no logo and no colours were given: only the default header colour is set")
 	}
 }

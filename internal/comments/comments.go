@@ -29,10 +29,17 @@ const (
 // Item is one comment on a block: the document id, the JSON Pointer of the
 // block and the text of the block when the comment was written.
 type Item struct {
-	ID      string `json:"id"`
-	Doc     string `json:"doc"`
-	Path    string `json:"path"`
-	Quote   string `json:"quote"`
+	ID    string `json:"id"`
+	Doc   string `json:"doc"`
+	Path  string `json:"path"`
+	Quote string `json:"quote"`
+	// Fragment is the part of the block the reader selected, when the
+	// comment is about a few words rather than the whole block.
+	Fragment string `json:"fragment,omitempty"`
+	// Prefix and Suffix are a few characters around the fragment, to tell
+	// one occurrence of it from another.
+	Prefix  string `json:"prefix,omitempty"`
+	Suffix  string `json:"suffix,omitempty"`
 	Text    string `json:"text"`
 	Author  string `json:"author,omitempty"`
 	Created string `json:"created,omitempty"`

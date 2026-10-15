@@ -23,7 +23,7 @@ type app struct {
 			Blocks                                        []struct{ P, S, H string }
 			MD                                            string
 		}
-		Comments []struct{ ID, Path, Status string }
+		Comments []struct{ ID, Path, Status, Suffix string }
 		Hist     *struct{ Commits []struct{ H string } }
 		Single   string
 		Brand    struct{ Head, Print, Foot string }
@@ -86,7 +86,7 @@ func TestComments(t *testing.T) {
 	project(t, map[string]string{
 		"docs/src/index.json": `{"title":"I","body":["Alpha text here.","Beta text here."]}`,
 		"export.json": `{"docc":"comments","version":1,"comments":[
-			{"id":"aaaa1111","doc":"index","path":"/body/1","quote":"Beta text here.","text":"Fix beta","author":"C","created":"2026-10-15T10:00:00Z"},
+			{"id":"aaaa1111","doc":"index","path":"/body/1","quote":"Beta text here.","fragment":"Beta","prefix":"","suffix":" text","text":"Fix beta","author":"C","created":"2026-10-15T10:00:00Z"},
 			{"id":"bbbb2222","doc":"index","path":"/body/0","quote":"Alpha text here.","text":"Fix alpha"}]}`,
 		"bad.json": `{"comments":[]}`,
 	})
@@ -105,7 +105,7 @@ func TestComments(t *testing.T) {
 	}
 	code, out, _ := do("comments")
 	for _, want := range []string{
-		"aaaa1111  open  index \"I\" /body/2\n  C 2026-10-15: Fix beta\n  block: Beta text here.",
+		"aaaa1111  open  index \"I\" /body/2\n  about: «Beta»\n  C 2026-10-15: Fix beta\n  block: Beta text here.",
 		"bbbb2222  open  index \"I\" /body/0\n  Fix alpha\n  block when commented: Alpha text here.\n  block now: Alpha text here, edited.",
 		"2 not processed, 2 in all (docc.comments.json)",
 	} {
@@ -132,7 +132,7 @@ func TestComments(t *testing.T) {
 		t.Fatal(out, errs)
 	}
 	a := readApp(t, "docs/out.html")
-	if len(a.Data.Comments) != 2 || a.Data.Comments[0].Path != "/body/2" || a.Data.Comments[0].Status != "done" {
+	if len(a.Data.Comments) != 2 || a.Data.Comments[0].Path != "/body/2" || a.Data.Comments[0].Status != "done" || a.Data.Comments[0].Suffix != " text" {
 		t.Errorf("comments in the page: %+v", a.Data.Comments)
 	}
 	if code, out, _ := do("comments", "rm", "bbbb2222", "aaaa1111"); code != 0 || out != "deleted bbbb2222\ndeleted aaaa1111\n" {

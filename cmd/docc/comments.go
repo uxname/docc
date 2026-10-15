@@ -274,6 +274,9 @@ func listComments(c *common, p *engine.Project, items []comments.Item, all bool,
 		if who != "" {
 			who += ": "
 		}
+		if l.Fragment != "" {
+			say(stdout, "  about: «%s»\n", indent(l.Fragment))
+		}
 		say(stdout, "  %s%s\n", who, indent(l.Text))
 		if l.Reply != "" {
 			say(stdout, "  reply: %s\n", indent(l.Reply))
