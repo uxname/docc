@@ -52,6 +52,7 @@ var ru = map[string]string{
 	"earlier":              "выше",
 	"more":                 "ещё",
 	// app.js: history, changes, comments, export
+	"Table": "Таблица",
 	"No paragraph in the window to comment on.": "На экране нет абзаца для замечания.",
 	"Not sent yet": "Ещё не отправил",
 	"There are changes since the version sent on": "Есть правки с отправленной версии от",

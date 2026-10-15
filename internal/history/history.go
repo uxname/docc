@@ -437,7 +437,9 @@ func Pointers(root *loader.Node) map[*loader.Node]string {
 
 // pair matches the unmatched strings of one gap: the most similar pairs
 // first (Dice coefficient of character bigrams at least 0.3); what is left
-// pairs in order when both sides have the same count, as a rewrite.
+// pairs in order when both sides have the same count, as a rewrite. A pair
+// never crosses another one: blocks keep their order, so a block removed in
+// one place and one added in another are a removal and an addition.
 // ponytail: greedy over all pairs, O(n²) per gap; gaps are a few paragraphs.
 func pair(a, b []Leaf, match map[string]string) {
 	usedA, usedB := make([]bool, len(a)), make([]bool, len(b))
@@ -448,11 +450,25 @@ func pair(a, b []Leaf, match map[string]string) {
 	for j := range b {
 		bb[j] = bigrams(b[j].Text)
 	}
+	var done [][2]int
+	crosses := func(i, j int) bool {
+		for _, d := range done {
+			if (i < d[0]) != (j < d[1]) {
+				return true
+			}
+		}
+		return false
+	}
+	take := func(i, j int) {
+		usedA[i], usedB[j] = true, true
+		done = append(done, [2]int{i, j})
+		match[b[j].Ptr] = a[i].Ptr
+	}
 	for {
 		best, bi, bj := 0.3, -1, -1
 		for i := range a {
 			for j := range b {
-				if !usedA[i] && !usedB[j] {
+				if !usedA[i] && !usedB[j] && !crosses(i, j) {
 					if s := dice(ba[i], bb[j]); s >= best {
 						best, bi, bj = s, i, j
 					}
@@ -462,23 +478,24 @@ func pair(a, b []Leaf, match map[string]string) {
 		if bi < 0 {
 			break
 		}
-		usedA[bi], usedB[bj] = true, true
-		match[b[bj].Ptr] = a[bi].Ptr
+		take(bi, bj)
 	}
-	var ra, rb []Leaf
+	var ra, rb []int
 	for i := range a {
 		if !usedA[i] {
-			ra = append(ra, a[i])
+			ra = append(ra, i)
 		}
 	}
 	for j := range b {
 		if !usedB[j] {
-			rb = append(rb, b[j])
+			rb = append(rb, j)
 		}
 	}
 	if len(ra) == len(rb) {
 		for k := range ra {
-			match[rb[k].Ptr] = ra[k].Ptr
+			if !crosses(ra[k], rb[k]) {
+				take(ra[k], rb[k])
+			}
 		}
 	}
 }

@@ -173,7 +173,7 @@
     var out = [];
     i = 0; j = 0;
     while (i < n && j < m) {
-      if (x[i] === y[j]) { out.push([0, j]); i++; j++; }
+      if (x[i] === y[j]) { out.push([0, j, i]); i++; j++; }
       else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push([-1, i]); i++; }
       else { out.push([1, j]); j++; }
     }
@@ -213,8 +213,8 @@
   // so the paragraph keeps its links, lists and tables: added words are wrapped
   // in <ins>, removed runs go in as <del> before the next word that stayed.
   // Markdown marks that render as no text (table bars, list bullets) are dropped.
-  var markOnly = /^(\||[-*+>]|\d+[.)]|:?-{2,}:?|#{1,6})$/;
-  function words(s) { return s.split(/\s+/).filter(function (w) { return w && !markOnly.test(w); }); }
+  var markOnly = /^([-*+>]|\d+[.)]|:?-{2,}:?|#{1,6})$/;
+  function words(s) { return s.replace(/\|/g, ' ').split(/\s+/).filter(function (w) { return w && !markOnly.test(w); }); }
   function textNodes(el, clean) {
     var out = [], w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), n;
     while ((n = w.nextNode())) { if (!clean || !n.parentNode.closest('del,.sr')) { out.push(n); } }
@@ -226,6 +226,39 @@
     e.appendChild(s); e.appendChild(document.createTextNode(text));
     return e;
   }
+  // the marks of the new words against the old ones: per new word whether it
+  // was added (ins), the removed words before it (del) and, on the last word,
+  // the removed words after it (after); null for a rewrite
+  function wordMarks(x, y) {
+    var ops = lcs(x, y);
+    if (!ops || rewrite(ops, x, y)) { return null; }
+    // A run of added (or removed) words that ends with the word standing just
+    // before it slides over that word when this joins it to the run before:
+    // «by SMS [or] via [Telegram via]» reads as «by SMS [or via Telegram] via».
+    for (var again = true; again;) {
+      again = false;
+      for (var i = 1; i < ops.length - 1 && !again; i++) {
+        var s = ops[i + 1][0];
+        if (ops[i][0] !== 0 || !s || ops[i - 1][0] !== s) { continue; }
+        var k = i + 1;
+        while (k + 1 < ops.length && ops[k + 1][0] === s) { k++; }
+        var last = ops[k], w = s > 0 ? y[last[1]] : x[last[1]];
+        if (w !== y[ops[i][1]]) { continue; }
+        var moved = s > 0 ? [[1, ops[i][1]]].concat(ops.slice(i + 1, k), [[0, last[1], ops[i][2]]])
+          : [[-1, ops[i][2]]].concat(ops.slice(i + 1, k), [[0, ops[i][1], last[1]]]);
+        Array.prototype.splice.apply(ops, [i, k - i + 1].concat(moved));
+        again = true;
+      }
+    }
+    var out = y.map(function () { return {}; }), gone = [];
+    ops.forEach(function (o) {
+      if (o[0] < 0) { gone.push(x[o[1]]); return; }
+      if (gone.length) { out[o[1]].del = gone.join(' '); gone = []; }
+      out[o[1]].ins = o[0] > 0;
+    });
+    if (gone.length && out.length) { out[out.length - 1].after = gone.join(' '); }
+    return out;
+  }
   // false when the text was rewritten (or is code): the caller shows the old text whole
   function drawDiff(el, oldSrc) {
     if (el.querySelector('pre')) { return false; }
@@ -234,16 +267,9 @@
       var re = /\S+/g, m;
       while ((m = re.exec(n.data))) { toks.push({ n: n, s: m.index, e: m.index + m[0].length, w: m[0] }); }
     });
-    var x = words(plain(oldSrc)), y = toks.map(function (t) { return t.w; }), ops = lcs(x, y);
-    if (!ops || rewrite(ops, x, y)) { return false; }
-    var gone = [];
-    ops.forEach(function (o) {
-      if (o[0] < 0) { gone.push(x[o[1]]); return; }
-      var t = toks[o[1]];
-      if (gone.length) { t.del = gone.join(' '); gone = []; }
-      t.ins = o[0] > 0;
-    });
-    if (gone.length && toks.length) { toks[toks.length - 1].after = gone.join(' '); }
+    var ms = wordMarks(words(plain(oldSrc)), toks.map(function (t) { return t.w; }));
+    if (!ms) { return false; }
+    toks.forEach(function (t, i) { Object.assign(t, ms[i]); });
     // rebuild each text node that has marks, from its tokens
     var byNode = new Map();
     toks.forEach(function (t) { if (!byNode.has(t.n)) { byNode.set(t.n, []); } byNode.get(t.n).push(t); });
@@ -273,16 +299,30 @@
     [].forEach.call(c.querySelectorAll('del,.sr,.anchor,.copy'), function (e) { e.remove(); });
     return c.textContent;
   }
-  // wraps characters [from, to) of el's text in elements made by make()
-  function wrapText(el, from, to, make) {
-    var at = 0;
+  // the text of a block as the reader reads it: no drawn removals, hidden
+  // labels or doubled spaces; at maps each character back to [node, offset]
+  function readText(el) {
+    var text = '', at = [];
     textNodes(el, true).forEach(function (n) {
-      var s = at, e = at + n.data.length;
-      at = e;
-      if (e <= from || s >= to) { return; }
-      var a = Math.max(from, s) - s, b = Math.min(to, e) - s, r = document.createRange();
-      r.setStart(n, a); r.setEnd(n, b);
-      var w = make(); r.surroundContents(w);
+      for (var i = 0; i < n.data.length; i++) {
+        var c = n.data[i], sp = /\s/.test(c);
+        if (sp && (!text || text[text.length - 1] === ' ')) { continue; }
+        text += sp ? ' ' : c; at.push([n, i]);
+      }
+    });
+    return { text: text, at: at };
+  }
+  // wraps characters [from, to) of readText(el) in elements made by make()
+  function wrapText(el, from, to, make) {
+    var at = readText(el).at.slice(from, to), parts = [];
+    at.forEach(function (p) {
+      var last = parts[parts.length - 1];
+      if (last && last[0] === p[0]) { last[2] = p[1] + 1; } else { parts.push([p[0], p[1], p[1] + 1]); }
+    });
+    parts.forEach(function (p) {
+      var r = document.createRange();
+      r.setStart(p[0], p[1]); r.setEnd(p[0], p[2]);
+      r.surroundContents(make());
     });
   }
   // the place of a fragment in a block's text: the occurrence whose
@@ -632,7 +672,7 @@
       whole[1](null);
       if (!el || !work) { lost[1](gone); return; }
       if (changed && !isNew && !drawDiff(el, before)) { whole[1](el.querySelector('pre') ? 'code' : 'text'); }
-      var text = textNodes(el, true).map(function (n) { return n.data; }).join('');
+      var text = readText(el).text;
       frags.forEach(function (c) {
         var i = findFragment(text, c);
         if (i < 0) { gone[c.id] = true; return; }
@@ -677,6 +717,20 @@
   }
 
   // ---- page ----
+  // On a wide screen the cards hang beside their paragraph without making it
+  // taller; a card that would cover the one above moves down below it.
+  function layoutCards(root) {
+    var low = -Infinity;
+    [].forEach.call(root.querySelectorAll('.blk-side'), function (s) {
+      s.style.transform = '';
+      if (getComputedStyle(s).height !== '0px') { return; } // narrow: under the paragraph
+      var h = s.scrollHeight;
+      if (!h) { return; }
+      var top = s.getBoundingClientRect().top, shift = Math.max(0, low + 8 - top);
+      if (shift) { s.style.transform = 'translateY(' + shift + 'px)'; }
+      low = top + shift + h;
+    });
+  }
   function Chip(props) {
     var p = byId[props.id];
     return p ? html`<a class="pchip" href=${'#' + p.id}>${p.title}</a>` : null;
@@ -704,7 +758,13 @@
         a.setAttribute('aria-label', '{{t:Link to this section}}');
         h.insertBefore(a, h.firstChild);
       });
-      [].forEach.call(el.querySelectorAll('.blk-body table'), function (t) { if (t.scrollWidth > t.clientWidth) { t.setAttribute('tabindex', '0'); } });
+      // a wide table scrolls from the keyboard too, named by its heading for a screen reader
+      [].forEach.call(el.querySelectorAll('.blk-body table'), function (t) {
+        if (t.scrollWidth <= t.clientWidth) { return; }
+        var hs = [].filter.call(el.querySelectorAll('.blk-body :is(h2,h3,h4)'), function (h) { return h.compareDocumentPosition(t) & 4; });
+        t.setAttribute('tabindex', '0');
+        t.setAttribute('aria-label', '{{t:Table}}' + (hs.length ? ': ' + hs[hs.length - 1].textContent.replace(/^#/, '') : ''));
+      });
       [].forEach.call(el.querySelectorAll('.blk-body pre'), function (pre) {
         if (pre.querySelector('.copy')) { return; }
         pre.setAttribute('tabindex', '0');
@@ -717,9 +777,21 @@
         });
         pre.appendChild(b);
       });
+      layoutCards(el);
+      var frame = 0, relayout = function () { cancelAnimationFrame(frame); frame = requestAnimationFrame(function () { layoutCards(el); }); };
+      var mo = window.MutationObserver && new MutationObserver(relayout);
+      if (mo) { mo.observe(el, { childList: true, subtree: true }); }
+      window.addEventListener('resize', relayout);
+      document.addEventListener('toggle', relayout, true);
+      document.addEventListener('input', relayout, true);
       props.onToc([].map.call(el.querySelectorAll('.blk-body :is(h2,h3)[id]'), function (h) {
         return { id: h.id, level: h.tagName.charAt(1), text: h.textContent.replace(/^#/, '') };
       }));
+      return function () {
+        if (mo) { mo.disconnect(); }
+        cancelAnimationFrame(frame);
+        window.removeEventListener('resize', relayout); document.removeEventListener('toggle', relayout, true); document.removeEventListener('input', relayout, true);
+      };
     });
     var prev = pages[page.i - 1], next = pages[page.i + 1];
     var shown = {}; shown[page.id] = true;
@@ -1079,7 +1151,7 @@
     post.setStart(r.endContainer, r.endOffset); post.setEnd(body, body.childNodes.length);
     var rect = r.getBoundingClientRect();
     return { a: blk.getAttribute('data-a'), ptr: blk.getAttribute('data-p'), x: rect.right, y: rect.bottom,
-      frag: { fragment: frag, prefix: cleanText(pre.cloneContents()).slice(-32), suffix: cleanText(post.cloneContents()).slice(0, 32) } };
+      frag: { fragment: frag, prefix: cleanText(pre.cloneContents()).replace(/\s+/g, ' ').slice(-32), suffix: cleanText(post.cloneContents()).replace(/\s+/g, ' ').slice(0, 32) } };
   }
 
   function App() {
@@ -1337,5 +1409,7 @@
       <${Toast} />`;
   }
 
+  // the pure parts, for app_test.js; nothing else sets this
+  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, hash: hash }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

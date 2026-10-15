@@ -8,7 +8,7 @@
 --bg:#fff;--bg2:#f6f7f9;--fg:#1c2128;--muted:#5d6875;--line:#e2e5ea;--field:#8a94a0;--accent:#2f5fd0;--accent-bg:#eaf0fd;--on-accent:#fff;--code:#f1f3f6;
 --chg:#0969da;--new:#1a7f37;--rem:#cf222e;--ins-fg:#0f5a2c;--ins-bg:#dcf3e3;--del-fg:#8f1d1d;--del-bg:#fbe2e2;--frag-bg:#fff3bf;--frag-line:#9a6700;
 --warn:#8a4b00;--warn-bg:#fdf1d8;--ok:#1a7f45;--ok-bg:#e3f5ea;--bad:#b42323;--bad-bg:#fbe7e7;--shadow:0 6px 24px rgba(20,30,50,.12);
---hbg:var(--bg2);--hfg:var(--fg);--hline:var(--line);--top:56px;--side:288px;--rail:280px;--col:720px;--tgt:32px}
+--hbg:var(--bg2);--hfg:var(--fg);--hline:var(--line);--top:56px;--side:304px;--rail:280px;--col:720px;--tgt:32px}
 @media (prefers-color-scheme:dark){:root{
 --bg:#0f1318;--bg2:#161b22;--fg:#e4e8ee;--muted:#9aa5b1;--line:#2b323b;--field:#6b7684;--accent:#6c9bff;--accent-bg:#1a2742;--on-accent:#0f1318;--code:#1b2129;
 --chg:#4493f8;--new:#3fb950;--rem:#f85149;--ins-fg:#9be9b4;--ins-bg:#12301f;--del-fg:#ffb3b3;--del-bg:#3d1a1a;--frag-bg:#4a3c00;--frag-line:#d4a72c;
@@ -89,8 +89,8 @@ main{min-width:0;padding:2rem 1.5rem 6rem;outline:0}
 .side-brand{display:none}
 @media (max-width:820px){.side-brand{display:block;margin-bottom:.8rem}}
 .banner{margin:.7rem 0 0;padding:.5rem .7rem;font-size:.8125rem;border-radius:6px;background:var(--warn-bg);color:var(--warn)}
-.tabs{display:flex;gap:2px;margin:0 .9rem;border-bottom:1px solid var(--line)}
-.tabs [role=tab]{flex:1 1 0;min-width:0;min-height:var(--tgt);padding:.2rem .15rem;font-size:.78rem;font-weight:600;line-height:1.2;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;overflow-wrap:anywhere}
+.tabs{display:flex;gap:2px;margin:0 .6rem;border-bottom:1px solid var(--line)}
+.tabs [role=tab]{flex:auto;min-width:0;min-height:var(--tgt);padding:.2rem .1rem;font-size:.78rem;font-weight:600;line-height:1.2;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .tabs [role=tab][aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
 .panel{flex:1;min-height:0;overflow:hidden auto;padding:.5rem .5rem 2rem}
 .pad{padding:.4rem .4rem}
@@ -203,18 +203,21 @@ blockquote p{margin:0}
 .overview p{margin:0 0 .5rem;color:var(--muted)}
 .overview ul{margin:0 0 .9rem;padding-left:1.2rem}
 /* blocks in the Work mode: the text, and beside it (under it when narrow) the tools and comment cards */
-.blk{position:relative;border-radius:4px}
-.blk.flash{background:var(--accent-bg);transition:background .6s}
+.blk{position:relative;border-radius:4px;margin-bottom:1rem}
+.blk-body>:last-child{margin-bottom:0}
+.blk.flash>.blk-body,.ghost.flash{background:var(--accent-bg);transition:background .6s}
 @media (min-width:1024px){
 .shell.work .blk{display:grid;grid-template-columns:minmax(0,var(--col)) var(--rail);column-gap:32px;align-items:start}
 .shell.work .blk>.old,.shell.work .blk>.blk-body{grid-column:1}
-.shell.work .blk-side{grid-column:2;grid-row:1 / span 2}
+.shell.work .blk-side{grid-column:2;grid-row:1 / span 2;height:0;overflow:visible;position:relative;z-index:2}
+.shell.work .doc{padding-bottom:4rem}
 }
 .blk-side{display:flex;flex-direction:column;gap:8px;font-size:.875rem;line-height:1.5}
 .blk-side:empty{display:none}
 .tools{display:none;gap:.3rem;flex-wrap:wrap}
 .blk.cur>.blk-side>.tools{display:flex}
-@media (pointer:fine) and (min-width:1024px){.blk:hover>.blk-side>.tools,.blk:focus-within>.blk-side>.tools{display:flex}}
+@media (pointer:fine) and (min-width:1024px){.shell.work .blk[data-a]>.blk-side>.tools{display:flex;visibility:hidden}
+.blk:hover>.blk-side>.tools,.blk:focus-within>.blk-side>.tools,.blk.cur>.blk-side>.tools{visibility:visible!important}}
 @media (max-width:1023px){.blk-side:has(>*:not(.tools)),.blk.cur>.blk-side{margin:.2rem 0 1rem}}
 /* gutter: a bar left of the text */
 .blk.chg>.blk-body,.blk.new>.blk-body{position:relative}
@@ -313,7 +316,8 @@ kbd{padding:.05rem .4rem;font:13px ui-monospace,monospace;background:var(--bg2);
 .pg-g>small{color:var(--muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.06em}
 .pg-i{margin:.2rem 0 .4rem}
 .ptr{display:block;color:var(--muted);font-size:.8rem}
-.toast-w{position:fixed;left:50%;bottom:76px;z-index:50;transform:translateX(-50%);max-width:calc(100vw - 2rem)}
+/* toasts sit under the header, away from the current edit in the middle and the navigator below */
+.toast-w{position:fixed;left:50%;top:calc(var(--top) + 12px);z-index:50;transform:translateX(-50%);max-width:calc(100vw - 2rem)}
 .toast{display:flex;gap:1rem;align-items:baseline;padding:.6rem 1rem;background:var(--fg);color:var(--bg);border-radius:8px;box-shadow:var(--shadow);font-size:.9rem}
 .toast .link{color:var(--bg);text-decoration:underline;font-size:inherit}
 /* narrow screens: the header keeps the menu, the mode and «⋯» */
@@ -338,13 +342,14 @@ kbd{padding:.05rem .4rem;font:13px ui-monospace,monospace;background:var(--bg2);
 main{padding:0}
 .page,.shell.work .page{max-width:none}
 .shell.work .blk{display:block}
+.blk-side{height:auto!important;transform:none!important}
 .blk.chg>.blk-body::before,.blk.new>.blk-body::before{display:none}
 .blk.chg>.blk-body,.blk.new>.blk-body{border-left:4px solid #888;padding-left:8px}
 .card{break-inside:avoid;margin:.3rem 0 .8rem}
 a{color:inherit;text-decoration:none}
 }
 .proj a{color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis}
-.tc{display:inline-block;margin-left:.15rem;padding:0 .35rem;font-size:.6875rem;font-weight:600;line-height:1.5;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:99px}
+.tc{display:inline-block;margin-left:.1rem;padding:0 .3rem;font-size:.6875rem;font-weight:600;line-height:1.5;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:99px}
 
 </style>
 <div id="app"><noscript><p class="noscript">This documentation is an application: turn on JavaScript to read it, or read the Markdown in the output folder.</p></noscript></div>
@@ -530,7 +535,7 @@ a{color:inherit;text-decoration:none}
     var out = [];
     i = 0; j = 0;
     while (i < n && j < m) {
-      if (x[i] === y[j]) { out.push([0, j]); i++; j++; }
+      if (x[i] === y[j]) { out.push([0, j, i]); i++; j++; }
       else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push([-1, i]); i++; }
       else { out.push([1, j]); j++; }
     }
@@ -570,8 +575,8 @@ a{color:inherit;text-decoration:none}
   // so the paragraph keeps its links, lists and tables: added words are wrapped
   // in <ins>, removed runs go in as <del> before the next word that stayed.
   // Markdown marks that render as no text (table bars, list bullets) are dropped.
-  var markOnly = /^(\||[-*+>]|\d+[.)]|:?-{2,}:?|#{1,6})$/;
-  function words(s) { return s.split(/\s+/).filter(function (w) { return w && !markOnly.test(w); }); }
+  var markOnly = /^([-*+>]|\d+[.)]|:?-{2,}:?|#{1,6})$/;
+  function words(s) { return s.replace(/\|/g, ' ').split(/\s+/).filter(function (w) { return w && !markOnly.test(w); }); }
   function textNodes(el, clean) {
     var out = [], w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), n;
     while ((n = w.nextNode())) { if (!clean || !n.parentNode.closest('del,.sr')) { out.push(n); } }
@@ -583,6 +588,39 @@ a{color:inherit;text-decoration:none}
     e.appendChild(s); e.appendChild(document.createTextNode(text));
     return e;
   }
+  // the marks of the new words against the old ones: per new word whether it
+  // was added (ins), the removed words before it (del) and, on the last word,
+  // the removed words after it (after); null for a rewrite
+  function wordMarks(x, y) {
+    var ops = lcs(x, y);
+    if (!ops || rewrite(ops, x, y)) { return null; }
+    // A run of added (or removed) words that ends with the word standing just
+    // before it slides over that word when this joins it to the run before:
+    // «by SMS [or] via [Telegram via]» reads as «by SMS [or via Telegram] via».
+    for (var again = true; again;) {
+      again = false;
+      for (var i = 1; i < ops.length - 1 && !again; i++) {
+        var s = ops[i + 1][0];
+        if (ops[i][0] !== 0 || !s || ops[i - 1][0] !== s) { continue; }
+        var k = i + 1;
+        while (k + 1 < ops.length && ops[k + 1][0] === s) { k++; }
+        var last = ops[k], w = s > 0 ? y[last[1]] : x[last[1]];
+        if (w !== y[ops[i][1]]) { continue; }
+        var moved = s > 0 ? [[1, ops[i][1]]].concat(ops.slice(i + 1, k), [[0, last[1], ops[i][2]]])
+          : [[-1, ops[i][2]]].concat(ops.slice(i + 1, k), [[0, ops[i][1], last[1]]]);
+        Array.prototype.splice.apply(ops, [i, k - i + 1].concat(moved));
+        again = true;
+      }
+    }
+    var out = y.map(function () { return {}; }), gone = [];
+    ops.forEach(function (o) {
+      if (o[0] < 0) { gone.push(x[o[1]]); return; }
+      if (gone.length) { out[o[1]].del = gone.join(' '); gone = []; }
+      out[o[1]].ins = o[0] > 0;
+    });
+    if (gone.length && out.length) { out[out.length - 1].after = gone.join(' '); }
+    return out;
+  }
   // false when the text was rewritten (or is code): the caller shows the old text whole
   function drawDiff(el, oldSrc) {
     if (el.querySelector('pre')) { return false; }
@@ -591,16 +629,9 @@ a{color:inherit;text-decoration:none}
       var re = /\S+/g, m;
       while ((m = re.exec(n.data))) { toks.push({ n: n, s: m.index, e: m.index + m[0].length, w: m[0] }); }
     });
-    var x = words(plain(oldSrc)), y = toks.map(function (t) { return t.w; }), ops = lcs(x, y);
-    if (!ops || rewrite(ops, x, y)) { return false; }
-    var gone = [];
-    ops.forEach(function (o) {
-      if (o[0] < 0) { gone.push(x[o[1]]); return; }
-      var t = toks[o[1]];
-      if (gone.length) { t.del = gone.join(' '); gone = []; }
-      t.ins = o[0] > 0;
-    });
-    if (gone.length && toks.length) { toks[toks.length - 1].after = gone.join(' '); }
+    var ms = wordMarks(words(plain(oldSrc)), toks.map(function (t) { return t.w; }));
+    if (!ms) { return false; }
+    toks.forEach(function (t, i) { Object.assign(t, ms[i]); });
     // rebuild each text node that has marks, from its tokens
     var byNode = new Map();
     toks.forEach(function (t) { if (!byNode.has(t.n)) { byNode.set(t.n, []); } byNode.get(t.n).push(t); });
@@ -630,16 +661,30 @@ a{color:inherit;text-decoration:none}
     [].forEach.call(c.querySelectorAll('del,.sr,.anchor,.copy'), function (e) { e.remove(); });
     return c.textContent;
   }
-  // wraps characters [from, to) of el's text in elements made by make()
-  function wrapText(el, from, to, make) {
-    var at = 0;
+  // the text of a block as the reader reads it: no drawn removals, hidden
+  // labels or doubled spaces; at maps each character back to [node, offset]
+  function readText(el) {
+    var text = '', at = [];
     textNodes(el, true).forEach(function (n) {
-      var s = at, e = at + n.data.length;
-      at = e;
-      if (e <= from || s >= to) { return; }
-      var a = Math.max(from, s) - s, b = Math.min(to, e) - s, r = document.createRange();
-      r.setStart(n, a); r.setEnd(n, b);
-      var w = make(); r.surroundContents(w);
+      for (var i = 0; i < n.data.length; i++) {
+        var c = n.data[i], sp = /\s/.test(c);
+        if (sp && (!text || text[text.length - 1] === ' ')) { continue; }
+        text += sp ? ' ' : c; at.push([n, i]);
+      }
+    });
+    return { text: text, at: at };
+  }
+  // wraps characters [from, to) of readText(el) in elements made by make()
+  function wrapText(el, from, to, make) {
+    var at = readText(el).at.slice(from, to), parts = [];
+    at.forEach(function (p) {
+      var last = parts[parts.length - 1];
+      if (last && last[0] === p[0]) { last[2] = p[1] + 1; } else { parts.push([p[0], p[1], p[1] + 1]); }
+    });
+    parts.forEach(function (p) {
+      var r = document.createRange();
+      r.setStart(p[0], p[1]); r.setEnd(p[0], p[2]);
+      r.surroundContents(make());
     });
   }
   // the place of a fragment in a block's text: the occurrence whose
@@ -989,7 +1034,7 @@ a{color:inherit;text-decoration:none}
       whole[1](null);
       if (!el || !work) { lost[1](gone); return; }
       if (changed && !isNew && !drawDiff(el, before)) { whole[1](el.querySelector('pre') ? 'code' : 'text'); }
-      var text = textNodes(el, true).map(function (n) { return n.data; }).join('');
+      var text = readText(el).text;
       frags.forEach(function (c) {
         var i = findFragment(text, c);
         if (i < 0) { gone[c.id] = true; return; }
@@ -1034,6 +1079,20 @@ a{color:inherit;text-decoration:none}
   }
 
   // ---- page ----
+  // On a wide screen the cards hang beside their paragraph without making it
+  // taller; a card that would cover the one above moves down below it.
+  function layoutCards(root) {
+    var low = -Infinity;
+    [].forEach.call(root.querySelectorAll('.blk-side'), function (s) {
+      s.style.transform = '';
+      if (getComputedStyle(s).height !== '0px') { return; } // narrow: under the paragraph
+      var h = s.scrollHeight;
+      if (!h) { return; }
+      var top = s.getBoundingClientRect().top, shift = Math.max(0, low + 8 - top);
+      if (shift) { s.style.transform = 'translateY(' + shift + 'px)'; }
+      low = top + shift + h;
+    });
+  }
   function Chip(props) {
     var p = byId[props.id];
     return p ? html`<a class="pchip" href=${'#' + p.id}>${p.title}</a>` : null;
@@ -1061,7 +1120,13 @@ a{color:inherit;text-decoration:none}
         a.setAttribute('aria-label', 'Link to this section');
         h.insertBefore(a, h.firstChild);
       });
-      [].forEach.call(el.querySelectorAll('.blk-body table'), function (t) { if (t.scrollWidth > t.clientWidth) { t.setAttribute('tabindex', '0'); } });
+      // a wide table scrolls from the keyboard too, named by its heading for a screen reader
+      [].forEach.call(el.querySelectorAll('.blk-body table'), function (t) {
+        if (t.scrollWidth <= t.clientWidth) { return; }
+        var hs = [].filter.call(el.querySelectorAll('.blk-body :is(h2,h3,h4)'), function (h) { return h.compareDocumentPosition(t) & 4; });
+        t.setAttribute('tabindex', '0');
+        t.setAttribute('aria-label', 'Table' + (hs.length ? ': ' + hs[hs.length - 1].textContent.replace(/^#/, '') : ''));
+      });
       [].forEach.call(el.querySelectorAll('.blk-body pre'), function (pre) {
         if (pre.querySelector('.copy')) { return; }
         pre.setAttribute('tabindex', '0');
@@ -1074,9 +1139,21 @@ a{color:inherit;text-decoration:none}
         });
         pre.appendChild(b);
       });
+      layoutCards(el);
+      var frame = 0, relayout = function () { cancelAnimationFrame(frame); frame = requestAnimationFrame(function () { layoutCards(el); }); };
+      var mo = window.MutationObserver && new MutationObserver(relayout);
+      if (mo) { mo.observe(el, { childList: true, subtree: true }); }
+      window.addEventListener('resize', relayout);
+      document.addEventListener('toggle', relayout, true);
+      document.addEventListener('input', relayout, true);
       props.onToc([].map.call(el.querySelectorAll('.blk-body :is(h2,h3)[id]'), function (h) {
         return { id: h.id, level: h.tagName.charAt(1), text: h.textContent.replace(/^#/, '') };
       }));
+      return function () {
+        if (mo) { mo.disconnect(); }
+        cancelAnimationFrame(frame);
+        window.removeEventListener('resize', relayout); document.removeEventListener('toggle', relayout, true); document.removeEventListener('input', relayout, true);
+      };
     });
     var prev = pages[page.i - 1], next = pages[page.i + 1];
     var shown = {}; shown[page.id] = true;
@@ -1436,7 +1513,7 @@ a{color:inherit;text-decoration:none}
     post.setStart(r.endContainer, r.endOffset); post.setEnd(body, body.childNodes.length);
     var rect = r.getBoundingClientRect();
     return { a: blk.getAttribute('data-a'), ptr: blk.getAttribute('data-p'), x: rect.right, y: rect.bottom,
-      frag: { fragment: frag, prefix: cleanText(pre.cloneContents()).slice(-32), suffix: cleanText(post.cloneContents()).slice(0, 32) } };
+      frag: { fragment: frag, prefix: cleanText(pre.cloneContents()).replace(/\s+/g, ' ').slice(-32), suffix: cleanText(post.cloneContents()).replace(/\s+/g, ' ').slice(0, 32) } };
   }
 
   function App() {
@@ -1694,6 +1771,8 @@ a{color:inherit;text-decoration:none}
       <${Toast} />`;
   }
 
+  // the pure parts, for app_test.js; nothing else sets this
+  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, hash: hash }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();
 

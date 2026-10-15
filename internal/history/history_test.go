@@ -215,3 +215,18 @@ func TestHistoryAcrossMerge(t *testing.T) {
 		t.Errorf("a revision outside the history of HEAD: %v", err)
 	}
 }
+
+// A paragraph removed in the middle and one added at the end are a removal
+// and an addition, not one rewritten paragraph: pairs keep the order.
+func TestPairKeepsOrder(t *testing.T) {
+	leaf := func(ptr, text string) Leaf { return Leaf{Ptr: ptr, Text: text} }
+	a := []Leaf{leaf("/b/1", "Confirmed by SMS within 5 minutes."), leaf("/b/3", "A client who missed two visits in a row cannot book online."),
+		leaf("/b/4", "Reminder a day before the visit.")}
+	b := []Leaf{leaf("/b/1", "Confirmed by SMS or Telegram within 1 minute."), leaf("/b/3", "Reminder two hours before the visit."),
+		leaf("/b/4", "A client can book two or three services in a row with one master.")}
+	match := map[string]string{}
+	pair(a, b, match)
+	if match["/b/1"] != "/b/1" || match["/b/3"] != "/b/4" || match["/b/4"] != "" {
+		t.Errorf("pairs: %v", match)
+	}
+}
