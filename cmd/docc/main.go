@@ -451,7 +451,7 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 		}
 		paths[ext] = f
 	}
-	if err := render.Write(p.Cfg.Abs(dir), files); err != nil {
+	if err := render.Write(p.Cfg.Abs(dir), dir, p.Cfg.Abs(p.Cfg.Src), files); err != nil {
 		return 0, nil, err
 	}
 	if err := p.WriteLock(); err != nil {
