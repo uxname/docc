@@ -42,7 +42,7 @@ The file `docc.lock` lies next to `docc.json` and is committed. It holds one lin
 
 The target hash covers only what the link points to: a block anchor hashes its paragraph, a field or section hashes its value, and a whole document is hashed without `notes`, `docIgnore`, `hidden`, `order` and `parent`. The code hash exists only for a `docc:begin` region and covers its trimmed text in NFC.
 
-`docc build` without errors records the links that are not in the lock with their hashes, so they count as confirmed, drops the links that are gone and keeps the stored hashes of the rest. When a target changes after that, DOC209 warns on the source: read it and check that it still agrees. When a code region changes, DOC402 warns: check the document it points to. `docc ack` stores the current hashes and clears both warnings.
+`docc build` without errors records the links that are not in the lock with their hashes, so they count as confirmed, drops the links that are gone and keeps the stored hashes of the rest. When a target changes after that, DOC209 warns on the source: read it and check that it still agrees. When a code region changes, DOC402 warns: check the document it points to. `docc ack` stores the current hashes of the changed links and clears both warnings; it prints every link it confirms.
 
 `docc check` reports DOC503, a core rule, when `docc.lock` does not match the links in the sources; `docc build` fixes it.
 

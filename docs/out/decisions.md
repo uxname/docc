@@ -26,11 +26,23 @@ Numbers of pages and sections are computed from the tree when `numbering` is on,
 
 A link exists only as a reference in the text. A separate list of links would repeat the text and drift from it, and a reference in a sentence also says why the documents are related.
 
+docc is a public open source project (MIT) with releases on GitHub, installers, `docc update` and the skill installed by `npx skills add`. The first users are the author's team; there are no sales, plans or support promises.
+
+`docc ack` confirms only links that changed and prints each one, because a command that silently confirms every link on a document lets an agent clear warnings about sources nobody read. `docc init` writes `maxWarnings` 0 so that a stale link (DOC209) stops `docc check`, the pre-commit hook and CI; a warning that blocks nothing is ignored.
+
+DOC209 is one diagnostic per source document and target document, at the first link, so a document that links to two or more parts of one target is not warned more than once. A link to an anchor or a field is warned about only when that part changes, which is why the hint advises it.
+
+DOC110 warns about a free field spelled almost like a reserved key (`parnet`, `hiden`) that the kind schema does not declare. The reserved fields are the only ones with a meaning, so a typo would otherwise be silent prose.
+
+`docc build` deletes from the output folder only what it generated (pages with the GENERATED mark, copies of images that exist in the sources, file manager junk). With any other file there it refuses and lists the files, because a silent deletion loses work. A marker file and `--dry-run` were not added.
+
+A launch or config error in JSON is the usual report with a diagnostic of code `config`, `usage` or `error`, and every error of `docc.json` is listed at once, so an agent parses one shape and fixes the file in one pass. Diagnostics stay ordered errors first, then by file and position: moving warnings in among errors was not done.
+
 The rules are listed in [Rules and diagnostics](rules.md) and the settings in [Configuration](config.md).
 
 ## Not verified
 
-Windows and macOS were not run: only Linux was available, and no CI is configured yet.
+Windows and macOS were not run: only Linux was available. The two GitHub workflows (tests and releases) run on Linux only, so the Windows and macOS builds are cross-compiled and untested.
 
 The criterion that an agent fixes 9 of 10 synthetic errors in two iterations was not measured.
 
