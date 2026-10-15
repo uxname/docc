@@ -144,3 +144,74 @@ func TestHistoryForTheReader(t *testing.T) {
 		t.Errorf("the full build keeps the notes and authors:\n%s", js)
 	}
 }
+
+// A merge is one change on the main line: a clean tree after a merge has no
+// uncommitted commit, and changesSince must be an ancestor of HEAD.
+func TestHistoryAcrossMerge(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("no git")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "docs", "src")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=A", "GIT_AUTHOR_EMAIL=a@x", "GIT_COMMITTER_NAME=A", "GIT_COMMITTER_EMAIL=a@x")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	step := func(doc, msg string) {
+		if err := os.WriteFile(filepath.Join(src, "a.json"), []byte(doc), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		run("add", "-A")
+		run("commit", "-q", "-m", msg)
+	}
+	// the title and the last paragraph are far apart, so Git merges them
+	doc := func(title, extra, msg string) (string, string) {
+		last := ""
+		if extra != "" {
+			last = `,"` + extra + `"`
+		}
+		return `{"title":"` + title + `",` + "\n\n\n\n\n" + `"body":["A",` + "\n\n\n\n\n" + `"B"` + last + "]}\n", msg
+	}
+	run("init", "-q", "-b", "main")
+	step(doc("A", "", "base"))
+	run("checkout", "-q", "-b", "feat")
+	step(doc("A", "F-para", "feature"))
+	run("checkout", "-q", "main")
+	step(doc("A changed", "", "main edit"))
+	run("tag", "onmain")
+	run("merge", "-q", "--no-edit", "feat")
+	data, _ := os.ReadFile(filepath.Join(src, "a.json"))
+	merged := string(data)
+	if !strings.Contains(merged, "A changed") || !strings.Contains(merged, "F-para") {
+		t.Fatalf("merge result: %s", data)
+	}
+	files := map[string]*loader.Node{"a.json": loader.Parse(data).Root}
+	h, err := Load(src, files, Options{})
+	if err != nil || h.Commits[len(h.Commits)-1].Hash == "" {
+		t.Fatalf("a clean tree after a merge has no uncommitted commit: %+v %v", h.Commits, err)
+	}
+	h, err = Load(src, files, Options{Since: "onmain"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := h.Docs["a.json"]
+	if vs := d.Blocks["/body/2"]; len(vs) != 1 || vs[0].C == 0 {
+		t.Errorf("the merged paragraph is new since the tag: %+v", vs)
+	}
+	if _, err := Load(src, files, Options{Since: "feat"}); err != nil {
+		t.Errorf("merged branch is an ancestor of HEAD: %v", err)
+	}
+	run("checkout", "-q", "-b", "other", "main~2")
+	step(`{"title":"Other","body":["A"]}`, "other")
+	run("checkout", "-q", "main")
+	if _, err := Load(src, files, Options{Since: "other"}); err == nil || !strings.Contains(err.Error(), "not in the history") {
+		t.Errorf("a revision outside the history of HEAD: %v", err)
+	}
+}

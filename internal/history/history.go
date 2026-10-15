@@ -110,9 +110,12 @@ func Load(srcDir string, current map[string]*loader.Node, o Options) (*History, 
 	var before map[string]bool // full hashes of the commits up to Since
 	sinceDate := ""
 	if o.Since != "" {
-		list, err := git(srcDir, nil, "rev-list", "--end-of-options", o.Since+"^{commit}")
+		list, err := git(srcDir, nil, "rev-list", "--first-parent", "--end-of-options", o.Since+"^{commit}")
 		if err != nil {
 			return nil, fmt.Errorf("changes since %q: no such Git revision", o.Since)
+		}
+		if _, err := git(srcDir, nil, "merge-base", "--is-ancestor", o.Since+"^{commit}", "HEAD"); err != nil {
+			return nil, fmt.Errorf("changes since %q: not in the history of HEAD", o.Since)
 		}
 		if d, err := git(srcDir, nil, "log", "-1", "--format=%aI", "--end-of-options", o.Since+"^{commit}"); err == nil {
 			sinceDate = strings.TrimSpace(d)
@@ -127,7 +130,7 @@ func Load(srcDir string, current map[string]*loader.Node, o Options) (*History, 
 	if head, err := git(srcDir, nil, "rev-parse", "--short=8", "HEAD"); err == nil {
 		h.Head = strings.TrimSpace(head)
 	}
-	log, err := git(srcDir, nil, "-c", "core.quotePath=false", "log", "--reverse", "-M", "--name-status",
+	log, err := git(srcDir, nil, "-c", "core.quotePath=false", "log", "--reverse", "--first-parent", "-m", "-M", "--name-status",
 		"--format=%x01%H%x1f%an%x1f%aI%x1f%s", "--", ".")
 	if err != nil {
 		return h, nil

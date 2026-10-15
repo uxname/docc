@@ -440,22 +440,27 @@ func noArgs(pos []string) error {
 // Markdown into out (or outFull) and returns the number of files. With single
 // and html, or when that file is already there, it also writes the one-file
 // Markdown and HTML next to the directory and returns their paths in extra.
-func build(p *engine.Project, full, single, html bool) (n int, extra []string, err error) {
+func build(p *engine.Project, warn io.Writer, full, single, html bool) (n int, extra []string, htmlErr, err error) {
 	if engine.Structural(p.Diags) {
-		return 0, nil, nil
+		return 0, nil, nil, nil
 	}
 	dir := p.Cfg.Out
 	if full {
 		dir = p.Cfg.OutFull
 	}
 	if err := render.CheckDir(p, dir); err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
-	// a one-file build made once is kept up to date by every later build
+	// a one-file build made once is kept up to date by every later build, if docc wrote it
 	for ext, on := range map[string]*bool{".md": &single, ".html": &html} {
 		if f, err := render.SingleFile(p, dir, ext); err == nil && !*on {
-			if _, err := os.Stat(f); err == nil {
+			if _, err := os.Stat(f); err != nil {
+				continue
+			}
+			if render.GeneratedFile(f, ext) {
 				*on = true
+			} else {
+				say(warn, "docc: %s is not a file docc wrote: left alone (build with --%s to replace it)\n", f, ext[1:])
 			}
 		}
 	}
@@ -465,7 +470,7 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 	if single {
 		one[".md"] = r.Single()
 	}
-	var htmlErr error // a bad changesSince stops only the HTML file, not the pages and the lock
+	// a bad changesSince stops only the HTML file, not the pages and the lock
 	if html {
 		var h string
 		if h, htmlErr = r.HTML(); htmlErr == nil {
@@ -476,25 +481,25 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 	for ext := range one {
 		f, err := render.SingleFile(p, dir, ext)
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, nil, err
 		}
 		paths[ext] = f
 	}
 	if err := render.Write(p.Cfg.Abs(dir), dir, p.Cfg.Abs(p.Cfg.Src), files); err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
 	if err := p.WriteLock(); err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
 	for _, ext := range []string{".md", ".html"} {
 		if content, ok := one[ext]; ok {
 			if err := render.WriteFile(paths[ext], content); err != nil {
-				return 0, nil, err
+				return 0, nil, nil, err
 			}
 			extra = append(extra, dir+ext)
 		}
 	}
-	return len(files), extra, htmlErr
+	return len(files), extra, htmlErr, nil
 }
 
 func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
@@ -516,11 +521,15 @@ func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	n, extra, err := build(p, *full, *single, *html)
+	n, extra, htmlErr, err := build(p, stderr, *full, *single, *html)
 	if err != nil {
 		return 2, err
 	}
 	code, err := emit(stdout, stderr, c, p, p.Sorted())
+	if htmlErr != nil { // after the diagnostics, which the failed HTML part must not hide
+		say(stderr, "docc: error: %v\n", htmlErr)
+		code = max(code, 2)
+	}
 	if err != nil || c.format != "text" {
 		return code, err
 	}
@@ -704,7 +713,7 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	n, _, err := build(p, false, false, false)
+	n, _, _, err := build(p, stderr, false, false, false)
 	if err != nil {
 		return 2, err
 	}

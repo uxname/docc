@@ -101,7 +101,7 @@ func (r *Renderer) HTML() (string, error) {
 		ptrs := history.Pointers(d.Root)
 		pd := pageData{ID: d.ID, Title: s.title(d), File: d.Rel, Hidden: s.Full && d.Hidden,
 			Kind: strField(d, "kind"), Status: strField(d, "status"), Priority: strField(d, "priority"),
-			Summary: s.summary(d), Covers: s.P.Covers[d.ID]}
+			Summary: s.summary(d), Covers: s.P.Covers[d.ID], Blocks: []blockData{}}
 		pd.StatusClass = statusClass(pd.Status)
 		pd.Status = s.statusLabel(pd.Status)
 		for _, t := range engine.StringList(d.Root.Get("tags")) {

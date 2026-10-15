@@ -208,11 +208,46 @@ func TestHTMLKeptUpToDate(t *testing.T) {
 	if err := os.WriteFile("docs/src/index.json", []byte(`{"title":"I","kind":"page","body":["Three."]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if code, _, errs := do("build"); code != 2 || !strings.Contains(errs, `changes since "no-such-tag"`) {
-		t.Fatalf("unknown revision: %d %s", code, errs)
+	if code, out, errs := do("build"); code != 2 || !strings.Contains(errs, `changes since "no-such-tag"`) || !strings.Contains(out, "files in docs/out") {
+		t.Fatalf("unknown revision: %d %s %s", code, out, errs)
 	}
 	// the pages are still built: only the HTML file waits for a good revision
 	if md := readFile(t, "docs/out/index.md"); !strings.Contains(md, "Three.") {
 		t.Errorf("docs/out was not built:\n%s", md)
+	}
+}
+
+// A one-file build is kept up to date only when docc wrote it: a foreign
+// docs/out.html or docs/out.md next to the output stays as it is.
+func TestForeignOneFileBuildsLeftAlone(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"I","body":["One."]}`,
+		"docs/out.html":       "<p>mine</p>",
+		"docs/out.md":         "my notes",
+	})
+	code, out, errs := do("build")
+	if code != 0 || strings.Contains(out, "out.html") || !strings.Contains(errs, "out.html is not a file docc wrote") || !strings.Contains(errs, "out.md is not a file docc wrote") {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+	if readFile(t, "docs/out.html") != "<p>mine</p>" || readFile(t, "docs/out.md") != "my notes" {
+		t.Error("a foreign file was overwritten")
+	}
+	if code, out, errs := do("build", "--html"); code != 0 || !strings.Contains(readFile(t, "docs/out.html"), "One.") {
+		t.Errorf("explicit --html must replace it: %d %s %s", code, out, errs)
+	}
+}
+
+// A page without body blocks has an empty list in the data island, not null,
+// which the app cannot map over.
+func TestHTMLPageWithoutBlocks(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"I","body":["One."]}`,
+		"docs/src/empty.json": `{"title":"Empty","kind":"page","parent":"index"}`,
+	})
+	if code, out, errs := do("build", "--html"); code != 0 {
+		t.Fatal(out, errs)
+	}
+	if html := readFile(t, "docs/out.html"); strings.Contains(html, `"blocks":null`) {
+		t.Error("blocks of an empty page must be [], not null")
 	}
 }

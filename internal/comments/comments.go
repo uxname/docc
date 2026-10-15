@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/uxname/docc/internal/history"
 	"github.com/uxname/docc/internal/loader"
@@ -108,13 +109,15 @@ func marshal(v any) ([]byte, error) {
 // as text: the export JSON in base64, so a messenger cannot mangle it.
 const Marker = "docc-comments:"
 
-var markerRe = regexp.MustCompile(regexp.QuoteMeta(Marker) + `\s*([A-Za-z0-9+/]+=*)`)
+// the base64 may be folded into lines by a messenger or mail, so it runs to the end
+var markerRe = regexp.MustCompile(regexp.QuoteMeta(Marker) + `([A-Za-z0-9+/=\s]+)`)
 
 // ParseExport reads what the HTML page gives away: the downloaded file, or
-// the copied text with a Marker line anywhere in it. name is for errors.
+// the copied text with a Marker line at its end (the last one counts: a
+// comment may quote the marker). name is for errors.
 func ParseExport(name string, b []byte) ([]Item, error) {
-	if m := markerRe.FindSubmatch(b); m != nil {
-		raw, err := base64.StdEncoding.DecodeString(string(m[1]))
+	if all := markerRe.FindAllSubmatch(b, -1); all != nil {
+		raw, err := base64.StdEncoding.DecodeString(strings.Join(strings.Fields(string(all[len(all)-1][1])), ""))
 		if err != nil {
 			return nil, fmt.Errorf("%s: the %s line is damaged: copy the comments again", name, Marker)
 		}

@@ -195,7 +195,7 @@
     vs.forEach(function (v) { if (v.c <= since) { before = v.t; } else { after = true; } });
     return after ? before : undefined;
   }
-  function blocksOf(page) { return (page.props || []).concat(page.blocks).filter(function (b) { return b.p; }); }
+  function blocksOf(page) { return (page.props || []).concat(page.blocks || []).filter(function (b) { return b.p; }); }
   // what changed on a page after `since`: changed and new blocks in page order, removed texts
   var deltaCache = {};
   function pageDelta(page, since) {
@@ -280,9 +280,12 @@
     if (unsent(local)) { e.preventDefault(); e.returnValue = ''; }
   });
   function removeComment(c) {
-    var before = local;
+    var at = local.indexOf(c);
     setLocal(local.filter(function (x) { return x.id !== c.id; }));
-    toast('{{t:Comment deleted.}}', '{{t:Undo}}', function () { setLocal(before); });
+    // put back only this comment: others may have been added or removed since
+    toast('{{t:Comment deleted.}}', '{{t:Undo}}', function () {
+      var rest = local.slice(); rest.splice(Math.max(0, Math.min(at, rest.length)), 0, c); setLocal(rest);
+    });
   }
 
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -308,6 +311,7 @@
       r.onend = function () { rec.current = null; on[1](false); };
       try { r.start(); rec.current = r; on[1](true); st[1](''); } catch (err) { st[1]('{{t:Dictation failed, type the text instead}}'); }
     }
+    useEffect(function () { return function () { if (rec.current) { rec.current.abort(); } }; }, []);
     function toggle() { if (rec.current) { rec.current.stop(); } else { start(); } }
     return html`<span class="mic-w">
       <button type="button" class=${'mic' + (on[0] ? ' on' : '')} aria-pressed=${on[0] ? 'true' : 'false'} onClick=${toggle}>
@@ -398,8 +402,8 @@
     var n = mine.length + repo.length;
     var extra = html`
       ${changed && !isNew && showDiff[0] && html`<div class="since"><small>{{t:Was → now}}</small><${Diff} a=${before} b=${b.s} /></div>`}
-      ${repo.map(function (c) { return html`<${Note} c=${c} repo=${true} />`; })}
-      ${mine.map(function (c) { return html`<${Note} c=${c} />`; })}
+      ${repo.map(function (c) { return html`<${Note} key=${c.id} c=${c} repo=${true} />`; })}
+      ${mine.map(function (c) { return html`<${Note} key=${c.id} c=${c} />`; })}
       ${mode[0] === 'c' && html`<${Editor} page=${page} ptr=${ptr} quote=${b.s} close=${function () { mode[1](null); }} />`}
       ${mode[0] === 'h' && html`<${History} vs=${vs} close=${function () { mode[1](null); }} />`}`;
     var tools = html`<span class="tools">
@@ -505,7 +509,7 @@
         ${page.props && html`<dl>${page.props.map(function (p) {
           return html`<dt>${p.k}</dt><${Block} ...${bl} b=${p} tag="dd" id=${p.id} />`;
         })}</dl>`}
-        ${page.blocks.map(function (b) { return html`<${Block} ...${bl} b=${b} />`; })}
+        ${(page.blocks || []).map(function (b) { return html`<${Block} ...${bl} b=${b} />`; })}
       </div>
       ${gone.length > 0 && html`<details class="gone"><summary>{{t:Removed from this page since the chosen version}}: ${gone.length}</summary>
         ${gone.map(function (t) { return html`<div class="dv"><del>${plain(t)}</del></div>`; })}</details>`}
@@ -550,7 +554,7 @@
     if (at >= 0 && (at < lo || at >= hi)) { lo = Math.max(0, at - 10); hi = Math.min(n, at + 11); }
     return html`<ul>
       ${lo > 0 && html`<li><button type="button" class="more" onClick=${function () { win[1]([Math.max(0, lo - 30), hi]); }}>↑ ${lo} {{t:earlier}}</button></li>`}
-      ${all.slice(lo, hi).map(function (x) { return html`<${Node} node=${x} cur=${props.cur} since=${props.since} />`; })}
+      ${all.slice(lo, hi).map(function (x) { return html`<${Node} key=${x.id} node=${x} cur=${props.cur} since=${props.since} />`; })}
       ${hi < n && html`<li><button type="button" class="more" onClick=${function () { win[1]([lo, Math.min(n, hi + 30)]); }}>${n - hi} {{t:more}} ↓</button></li>`}
     </ul>`;
   }
@@ -583,7 +587,7 @@
       function key(e) {
         var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
         if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
-          e.preventDefault(); props.openSide(); inp.current.focus(); inp.current.select();
+          e.preventDefault(); props.openSide(); setTimeout(function () { inp.current.focus(); inp.current.select(); }, 0); // #side is hidden until it has opened
         }
       }
       document.addEventListener('keydown', key);
@@ -610,7 +614,11 @@
       hits = hits.slice(0, LIMIT);
     }
     var re = v ? new RegExp('(' + v.split(/\s+/).map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')', 'gi') : null;
-    function go(h) { q[1](''); inp.current.blur(); location.hash = blockHash(h.p.id, h.ptr); }
+    function go(h) {
+      var to = blockHash(h.p.id, h.ptr);
+      q[1](''); inp.current.blur();
+      if (decode(location.hash) === decode(to)) { props.go(to); } else { location.hash = to; }
+    }
     return html`<div class="search">
       <input type="search" id="q" ref=${inp} placeholder="{{t:Search  ( / )}}" aria-label="{{t:Search the documentation}}" autocomplete="off"
         role="combobox" aria-expanded=${v ? 'true' : 'false'} aria-controls="results"
@@ -783,7 +791,7 @@
       var n = changes.list.length, k = at[0] < 0 ? (d > 0 ? 0 : n - 1) : (at[0] + d + n) % n, x = changes.list[k];
       at[1](k);
       var h = blockHash(x.page.id, x.ptr);
-      if (location.hash === h) { r[1](route(h)); } else { location.hash = h; }
+      if (decode(location.hash) === decode(h)) { r[1](route(h)); } else { location.hash = h; }
     }
     function closeSide() { side[1](false); }
     return html`
@@ -797,7 +805,7 @@
         <aside id="side" class=${side[0] ? 'open' : ''} aria-label="{{t:Navigation}}">
           <button type="button" class="side-x" onClick=${closeSide}>✕ {{t:Close}}</button>
           ${D.brand.head && html`<div class="side-brand" dangerouslySetInnerHTML=${{ __html: D.brand.head }}></div>`}
-          <${Search} openSide=${function () { side[1](true); }} />
+          <${Search} openSide=${function () { side[1](true); }} go=${function (h) { r[1](route(h)); }} />
           ${D.full && html`<p class="banner">{{t:Full build: includes hidden documents and notes. Do not publish.}}</p>`}
           <nav id="tree" aria-label="{{t:Document tree}}">
             ${tree.length > 0 && html`<h2>{{t:Pages}}</h2><${Items} nodes=${tree} cur=${page.id} since=${since} />`}
