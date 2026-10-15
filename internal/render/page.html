@@ -1,32 +1,16 @@
 <!doctype html>
+<html lang="{{t:en}}">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{TITLE}}</title>
-<script>document.documentElement.className="js"</script>
 <style>
 {{CSS}}
 </style>
-<a class="skip" href="#main">{{t:Skip to content}}</a>
-<header class="bar">
-<button id="menu" type="button" aria-label="{{t:Menu}}" aria-expanded="false" aria-controls="side">☰</button>{{BRAND_HEAD}}
-<span id="bar-title"></span>
-</header>
-<div class="shell">
-<aside id="side">{{BRAND_HEAD}}
-<div class="search">
-<input type="search" id="q" placeholder="{{t:Search  ( / )}}" aria-label="{{t:Search the documentation}}" autocomplete="off">
-<ul id="results" role="listbox" aria-label="{{t:Search results}}" hidden></ul>
-</div>
-{{BANNER}}
-<nav id="tree" aria-label="{{t:Document tree}}">
-{{NAV}}
-</nav>
-</aside>
-<main id="main" tabindex="-1">{{BRAND_PRINT}}
-{{CONTENT}}{{BRAND_FOOT}}
-</main>
-<aside id="toc" aria-label="{{t:On this page}}" hidden></aside>
-</div>
+<div id="app"><noscript><p class="noscript">{{t:This documentation is an application: turn on JavaScript to read it, or read the Markdown in the output folder.}}</p></noscript></div>
+<script type="application/json" id="docc-data">{{DATA}}</script>
+<script>
+{{VENDOR}}
+</script>
 <script>
 {{JS}}
 </script>

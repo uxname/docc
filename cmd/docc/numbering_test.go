@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -59,11 +60,14 @@ func TestNumbering(t *testing.T) {
 	if code, _, errs := do("build", "--html"); code != 0 {
 		t.Fatal(errs)
 	}
-	html := readFile(t, "docs/out.html")
-	for _, want := range []string{`<h4 id="b1--size">2.1.1.1 Size</h4>`, `<h3 id="b1--roles">2.1.3 Roles</h3>`, `href="#b1--size">2.1.1.1 Size</a>`, `<h1>2.1 Deep</h1>`, `data-title="2.1 Deep"`} {
-		if !strings.Contains(html, want) {
+	a := readApp(t, "docs/out.html")
+	for _, want := range []string{`<h4 id="b1--size">2.1.1.1 Size</h4>`, `<h3 id="b1--roles">2.1.3 Roles</h3>`, `href="#b1--size">2.1.1.1 Size</a>`} {
+		if !strings.Contains(a.Blocks, want) {
 			t.Errorf("out.html lacks %q", want)
 		}
+	}
+	if !strings.Contains(fmt.Sprint(a.Data.Pages), "b1 2.1 Deep") {
+		t.Errorf("the page title lacks its number: %+v", a.Data.Pages)
 	}
 	if code, out, _ := do("check"); code != 0 {
 		t.Errorf("check after build: %d %s", code, out)
@@ -75,11 +79,14 @@ func TestNumberingOffKeepsTitlesAndAnchors(t *testing.T) {
 	if code, _, errs := do("build", "--html"); code != 0 {
 		t.Fatal(errs)
 	}
-	html := readFile(t, "docs/out.html")
-	for _, want := range []string{`<h4 id="b1--size">Size</h4>`, `href="#b1--size">Size</a>`, `<h1>Deep</h1>`} {
-		if !strings.Contains(html, want) {
+	a := readApp(t, "docs/out.html")
+	for _, want := range []string{`<h4 id="b1--size">Size</h4>`, `href="#b1--size">Size</a>`} {
+		if !strings.Contains(a.Blocks, want) {
 			t.Errorf("out.html lacks %q", want)
 		}
+	}
+	if !strings.Contains(fmt.Sprint(a.Data.Pages), "b1 Deep") {
+		t.Errorf("page title: %+v", a.Data.Pages)
 	}
 	do("build")
 	if index := readFile(t, "docs/out/index.md"); !strings.Contains(index, "See [Deep](b1.md), [Size](b1.md#size) and [Roles](b1.md#roles).") {

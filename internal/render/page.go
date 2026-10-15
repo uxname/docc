@@ -20,7 +20,12 @@ var reserved = map[string]bool{
 }
 
 func (r *Renderer) page(d *engine.Doc) string {
-	pg := &page{r: r, doc: d, path: PagePath(d)}
+	return (&page{r: r, doc: d, path: PagePath(d)}).build()
+}
+
+// build renders the page of pg.doc; in the HTML file it also fills pg.marks and pg.props.
+func (pg *page) build() string {
+	r, d := pg.r, pg.doc
 	var blocks []string
 	switch {
 	case !r.single:
@@ -43,14 +48,16 @@ func (r *Renderer) page(d *engine.Doc) string {
 	type field struct {
 		key, content string
 		node         *loader.Node
+		short        bool
 	}
 	var fields []field
 	short := 0
 	for _, m := range d.Root.Members {
 		if !reserved[m.Key] {
 			if c := pg.fieldContent(m.Value, 3); c != "" {
-				fields = append(fields, field{m.Key, c, m.Value})
-				if shortValue(c) {
+				sh := shortValue(pg.markRe().ReplaceAllString(c, ""))
+				fields = append(fields, field{m.Key, c, m.Value, sh})
+				if sh {
 					short++
 				}
 			}
@@ -59,25 +66,27 @@ func (r *Renderer) page(d *engine.Doc) string {
 	// HTML: one-line values form a property list before the sections, so a page
 	// is not a stack of headings with a single word under each
 	props := r.html && short >= 2
-	if props {
-		var items []string
+	if props { // drawn by the page script from pg.props
 		for _, f := range fields {
-			if shortValue(f.content) {
-				items = append(items, heading(f.key)+pg.anchorTag(r.anchorOf(d, f.node).anchor)+"\n:   "+f.content)
+			if f.short {
+				pg.cut += len(pg.markRe().FindAllStringIndex(f.content, -1))
+				pg.props = append(pg.props, prop{heading(f.key), d.ID + "--" + r.anchorOf(d, f.node).anchor, f.node, pg.markRe().ReplaceAllString(f.content, "")})
 			}
 		}
-		blocks = append(blocks, strings.Join(items, "\n\n"))
 	}
 	for _, f := range fields {
-		if props && shortValue(f.content) {
+		if props && f.short {
 			continue
 		}
 		if r.anchors {
 			blocks = append(blocks, pg.anchorTag(r.anchorOf(d, f.node).anchor))
 		}
-		blocks = append(blocks, "## "+heading(f.key), f.content)
+		blocks = append(blocks, pg.mark(nil)+"## "+heading(f.key), f.content)
 	}
 	if r.Full {
+		if r.html {
+			blocks = append(blocks, strings.TrimSpace(pg.mark(nil)))
+		}
 		pg.serviceSections(&blocks)
 	}
 	if !r.html {
@@ -115,13 +124,13 @@ func (pg *page) fieldContent(v *loader.Node, level int) string {
 		return pg.sections(v, level)
 	}
 	if t := pg.table(v); t != "" {
-		return t
+		return pg.mark(v) + t
 	}
 	switch v.Kind {
 	case loader.String:
 		return strings.Join(pg.paragraphs(v, true), "\n\n")
 	case loader.Number, loader.Bool:
-		return v.Str
+		return pg.mark(v) + v.Str
 	case loader.Array:
 		allStrings := true
 		for _, it := range v.Items {
@@ -131,7 +140,7 @@ func (pg *page) fieldContent(v *loader.Node, level int) string {
 			return strings.Join(pg.paragraphs(v, true), "\n\n")
 		}
 	}
-	return strings.Join(pg.listLines(v, "", true), "\n")
+	return pg.mark(v) + strings.Join(pg.listLines(v, "", true), "\n")
 }
 
 // sections renders the members of a set of sections as headings of the given
@@ -150,7 +159,7 @@ func (pg *page) sections(v *loader.Node, level int) string {
 		case a.num != "" && !pg.r.single: // the numbered heading gets another id on GitHub; links keep the plain anchor
 			blocks = append(blocks, `<a id="`+a.anchor+`"></a>`)
 		}
-		blocks = append(blocks, strings.Repeat("#", level)+" "+numbered(a.num, heading(m.Key)))
+		blocks = append(blocks, pg.mark(nil)+strings.Repeat("#", level)+" "+numbered(a.num, heading(m.Key)))
 		if c := pg.fieldContent(m.Value, min(level+1, 6)); c != "" {
 			blocks = append(blocks, c)
 		}

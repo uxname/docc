@@ -10,13 +10,15 @@ spec
 
 `docc build` writes the Markdown into `docs/out`, removes the files it generated earlier that no source produces any more (pages with the GENERATED mark, copies of images, file manager junk) and updates `docc.lock`. When the folder holds any other file it refuses with exit code 2, writes and deletes nothing and lists those files: links that are not in the lock are recorded as confirmed, links that are gone are dropped. When the sources have errors of the groups 1xx or 2xx it writes nothing and exits with code 1. With the flag full it writes the audit build into `docs/out-full` and leaves `docs/out` alone.
 
-The flags single and html add one file next to the folder, both can be combined with full: `docc build --single` writes all pages into one Markdown file (`docs/out.md`) and `docc build --html` into one self-contained HTML file (`docs/out.html`). The folder of pages is built as before. These files are for reading, are not committed and are not checked by `docc check`. With full they are `docs/out-full.md` and `docs/out-full.html`.
+The flags single and html add one file next to the folder, both can be combined with full: `docc build --single` writes all pages into one Markdown file (`docs/out.md`) and `docc build --html` into one self-contained HTML application (`docs/out.html`) with the Git history of every block, comments and Markdown export ([Rendering](rendering.md)). The folder of pages is built as before. These files are for reading, are not committed and are not checked by `docc check`. With full they are `docs/out-full.md` and `docs/out-full.html`.
 
 `docc check` is read-only and made for CI. It runs validate, then compares `docs/out` with what the sources produce (DOC501) and `docc.lock` with the links in the sources (DOC503). With errors of the groups 1xx or 2xx the comparison is skipped.
 
 `docc ack` takes document ids, link targets or code files and sets the stored hashes in `docc.lock` to the current ones for every changed line whose source or target is the argument, or whose target lies in the document with that id. Lines that did not change are left alone. It prints each link it confirmed (`confirmed source -> target`; in JSON a `links` list) and the total, so the reader sees which sources were confirmed. It is run after a person has checked every source flagged by DOC209 or DOC402. `docc ack --all` confirms every changed link.
 
 `docc update` replaces the running binary with a release from GitHub. It reads `checksums.txt` of the release, picks the archive for this system, refuses it when the SHA-256 differs and only then swaps the file. The flag check only reports whether a newer release exists (exit code 1: there is one), the flag version takes a given tag. A development build without a release version refuses to update. The variable DOCC_BASE_URL replaces the releases address, `install.sh` and `install.ps1` read it too.
+
+`docc comments` handles the review comments downloaded from the HTML file. `docc comments import <file>` adds them to `docc.comments.json` in the project root as not processed, skips a comment already there (same id) and attaches a comment whose block moved to the block with the quoted text; the file belongs in git, so the import is part of the history. Without a subcommand it lists the comments not processed yet with the quoted block and its current text (unchanged, moved, changed, removed), so an agent can work through them with a person; `--all` lists every comment. `docc comments done <id>` marks comments as processed and `docc comments rm <id>` deletes them; an id may be shortened to a unique prefix.
 
 Every command accepts --help and prints its flags with an example. The global flags may stand before or after the command. `docc init` ends with a Next block of steps.
 
@@ -44,4 +46,5 @@ format text or json, config, max-diagnostics (default 20, errors first, applies 
 
 - [Agent workflow](agent-workflow.md)
 - [docc](index.md)
+- [Rendering](rendering.md)
 - [Rules and diagnostics](rules.md)

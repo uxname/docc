@@ -138,29 +138,45 @@ func TestHTMLBuild(t *testing.T) {
 	if code, out, errs := do("build", "--html"); code != 0 || !strings.Contains(out, "built docs/out.html") {
 		t.Fatalf("%d %s %s", code, out, errs)
 	}
-	page := readFile(t, "docs/out.html")
+	a := readApp(t, "docs/out.html")
+	ps := a.Data.Pages
+	// pages in tree order (the page script links neighbours by it), with their parts as data
+	if len(ps) != 2 || ps[0].ID != "index" || ps[0].Title != "Index <b>" || ps[1].ID != "req" {
+		t.Fatalf("pages: %+v", ps)
+	}
+	req := ps[1]
+	if req.Kind != "requirement" || req.Status != "accepted" || req.SC != "ok" || req.Priority != "2" ||
+		strings.Join(req.Tags, ",") != "t1" || strings.Join(req.Crumbs, ",") != "index" || req.Parent != "index" ||
+		strings.Join(ps[0].Kids, ",") != "req" {
+		t.Errorf("req: %+v", req)
+	}
+	// one-line fields form a property list
+	if len(req.Props) != 2 || req.Props[0].K != "Owner" || req.Props[0].ID != "req--owner" || req.Props[0].H != "Team" || req.Props[0].P != "/owner" {
+		t.Errorf("props: %+v", req.Props)
+	}
 	for _, want := range []string{
-		`<section class="page" id="index" data-title="Index &lt;b&gt;">`, `<section class="page" id="req" data-title="Req">`,
-		`<nav class="crumbs" aria-label="Breadcrumb"><a href="#index">Index &lt;b&gt;</a></nav>`,
-		`<h1>Req</h1>`,
-		`<span class="badge kind">requirement</span><span class="badge ok">accepted</span><span class="badge">priority 2</span><span class="tag">#t1</span>`,
-		"<dt>Owner<a id=\"req--owner\"></a></dt>\n<dd>Team</dd>", // one-line fields form a property list
-		`<a class="row" href="#req">`,                            // child pages as rows on the parent page
-		`<div class="rg"><span class="rl">Parent</span><a class="chip" href="#index">`,
-		`<a class="next" href="#req">`, `<a class="prev" href="#index">`,
 		`<h2 id="req--statement">Statement</h2>`, // target of [[req#statement]]
 		`<a href="#req--statement">Req</a>`,      // the link itself
-		`<a href="#req">Req</a>`,                 // plain page link, also in the tree
+		`<a href="#req">Req</a>`,                 // plain page link
 		"<td>one<br>two</td>",                    // line break in a table cell survives
-		"<title>Index &lt;b&gt;</title>",         // titles are escaped
-		`<input type="search"`, `prefers-color-scheme`, `@media print`,
 	} {
-		if !strings.Contains(page, want) {
+		if !strings.Contains(a.Blocks, want) {
+			t.Errorf("blocks lack %q", want)
+		}
+	}
+	for _, want := range []string{"<title>Index &lt;b&gt;</title>", `type="search"`, `prefers-color-scheme`, `@media print`} {
+		if !strings.Contains(a.Shell, want) {
 			t.Errorf("out.html lacks %q", want)
 		}
 	}
-	// agents' raw HTML never reaches the file; hidden documents stay out; nothing is fetched
-	for _, bad := range []string{"<script>alert", "onclick", "evil", "Secret", "Hid", "http://", "https://", ".md\"", "<h2 id=\"req--owner\""} {
+	// agents' raw HTML never reaches the blocks; hidden documents stay out; nothing is fetched
+	for _, bad := range []string{"<script>alert", "onclick", "evil", ".md\"", "<h2 id=\"req--owner\""} {
+		if strings.Contains(a.Blocks, bad) {
+			t.Errorf("blocks contain %q", bad)
+		}
+	}
+	page := readFile(t, "docs/out.html")
+	for _, bad := range []string{"Secret", "Hid", "<script src", "<link", "</script>alert", "<script>alert"} {
 		if strings.Contains(page, bad) {
 			t.Errorf("out.html contains %q", bad)
 		}
@@ -258,7 +274,7 @@ func TestSectionsRenderLinkAndInclude(t *testing.T) {
 	if code, out, errs := do("build", "--html"); code != 0 {
 		t.Fatalf("%d %s %s", code, out, errs)
 	}
-	page := readFile(t, "docs/out.html")
+	page := readApp(t, "docs/out.html").Blocks
 	for _, want := range []string{`<h3 id="audit--1712-no-renewal-date"`, `<h4 id="audit--same"`, `<h3 id="audit--same-1"`, `href="#audit--same-1"`} {
 		if !strings.Contains(page, want) {
 			t.Errorf("out.html lacks %q", want)

@@ -35,6 +35,7 @@ Commands:
   rules              list rules with effective levels
   schema document|config   print a JSON Schema
   update             replace docc with the latest release (--check: only look, --version vX.Y.Z)
+  comments           review comments from the HTML file: import <file>, list (--all), done <id>, rm <id>
 
 Flags: --format text|json, --config <file>, --max-diagnostics N, --max-warnings N
 (they may stand before or after the command)
@@ -65,8 +66,9 @@ Examples:
 Validates and writes Markdown into docs/out and the links into docc.lock (new links are
 confirmed, vanished ones dropped). With errors in groups 1xx-2xx nothing is written.
 --single also writes every page into one Markdown file next to the directory (docs/out.md), --html
-into one self-contained HTML file (docs/out.html): a document tree, search, dark theme and print
-styles, no network needed. With --full the files are docs/out-full.md and docs/out-full.html. They
+into one self-contained HTML application (docs/out.html), no network needed: a document tree,
+search, dark theme, the Git history of every block, changes since a chosen commit, comments on
+blocks (typed or dictated) downloaded as JSON for docc comments import, and Markdown export. With --full the files are docs/out-full.md and docs/out-full.html. They
 are for reading, are not checked by docc check and are usually kept out of git.
 
 Examples:
@@ -242,6 +244,8 @@ func dispatch(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 		return 0, cmdSchema(args[1:], stdout)
 	case "update":
 		return cmdUpdate(args[1:], stdout)
+	case "comments":
+		return cmdComments(c, args[1:], stdout)
 	}
 	return 2, usageErr("unknown command %q (try docc --help)", args[0])
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/uxname/docc/internal/engine"
@@ -17,6 +19,42 @@ type page struct {
 	r    *Renderer
 	doc  *engine.Doc
 	path string // page path relative to the output directory
+
+	// HTML file only: the nodes of the blocks in marker order (nil for a
+	// heading or a service section) and the one-line fields of the property list
+	marks []*loader.Node
+	props []prop
+	tag   string // marker name; "" is "b", see markTag
+	cut   int    // markers removed from the text again (the property list)
+}
+
+// prop is one entry of the property list of the HTML file.
+type prop struct {
+	key, id string
+	node    *loader.Node
+	md      string
+}
+
+// mark starts a block of the HTML file: a comment line the HTML build cuts the
+// page at, numbered in pg.marks. Elsewhere it is empty.
+func (pg *page) mark(n *loader.Node) string {
+	if !pg.r.html {
+		return ""
+	}
+	pg.marks = append(pg.marks, n)
+	return "<!--" + pg.markTag() + ":" + strconv.Itoa(len(pg.marks)-1) + "-->\n\n"
+}
+
+func (pg *page) markTag() string {
+	if pg.tag == "" {
+		return "b"
+	}
+	return pg.tag
+}
+
+// markRe matches the markers of the page, with the blank line after them.
+func (pg *page) markRe() *regexp.Regexp {
+	return regexp.MustCompile(`<!--` + pg.markTag() + `:(\d+)-->\n(?:\n)?`)
 }
 
 const maxIncludeDepth = 32
@@ -246,10 +284,11 @@ func (pg *page) paragraphs(v *loader.Node, includes bool) []string {
 			xs = pg.expand(e, 0)
 		}
 		for i, x := range xs {
+			x = pg.refs(x)
 			if i == 0 {
-				x = tag + x
+				x = pg.mark(n) + tag + x
 			}
-			out = append(out, pg.refs(x))
+			out = append(out, x)
 		}
 	}
 	return out

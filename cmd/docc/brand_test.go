@@ -18,6 +18,8 @@ func TestBrandingInHTMLOnly(t *testing.T) {
 		t.Fatalf("%d %s %s", code, out, errs)
 	}
 	html := readFile(t, "docs/out.html")
+	b := readApp(t, "docs/out.html").Data.Brand
+	html += b.Head + b.Print + b.Foot
 	for _, want := range []string{
 		`<a class="brand" href="https://example.com/x"><span class="logo" role="img" aria-label="A &amp; B"></span></a>`,
 		`--brand-logo:url("data:image/svg+xml;base64,`, `--brand-bg:#1f1f1f`, `--accent:#0b7a64`, `--accent:#57e9c7`,
@@ -45,6 +47,8 @@ func TestBrandingNameOnly(t *testing.T) {
 		t.Fatalf("%d %s %s", code, out, errs)
 	}
 	html := readFile(t, "docs/out.html")
+	b := readApp(t, "docs/out.html").Data.Brand
+	html += b.Head + b.Print + b.Foot
 	for _, want := range []string{`<span class="brand">Acme</span>`, `<footer class="brand-foot">Acme</footer>`} {
 		if !strings.Contains(html, want) {
 			t.Errorf("out.html lacks %q", want)

@@ -24,7 +24,9 @@ engine: loads a project and runs all checks, including the graph and the suppres
 
 rules: the registry of all rules; explain, rules and the skill are built from it.
 
-render: Markdown pages, the tree, the single Markdown and HTML files, numbering and images. `lang.go` holds the Russian labels for `"lang": "ru"`.
+render: Markdown pages, the tree, the single Markdown file, the HTML application (`app.js` with Preact and htm from `vendor`, fed with a JSON island), numbering and images. `lang.go` holds the Russian labels for `"lang": "ru"`.
+
+history: reads the Git history of the documents and follows every block through it; comments: the review comments of the HTML file and `docc.comments.json`.
 
 trace and report: `docc:` tags in code files, and the text and JSON reports.
 

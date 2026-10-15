@@ -8,7 +8,7 @@
  ▀██████   ▀████▀   ▀████▀   ▀████▀
 ```
 
-Compiler and linter for documentation written as JSON. AI agents write the documents, `docc` checks them like a code linter (structure, links, content, style) and builds Markdown (and one HTML file) for people.
+Compiler and linter for documentation written as JSON. AI agents write the documents, `docc` checks them like a code linter (structure, links, content, style) and builds Markdown for people, plus one HTML file to read and review: the Git history of every paragraph, comments on blocks (typed or dictated) and Markdown export.
 
 ## Install
 
@@ -42,7 +42,8 @@ Update it with `npx skills update`. The skill needs the `docc` binary from above
 
     docc init        # docc.json (maxWarnings 0), docs/schemas/page.json, docs/src/index.json, .gitignore lines, docs/out, a git pre-commit hook
     docc validate    # check the sources (--format json for agents and CI)
-    docc build       # write docs/out and docc.lock (--single, --html: also one .md and one .html file for reading)
+    docc build       # write docs/out and docc.lock (--single, --html: also one .md file and one HTML app)
+    docc comments    # review comments from the HTML file: import <file>, list, done <id>, rm <id>
     docc check       # for CI: validate + docs/out and docc.lock are up to date
     docc ack <id>    # after a review: confirm the changed links around a document or code file (prints each one)
 

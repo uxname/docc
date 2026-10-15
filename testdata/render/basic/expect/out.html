@@ -1,8 +1,8 @@
 <!doctype html>
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Index</title>
-<script>document.documentElement.className="js"</script>
 <style>
 :root{color-scheme:light dark;
 --bg:#fff;--bg2:#f6f7f9;--fg:#1c2128;--muted:#5d6875;--line:#e2e5ea;--accent:#2f5fd0;--accent-bg:#eaf0fd;--code:#f1f3f6;
@@ -51,10 +51,6 @@ a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
 .banner{margin:.9rem 0 0;padding:.5rem .7rem;font-size:.82rem;border-radius:.5rem;background:var(--warn-bg);color:var(--warn)}
 /* page */
 main{padding:2.5rem 3rem 5rem;max-width:56rem;width:100%;margin:0 auto;outline:0}
-.js section.page{display:none}
-.js section.page.on{display:block}
-section.page+section.page{margin-top:4rem;padding-top:2rem;border-top:1px solid var(--line)}
-.js section.page+section.page{margin:0;padding:0;border:0}
 .crumbs{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.85rem;color:var(--muted);margin-bottom:.6rem}
 .crumbs a{color:var(--muted);text-decoration:none}
 .crumbs a:hover{color:var(--accent);text-decoration:underline}
@@ -119,6 +115,67 @@ blockquote p{margin:0}
 .pn span{color:var(--accent);font-weight:600}
 .pn .next{grid-column:2;text-align:right}
 .pn .prev{grid-column:1}
+/* blocks: tools on hover, comments, history, changes */
+.ttl{display:flex;align-items:flex-start;gap:1rem}
+.ttl h1{flex:1}
+button{font:inherit;color:inherit;cursor:pointer}
+.ph-b,.toolbar button,.ed-row button,.menu button{padding:.25rem .7rem;font-size:.85rem;background:var(--bg);border:1px solid var(--line);border-radius:.45rem;white-space:nowrap}
+.ph-b{margin-top:.6rem}
+.ph-b:hover,.toolbar button:hover,.ed-row button:hover,.menu button:hover,.toolbar button.on{border-color:var(--accent);color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+button.pri:hover{color:#fff}
+button:disabled{opacity:.45;cursor:default}
+button.link{padding:0;border:0;background:none;color:var(--accent);font-size:.82rem}
+.sp{flex:1}
+.muted{color:var(--muted);font-size:.88rem}
+.toolbar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:-1.2rem 0 1.2rem;padding:.5rem 0;background:var(--bg);border-bottom:1px solid var(--line);font-size:.88rem}
+.since-l{display:flex;align-items:center;gap:.4rem;color:var(--muted)}
+.since-l select{max-width:22rem;padding:.2rem .4rem;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:.45rem}
+.panel{margin:0 0 1.2rem;padding:1rem 1.1rem;background:var(--bg2);border:1px solid var(--line);border-radius:.7rem}
+.menu{display:flex;flex-wrap:wrap;gap:.5rem}
+.hh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem}
+.pc{margin:.8rem 0 0}
+.ptr{margin-left:.5rem;color:var(--muted);font-size:.8rem}
+.blk{position:relative;margin:0 -.8rem;padding:0 .8rem;border-left:3px solid transparent;border-radius:.3rem}
+.blk:hover{background:var(--bg2)}
+.blk.chg{border-left-color:var(--warn);background:var(--warn-bg)}
+.blk.flash{outline:2px solid var(--accent)}
+dd.blk{margin:0;padding:0 .4rem}
+.tools{position:absolute;top:.1rem;right:-.4rem;display:flex;gap:.2rem;opacity:0;transition:opacity .1s}
+.blk:hover>.tools,.blk.has-c>.tools,.blk.chg>.tools,.tools:focus-within{opacity:1}
+.tools button{padding:.05rem .4rem;font-size:.8rem;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:.4rem}
+.tools button:hover{border-color:var(--accent)}
+.tools .chg-b{color:var(--warn);font-weight:700}
+.note{margin:.4rem 0 .8rem;padding:.5rem .8rem;background:var(--accent-bg);border-radius:.5rem;font-size:.92rem}
+.note.repo{background:var(--bg2);border:1px solid var(--line)}
+.nh{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline}
+.nh small{color:var(--muted)}
+.nh button{margin-left:auto}
+.nt{white-space:pre-wrap}
+.editor{margin:.4rem 0 1rem;padding:.7rem;background:var(--bg);border:1px solid var(--accent);border-radius:.6rem}
+.editor textarea,.editor .who{display:block;width:100%;margin-bottom:.5rem;padding:.5rem .6rem;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:.45rem}
+.editor textarea{resize:vertical}
+.ed-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.mic-w{display:flex;align-items:center;gap:.5rem}
+.mic{user-select:none;touch-action:none}
+.mic.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.err{color:var(--bad)}
+.hist{margin:.4rem 0 1rem;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--line);border-radius:.6rem;font-size:.92rem}
+.page-hist{margin:0 0 1.4rem}
+.ver{padding:.5rem 0;border-top:1px solid var(--line)}
+.vh{color:var(--muted);font-size:.82rem;margin-bottom:.25rem}
+.dv{white-space:pre-wrap;overflow-wrap:anywhere}
+.dv ins{background:var(--ok-bg);color:var(--ok);text-decoration:none}
+.dv del{background:var(--bad-bg);color:var(--bad)}
+.dv.whole del,.dv.whole ins{display:block;padding:.2rem .4rem;border-radius:.3rem}
+.dv.whole del{margin-bottom:.3rem}
+.since{margin:.2rem 0 .8rem;padding:.5rem .7rem;background:var(--bg);border:1px dashed var(--warn);border-radius:.5rem;font-size:.92rem}
+.pg-g{margin:.3rem 0}
+.pg-g>small{color:var(--muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.06em}
+.pg-i{margin:.2rem 0 .4rem}
+.pg-i .ptr{margin:0;display:block}
+.dot{color:var(--warn);font-size:.7rem}
+.noscript{padding:2rem}
 /* table of contents */
 #toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:2.6rem 1rem 2rem 0;font-size:.85rem;line-height:1.4}
 #toc[hidden]{display:none}
@@ -146,404 +203,636 @@ h1{font-size:1.8rem}
 .bar,#side,#toc,.skip,.copy,.pn{display:none!important}
 .shell{display:block}
 main{max-width:none;padding:0}
-section.page{display:block!important;break-before:page;margin:0;padding:0;border:0}
-section.page:first-of-type{break-before:auto}
+.toolbar,.panel,.tools,.ph-b,.editor,.hist{display:none!important}
+.blk.chg{border-color:transparent!important}
 a{color:inherit;text-decoration:none}
 .row,.chip{border:1px solid var(--line)}
 }
 
 </style>
-<a class="skip" href="#main">Skip to content</a>
-<header class="bar">
-<button id="menu" type="button" aria-label="Menu" aria-expanded="false" aria-controls="side">☰</button>
-<span id="bar-title"></span>
-</header>
-<div class="shell">
-<aside id="side">
-<div class="search">
-<input type="search" id="q" placeholder="Search  ( / )" aria-label="Search the documentation" autocomplete="off">
-<ul id="results" role="listbox" aria-label="Search results" hidden></ul>
-</div>
-
-<nav id="tree" aria-label="Document tree">
-<h2>Pages</h2>
-<ul><li class="parent"><button class="tw" type="button" aria-expanded="true" aria-label="Collapse"></button><a href="#index">Index</a><ul><li><a href="#deep">Deep doc</a></li><li><a href="#req">Requirement</a></li></ul></li></ul>
-
-</nav>
-</aside>
-<main id="main" tabindex="-1">
-<section class="page" id="index" data-title="Index">
-<h1>Index</h1>
-<div class="badges"><span class="badge kind">note</span><span class="badge ok">accepted</span><span class="tag">#draft</span><span class="tag">#x</span></div>
-<div class="doc">
-<p>Welcome. See <a href="#deep--acceptance-criteria">Deep doc</a>, <a href="#req">Requirement</a> and <a href="#req">Requirement</a>.</p>
-<p>First fact.</p>
-<p>Second fact.</p>
-<p>Quote: First fact.</p>
-<dl>
-<dt>Owner name<a id="index--owner-name"></a></dt>
-<dd>Team</dd>
-<dt>Count<a id="index--count"></a></dt>
-<dd>3</dd>
-<dt>Flag<a id="index--flag"></a></dt>
-<dd>true</dd>
-<dt>Inline<a id="index--inline"></a></dt>
-<dd>Text Requirement here and <code>{{literal}}</code> code and <a href="#deep">Deep doc</a>.</dd>
-</dl>
-<h2 id="index--meta">Meta</h2>
-<ul>
-<li><strong>a:</strong> x</li>
-<li><strong>nested:</strong>
-<ul>
-<li><strong>k:</strong> v</li>
-<li><strong>list:</strong>
-<ul>
-<li>p</li>
-<li>q</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><strong>multi:</strong> line1
-line2</li>
-</ul>
-<h2 id="index--steps">Steps</h2>
-<ol>
-<li>
-<ul>
-<li><strong>name:</strong> one</li>
-<li><strong>done:</strong> true</li>
-</ul>
-</li>
-<li>
-<ul>
-<li><strong>name:</strong> two</li>
-<li><strong>items:</strong>
-<ul>
-<li>a</li>
-<li>b</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-<h2 id="index--numbers">Numbers</h2>
-<ul>
-<li>1</li>
-<li>2.50</li>
-</ul>
-</div>
-<h2 class="rh">Pages in this section</h2>
-<div class="rows">
-<a class="row" href="#deep"><span class="ct">Deep doc <span class="badge kind">page</span></span><span class="cs">Back to Index and Index.</span></a>
-<a class="row" href="#req"><span class="ct">Requirement <span class="badge kind">page</span></span><span class="cs">Requirement body, see Deep doc.</span></a>
-</div>
-<nav class="pn" aria-label="Neighbouring pages"><a class="next" href="#deep"><small>Next</small><span>Deep doc</span></a></nav>
-</section>
-<section class="page" id="deep" data-title="Deep doc">
-<nav class="crumbs" aria-label="Breadcrumb"><a href="#index">Index</a></nav>
-<h1>Deep doc</h1>
-<div class="badges"><span class="badge kind">page</span></div>
-<div class="doc">
-<p>Back to <a href="#index">Index</a> and <a href="#index--owner-name">Index</a>.</p>
-<h2 id="deep--acceptance-criteria">Acceptance criteria</h2>
-<p>Given X.</p>
-<p>Then Y with <a href="#req--statement">Requirement</a> and <a href="#req--first">Requirement</a>.</p>
-</div>
-<h2 class="rh">Related</h2>
-<div class="related">
-<div class="rg"><span class="rl">Parent</span><a class="chip" href="#index">Index</a></div>
-<div class="rg"><span class="rl">Referenced by</span><a class="chip" href="#req">Requirement</a></div>
-</div>
-<nav class="pn" aria-label="Neighbouring pages"><a class="prev" href="#index"><small>Previous</small><span>Index</span></a><a class="next" href="#req"><small>Next</small><span>Requirement</span></a></nav>
-</section>
-<section class="page" id="req" data-title="Requirement">
-<nav class="crumbs" aria-label="Breadcrumb"><a href="#index">Index</a></nav>
-<h1>Requirement</h1>
-<div class="badges"><span class="badge kind">page</span></div>
-<div class="doc">
-<p>Requirement body, see <a href="#deep--acceptance-criteria">Deep doc</a>.</p>
-<h2 id="req--statement">Statement</h2>
-<p><a id="req--first"></a>First fact.</p>
-<p>Second fact.</p>
-<h2 id="req--checks">Checks</h2>
-<ul>
-<li><a id="req--check"></a>Plain check.</li>
-<li>
-<ul>
-<li><strong>name:</strong> n</li>
-</ul>
-</li>
-</ul>
-<h2 id="req--formula">Formula</h2>
-<p>x ^2</p>
-</div>
-<h2 class="rh">Related</h2>
-<div class="related">
-<div class="rg"><span class="rl">Parent</span><a class="chip" href="#index">Index</a></div>
-<div class="rg"><span class="rl">Referenced by</span><a class="chip" href="#deep">Deep doc</a></div>
-</div>
-<nav class="pn" aria-label="Neighbouring pages"><a class="prev" href="#deep"><small>Previous</small><span>Deep doc</span></a></nav>
-</section>
-
-</main>
-<aside id="toc" aria-label="On this page" hidden></aside>
-</div>
+<div id="app"><noscript><p class="noscript">This documentation is an application: turn on JavaScript to read it, or read the Markdown in the output folder.</p></noscript></div>
+<script type="application/json" id="docc-data">{"title":"Index","lang":"en","key":"docc:001","nav":{"tree":[["index",0],["deep",1],["req",1]],"orphans":[],"uncovered":null},"pages":[{"id":"index","title":"Index","file":"index.json","kind":"note","status":"accepted","sc":"ok","tags":["draft","x"],"kids":["deep","req"],"refs":["deep","req"],"summary":"Welcome. See Deep doc, Requirement and Requirement.","props":[{"k":"Owner name","id":"index--owner-name","p":"/owner_name","s":"Team","h":"Team"},{"k":"Count","id":"index--count","p":"/count","s":"3","h":"3"},{"k":"Flag","id":"index--flag","p":"/flag","s":"true","h":"true"},{"k":"Inline","id":"index--inline","p":"/inline","s":"Text {{req#title}} here and `{{literal}}` code and [[deep]].","h":"Text Requirement here and \u003ccode>{{literal}}\u003c/code> code and \u003ca href=\"#deep\">Deep doc\u003c/a>."}],"blocks":[{"p":"/body/0","s":"Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].","h":"\u003cp>Welcome. See \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>, \u003ca href=\"#req\">Requirement\u003c/a> and \u003ca href=\"#req\">Requirement\u003c/a>.\u003c/p>\n"},{"p":"/body/1","s":"{{req#statement}}","h":"\u003cp>First fact.\u003c/p>\n\u003cp>Second fact.\u003c/p>\n"},{"p":"/body/2","s":"Quote: {{req#^first}}","h":"\u003cp>Quote: First fact.\u003c/p>\n"},{"h":"\u003ch2 id=\"index--meta\">Meta\u003c/h2>\n"},{"p":"/meta","s":"a: x; nested: k: v; list: p\nq; multi: line1\nline2; skip: ","h":"\u003cul>\n\u003cli>\u003cstrong>a:\u003c/strong> x\u003c/li>\n\u003cli>\u003cstrong>nested:\u003c/strong>\n\u003cul>\n\u003cli>\u003cstrong>k:\u003c/strong> v\u003c/li>\n\u003cli>\u003cstrong>list:\u003c/strong>\n\u003cul>\n\u003cli>p\u003c/li>\n\u003cli>q\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\u003cstrong>multi:\u003c/strong> line1\nline2\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--steps\">Steps\u003c/h2>\n"},{"p":"/steps","s":"name: one; done: true\nname: two; items: a\nb","h":"\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> one\u003c/li>\n\u003cli>\u003cstrong>done:\u003c/strong> true\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> two\u003c/li>\n\u003cli>\u003cstrong>items:\u003c/strong>\n\u003cul>\n\u003cli>a\u003c/li>\n\u003cli>b\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"},{"h":"\u003ch2 id=\"index--numbers\">Numbers\u003c/h2>\n"},{"p":"/numbers","s":"1\n2.50","h":"\u003cul>\n\u003cli>1\u003c/li>\n\u003cli>2.50\u003c/li>\n\u003c/ul>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](a/deep.md#acceptance-criteria), [Requirement](req.md) and [Requirement](req.md).\n\nFirst fact.\n\nSecond fact.\n\nQuote: First fact.\n\n## Owner name\n\nTeam\n\n## Count\n\n3\n\n## Flag\n\ntrue\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n## Inline\n\nText Requirement here and `{{literal}}` code and [Deep doc](a/deep.md).\n\n## Numbers\n\n- 1\n- 2.50\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Requirement](req.md)\n\nDocument tree: [_tree.md](_tree.md)\n"},{"id":"deep","title":"Deep doc","file":"a/deep.json","kind":"page","crumbs":["index"],"parent":"index","refs":["index","req"],"summary":"Back to Index and Index.","blocks":[{"p":"/body","s":"Back to [[index]] and [[index#owner_name]].","h":"\u003cp>Back to \u003ca href=\"#index\">Index\u003c/a> and \u003ca href=\"#index--owner-name\">Index\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"deep--acceptance-criteria\">Acceptance criteria\u003c/h2>\n"},{"p":"/acceptance_criteria/0","s":"Given X.","h":"\u003cp>Given X.\u003c/p>\n"},{"p":"/acceptance_criteria/1","s":"Then Y with [[req#statement]] and [[req#^first]].","h":"\u003cp>Then Y with \u003ca href=\"#req--statement\">Requirement\u003c/a> and \u003ca href=\"#req--first\">Requirement\u003c/a>.\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Deep doc\n\npage\n\nBack to [Index](../index.md) and [Index](../index.md#owner-name).\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](../req.md#statement) and [Requirement](../req.md#first).\n\n## Parent\n\n[Index](../index.md)\n\n## Referenced by\n\n- [Index](../index.md)\n- [Requirement](../req.md)\n"},{"id":"req","title":"Requirement","file":"req.json","kind":"page","crumbs":["index"],"parent":"index","refs":["deep","index"],"summary":"Requirement body, see Deep doc.","blocks":[{"p":"/body","s":"Requirement body, see [[deep#acceptance_criteria]].","h":"\u003cp>Requirement body, see \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--statement\">Statement\u003c/h2>\n"},{"p":"/statement/0","s":"First fact. ^first","h":"\u003cp>\u003ca id=\"req--first\">\u003c/a>First fact.\u003c/p>\n"},{"p":"/statement/1","s":"Second fact.","h":"\u003cp>Second fact.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--checks\">Checks\u003c/h2>\n"},{"p":"/checks","s":"Plain check. ^check\nname: n","h":"\u003cul>\n\u003cli>\u003ca id=\"req--check\">\u003c/a>Plain check.\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"req--formula\">Formula\u003c/h2>\n"},{"p":"/formula","s":"x ^2","h":"\u003cp>x ^2\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](a/deep.md#acceptance-criteria).\n\n## Statement\n\n\u003ca id=\"first\">\u003c/a>First fact.\n\nSecond fact.\n\n## Checks\n\n- \u003ca id=\"check\">\u003c/a>Plain check.\n- - **name:** n\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](index.md)\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Index](index.md)\n"}],"hist":null,"comments":null,"brand":{},"single":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Document tree\n\n- [Index](#index)\n  - [Deep doc](#deep)\n  - [Requirement](#req)\n\n---\n\n\u003ca id=\"index\">\u003c/a>\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](#deep--acceptance-criteria), [Requirement](#req) and [Requirement](#req).\n\nFirst fact.\n\nSecond fact.\n\nQuote: First fact.\n\n\u003ca id=\"index--owner-name\">\u003c/a>\n\n## Owner name\n\nTeam\n\n\u003ca id=\"index--count\">\u003c/a>\n\n## Count\n\n3\n\n\u003ca id=\"index--flag\">\u003c/a>\n\n## Flag\n\ntrue\n\n\u003ca id=\"index--meta\">\u003c/a>\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n\u003ca id=\"index--steps\">\u003c/a>\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n\u003ca id=\"index--inline\">\u003c/a>\n\n## Inline\n\nText Requirement here and `{{literal}}` code and [Deep doc](#deep).\n\n\u003ca id=\"index--numbers\">\u003c/a>\n\n## Numbers\n\n- 1\n- 2.50\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Requirement](#req)\n\n\n---\n\n\u003ca id=\"deep\">\u003c/a>\n\n# Deep doc\n\npage\n\nBack to [Index](#index) and [Index](#index--owner-name).\n\n\u003ca id=\"deep--acceptance-criteria\">\u003c/a>\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](#req--statement) and [Requirement](#req--first).\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Index](#index)\n- [Requirement](#req)\n\n\n---\n\n\u003ca id=\"req\">\u003c/a>\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](#deep--acceptance-criteria).\n\n\u003ca id=\"req--statement\">\u003c/a>\n\n## Statement\n\n\u003ca id=\"req--first\">\u003c/a>First fact.\n\nSecond fact.\n\n\u003ca id=\"req--checks\">\u003c/a>\n\n## Checks\n\n- \u003ca id=\"req--check\">\u003c/a>Plain check.\n- - **name:** n\n\n\u003ca id=\"req--formula\">\u003c/a>\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Index](#index)\n\n","zip":"UEsDBBQACAAIAAAAISgAAAAAAAAAAAAAAAANAAkAZG9jcy9fdHJlZS5tZFVUBQABgENtOETMsQqDMBQF0P19xS1dFPrsD5RCIaG4KIibOLR5d3Aw0aBg/7506nzg3E6qePrGd4/eO7w/sBTCBa5F0/bwru6hehc5w6Wwz4wbtkyKKIY6Go+xmKLxqGYrBVAMjlxgKYzF62rk8peO6z5l/pKxyFyr2Ur5DgBQSwcI13/013YAAACCAAAAUEsDBBQACAAIAAAAISgAAAAAAAAAAAAAAAAOAAkAZG9jcy9hL2RlZXAubWRVVAUAAYBDbTh0z8Fq8zAQBOD7PsX86PIbKvUFSiHFJuSSFONDS+hBkSaNKF47ito0b19icnRuy87CN/v0z1osm3XTLrqmxu6COITwgHqD9aZDU686WPssYlCT4zUVGf0nRV58+EIZsF1p5O/Hf+ce03VyfazgNc4FZjgrs1Xfs3IixmARAsfiNRAhp8KcvMgy/VDx5kS6AxXvOKdywLbl8Ttl9tQycZlH10dzKr5Myxt752yf8qnc1FefqUVkpmI11Wq5Z6YGRuwuInb2S7H3sEr+BgBQSwcIWD2k+8wAAABZAQAAUEsDBBQACAAIAAAAISgAAAAAAAAAAAAAAAANAAkAZG9jcy9pbmRleC5tZFVUBQABgENtOGxRwYoaQRC911dUmIsOziQacpEQCBk3eIgSFXIQ2W27n8mQ6e6xpybrsux35Z4vC92usAueqt6rN/V66n18UxT8dbaYrT5vZhXvH9h4rUdcLXmx3PCsmm+4KD4RZTx3Bici5wX87y8rrdEKTOxNUAcZ8YnoBxrtLUpeA7ytgDYu3A3UWwO0pTXZ+TvlNAodakGo1XDE2xWOfR1g4WQ3CDiW1gxZOXN9UhLd1KETPigtJdEa2jtzQd97L5jyK0WW8fLeIbBTFkQbKJvIL753QvQ+gZtG/SSS0CPBbxBFVHCeq2me8ym1Dp3ATPOcmCP+HUd/nkFTd3IeRdw+12P60PaN1FHc1A5j4lQnyWgtaDuicZk2xhdGnXeICyJlvEtUetrktUzu/UVWC2x38eeC1aXZJ5u5i5bx50/CL87KvxCQjn33+NjETFTz9HTH2pszfS3ImEGW8aK3e4QunmlMBU/KD++S1woHBDgNw/uHOL26I/LX8iWqvO5j5CwBmPL2NtbSmt3gVgJQWjOk/wMAUEsHCGfNYvuOAQAAvQIAAFBLAwQUAAgACAAAACEoAAAAAAAAAAAAAAAACwAJAGRvY3MvcmVxLm1kVVQFAAGAQ204bI/BasJAEIbv8xRT96LBjdBjsUJpYvGiEnMTC5PZSbvUbNLNCubty6YWCu1pd77h+4d/eac1vuTbvHgq8wyrAU3LPMdsh9tdiXm2KVHrFYDCQj4v1ksjLgB09CYAvxBWrRnm2IvgMRPpYs5pSgsj0qWNUcQsXSDHotnbIN7SLAVQCg+Bwi11SWjN46S2vg+T1XJBq3X8Yk0cUoCDcOvMz6QUPr8Lf/QAGm8mR/Bt7s9kHY4gBY0ak8RRIw9Jgm6U161vLmcCuOLr/Uj25Mdyx40zcj1NbXzSxszGbSG1eHEsBqsh3vyv5yzyP/rXAFBLBwhvwibd7gAAAGYBAABQSwECFAAUAAgACAAAACEo13/013YAAACCAAAADQAJAAAAAAAAAAAAAAAAAAAAZG9jcy9fdHJlZS5tZFVUBQABgENtOFBLAQIUABQACAAIAAAAIShYPaT7zAAAAFkBAAAOAAkAAAAAAAAAAAAAALoAAABkb2NzL2EvZGVlcC5tZFVUBQABgENtOFBLAQIUABQACAAIAAAAIShnzWL7jgEAAL0CAAANAAkAAAAAAAAAAAAAAMsBAABkb2NzL2luZGV4Lm1kVVQFAAGAQ204UEsBAhQAFAAIAAgAAAAhKG/CJt3uAAAAZgEAAAsACQAAAAAAAAAAAAAAnQMAAGRvY3MvcmVxLm1kVVQFAAGAQ204UEsFBgAAAAAEAAQADwEAAM0EAAAAAA=="}</script>
 <script>
+/* htm/preact/standalone 3.1.1 (https://github.com/developit/htm): htm under the Apache License 2.0, Preact (https://preactjs.com) under the MIT License. */
+!function(e,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n(e.htmPreact={})}(this,function(e){var n,_,t,o,r,u,l,i={},c=[],f=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i;function s(e,n){for(var _ in n)e[_]=n[_];return e}function a(e){var n=e.parentNode;n&&n.removeChild(e)}function p(e,_,t){var o,r,u,l={};for(u in _)"key"==u?o=_[u]:"ref"==u?r=_[u]:l[u]=_[u];if(arguments.length>2&&(l.children=arguments.length>3?n.call(arguments,2):t),"function"==typeof e&&null!=e.defaultProps)for(u in e.defaultProps)void 0===l[u]&&(l[u]=e.defaultProps[u]);return h(e,l,o,r,null)}function h(e,n,o,r,u){var l={type:e,props:n,key:o,ref:r,__k:null,__:null,__b:0,__e:null,__d:void 0,__c:null,__h:null,constructor:void 0,__v:null==u?++t:u};return null!=_.vnode&&_.vnode(l),l}function d(e){return e.children}function v(e,n){this.props=e,this.context=n}function y(e,n){if(null==n)return e.__?y(e.__,e.__.__k.indexOf(e)+1):null;for(var _;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e)return _.__e;return"function"==typeof e.type?y(e):null}function m(e){var n,_;if(null!=(e=e.__)&&null!=e.__c){for(e.__e=e.__c.base=null,n=0;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e){e.__e=e.__c.base=_.__e;break}return m(e)}}function g(e){(!e.__d&&(e.__d=!0)&&o.push(e)&&!k.__r++||u!==_.debounceRendering)&&((u=_.debounceRendering)||r)(k)}function k(){for(var e;k.__r=o.length;)e=o.sort(function(e,n){return e.__v.__b-n.__v.__b}),o=[],e.some(function(e){var n,_,t,o,r,u;e.__d&&(r=(o=(n=e).__v).__e,(u=n.__P)&&(_=[],(t=s({},o)).__v=o.__v+1,D(u,o,t,n.__n,void 0!==u.ownerSVGElement,null!=o.__h?[r]:null,_,null==r?y(o):r,o.__h),w(_,o),o.__e!=r&&m(o)))})}function b(e,n,_,t,o,r,u,l,f,s){var a,p,v,m,g,k,b,H=t&&t.__k||c,E=H.length;for(_.__k=[],a=0;a<n.length;a++)if(null!=(m=_.__k[a]=null==(m=n[a])||"boolean"==typeof m?null:"string"==typeof m||"number"==typeof m||"bigint"==typeof m?h(null,m,null,null,m):Array.isArray(m)?h(d,{children:m},null,null,null):m.__b>0?h(m.type,m.props,m.key,null,m.__v):m)){if(m.__=_,m.__b=_.__b+1,null===(v=H[a])||v&&m.key==v.key&&m.type===v.type)H[a]=void 0;else for(p=0;p<E;p++){if((v=H[p])&&m.key==v.key&&m.type===v.type){H[p]=void 0;break}v=null}D(e,m,v=v||i,o,r,u,l,f,s),g=m.__e,(p=m.ref)&&v.ref!=p&&(b||(b=[]),v.ref&&b.push(v.ref,null,m),b.push(p,m.__c||g,m)),null!=g?(null==k&&(k=g),"function"==typeof m.type&&null!=m.__k&&m.__k===v.__k?m.__d=f=C(m,f,e):f=x(e,m,v,H,g,f),s||"option"!==_.type?"function"==typeof _.type&&(_.__d=f):e.value=""):f&&v.__e==f&&f.parentNode!=e&&(f=y(v))}for(_.__e=k,a=E;a--;)null!=H[a]&&("function"==typeof _.type&&null!=H[a].__e&&H[a].__e==_.__d&&(_.__d=y(t,a+1)),A(H[a],H[a]));if(b)for(a=0;a<b.length;a++)U(b[a],b[++a],b[++a])}function C(e,n,_){var t,o;for(t=0;t<e.__k.length;t++)(o=e.__k[t])&&(o.__=e,n="function"==typeof o.type?C(o,n,_):x(_,o,o,e.__k,o.__e,n));return n}function x(e,n,_,t,o,r){var u,l,i;if(void 0!==n.__d)u=n.__d,n.__d=void 0;else if(null==_||o!=r||null==o.parentNode)e:if(null==r||r.parentNode!==e)e.appendChild(o),u=null;else{for(l=r,i=0;(l=l.nextSibling)&&i<t.length;i+=2)if(l==o)break e;e.insertBefore(o,r),u=r}return void 0!==u?u:o.nextSibling}function H(e,n,_){"-"===n[0]?e.setProperty(n,_):e[n]=null==_?"":"number"!=typeof _||f.test(n)?_:_+"px"}function E(e,n,_,t,o){var r;e:if("style"===n)if("string"==typeof _)e.style.cssText=_;else{if("string"==typeof t&&(e.style.cssText=t=""),t)for(n in t)_&&n in _||H(e.style,n,"");if(_)for(n in _)t&&_[n]===t[n]||H(e.style,n,_[n])}else if("o"===n[0]&&"n"===n[1])r=n!==(n=n.replace(/Capture$/,"")),n=n.toLowerCase()in e?n.toLowerCase().slice(2):n.slice(2),e.l||(e.l={}),e.l[n+r]=_,_?t||e.addEventListener(n,r?S:P,r):e.removeEventListener(n,r?S:P,r);else if("dangerouslySetInnerHTML"!==n){if(o)n=n.replace(/xlink[H:h]/,"h").replace(/sName$/,"s");else if("href"!==n&&"list"!==n&&"form"!==n&&"tabIndex"!==n&&"download"!==n&&n in e)try{e[n]=null==_?"":_;break e}catch(e){}"function"==typeof _||(null!=_&&(!1!==_||"a"===n[0]&&"r"===n[1])?e.setAttribute(n,_):e.removeAttribute(n))}}function P(e){this.l[e.type+!1](_.event?_.event(e):e)}function S(e){this.l[e.type+!0](_.event?_.event(e):e)}function D(e,n,t,o,r,u,l,i,c){var f,a,p,h,y,m,g,k,C,x,H,E=n.type;if(void 0!==n.constructor)return null;null!=t.__h&&(c=t.__h,i=n.__e=t.__e,n.__h=null,u=[i]),(f=_.__b)&&f(n);try{e:if("function"==typeof E){if(k=n.props,C=(f=E.contextType)&&o[f.__c],x=f?C?C.props.value:f.__:o,t.__c?g=(a=n.__c=t.__c).__=a.__E:("prototype"in E&&E.prototype.render?n.__c=a=new E(k,x):(n.__c=a=new v(k,x),a.constructor=E,a.render=M),C&&C.sub(a),a.props=k,a.state||(a.state={}),a.context=x,a.__n=o,p=a.__d=!0,a.__h=[]),null==a.__s&&(a.__s=a.state),null!=E.getDerivedStateFromProps&&(a.__s==a.state&&(a.__s=s({},a.__s)),s(a.__s,E.getDerivedStateFromProps(k,a.__s))),h=a.props,y=a.state,p)null==E.getDerivedStateFromProps&&null!=a.componentWillMount&&a.componentWillMount(),null!=a.componentDidMount&&a.__h.push(a.componentDidMount);else{if(null==E.getDerivedStateFromProps&&k!==h&&null!=a.componentWillReceiveProps&&a.componentWillReceiveProps(k,x),!a.__e&&null!=a.shouldComponentUpdate&&!1===a.shouldComponentUpdate(k,a.__s,x)||n.__v===t.__v){a.props=k,a.state=a.__s,n.__v!==t.__v&&(a.__d=!1),a.__v=n,n.__e=t.__e,n.__k=t.__k,n.__k.forEach(function(e){e&&(e.__=n)}),a.__h.length&&l.push(a);break e}null!=a.componentWillUpdate&&a.componentWillUpdate(k,a.__s,x),null!=a.componentDidUpdate&&a.__h.push(function(){a.componentDidUpdate(h,y,m)})}a.context=x,a.props=k,a.state=a.__s,(f=_.__r)&&f(n),a.__d=!1,a.__v=n,a.__P=e,f=a.render(a.props,a.state,a.context),a.state=a.__s,null!=a.getChildContext&&(o=s(s({},o),a.getChildContext())),p||null==a.getSnapshotBeforeUpdate||(m=a.getSnapshotBeforeUpdate(h,y)),H=null!=f&&f.type===d&&null==f.key?f.props.children:f,b(e,Array.isArray(H)?H:[H],n,t,o,r,u,l,i,c),a.base=n.__e,n.__h=null,a.__h.length&&l.push(a),g&&(a.__E=a.__=null),a.__e=!1}else null==u&&n.__v===t.__v?(n.__k=t.__k,n.__e=t.__e):n.__e=T(t.__e,n,t,o,r,u,l,c);(f=_.diffed)&&f(n)}catch(e){n.__v=null,(c||null!=u)&&(n.__e=i,n.__h=!!c,u[u.indexOf(i)]=null),_.__e(e,n,t)}}function w(e,n){_.__c&&_.__c(n,e),e.some(function(n){try{e=n.__h,n.__h=[],e.some(function(e){e.call(n)})}catch(e){_.__e(e,n.__v)}})}function T(e,_,t,o,r,u,l,c){var f,s,p,h=t.props,d=_.props,v=_.type,m=0;if("svg"===v&&(r=!0),null!=u)for(;m<u.length;m++)if((f=u[m])&&(f===e||(v?f.localName==v:3==f.nodeType))){e=f,u[m]=null;break}if(null==e){if(null===v)return document.createTextNode(d);e=r?document.createElementNS("http://www.w3.org/2000/svg",v):document.createElement(v,d.is&&d),u=null,c=!1}if(null===v)h===d||c&&e.data===d||(e.data=d);else{if(u=u&&n.call(e.childNodes),s=(h=t.props||i).dangerouslySetInnerHTML,p=d.dangerouslySetInnerHTML,!c){if(null!=u)for(h={},m=0;m<e.attributes.length;m++)h[e.attributes[m].name]=e.attributes[m].value;(p||s)&&(p&&(s&&p.__html==s.__html||p.__html===e.innerHTML)||(e.innerHTML=p&&p.__html||""))}if(function(e,n,_,t,o){var r;for(r in _)"children"===r||"key"===r||r in n||E(e,r,null,_[r],t);for(r in n)o&&"function"!=typeof n[r]||"children"===r||"key"===r||"value"===r||"checked"===r||_[r]===n[r]||E(e,r,n[r],_[r],t)}(e,d,h,r,c),p)_.__k=[];else if(m=_.props.children,b(e,Array.isArray(m)?m:[m],_,t,o,r&&"foreignObject"!==v,u,l,u?u[0]:t.__k&&y(t,0),c),null!=u)for(m=u.length;m--;)null!=u[m]&&a(u[m]);c||("value"in d&&void 0!==(m=d.value)&&(m!==e.value||"progress"===v&&!m)&&E(e,"value",m,h.value,!1),"checked"in d&&void 0!==(m=d.checked)&&m!==e.checked&&E(e,"checked",m,h.checked,!1))}return e}function U(e,n,t){try{"function"==typeof e?e(n):e.current=n}catch(e){_.__e(e,t)}}function A(e,n,t){var o,r;if(_.unmount&&_.unmount(e),(o=e.ref)&&(o.current&&o.current!==e.__e||U(o,null,n)),null!=(o=e.__c)){if(o.componentWillUnmount)try{o.componentWillUnmount()}catch(e){_.__e(e,n)}o.base=o.__P=null}if(o=e.__k)for(r=0;r<o.length;r++)o[r]&&A(o[r],n,"function"!=typeof e.type);t||null==e.__e||a(e.__e),e.__e=e.__d=void 0}function M(e,n,_){return this.constructor(e,_)}n=c.slice,_={__e:function(e,n){for(var _,t,o;n=n.__;)if((_=n.__c)&&!_.__)try{if((t=_.constructor)&&null!=t.getDerivedStateFromError&&(_.setState(t.getDerivedStateFromError(e)),o=_.__d),null!=_.componentDidCatch&&(_.componentDidCatch(e),o=_.__d),o)return _.__E=_}catch(n){e=n}throw e}},t=0,v.prototype.setState=function(e,n){var _;_=null!=this.__s&&this.__s!==this.state?this.__s:this.__s=s({},this.state),"function"==typeof e&&(e=e(s({},_),this.props)),e&&s(_,e),null!=e&&this.__v&&(n&&this.__h.push(n),g(this))},v.prototype.forceUpdate=function(e){this.__v&&(this.__e=!0,e&&this.__h.push(e),g(this))},v.prototype.render=d,o=[],r="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,k.__r=0,l=0;var F,L,N,W=0,R=[],I=_.__b,O=_.__r,V=_.diffed,q=_.__c,B=_.unmount;function $(e,n){_.__h&&_.__h(L,e,W||n),W=0;var t=L.__H||(L.__H={__:[],__h:[]});return e>=t.__.length&&t.__.push({}),t.__[e]}function j(e){return W=1,G(ee,e)}function G(e,n,_){var t=$(F++,2);return t.t=e,t.__c||(t.__=[_?_(n):ee(void 0,n),function(e){var n=t.t(t.__[0],e);t.__[0]!==n&&(t.__=[n,t.__[1]],t.__c.setState({}))}],t.__c=L),t.__}function z(e,n){var t=$(F++,4);!_.__s&&Z(t.__H,n)&&(t.__=e,t.__H=n,L.__h.push(t))}function J(e,n){var _=$(F++,7);return Z(_.__H,n)&&(_.__=e(),_.__H=n,_.__h=e),_.__}function K(){R.forEach(function(e){if(e.__P)try{e.__H.__h.forEach(X),e.__H.__h.forEach(Y),e.__H.__h=[]}catch(n){e.__H.__h=[],_.__e(n,e.__v)}}),R=[]}_.__b=function(e){L=null,I&&I(e)},_.__r=function(e){O&&O(e),F=0;var n=(L=e.__c).__H;n&&(n.__h.forEach(X),n.__h.forEach(Y),n.__h=[])},_.diffed=function(e){V&&V(e);var n=e.__c;n&&n.__H&&n.__H.__h.length&&(1!==R.push(n)&&N===_.requestAnimationFrame||((N=_.requestAnimationFrame)||function(e){var n,_=function(){clearTimeout(t),Q&&cancelAnimationFrame(n),setTimeout(e)},t=setTimeout(_,100);Q&&(n=requestAnimationFrame(_))})(K)),L=void 0},_.__c=function(e,n){n.some(function(e){try{e.__h.forEach(X),e.__h=e.__h.filter(function(e){return!e.__||Y(e)})}catch(t){n.some(function(e){e.__h&&(e.__h=[])}),n=[],_.__e(t,e.__v)}}),q&&q(e,n)},_.unmount=function(e){B&&B(e);var n=e.__c;if(n&&n.__H)try{n.__H.__.forEach(X)}catch(e){_.__e(e,n.__v)}};var Q="function"==typeof requestAnimationFrame;function X(e){var n=L;"function"==typeof e.__c&&e.__c(),L=n}function Y(e){var n=L;e.__c=e.__(),L=n}function Z(e,n){return!e||e.length!==n.length||n.some(function(n,_){return n!==e[_]})}function ee(e,n){return"function"==typeof n?n(e):n}var ne=function(e,n,_,t){var o;n[0]=0;for(var r=1;r<n.length;r++){var u=n[r++],l=n[r]?(n[0]|=u?1:2,_[n[r++]]):n[++r];3===u?t[0]=l:4===u?t[1]=Object.assign(t[1]||{},l):5===u?(t[1]=t[1]||{})[n[++r]]=l:6===u?t[1][n[++r]]+=l+"":u?(o=e.apply(l,ne(e,l,_,["",null])),t.push(o),l[0]?n[0]|=2:(n[r-2]=0,n[r]=o)):t.push(l)}return t},_e=new Map,te=function(e){var n=_e.get(this);return n||(n=new Map,_e.set(this,n)),(n=ne(this,n.get(e)||(n.set(e,n=function(e){for(var n,_,t=1,o="",r="",u=[0],l=function(e){1===t&&(e||(o=o.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?u.push(0,e,o):3===t&&(e||o)?(u.push(3,e,o),t=2):2===t&&"..."===o&&e?u.push(4,e,0):2===t&&o&&!e?u.push(5,0,!0,o):t>=5&&((o||!e&&5===t)&&(u.push(t,0,o,_),t=6),e&&(u.push(t,e,0,_),t=6)),o=""},i=0;i<e.length;i++){i&&(1===t&&l(),l(i));for(var c=0;c<e[i].length;c++)n=e[i][c],1===t?"<"===n?(l(),u=[u],t=3):o+=n:4===t?"--"===o&&">"===n?(t=1,o=""):o=n+o[0]:r?n===r?r="":o+=n:'"'===n||"'"===n?r=n:">"===n?(l(),t=1):t&&("="===n?(t=5,_=o,o=""):"/"===n&&(t<5||">"===e[i][c+1])?(l(),3===t&&(u=u[0]),t=u,(u=u[0]).push(2,0,t),t=0):" "===n||"\t"===n||"\n"===n||"\r"===n?(l(),t=2):o+=n),3===t&&"!--"===o&&(t=4,u=u[0])}return l(),u}(e)),n),arguments,[])).length>1?n:n[0]}.bind(p);e.h=p,e.html=te,e.render=function(e,t,o){var r,u,l;_.__&&_.__(e,t),u=(r="function"==typeof o)?null:o&&o.__k||t.__k,l=[],D(t,e=(!r&&o||t).__k=p(d,null,[e]),u||i,i,void 0!==t.ownerSVGElement,!r&&o?[o]:u?null:t.firstChild?n.call(t.childNodes):null,l,!r&&o?o:u?u.__e:t.firstChild,r),w(l,e)},e.Component=v,e.createContext=function(e,n){var _={__c:n="__cC"+l++,__:e,Consumer:function(e,n){return e.children(n)},Provider:function(e){var _,t;return this.getChildContext||(_=[],(t={})[n]=this,this.getChildContext=function(){return t},this.shouldComponentUpdate=function(e){this.props.value!==e.value&&_.some(g)},this.sub=function(e){_.push(e);var n=e.componentWillUnmount;e.componentWillUnmount=function(){_.splice(_.indexOf(e),1),n&&n.call(e)}}),e.children}};return _.Provider.__=_.Consumer.contextType=_},e.useState=j,e.useReducer=G,e.useEffect=function(e,n){var t=$(F++,3);!_.__s&&Z(t.__H,n)&&(t.__=e,t.__H=n,L.__H.__h.push(t))},e.useLayoutEffect=z,e.useRef=function(e){return W=5,J(function(){return{current:e}},[])},e.useImperativeHandle=function(e,n,_){W=6,z(function(){"function"==typeof e?e(n()):e&&(e.current=n())},null==_?_:_.concat(e))},e.useMemo=J,e.useCallback=function(e,n){return W=8,J(function(){return e},n)},e.useContext=function(e){var n=L.context[e.__c],_=$(F++,9);return _.c=e,n?(null==_.__&&(_.__=!0,n.sub(L)),n.props.value):e.__},e.useDebugValue=function(e,n){_.useDebugValue&&_.useDebugValue(n?n(e):e)},e.useErrorBoundary=function(e){var n=$(F++,10),_=j();return n.__=e,L.componentDidCatch||(L.componentDidCatch=function(e){n.__&&n.__(e),_[1](e)}),[_[0],function(){_[1](void 0)}]}});
+
+</script>
+<script>
+// The documentation application: one page at a time drawn from the JSON
+// island #docc-data with Preact and htm (vendor/htm-preact-standalone.js).
+// Labels are marked as t:English in double braces and translated by the build (lang.go).
 (function () {
   'use strict';
-  try {
-    var $ = function (s, r) { return (r || document).querySelector(s); };
-    var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
-    var pages = $$('main > section.page');
-    var side = $('#side'), menu = $('#menu'), tocBox = $('#toc'), barTitle = $('#bar-title');
-    var rootTitle = document.title, current = null, spy = null;
-    var links = $$('#tree a[href^="#"]');
+  var P = window.htmPreact;
+  var html = P.html, render = P.render;
+  var useState = P.useState, useEffect = P.useEffect, useRef = P.useRef;
+  var D = JSON.parse(document.getElementById('docc-data').textContent);
+  var pages = D.pages, byId = {};
+  pages.forEach(function (p, i) { p.i = i; byId[p.id] = p; });
+  var H = D.hist || { commits: [], docs: {} };
+  var commits = H.commits || [];
 
-    function decode(h) {
-      h = h.replace(/^#/, '');
-      try { return decodeURIComponent(h); } catch (e) { return h; }
-    }
-
-    // heading anchors and copy buttons
+  // ---- small helpers ----
+  function store(k, v) {
+    try {
+      if (v === undefined) { return JSON.parse(localStorage.getItem(D.key + ':' + k)); }
+      localStorage.setItem(D.key + ':' + k, JSON.stringify(v));
+    } catch (e) { return null; }
+  }
+  function decode(h) {
+    h = h.replace(/^#/, '');
+    try { return decodeURIComponent(h); } catch (e) { return h; }
+  }
+  // the page a hash belongs to: a page id, or <page id>--<anchor>
+  function route(hash) {
+    var id = decode(hash);
+    if (byId[id]) { return { page: byId[id], target: null }; }
+    var best = null;
     pages.forEach(function (p) {
-      $$('.doc h2[id], .doc h3[id], .doc h4[id]', p).forEach(function (h) {
-        h.dataset.t = h.textContent;
+      if (id.indexOf(p.id + '--') === 0 && (!best || p.id.length > best.id.length)) { best = p; }
+    });
+    return best ? { page: best, target: id } : { page: pages[0], target: null };
+  }
+  // "/13.1 Migration sources/2" -> "13.1 Migration sources › 3"
+  function ptrLabel(p) {
+    return p.split('/').slice(1).map(function (s) {
+      s = s.replace(/~1/g, '/').replace(/~0/g, '~');
+      return /^\d+$/.test(s) ? String(+s + 1) : s;
+    }).join(' › ');
+  }
+  function when(c) {
+    var cm = commits[c];
+    if (!cm || !cm.h) { return 'not committed'; }
+    var d = new Date(cm.d);
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function commitLine(c) {
+    var cm = commits[c] || {};
+    return cm.h ? when(c) + ' · ' + cm.a + ' · ' + cm.h + ' · ' + cm.m : 'not committed';
+  }
+  function save(name, type, data) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: type }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function unzip64(s) {
+    var b = atob(s), u = new Uint8Array(b.length);
+    for (var i = 0; i < b.length; i++) { u[i] = b.charCodeAt(i); }
+    return u;
+  }
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) { return crypto.randomUUID(); }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+    });
+  }
+  var plain = document.createElement('div');
+  function textOf(h) { plain.innerHTML = h; return plain.textContent.replace(/\s+/g, ' ').trim(); }
+
+  // word diff: a longest common subsequence over words and spaces
+  function diff(a, b) {
+    var x = (a || '').split(/(\s+)/), y = (b || '').split(/(\s+)/);
+    var n = x.length, m = y.length;
+    if (n * m > 4000000) { return [[-1, a], [1, b]]; } // ponytail: huge blocks are shown as replaced
+    var dp = [];
+    for (var i = 0; i <= n; i++) { dp.push(new Uint32Array(m + 1)); }
+    for (i = n - 1; i >= 0; i--) {
+      for (var j = m - 1; j >= 0; j--) {
+        dp[i][j] = x[i] === y[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    var out = [];
+    function push(op, s) {
+      if (out.length && out[out.length - 1][0] === op) { out[out.length - 1][1] += s; } else { out.push([op, s]); }
+    }
+    i = 0; j = 0;
+    while (i < n && j < m) {
+      if (x[i] === y[j]) { push(0, x[i]); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { push(-1, x[i]); i++; }
+      else { push(1, y[j]); j++; }
+    }
+    while (i < n) { push(-1, x[i++]); }
+    while (j < m) { push(1, y[j++]); }
+    // a rewrite reads better as old text, then new text, than as confetti
+    var same = 0;
+    out.forEach(function (d) { if (d[0] === 0) { same += d[1].replace(/\s+/g, '').length; } });
+    if (same < 0.4 * Math.max(a.replace(/\s+/g, '').length, b.replace(/\s+/g, '').length)) { return [[-1, a], [1, b]]; }
+    return out;
+  }
+  function Diff(props) {
+    if (props.a == null) { return html`<div class="dv"><ins>${props.b}</ins></div>`; }
+    var ds = diff(props.a, props.b), whole = ds.length === 2 && ds[0][1] === props.a && ds[1][1] === props.b;
+    return html`<div class=${'dv' + (whole ? ' whole' : '')}>${ds.map(function (d) {
+      return d[0] < 0 ? html`<del>${d[1]}</del>` : d[0] > 0 ? html`<ins>${d[1]}</ins>` : d[1];
+    })}</div>`;
+  }
+
+  // ---- history ----
+  function versions(page, ptr) {
+    var h = H.docs && H.docs[page.file];
+    return (h && h.b && h.b[ptr]) || [];
+  }
+  function pageChanges(page) {
+    var h = H.docs && H.docs[page.file];
+    return (h && h.ch) || [];
+  }
+  // the text of a block right after commit `since`: undefined when the block
+  // did not change after it, null when it did not exist yet
+  function changedSince(page, ptr, since) {
+    if (since == null || since < 0) { return undefined; }
+    var vs = versions(page, ptr), before = null, after = false;
+    vs.forEach(function (v) { if (v.c <= since) { before = v.t; } else { after = true; } });
+    return after ? before : undefined;
+  }
+  function pageChangedSince(page, since) {
+    return since != null && since >= 0 && pageChanges(page).some(function (c) { return c.c > since; });
+  }
+
+  // ---- comments: kept in localStorage until downloaded as JSON ----
+  var listeners = [];
+  var imported = D.comments || [], inRepo = {};
+  imported.forEach(function (c) { inRepo[c.id] = true; });
+  // comments already imported into the repository leave the browser
+  var local = (store('comments') || []).filter(function (c) { return !inRepo[c.id]; });
+  store('comments', local);
+  function setLocal(list) {
+    local = list; store('comments', list);
+    listeners.forEach(function (f) { f(list); });
+  }
+  function useComments() {
+    var s = useState(local);
+    useEffect(function () {
+      var f = function (l) { s[1](l); };
+      listeners.push(f);
+      return function () { listeners.splice(listeners.indexOf(f), 1); };
+    }, []);
+    return s[0];
+  }
+  function exportComments() {
+    var d = new Date().toISOString().slice(0, 10);
+    save('comments-' + d + '.json', 'application/json',
+      JSON.stringify({ docc: 'comments', version: 1, comments: local }, null, 2) + '\n');
+  }
+
+  var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
+
+  // hold the button and speak; the words go into the text box as they come
+  function Mic(props) {
+    var rec = useRef(null), st = useState(''), on = useState(false);
+    if (!Rec) { return null; }
+    function start(e) {
+      e.preventDefault();
+      if (rec.current) { return; }
+      var base = props.get(), r = new Rec();
+      r.lang = speechLang; r.interimResults = true; r.continuous = true;
+      r.onresult = function (ev) {
+        var s = '';
+        for (var i = 0; i < ev.results.length; i++) { s += ev.results[i][0].transcript; }
+        props.set((base ? base.replace(/\s*$/, ' ') : '') + s.trim());
+      };
+      r.onerror = function (ev) {
+        st[1](ev.error === 'not-allowed' ? 'No access to the microphone' :
+          ev.error === 'network' ? 'Speech service unreachable' :
+          ev.error === 'no-speech' ? 'No speech heard' : ev.error);
+      };
+      r.onend = function () { rec.current = null; on[1](false); };
+      try { r.start(); rec.current = r; on[1](true); st[1](''); } catch (err) { st[1](String(err)); }
+    }
+    function stop() { if (rec.current) { rec.current.stop(); } }
+    return html`<span class="mic-w">
+      <button type="button" class=${'mic' + (on[0] ? ' on' : '')} onPointerDown=${start} onPointerUp=${stop}
+        onPointerLeave=${stop} onPointerCancel=${stop} onContextMenu=${function (e) { e.preventDefault(); }}
+        title="Hold and speak">${on[0] ? '● Listening…' : '🎤 Hold and speak'}</button>
+      ${st[0] && html`<small class="err">${st[0]}</small>`}
+    </span>`;
+  }
+
+  function Editor(props) {
+    var text = useState(''), author = useState(store('author') || ''), ta = useRef(null);
+    var cur = useRef(''); cur.current = text[0];
+    useEffect(function () { if (ta.current) { ta.current.focus(); } }, []);
+    function ok() {
+      var t = text[0].trim();
+      if (!t) { return; }
+      if (author[0].trim()) { store('author', author[0].trim()); }
+      setLocal(local.concat([{ id: uuid(), doc: props.page.id, path: props.ptr, quote: props.quote, text: t,
+        author: author[0].trim(), created: new Date().toISOString(), build: H.head || '' }]));
+      props.close();
+    }
+    return html`<div class="editor">
+      ${!store('author') && html`<input class="who" placeholder="Your name" value=${author[0]}
+        onInput=${function (e) { author[1](e.target.value); }} />`}
+      <textarea ref=${ta} rows="3" placeholder="Comment on this block" value=${text[0]}
+        onInput=${function (e) { text[1](e.target.value); }}
+        onKeyDown=${function (e) {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { ok(); }
+          if (e.key === 'Escape') { props.close(); }
+        }}></textarea>
+      <div class="ed-row">
+        <${Mic} get=${function () { return cur.current; }} set=${text[1]} />
+        <span class="sp"></span>
+        <button type="button" onClick=${props.close}>Cancel</button>
+        <button type="button" class="pri" onClick=${ok} disabled=${!text[0].trim()}>Save</button>
+      </div>
+    </div>`;
+  }
+
+  function Note(props) {
+    var c = props.c;
+    return html`<div class=${'note' + (props.repo ? ' repo' : '')}>
+      <div class="nh"><b>${c.author || 'Anonymous'}</b>
+        <small>${c.created ? new Date(c.created).toLocaleString() : ''}</small>
+        ${props.repo ? html`<span class=${'badge ' + (c.status === 'done' ? 'ok' : 'warn')}>
+          ${c.status === 'done' ? 'processed' : 'not processed'}</span>`
+          : html`<button type="button" class="link" onClick=${function () {
+            setLocal(local.filter(function (x) { return x.id !== c.id; }));
+          }}>Delete</button>`}
+      </div>
+      <div class="nt">${c.text}</div>
+    </div>`;
+  }
+
+  // ---- one block: its HTML with tools, comments, history and changes ----
+  function History(props) {
+    var vs = props.vs.slice().reverse();
+    return html`<div class="hist">
+      <div class="hh"><b>History of the block</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
+      ${vs.map(function (v, k) {
+        var prev = vs[k + 1];
+        return html`<div class="ver">
+          <div class="vh">${commitLine(v.c)}${!prev && html` · <i>created</i>`}</div>
+          <${Diff} a=${prev ? prev.t : null} b=${v.t} />
+        </div>`;
+      })}
+    </div>`;
+  }
+
+  function Block(props) {
+    var b = props.b, page = props.page, ptr = b.p;
+    var mode = useState(null), showDiff = useState(false);
+    var mine = props.comments.filter(function (c) { return c.doc === page.id && c.path === ptr; });
+    var repo = imported.filter(function (c) { return c.doc === page.id && c.path === ptr; });
+    var vs = ptr ? versions(page, ptr) : [];
+    var before = ptr ? changedSince(page, ptr, props.since) : undefined;
+    var changed = before !== undefined;
+    var body = props.tag === 'dd'
+      ? html`<dd class="bc" id=${props.id} dangerouslySetInnerHTML=${{ __html: b.h }}></dd>`
+      : html`<div class="bc" dangerouslySetInnerHTML=${{ __html: b.h }}></div>`;
+    if (!ptr) { return props.tag === 'dd' ? body : html`<div class="blk">${body}</div>`; }
+    var extra = html`
+      ${changed && showDiff[0] && html`<div class="since"><small>Text at the chosen version → now</small><${Diff} a=${before} b=${b.s} /></div>`}
+      ${repo.map(function (c) { return html`<${Note} c=${c} repo=${true} />`; })}
+      ${mine.map(function (c) { return html`<${Note} c=${c} />`; })}
+      ${mode[0] === 'c' && html`<${Editor} page=${page} ptr=${ptr} quote=${b.s} close=${function () { mode[1](null); }} />`}
+      ${mode[0] === 'h' && html`<${History} vs=${vs} close=${function () { mode[1](null); }} />`}`;
+    var tools = html`<span class="tools">
+      ${changed && html`<button type="button" class="chg-b" title="Changed after the chosen version"
+        onClick=${function () { showDiff[1](!showDiff[0]); }}>Δ</button>`}
+      <button type="button" title="Comment" onClick=${function () { mode[1](mode[0] === 'c' ? null : 'c'); }}>💬${mine.length + repo.length ? ' ' + (mine.length + repo.length) : ''}</button>
+      ${vs.length > 1 && html`<button type="button" title="History of the block" onClick=${function () { mode[1](mode[0] === 'h' ? null : 'h'); }}>🕘 ${vs.length}</button>`}
+    </span>`;
+    var cls = 'blk' + (changed ? ' chg' : '') + (mine.length + repo.length ? ' has-c' : '');
+    if (props.tag === 'dd') {
+      return html`<dd class=${cls} id=${props.id}><div class="bc" dangerouslySetInnerHTML=${{ __html: b.h }}></div>${tools}${extra}</dd>`;
+    }
+    return html`<div class=${cls} data-p=${ptr}>${body}${tools}${extra}</div>`;
+  }
+
+  // ---- page ----
+  function PageHistory(props) {
+    var ch = pageChanges(props.page).slice().reverse();
+    function list(label, items, fn) {
+      return items && items.length ? html`<div class="pg-g"><small>${label}</small>${items.map(fn)}</div>` : null;
+    }
+    return html`<div class="hist page-hist">
+      <div class="hh"><b>History of the page</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
+      ${!ch.length && html`<p class="muted">No history: the project is not in Git.</p>`}
+      ${ch.map(function (c) {
+        return html`<div class="ver">
+          <div class="vh">${commitLine(c.c)}${c.new && html` · <i>page created</i>`}</div>
+          ${list('Changed', c.ch, function (x) { return html`<div class="pg-i"><span class="ptr">${ptrLabel(x[0])}</span><${Diff} a=${x[1]} b=${x[2]} /></div>`; })}
+          ${list('Added', c.add, function (x) { return html`<div class="pg-i"><span class="ptr">${ptrLabel(x[0])}</span><${Diff} a=${null} b=${x[1]} /></div>`; })}
+          ${list('Removed', c.rm, function (x) { return html`<div class="pg-i"><span class="ptr">${ptrLabel(x[0])}</span><div class="dv"><del>${x[1]}</del></div></div>`; })}
+        </div>`;
+      })}
+    </div>`;
+  }
+
+  function Chip(props) {
+    var p = byId[props.id];
+    return p ? html`<a class="chip" href=${'#' + p.id}>${p.title}</a>` : null;
+  }
+
+  function Page(props) {
+    var page = props.page, ph = useState(false), main = useRef(null);
+    useEffect(function () { ph[1](false); }, [page.id]);
+    // heading anchors and copy buttons inside the rendered Markdown
+    useEffect(function () {
+      var el = main.current;
+      [].forEach.call(el.querySelectorAll('.bc :is(h2,h3,h4)[id]'), function (h) {
+        if (h.querySelector('.anchor')) { return; }
         var a = document.createElement('a');
         a.className = 'anchor'; a.href = '#' + h.id; a.textContent = '#';
         a.setAttribute('aria-label', 'Link to this section');
         h.insertBefore(a, h.firstChild);
       });
-      $$('pre', p).forEach(function (pre) {
+      [].forEach.call(el.querySelectorAll('.bc pre'), function (pre) {
+        if (pre.querySelector('.copy')) { return; }
         var b = document.createElement('button');
         b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
         b.addEventListener('click', function () {
-          var code = $('code', pre), text = (code || pre).textContent;
+          var code = pre.querySelector('code'), text = (code || pre).textContent;
           var done = function (m) { b.textContent = m; setTimeout(function () { b.textContent = 'Copy'; }, 1500); };
           if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { done('Copied'); }, function () { done('Failed'); }); }
           else { done('Failed'); }
         });
         pre.appendChild(b);
       });
+      props.onToc([].map.call(el.querySelectorAll('.bc :is(h2,h3,h4)[id]'), function (h) {
+        return { id: h.id, level: h.tagName.charAt(1), text: h.textContent.replace(/^#/, '') };
+      }));
     });
+    var prev = pages[page.i - 1], next = pages[page.i + 1];
+    var shown = {}; shown[page.id] = true;
+    (page.kids || []).forEach(function (k) { shown[k] = true; });
+    if (page.parent) { shown[page.parent] = true; }
+    var refs = (page.refs || []).filter(function (r) { return !shown[r]; });
+    var bl = { comments: props.comments, since: props.since, page: page };
+    return html`<article class="page" ref=${main}>
+      ${D.brand.print && html`<div dangerouslySetInnerHTML=${{ __html: D.brand.print }}></div>`}
+      ${page.crumbs && html`<nav class="crumbs" aria-label="Breadcrumb">${page.crumbs.map(function (id, k) {
+        return html`${k > 0 && html`<span aria-hidden="true">›</span>`}<a href=${'#' + id}>${byId[id] ? byId[id].title : id}</a>`;
+      })}</nav>`}
+      <div class="ttl">
+        <h1>${page.title}</h1>
+        ${commits.length > 0 && html`<button type="button" class="ph-b" onClick=${function () { ph[1](!ph[0]); }}>🕘 Page history</button>`}
+      </div>
+      ${(page.kind || page.status || page.priority || page.hidden || page.tags) && html`<div class="badges">
+        ${page.kind && html`<span class="badge kind">${page.kind}</span>`}
+        ${page.status && html`<span class=${'badge ' + (page.sc || '')}>${page.status}</span>`}
+        ${page.priority && html`<span class="badge">priority ${page.priority}</span>`}
+        ${page.hidden && html`<span class="badge bad">hidden</span>`}
+        ${(page.tags || []).map(function (t) { return html`<span class="tag">#${t}</span>`; })}
+      </div>`}
+      ${ph[0] && html`<${PageHistory} page=${page} close=${function () { ph[1](false); }} />`}
+      <div class="doc">
+        ${page.props && html`<dl>${page.props.map(function (p) {
+          return html`<dt>${p.k}</dt><${Block} ...${bl} b=${p} tag="dd" id=${p.id} />`;
+        })}</dl>`}
+        ${page.blocks.map(function (b) { return html`<${Block} ...${bl} b=${b} />`; })}
+      </div>
+      ${page.kids && html`<h2 class="rh">Pages in this section</h2><div class="rows">${page.kids.map(function (id) {
+        var k = byId[id];
+        return k && html`<a class="row" href=${'#' + id}><span class="ct">${k.title}${k.kind && html` <span class="badge kind">${k.kind}</span>`}</span>${k.summary && html`<span class="cs">${k.summary}</span>`}</a>`;
+      })}</div>`}
+      ${(page.parent || refs.length || page.covers) && html`<h2 class="rh">Related</h2><div class="related">
+        ${page.parent && html`<div class="rg"><span class="rl">Parent</span><${Chip} id=${page.parent} /></div>`}
+        ${refs.length > 0 && html`<div class="rg"><span class="rl">Referenced by</span>${refs.map(function (id) { return html`<${Chip} id=${id} />`; })}</div>`}
+        ${page.covers && html`<div class="rg"><span class="rl">Covered by</span>${page.covers.map(function (c) { return html`<code>${c}</code>`; })}</div>`}
+      </div>`}
+      ${(prev || next) && html`<nav class="pn" aria-label="Neighbouring pages">
+        ${prev && html`<a class="prev" href=${'#' + prev.id}><small>Previous</small><span>${prev.title}</span></a>`}
+        ${next && html`<a class="next" href=${'#' + next.id}><small>Next</small><span>${next.title}</span></a>`}
+      </nav>`}
+      ${D.brand.foot && html`<div dangerouslySetInnerHTML=${{ __html: D.brand.foot }}></div>`}
+    </article>`;
+  }
 
-    // sidebar tree
-    function setOpen(tw, open) {
-      tw.setAttribute('aria-expanded', open ? 'true' : 'false');
-      tw.setAttribute('aria-label', open ? 'Collapse' : 'Expand');
-    }
-    function setGroup(h, open) {
-      h.classList.toggle('closed', !open);
-      $('.gt', h).setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-    $('#tree').addEventListener('click', function (e) {
-      var tw = e.target.closest && e.target.closest('.tw');
-      if (tw) { setOpen(tw, tw.getAttribute('aria-expanded') !== 'true'); return; }
-      var gt = e.target.closest && e.target.closest('.gt');
-      if (gt) { var h = gt.parentNode; setGroup(h, h.classList.contains('closed')); }
+  // ---- sidebar: tree and search ----
+  function nest(list) {
+    var root = { kids: [] }, stack = [root];
+    list.forEach(function (e) {
+      var node = { id: e[0], kids: [] };
+      stack.length = e[1] + 1;
+      (stack[e[1]] || root).kids.push(node);
+      stack.push(node);
     });
-    // long lists show a window of items with buttons for the rest; the window
-    // moves to the current page, so a list of a thousand siblings stays short
-    function limit(list, items, n, wrap, label) {
-      var all = items(), lo = 0, hi = n, step = 30;
-      if (all.length <= n) { return; }
-      function button(text, fn) {
-        var b = document.createElement('button');
-        b.type = 'button'; b.className = 'more'; b.addEventListener('click', fn);
-        var holder = b;
-        if (wrap) { holder = document.createElement('li'); holder.appendChild(b); }
-        return { b: b, el: holder, set: function (t) { b.textContent = t; } };
-      }
-      var up = button('', function () { lo = Math.max(0, lo - step); draw(); });
-      var down = button('', function () { hi = Math.min(all.length, hi + step); draw(); });
-      list.insertBefore(up.el, all[0]);
-      list.appendChild(down.el);
-      function draw() {
-        all.forEach(function (x, k) { x.classList.toggle('extra', k < lo || k >= hi); });
-        up.el.style.display = lo > 0 ? '' : 'none';
-        down.el.style.display = hi < all.length ? '' : 'none';
-        up.set('↑ ' + lo + ' earlier');
-        down.set((all.length - hi) + ' more ' + (label || '') + '↓');
-      }
-      list.reveal = function (el) {
-        var k = -1;
-        all.forEach(function (x, m) { if (x.contains(el)) { k = m; } });
-        if (k >= 0 && (k < lo || k >= hi)) { lo = Math.max(0, k - 10); hi = Math.min(all.length, k + 11); draw(); }
-      };
-      draw();
-    }
-    $$('#tree ul').forEach(function (ul) {
-      limit(ul, function () { return [].slice.call(ul.children).filter(function (c) { return c.tagName === 'LI'; }); }, 30, true);
-    });
-    $$('.rows').forEach(function (r) { limit(r, function () { return $$(':scope > .row', r); }, 30, false); });
-    $$('.rg').forEach(function (g) { limit(g, function () { return $$(':scope > .chip', g); }, 12, false); });
-    // the tree starts folded; show() opens the way to the current page
-    $$('#tree .tw').forEach(function (tw) { setOpen(tw, false); });
-    $$('#tree .gh').forEach(function (h) { setGroup(h, false); });
-    function markTree(id) {
-      links.forEach(function (a) {
-        if (decode(a.hash) !== id) { a.removeAttribute('aria-current'); return; }
-        a.setAttribute('aria-current', 'page');
-        for (var li = a.parentNode; li && li.id !== 'tree'; li = li.parentNode) {
-          var tw = li.tagName === 'LI' && $(':scope > .tw', li);
-          if (tw) { setOpen(tw, true); }
-          if (li.reveal) { li.reveal(a); }
-          if (li.classList && li.classList.contains('gb')) { setGroup(li.previousElementSibling, true); }
+    return root.kids;
+  }
+  var tree = nest(D.nav.tree), orphans = nest(D.nav.orphans);
+  function contains(node, id) {
+    return node.id === id || node.kids.some(function (k) { return contains(k, id); });
+  }
+  // long lists show a window of 30 items with buttons for the rest
+  function Items(props) {
+    var all = props.nodes, n = all.length, at = -1;
+    all.forEach(function (x, k) { if (contains(x, props.cur)) { at = k; } });
+    var win = useState(null);
+    var lo = 0, hi = Math.min(n, 30);
+    if (win[0]) { lo = win[0][0]; hi = win[0][1]; }
+    if (at >= 0 && (at < lo || at >= hi)) { lo = Math.max(0, at - 10); hi = Math.min(n, at + 11); }
+    return html`<ul>
+      ${lo > 0 && html`<li><button type="button" class="more" onClick=${function () { win[1]([Math.max(0, lo - 30), hi]); }}>↑ ${lo} earlier</button></li>`}
+      ${all.slice(lo, hi).map(function (x) { return html`<${Node} node=${x} cur=${props.cur} since=${props.since} />`; })}
+      ${hi < n && html`<li><button type="button" class="more" onClick=${function () { win[1]([lo, Math.min(n, hi + 30)]); }}>${n - hi} more ↓</button></li>`}
+    </ul>`;
+  }
+  function Node(props) {
+    var x = props.node, p = byId[x.id], inside = contains(x, props.cur);
+    var open = useState(null);
+    var isOpen = open[0] == null ? inside : open[0];
+    useEffect(function () { if (inside) { open[1](null); } }, [props.cur]);
+    if (!p) { return null; }
+    var mark = pageChangedSince(p, props.since);
+    return html`<li class=${x.kids.length ? 'parent' : ''}>
+      ${x.kids.length > 0 && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
+        aria-label=${isOpen ? 'Collapse' : 'Expand'} onClick=${function () { open[1](!isOpen); }}></button>`}
+      <a href=${'#' + p.id} aria-current=${p.id === props.cur ? 'page' : undefined}>${p.title}${p.hidden && html` <span class="badge bad">hidden</span>`}${mark && html` <span class="dot" title="Changed after the chosen version">●</span>`}</a>
+      ${x.kids.length > 0 && isOpen && html`<${Items} nodes=${x.kids} cur=${props.cur} since=${props.since} />`}
+    </li>`;
+  }
+  function Group(props) {
+    var open = useState(false);
+    return html`<h2 class=${'gh' + (open[0] ? '' : ' closed')}><button class="gt" type="button" aria-expanded=${open[0] ? 'true' : 'false'}
+      onClick=${function () { open[1](!open[0]); }}>${props.label} <span>${props.n}</span></button></h2>
+      ${open[0] && html`<div class="gb">${props.children}</div>`}`;
+  }
+
+  var index = null;
+  function Search(props) {
+    var q = useState(''), sel = useState(0), box = useRef(null);
+    useEffect(function () {
+      function key(e) {
+        var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+        if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+          e.preventDefault(); props.openSide(); box.current.focus(); box.current.select();
         }
-      });
-      var cur = $('#tree [aria-current]');
-      if (cur) {
-        var r = cur.getBoundingClientRect(), s = side.getBoundingClientRect();
-        if (r.top < s.top + 60 || r.bottom > s.bottom - 20) { side.scrollTop += r.top - s.top - 120; }
       }
-    }
-
-    // "On this page"
-    function buildToc(page) {
-      if (spy) { spy.disconnect(); spy = null; }
-      var hs = $$('.doc h2[id], .doc h3[id], .doc h4[id]', page);
-      tocBox.textContent = '';
-      if (hs.length < 2) { tocBox.hidden = true; return; }
-      var h = document.createElement('h2');
-      h.textContent = 'On this page';
-      tocBox.appendChild(h);
-      var map = {};
-      hs.forEach(function (x) {
-        var a = document.createElement('a');
-        a.href = '#' + x.id; a.textContent = x.dataset.t;
-        a.className = 'l' + x.tagName.charAt(1);
-        tocBox.appendChild(a); map[x.id] = a;
+      document.addEventListener('keydown', key);
+      return function () { document.removeEventListener('keydown', key); };
+    }, []);
+    var v = q[0].trim(), hits = [];
+    if (v) {
+      index = index || pages.map(function (p) {
+        return { p: p, text: p.blocks.concat(p.props || []).map(function (b) { return textOf(b.h); }).join(' ') };
       });
-      tocBox.hidden = false;
-      if (window.IntersectionObserver) {
-        spy = new IntersectionObserver(function (es) {
-          es.forEach(function (e) {
-            if (!e.isIntersecting) { return; }
-            $$('a', tocBox).forEach(function (a) { a.classList.remove('on'); });
-            map[e.target.id].classList.add('on');
-          });
-        }, { rootMargin: '0px 0px -75% 0px' });
-        hs.forEach(function (x) { spy.observe(x); });
-      }
-    }
-
-    // router: the hash names a page or a section inside it
-    function show() {
-      var id = decode(location.hash), target = id ? document.getElementById(id) : null;
-      var page = target && target.closest ? target.closest('section.page') : null;
-      if (!page) { page = pages[0]; target = null; }
-      if (page !== current) {
-        pages.forEach(function (p) { p.classList.toggle('on', p === page); });
-        current = page;
-        document.title = page === pages[0] ? rootTitle : page.dataset.title + ' · ' + rootTitle;
-        barTitle.textContent = page.dataset.title;
-        markTree(page.id);
-        buildToc(page);
-      }
-      if (target && target !== page) { target.scrollIntoView({ behavior: 'instant' }); }
-      else { window.scrollTo({ top: 0, behavior: 'instant' }); }
-      closeMenu();
-    }
-
-    // drawer on narrow screens
-    function closeMenu() {
-      side.classList.remove('open');
-      menu.setAttribute('aria-expanded', 'false');
-    }
-    menu.addEventListener('click', function () {
-      var open = !side.classList.contains('open');
-      side.classList.toggle('open', open);
-      menu.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    // search: every word must occur on the page; titles rank first
-    var q = $('#q'), res = $('#results'), hits = [], sel = -1;
-    var index = pages.map(function (p) {
-      return { id: p.id, title: p.dataset.title, text: $('.doc', p).textContent.replace(/\s+/g, ' ') };
-    });
-    function esc(w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-    function snippet(t, re) {
-      var m = re.exec(t.text), i = m ? m.index : 0;
-      var from = Math.max(0, i - 40), to = Math.min(t.text.length, i + 110);
-      if (from > 0) { var sp = t.text.indexOf(' ', from); from = sp >= 0 && sp < i ? sp + 1 : from; }
-      if (to < t.text.length) { var sl = t.text.lastIndexOf(' ', to); to = sl > i ? sl : to; }
-      var s = (from > 0 ? '… ' : '') + t.text.slice(from, to) + (to < t.text.length ? ' …' : '');
-      var span = document.createElement('span');
-      s.split(re).forEach(function (part, k) {
-        if (k % 2) { var mk = document.createElement('mark'); mk.textContent = part; span.appendChild(mk); }
-        else { span.appendChild(document.createTextNode(part)); }
-      });
-      return span;
-    }
-    function select(i) {
-      var items = $$('li[role=option]', res);
-      items.forEach(function (x, k) { x.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
-      sel = i;
-      if (items[i]) { items[i].scrollIntoView({ block: 'nearest' }); }
-    }
-    function search() {
-      var v = q.value.trim();
-      res.textContent = ''; hits = []; sel = -1;
-      if (!v) { res.hidden = true; return; }
+      var esc = function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
       var words = v.split(/\s+/).map(function (w) { return new RegExp(esc(w), 'i'); });
-      var all = new RegExp('(' + v.split(/\s+/).map(esc).join('|') + ')', 'gi');
       index.forEach(function (t) {
-        var ok = words.every(function (w) { return w.test(t.title) || w.test(t.text); });
-        if (!ok) { return; }
-        var score = words.reduce(function (s, w) { return s + (w.test(t.title) ? 10 : 0); }, 0);
-        hits.push({ t: t, score: score });
+        if (!words.every(function (w) { return w.test(t.p.title) || w.test(t.text); })) { return; }
+        var score = words.reduce(function (s, w) { return s + (w.test(t.p.title) ? 10 : 0); }, 0);
+        var m = words[0].exec(t.text), i = m ? m.index : 0;
+        var from = Math.max(0, i - 40), snip = (from > 0 ? '… ' : '') + t.text.slice(from, i + 110) + (i + 110 < t.text.length ? ' …' : '');
+        hits.push({ p: t.p, score: score, snip: snip });
       });
       hits.sort(function (a, b) { return b.score - a.score; });
       hits = hits.slice(0, 20);
-      if (!hits.length) {
-        var none = document.createElement('li');
-        none.className = 'none'; none.textContent = 'Nothing found';
-        res.appendChild(none);
-      }
-      hits.forEach(function (h) {
-        var li = document.createElement('li'), b = document.createElement('b');
-        li.setAttribute('role', 'option'); li.dataset.id = h.t.id;
-        b.textContent = h.t.title;
-        all.lastIndex = 0;
-        li.appendChild(b); li.appendChild(snippet(h.t, all));
-        res.appendChild(li);
-      });
-      res.hidden = false;
-      if (hits.length) { select(0); }
     }
-    function open(id) {
-      q.value = ''; res.hidden = true; hits = []; q.blur();
-      if (decode(location.hash) === id) { show(); } else { location.hash = '#' + id; }
-    }
-    q.addEventListener('input', search);
-    q.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); select((sel + 1) % hits.length); }
-      else if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); select((sel + hits.length - 1) % hits.length); }
-      else if (e.key === 'Enter' && hits[sel]) { e.preventDefault(); open(hits[sel].t.id); }
-      else if (e.key === 'Escape') { q.value = ''; search(); q.blur(); }
-    });
-    res.addEventListener('click', function (e) {
-      var li = e.target.closest && e.target.closest('li[data-id]');
-      if (li) { open(li.dataset.id); }
-    });
-    document.addEventListener('click', function (e) {
-      if (!e.target.closest('.search')) { res.hidden = true; }
-      if (!e.target.closest('#side, #menu')) { closeMenu(); }
-    });
-    document.addEventListener('keydown', function (e) {
-      var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-      if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
-        e.preventDefault();
-        if (getComputedStyle(menu).display !== 'none') { side.classList.add('open'); menu.setAttribute('aria-expanded', 'true'); }
-        q.focus(); q.select();
-      } else if (e.key === 'Escape') { closeMenu(); }
-    });
-
-    window.addEventListener('hashchange', show);
-    show();
-  } catch (err) {
-    document.documentElement.className = ''; // without the script every page stays visible
+    var re = v ? new RegExp('(' + v.split(/\s+/).map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')', 'gi') : null;
+    function go(h) { q[1](''); box.current.blur(); location.hash = '#' + h.p.id; }
+    return html`<div class="search">
+      <input type="search" id="q" ref=${box} placeholder="Search  ( / )" aria-label="Search the documentation" autocomplete="off"
+        value=${q[0]} onInput=${function (e) { q[1](e.target.value); sel[1](0); }}
+        onKeyDown=${function (e) {
+          if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); sel[1]((sel[0] + 1) % hits.length); }
+          else if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); sel[1]((sel[0] + hits.length - 1) % hits.length); }
+          else if (e.key === 'Enter' && hits[sel[0]]) { e.preventDefault(); go(hits[sel[0]]); }
+          else if (e.key === 'Escape') { q[1](''); box.current.blur(); }
+        }} />
+      ${v && html`<ul id="results" role="listbox" aria-label="Search results">
+        ${!hits.length && html`<li class="none">Nothing found</li>`}
+        ${hits.map(function (h, k) {
+          return html`<li role="option" aria-selected=${k === sel[0] ? 'true' : 'false'} onClick=${function () { go(h); }}>
+            <b>${h.p.title}</b><span>${h.snip.split(re).map(function (part, n) { return n % 2 ? html`<mark>${part}</mark>` : part; })}</span></li>`;
+        })}
+      </ul>`}
+    </div>`;
   }
+
+  // ---- "On this page" ----
+  function Toc(props) {
+    var on = useState(null);
+    useEffect(function () {
+      if (!window.IntersectionObserver || props.items.length < 2) { return; }
+      var spy = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { on[1](e.target.id); } });
+      }, { rootMargin: '0px 0px -75% 0px' });
+      props.items.forEach(function (x) { var el = document.getElementById(x.id); if (el) { spy.observe(el); } });
+      return function () { spy.disconnect(); };
+    }, [props.items]);
+    if (props.items.length < 2) { return null; }
+    return html`<aside id="toc" aria-label="On this page"><h2>On this page</h2>
+      ${props.items.map(function (x) { return html`<a href=${'#' + x.id} class=${'l' + x.level + (on[0] === x.id ? ' on' : '')}>${x.text}</a>`; })}
+    </aside>`;
+  }
+
+  // ---- toolbar: changes since a version, comments, export ----
+  function Comments(props) {
+    var list = props.comments;
+    var open = imported.filter(function (c) { return c.status !== 'done'; }).length;
+    return html`<div class="panel">
+      <div class="hh"><b>Comments</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
+      <p class="muted">New comments stay in this browser until you download them and run docc comments import.</p>
+      <div class="ed-row">
+        <button type="button" class="pri" disabled=${!list.length} onClick=${exportComments}>Download JSON</button>
+        <button type="button" disabled=${!list.length} onClick=${function () {
+          if (confirm('Delete all comments of this browser?')) { setLocal([]); }
+        }}>Clear</button>
+      </div>
+      ${!list.length && html`<p class="muted">No new comments. Point at a block and press 💬.</p>`}
+      ${list.map(function (c) {
+        var p = byId[c.doc];
+        return html`<div class="pc"><a href=${'#' + c.doc} onClick=${function () { props.goto(c); }}>${p ? p.title : c.doc}</a>
+          <small class="ptr">${ptrLabel(c.path)}</small><${Note} c=${c} /></div>`;
+      })}
+      ${imported.length > 0 && html`<p class="muted">In the repository: ${imported.length}, not processed: ${open}</p>`}
+    </div>`;
+  }
+
+  function Export(props) {
+    var page = props.page;
+    return html`<div class="panel menu">
+      <button type="button" onClick=${function () { save(page.id + '.md', 'text/markdown', page.md); props.close(); }}>This page (.md)</button>
+      <button type="button" onClick=${function () { save('docs.md', 'text/markdown', D.single); props.close(); }}>All pages in one file (.md)</button>
+      <button type="button" onClick=${function () { save('docs.zip', 'application/zip', unzip64(D.zip)); props.close(); }}>All pages as separate files (.zip)</button>
+    </div>`;
+  }
+
+  function Toolbar(props) {
+    var real = [];
+    commits.forEach(function (c, k) { if (c.h) { real.push(k); } });
+    return html`<div class="toolbar">
+      ${real.length > 0 && html`<label class="since-l">Changes since
+        <select value=${props.since == null ? '' : String(props.since)} onChange=${function (e) {
+          props.setSince(e.target.value === '' ? null : +e.target.value);
+        }}>
+          <option value="">off</option>
+          ${real.slice().reverse().map(function (k) { return html`<option value=${String(k)}>${when(k)} · ${commits[k].m}</option>`; })}
+        </select></label>`}
+      <span class="sp"></span>
+      <button type="button" class=${props.panel === 'c' ? 'on' : ''} onClick=${function () { props.setPanel(props.panel === 'c' ? null : 'c'); }}>💬 Comments${props.comments.length ? ' (' + props.comments.length + ')' : ''}</button>
+      <button type="button" class=${props.panel === 'e' ? 'on' : ''} onClick=${function () { props.setPanel(props.panel === 'e' ? null : 'e'); }}>⬇ Export</button>
+    </div>`;
+  }
+
+  // ---- application ----
+  function App() {
+    var r = useState(route(location.hash)), side = useState(false), toc = useState([]);
+    var sinceHash = useState(store('since')), panel = useState(null);
+    var comments = useComments();
+    var page = r[0].page;
+    // the chosen version is kept by hash: indexes change with every commit
+    var since = [null];
+    commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { since[0] = k; } });
+    useEffect(function () {
+      function on() { r[1](route(location.hash)); side[1](false); }
+      window.addEventListener('hashchange', on);
+      return function () { window.removeEventListener('hashchange', on); };
+    }, []);
+    useEffect(function () {
+      document.title = page === pages[0] ? D.title : page.title + ' · ' + D.title;
+      var t = r[0].target && document.getElementById(r[0].target);
+      if (t) { t.scrollIntoView({ behavior: 'instant' }); } else { window.scrollTo({ top: 0, behavior: 'instant' }); }
+      var cur = document.querySelector('#tree [aria-current]'), sd = document.getElementById('side');
+      if (cur && sd) {
+        var a = cur.getBoundingClientRect(), s = sd.getBoundingClientRect();
+        if (a.top < s.top + 60 || a.bottom > s.bottom - 20) { sd.scrollTop += a.top - s.top - 120; }
+      }
+    }, [r[0]]);
+    function setSince(v) { var h = v == null ? null : commits[v].h; sinceHash[1](h); store('since', h); }
+    function setToc(items) { if (JSON.stringify(items) !== JSON.stringify(toc[0])) { toc[1](items); } }
+    function goto(c) {
+      panel[1](null);
+      setTimeout(function () {
+        var el = document.querySelector('.blk[data-p="' + CSS.escape(c.path) + '"]');
+        if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 1500); }
+      }, 50);
+    }
+    return html`
+      <a class="skip" href="#main">Skip to content</a>
+      <header class="bar">
+        <button id="menu" type="button" aria-label="Menu" aria-expanded=${side[0] ? 'true' : 'false'} onClick=${function () { side[1](!side[0]); }}>☰</button>
+        ${D.brand.head && html`<span dangerouslySetInnerHTML=${{ __html: D.brand.head }}></span>`}
+        <span id="bar-title">${page.title}</span>
+      </header>
+      <div class="shell">
+        <aside id="side" class=${side[0] ? 'open' : ''}>
+          ${D.brand.head && html`<div dangerouslySetInnerHTML=${{ __html: D.brand.head }}></div>`}
+          <${Search} openSide=${function () { side[1](true); }} />
+          ${D.full && html`<p class="banner">Full build: includes hidden documents and notes. Do not publish.</p>`}
+          <nav id="tree" aria-label="Document tree">
+            ${tree.length > 0 && html`<h2>Pages</h2><${Items} nodes=${tree} cur=${page.id} since=${since[0]} />`}
+            ${orphans.length > 0 && html`<${Group} label="Without parent" n=${D.nav.orphans.length}><${Items} nodes=${orphans} cur=${page.id} since=${since[0]} /><//>`}
+            ${D.nav.uncovered && html`<${Group} label="Documents without code coverage" n=${D.nav.uncovered.length}>
+              <ul>${D.nav.uncovered.map(function (id) { return html`<li><a href=${'#' + id}>${byId[id] ? byId[id].title : id}</a></li>`; })}</ul><//>`}
+          </nav>
+        </aside>
+        <main id="main" tabindex="-1">
+          <${Toolbar} since=${since[0]} setSince=${setSince} panel=${panel[0]} setPanel=${panel[1]} comments=${comments} />
+          ${panel[0] === 'c' && html`<${Comments} comments=${comments} close=${function () { panel[1](null); }} goto=${goto} />`}
+          ${panel[0] === 'e' && html`<${Export} page=${page} close=${function () { panel[1](null); }} />`}
+          <${Page} key=${page.id} page=${page} comments=${comments} since=${since[0]} onToc=${setToc} />
+        </main>
+        <${Toc} items=${toc[0]} />
+      </div>`;
+  }
+
+  render(html`<${App} />`, document.getElementById('app'));
 })();
 
 </script>

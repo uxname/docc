@@ -30,14 +30,14 @@ func TestLangRu(t *testing.T) {
 	}
 	html := readFile(t, "docs/out.html")
 	for _, want := range []string{
-		">Страницы раздела<", ">Связанные<", ">Родитель<", "<small>Далее</small>", "<small>Назад</small>",
-		`placeholder="Поиск  ( / )"`, `aria-label="На этой странице"`, `'Копировать'`, `'Ничего не найдено'`, `' ещё '`,
+		">Страницы раздела<", ">Связанные<", ">Родитель<", "<small>Далее</small>", "<small>Назад</small>", `<html lang="ru">`,
+		`placeholder="Поиск  ( / )"`, `aria-label="На этой странице"`, `'Копировать'`, ">Ничего не найдено<", " ещё ↓", "🎤 Зажмите и говорите",
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("out.html lacks %q", want)
 		}
 	}
-	for _, bad := range []string{"Pages in this section", "'Copy'", "'On this page'", `aria-label="On this page"`, ">Parent<"} {
+	for _, bad := range []string{"Pages in this section", "'Copy'", "'On this page'", `aria-label="On this page"`, ">Parent<", "{{t:"} {
 		if strings.Contains(html, bad) {
 			t.Errorf("out.html keeps %q", bad)
 		}
@@ -79,6 +79,9 @@ func TestImages(t *testing.T) {
 	}
 	for f, wants := range checks {
 		got := readFile(t, f)
+		if f == "docs/out.html" {
+			got = readApp(t, f).Blocks
+		}
 		for _, want := range wants {
 			if !strings.Contains(got, want) {
 				t.Errorf("%s lacks %q", f, want)
@@ -105,7 +108,7 @@ func TestFootnotesInHTML(t *testing.T) {
 	if code, out, errs := do("build", "--html"); code != 0 {
 		t.Fatalf("%d %s %s", code, out, errs)
 	}
-	html := readFile(t, "docs/out.html")
+	html := readApp(t, "docs/out.html").Blocks
 	for _, want := range []string{`id="index--fn:1"`, `href="#index--fn:1"`, `id="p--fn:1"`, `href="#p--fnref:1"`, "Source two."} {
 		if !strings.Contains(html, want) {
 			t.Errorf("out.html lacks %q", want)

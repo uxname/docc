@@ -81,7 +81,7 @@ func TestSkillMatchesRegistryAndCommands(t *testing.T) {
 	}
 	for _, cmd := range regexp.MustCompile("`docc ([a-z]+)").FindAllStringSubmatch(text, -1) {
 		switch cmd[1] {
-		case "validate", "build", "check", "explain", "rules", "schema", "init", "ack", "update":
+		case "validate", "build", "check", "explain", "rules", "schema", "init", "ack", "update", "comments":
 		default:
 			t.Errorf("skill mentions unknown command docc %s", cmd[1])
 		}

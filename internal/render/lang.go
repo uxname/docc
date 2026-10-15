@@ -8,7 +8,7 @@ import (
 
 // ru translates the fixed labels of the output ("lang": "ru" in docc.json).
 // The English text is the key, so the default build needs no table and stays
-// as it was. page.html and page.js mark their labels as {{t:English text}}.
+// as it was. page.html and app.js mark their labels as {{t:English text}}.
 // Every key must have a Russian entry: TestLabelsTranslated checks it.
 var ru = map[string]string{
 	// Markdown pages and the document tree
@@ -52,6 +52,49 @@ var ru = map[string]string{
 	"Nothing found":        "Ничего не найдено",
 	"earlier":              "выше",
 	"more":                 "ещё",
+	// app.js: history, comments, export
+	"en": "ru",
+	"This documentation is an application: turn on JavaScript to read it, or read the Markdown in the output folder.": "Эта документация — приложение: включите JavaScript, чтобы её читать, или читайте Markdown в папке сборки.",
+	"not committed":                          "не закоммичено",
+	"No access to the microphone":            "Нет доступа к микрофону",
+	"Speech service unreachable":             "Сервис распознавания речи недоступен",
+	"No speech heard":                        "Речь не услышана",
+	"Hold and speak":                         "Зажмите и говорите",
+	"Listening…":                             "Слушаю…",
+	"Your name":                              "Ваше имя",
+	"Comment on this block":                  "Комментарий к этому блоку",
+	"Cancel":                                 "Отмена",
+	"Save":                                   "Сохранить",
+	"Anonymous":                              "Без имени",
+	"processed":                              "обработан",
+	"not processed":                          "не обработан",
+	"Delete":                                 "Удалить",
+	"History of the block":                   "История блока",
+	"Close":                                  "Закрыть",
+	"created":                                "создан",
+	"Text at the chosen version → now":       "Текст в выбранной версии → сейчас",
+	"Changed after the chosen version":       "Изменено после выбранной версии",
+	"Comment":                                "Комментировать",
+	"History of the page":                    "История страницы",
+	"No history: the project is not in Git.": "Истории нет: проект не в Git.",
+	"page created":                           "страница создана",
+	"Changed":                                "Изменено",
+	"Added":                                  "Добавлено",
+	"Removed":                                "Удалено",
+	"Page history":                           "История страницы",
+	"Comments":                               "Комментарии",
+	"New comments stay in this browser until you download them and run docc comments import.": "Новые комментарии хранятся в этом браузере, пока вы не скачаете их и не выполните docc comments import.",
+	"Download JSON":                        "Скачать JSON",
+	"Delete all comments of this browser?": "Удалить все комментарии этого браузера?",
+	"Clear":                                "Очистить",
+	"No new comments. Point at a block and press 💬.": "Новых комментариев нет. Наведите на блок и нажмите 💬.",
+	"In the repository":                  "В репозитории",
+	"This page (.md)":                    "Эта страница (.md)",
+	"All pages in one file (.md)":        "Все страницы одним файлом (.md)",
+	"All pages as separate files (.zip)": "Все страницы отдельными файлами (.zip)",
+	"Changes since":                      "Изменения с",
+	"off":                                "выкл.",
+	"Export":                             "Экспорт",
 }
 
 // t returns a fixed label in the language of the project.
@@ -77,7 +120,7 @@ func Labels(s string) []string {
 
 var jsQuote = strings.NewReplacer(`\`, `\\`, `'`, `\'`)
 
-// labels replaces {{t:...}} in page.html (js false) or page.js (js true) with
+// labels replaces {{t:...}} in page.html (js false) or app.js (js true) with
 // the label in the language of the project, escaped for that file.
 func (r *Renderer) labels(s string, js bool) string {
 	return labelRe.ReplaceAllStringFunc(s, func(m string) string {
