@@ -30,7 +30,7 @@ Commands:
   validate           check sources
   build              build Markdown into docs/out (--full: audit, --single/--html: one file)
   check              read-only check for CI: validate + freshness of out/ and docc.lock
-  ack <id|file>...   confirm the links around a document, target or code file in docc.lock (--all: every link)
+  ack <id|file>...   confirm the changed links around a document, target or code file in docc.lock (--all: every changed link)
   explain <code>     describe a rule
   rules              list rules with effective levels
   schema document|config   print a JSON Schema
@@ -86,9 +86,12 @@ Example:
 `,
 	"ack": `Usage: docc ack <id, target or code file>... | --all
 
-Confirms links in docc.lock after a review: sets the stored hashes of every line whose
-source or target is the argument, or whose target lies in the document with that id, to
-the current ones. This clears DOC209 and DOC402. New links are confirmed by docc build.
+Confirms changed links in docc.lock after a review: sets the stored hashes of every
+changed line whose source or target is the argument, or whose target lies in the document
+with that id, to the current ones, and prints each link it confirmed. This clears DOC209
+and DOC402. Links that did not change are left alone. New links are confirmed by docc build.
+Read every document the output lists before you run it: the argument may match more
+links than the one you reviewed.
 
 Examples:
   docc ack req-login
@@ -548,21 +551,29 @@ func cmdAck(c *common, args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	n, err := p.Ack(pos, *all)
+	done, err := p.Ack(pos, *all)
 	if err != nil {
 		return 2, err
 	}
 	if c.format == "json" {
-		return 0, writeJSON(stdout, map[string]any{"confirmed": n})
+		links := make([]map[string]string, len(done))
+		for i, l := range done {
+			links[i] = map[string]string{"source": l.Source, "target": l.Target}
+		}
+		return 0, writeJSON(stdout, map[string]any{"confirmed": len(done), "links": links})
 	}
-	say(stdout, "confirmed %d links in %s\n", n, engine.LockFile)
+	for _, l := range done {
+		say(stdout, "confirmed %s -> %s\n", l.Source, l.Target)
+	}
+	say(stdout, "confirmed %d links in %s\n", len(done), engine.LockFile)
 	return 0, nil
 }
 
 const initConfig = `{
   "src": "docs/src",
   "out": "docs/out",
-  "roots": ["index"]
+  "roots": ["index"],
+  "maxWarnings": 0
 }
 `
 

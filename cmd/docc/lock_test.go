@@ -47,20 +47,26 @@ func TestLockSuspectAndAck(t *testing.T) {
 	}
 	write(t, "docs/src/a.json", `{"kind":"page","title":"A","parent":"index","order":2,"body":["Ten per minute. ^limit","Other."],"spec":{"$sections":true,"Rate limits":"R"}}`)
 	_, out, _ := do("validate")
-	if strings.Count(out, "DOC209") != 3 || !strings.Contains(out, "docs/src/index.json") || !strings.Contains(out, "docs/src/b.json") {
-		t.Fatalf("want DOC209 for a and a#^limit from index and a from b:\n%s", out)
+	if strings.Count(out, "DOC209") != 2 || !strings.Contains(out, "the targets a, a#^limit changed") || !strings.Contains(out, "docs/src/b.json") {
+		t.Fatalf("want one DOC209 for a and a#^limit from index and one for a from b:\n%s", out)
 	}
 	if _, out, _ := do("check"); strings.Contains(out, "DOC503") || strings.Contains(out, "DOC109") {
 		t.Errorf("the lock is fresh:\n%s", out)
 	}
-	if code, out, _ := do("ack", "a#^limit"); code != 0 || !strings.Contains(out, "confirmed 1 links") {
+	if code, out, _ := do("ack", "a#^limit"); code != 0 || !strings.Contains(out, "confirmed index -> a#^limit") || !strings.Contains(out, "confirmed 1 links") {
 		t.Fatalf("ack: %d %s", code, out)
 	}
-	if _, out, _ = do("validate"); strings.Count(out, "DOC209") != 2 {
+	if _, out, _ = do("validate"); strings.Count(out, "DOC209") != 2 || strings.Contains(out, "a#^limit changed") {
 		t.Fatalf("ack of a#^limit must clear only that line:\n%s", out)
 	}
-	if code, out, _ := do("ack", "a"); code != 0 || !strings.Contains(out, "confirmed 4 links") {
-		t.Fatalf("ack a: %d %s", code, out)
+	if code, out, _ := do("ack", "a"); code != 0 || !strings.Contains(out, "confirmed 2 links") || !strings.Contains(out, "confirmed b -> a") || strings.Contains(out, "a#spec") {
+		t.Fatalf("ack a must list and confirm only the stale lines: %d %s", code, out)
+	}
+	if code, out, _ := do("ack", "a"); code != 0 || !strings.Contains(out, "confirmed 0 links") {
+		t.Fatalf("a second ack has nothing to confirm: %d %s", code, out)
+	}
+	if code, out, _ := do("ack", "a", "--format", "json"); code != 0 || !strings.Contains(out, `"links": []`) {
+		t.Fatalf("ack json lists the links: %d %s", code, out)
 	}
 	if _, out, _ = do("validate"); strings.Contains(out, "DOC209") {
 		t.Fatalf("ack a must confirm every link to a:\n%s", out)

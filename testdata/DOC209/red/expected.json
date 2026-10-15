@@ -9,6 +9,6 @@
     "endLine": 1,
     "endColumn": 74,
     "message": "the target b#^limit changed after the link from index was confirmed",
-    "hint": "Check index against b#^limit, then run docc ack b#^limit."
+    "hint": "Check index against b#^limit, then run docc ack b#^limit (it prints the links it confirms)."
   }
 ]

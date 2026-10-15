@@ -386,6 +386,20 @@ func TestInit(t *testing.T) {
 	}
 }
 
+func TestInitConfigBlocksSuspectLinks(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if code, out, _ := do("init"); code != 0 {
+		t.Fatal(code, out)
+	}
+	write(t, "docs/src/index.json", `{"title":"Index","kind":"page","body":"See [[a]]."}`)
+	write(t, "docs/src/a.json", `{"title":"A","kind":"page","parent":"index","body":"Five."}`)
+	mustBuild(t)
+	write(t, "docs/src/a.json", `{"title":"A","kind":"page","parent":"index","body":"Ten."}`)
+	if code, out, _ := do("check"); code != 1 || !strings.Contains(out, "DOC209") {
+		t.Fatalf("a stale link must fail check in a project made by init: %d\n%s", code, out)
+	}
+}
+
 func TestInitHook(t *testing.T) {
 	t.Chdir(t.TempDir())
 	if code, out, _ := do("init"); code != 0 || strings.Contains(out, "pre-commit") {

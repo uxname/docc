@@ -239,24 +239,46 @@ func (p *Project) WriteLock() error {
 	return os.WriteFile(p.Cfg.Abs(LockFile), []byte(want), 0o644)
 }
 
+// stale reports whether the lock line o no longer matches the current link l:
+// the target (or, for a region link, the code) changed after it was confirmed.
+func stale(o, l Link) bool {
+	return o.Hash != l.Hash || o.Code != l.Code
+}
+
 // checkLock reports links whose target (DOC209) or code region (DOC402)
-// changed after they were confirmed in docc.lock.
+// changed after they were confirmed in docc.lock. Several stale links of one
+// document to parts of the same document are one DOC209, at the first of them.
 func (p *Project) checkLock() {
 	_, stored, _, _ := p.readLock()
 	if len(stored) == 0 {
 		return
 	}
 	old := firstByKey(stored)
+	type group struct {
+		first   Link
+		targets []string
+	}
+	groups := map[string]*group{}
+	var order []string // groups in link order
 	for _, l := range p.Links() {
 		o, ok := old[l.key()]
 		if !ok {
 			continue
 		}
 		if o.Hash != l.Hash {
-			msg := fmt.Sprintf("the target %s changed after the link from %s was confirmed", l.Target, l.Source)
 			if l.doc != nil {
-				p.emit(l.doc, "DOC209", l.start, l.end, msg, fmt.Sprintf("Check %s against %s, then run docc ack %s.", l.Source, l.Target, l.Target))
+				id, _, _, _ := splitRef(l.Target)
+				k := l.Source + " " + id
+				g := groups[k]
+				if g == nil {
+					g = &group{first: l}
+					groups[k], order = g, append(order, k)
+				} else if l.start < g.first.start {
+					g.first = l
+				}
+				g.targets = append(g.targets, l.Target)
 			} else {
+				msg := fmt.Sprintf("the target %s changed after the link from %s was confirmed", l.Target, l.Source)
 				p.emitFile(l.Source, "DOC209", l.line, l.col, msg, fmt.Sprintf("Check the code in %s against %s, then run docc ack %s.", l.Source, l.Target, l.Target))
 			}
 		}
@@ -264,6 +286,19 @@ func (p *Project) checkLock() {
 			p.emitFile(l.Source, "DOC402", l.line, l.col, fmt.Sprintf("code region in %s for %s changed", l.Source, l.Target),
 				fmt.Sprintf("Check the document %s still matches, then run docc ack %s.", l.Target, l.Source))
 		}
+	}
+	for _, k := range order {
+		g := groups[k]
+		l := g.first
+		msg := fmt.Sprintf("the target %s changed after the link from %s was confirmed", l.Target, l.Source)
+		if len(g.targets) > 1 {
+			msg = fmt.Sprintf("the targets %s changed after the links from %s were confirmed", strings.Join(g.targets, ", "), l.Source)
+		}
+		hint := fmt.Sprintf("Check %s against %s, then run docc ack %s (it prints the links it confirms).", l.Source, l.Target, l.Target)
+		if !strings.Contains(l.Target, "#") {
+			hint += fmt.Sprintf(" To be warned only when one part changes, link %s#^anchor or %s#field instead of the whole document.", l.Target, l.Target)
+		}
+		p.emit(l.doc, "DOC209", l.start, l.end, msg, hint)
 	}
 }
 
@@ -307,13 +342,15 @@ func (p *Project) CheckLock() {
 	p.emitFile(LockFile, "DOC503", line, 1, msg, "Run docc build and commit docc.lock.")
 }
 
-// Ack confirms the lock lines around each name: its source or target is the
-// name, or the target lies in the document with that id; with all, every
-// line. Lines of links that no longer exist are left to docc build.
-func (p *Project) Ack(names []string, all bool) (int, error) {
+// Ack confirms the stale lock lines around each name: its source or target is
+// the name, or the target lies in the document with that id; with all, every
+// stale line. Lines that are not stale are left as they are, and so are lines
+// of links that no longer exist (docc build drops them). It returns the links
+// it confirmed.
+func (p *Project) Ack(names []string, all bool) ([]Link, error) {
 	data, _, _, exists := p.readLock()
 	if !exists {
-		return 0, &UsageError{"docc.lock not found: run docc build first"}
+		return nil, &UsageError{"docc.lock not found: run docc build first"}
 	}
 	cur := map[string]Link{}
 	for _, l := range p.Links() {
@@ -321,7 +358,7 @@ func (p *Project) Ack(names []string, all bool) (int, error) {
 	}
 	rows := lockRows(data)
 	hit := map[string]bool{}
-	n := 0
+	var done []Link
 	for i, row := range rows {
 		l, ok := parseLockLine(row)
 		c, now := cur[l.key()]
@@ -335,19 +372,19 @@ func (p *Project) Ack(names []string, all bool) (int, error) {
 				match, hit[x] = true, true
 			}
 		}
-		if match {
+		if match && stale(l, c) {
 			l.Hash, l.Code = c.Hash, c.Code
 			rows[i] = l.String()
-			n++
+			done = append(done, Link{Source: l.Source, Target: l.Target})
 		}
 	}
 	for _, x := range names {
 		if !hit[x] {
-			return 0, &UsageError{fmt.Sprintf("no link in docc.lock matches %q (a new link gets there with docc build)", x)}
+			return nil, &UsageError{fmt.Sprintf("no link in docc.lock matches %q (a new link gets there with docc build)", x)}
 		}
 	}
-	if n == 0 {
-		return 0, nil
+	if len(done) == 0 {
+		return nil, nil
 	}
-	return n, os.WriteFile(p.Cfg.Abs(LockFile), []byte(strings.Join(rows, "\n")+"\n"), 0o644)
+	return done, os.WriteFile(p.Cfg.Abs(LockFile), []byte(strings.Join(rows, "\n")+"\n"), 0o644)
 }
