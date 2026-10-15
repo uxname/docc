@@ -465,9 +465,11 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 	if single {
 		one[".md"] = r.Single()
 	}
+	var htmlErr error // a bad changesSince stops only the HTML file, not the pages and the lock
 	if html {
-		if one[".html"], err = r.HTML(); err != nil {
-			return 0, nil, err
+		var h string
+		if h, htmlErr = r.HTML(); htmlErr == nil {
+			one[".html"] = h
 		}
 	}
 	paths := map[string]string{}
@@ -492,7 +494,7 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 			extra = append(extra, dir+ext)
 		}
 	}
-	return len(files), extra, nil
+	return len(files), extra, htmlErr
 }
 
 func cmdBuild(c *common, args []string, stdout, stderr io.Writer) (int, error) {

@@ -205,7 +205,14 @@ func TestHTMLKeptUpToDate(t *testing.T) {
 	if err := os.WriteFile("docc.json", []byte(`{"changesSince":"no-such-tag"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile("docs/src/index.json", []byte(`{"title":"I","kind":"page","body":["Three."]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if code, _, errs := do("build"); code != 2 || !strings.Contains(errs, `changes since "no-such-tag"`) {
 		t.Fatalf("unknown revision: %d %s", code, errs)
+	}
+	// the pages are still built: only the HTML file waits for a good revision
+	if md := readFile(t, "docs/out/index.md"); !strings.Contains(md, "Three.") {
+		t.Errorf("docs/out was not built:\n%s", md)
 	}
 }
