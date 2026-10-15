@@ -584,3 +584,20 @@ func TestConfigExplicitBeatsParent(t *testing.T) {
 		t.Fatalf("%d %s %s", code, out, errs)
 	}
 }
+
+func TestTyposGetSuggestions(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json":        `{"title":"Index","kind":"page","body":"See [[requirments]] and [[unrelated-thing]]."}`,
+		"docs/src/requirements.json": `{"title":"R","kind":"page","parent":"index","parnet":"index","body":"x"}`,
+	})
+	_, out, _ := do("validate")
+	if !strings.Contains(out, "Did you mean `requirements`?") {
+		t.Errorf("DOC202 must name the nearest id:\n%s", out)
+	}
+	if strings.Contains(out, "Did you mean `requirements` or") || strings.Contains(out, "unrelated-thing\"\n          hint: Did you mean") {
+		t.Errorf("a far id gets no suggestion:\n%s", out)
+	}
+	if !strings.Contains(out, `DOC110`) || !strings.Contains(out, `misspelled "parent"`) {
+		t.Errorf("want DOC110 for parnet:\n%s", out)
+	}
+}

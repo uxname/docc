@@ -2,14 +2,17 @@ package engine
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/uxname/docc/internal/loader"
 	"github.com/uxname/docc/internal/mdscan"
+	"github.com/uxname/docc/internal/schema"
 )
 
 // inGraph reports whether d is the graph node of its id (the first document
@@ -105,8 +108,11 @@ func (p *Project) brokenRefs() {
 		check := func(id string, start, end int, what string, visibleOnly bool) {
 			t, ok := p.refTarget(id)
 			if !ok {
-				p.emit(d, "DOC202", start, end, fmt.Sprintf("%s points to a document that does not exist: %q", what, id),
-					fmt.Sprintf("Create %s/%s.json or fix the id.", p.Cfg.Src, id))
+				hint := fmt.Sprintf("Fix the id, or create %s/%s.json only if the document is really needed.", p.Cfg.Src, id)
+				if near := p.similarIDs(id); len(near) > 0 {
+					hint = fmt.Sprintf("Did you mean %s? ", strings.Join(near, " or ")) + hint
+				}
+				p.emit(d, "DOC202", start, end, fmt.Sprintf("%s points to a document that does not exist: %q", what, id), hint)
 				return
 			}
 			if visibleOnly && !d.Hidden && t.Parsed() && t.Hidden {
@@ -465,4 +471,19 @@ func reachCyclic(edges map[incNode][]incNode, cyclic map[incNode]bool) map[incNo
 		}
 	}
 	return out
+}
+
+// similarIDs returns up to three existing ids close to id, nearest first.
+func (p *Project) similarIDs(id string) []string {
+	ids := slices.Sorted(maps.Keys(p.Graph))
+	var near []string
+	for len(near) < 3 && len(ids) > 0 {
+		c, _ := schema.Closest(id, ids)
+		if c == "" {
+			break
+		}
+		near = append(near, "`"+c+"`")
+		ids = slices.DeleteFunc(ids, func(x string) bool { return x == c })
+	}
+	return near
 }

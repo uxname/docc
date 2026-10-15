@@ -3,8 +3,8 @@ package rules
 import "testing"
 
 func TestRegistry(t *testing.T) {
-	if n := len(All()); n != 38 {
-		t.Fatalf("want 38 rules, got %d", n)
+	if n := len(All()); n != 39 {
+		t.Fatalf("want 39 rules, got %d", n)
 	}
 	core := 0
 	for _, r := range All() {

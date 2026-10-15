@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC110",
+    "rule": "syntax/reserved-field-typo",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 37,
+    "endLine": 1,
+    "endColumn": 44,
+    "message": "field \"hiden\" looks like a misspelled \"hidden\"",
+    "hint": "Did you mean \"hidden\"? Rename it, or declare \"hiden\" in the schema of the kind if it is meant."
+  }
+]

@@ -133,7 +133,13 @@ func (k *Kind) unknownFields(root *loader.Node) []Violation {
 }
 
 func (k *Kind) closest(key string) string {
-	names := append(slices.Sorted(maps.Keys(k.allowed)), builtinFields...)
+	c, _ := Closest(key, append(slices.Sorted(maps.Keys(k.allowed)), builtinFields...))
+	return c
+}
+
+// Closest returns the name nearest to key and its edit distance; "" when none
+// is near enough to be a likely typo.
+func Closest(key string, names []string) (string, int) {
 	best, bestD := "", 0
 	for _, n := range names {
 		if d := distance(key, n); best == "" || d < bestD {
@@ -141,9 +147,15 @@ func (k *Kind) closest(key string) string {
 		}
 	}
 	if bestD > 2 && bestD*3 > len([]rune(key)) {
-		return ""
+		return "", 0
 	}
-	return best
+	return best, bestD
+}
+
+// Declares reports whether the schema of the kind lists key as a property.
+func (s *Set) Declares(kindName, key string) bool {
+	k := s.kinds[kindName]
+	return k != nil && k.allowed[key]
 }
 
 // distance is the Levenshtein distance between a and b.

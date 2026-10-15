@@ -9,7 +9,7 @@
     "endLine": 3,
     "endColumn": 24,
     "message": "parent points to a document that does not exist: \"no-parent\"",
-    "hint": "Create docs/src/no-parent.json or fix the id."
+    "hint": "Fix the id, or create docs/src/no-parent.json only if the document is really needed."
   },
   {
     "code": "DOC202",
@@ -21,7 +21,7 @@
     "endLine": 4,
     "endColumn": 34,
     "message": "reference [[no-link]] points to a document that does not exist: \"no-link\"",
-    "hint": "Create docs/src/no-link.json or fix the id."
+    "hint": "Fix the id, or create docs/src/no-link.json only if the document is really needed."
   },
   {
     "code": "DOC202",
@@ -33,7 +33,7 @@
     "endLine": 4,
     "endColumn": 46,
     "message": "reference [[no-ref]] points to a document that does not exist: \"no-ref\"",
-    "hint": "Create docs/src/no-ref.json or fix the id."
+    "hint": "Fix the id, or create docs/src/no-ref.json only if the document is really needed."
   },
   {
     "code": "DOC202",
@@ -57,6 +57,6 @@
     "endLine": 5,
     "endColumn": 31,
     "message": "reference [[no-note]] points to a document that does not exist: \"no-note\"",
-    "hint": "Create docs/src/no-note.json or fix the id."
+    "hint": "Fix the id, or create docs/src/no-note.json only if the document is really needed."
   }
 ]
