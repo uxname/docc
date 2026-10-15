@@ -77,6 +77,7 @@ var ru = map[string]string{
 	"Delete":                             "Удалить",
 	"Team's answer":                      "Ответ команды",
 	"Comment deleted.":                   "Замечание удалено.",
+	"Discard the unsaved comment?":       "Отбросить несохранённое замечание?",
 	"Undo":                               "Вернуть",
 	"History of the paragraph":           "История абзаца",
 	"Close":                              "Закрыть",

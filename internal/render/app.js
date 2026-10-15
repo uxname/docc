@@ -100,16 +100,21 @@
   // the source text of a block as a reader sees it: links by their names, no marks
   // ponytail: a few regexes for the usual marks, not a Markdown parser
   function plain(s) {
-    return (s || '')
+    // code (fenced or in backticks) is kept as written: marks inside it are not marks
+    return (s || '').split(/(```[\s\S]*?```|`[^`\n]+`)/).map(function (t, i) {
+      return i % 2 ? t.replace(/^`{3}[^\n]*\n?|\n?`{3}$/g, '').replace(/^`|`$/g, '') : marks(t);
+    }).join('');
+  }
+  function marks(s) {
+    return s
       .replace(/\[\[([^\]#|]+)(?:#([^\]|]*))?\]\]/g, function (m, id, a) {
         if (a && a.indexOf('/') > 0) { return a.slice(a.lastIndexOf('/') + 1); }
         return byId[id] ? byId[id].title : id;
       })
       .replace(/\{\{([^}#]+)#[^}]*\}\}/g, function (m, id) { return '«' + (byId[id] ? byId[id].title : id) + '»'; })
-      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)/g, '$1')
       .replace(/(\*\*|__)(.+?)\1/g, '$2')
-      .replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1$2')
-      .replace(/`([^`]+)`/g, '$1')
+      .replace(/(^|[^*\w])\*(?=\S)([^*\n]*\S)\*/g, '$1$2')
       .replace(/^#{1,6}\s+/gm, '')
       .replace(/^>\s?/gm, '')
       .replace(/\s\^[a-z0-9-]+$/gm, '');
@@ -210,10 +215,12 @@
         d.list.push(b.p);
         if (before === null) { d.add++; } else { d.chg++; }
       });
-      var gone = {};
+      var gone = {}, late = {}; // late: texts of blocks that came after `since`; they were not in that version
       pageChanges(page).forEach(function (c) {
         if (c.c <= since) { return; }
-        (c.rm || []).forEach(function (x) { if (!now[x[1]] && !gone[x[1]]) { gone[x[1]] = true; d.rm.push(x[1]); } });
+        (c.add || []).forEach(function (x) { late[x[1]] = true; });
+        (c.ch || []).forEach(function (x) { if (late[x[1]]) { late[x[2]] = true; } });
+        (c.rm || []).forEach(function (x) { if (!now[x[1]] && !gone[x[1]] && !late[x[1]]) { gone[x[1]] = true; d.rm.push(x[1]); } });
       });
     }
     deltaCache[key] = d;
@@ -320,10 +327,15 @@
     </span>`;
   }
 
+  var draft = false; // an editor is open with text not saved yet
+  function leaveDraft() { return !draft || confirm('{{t:Discard the unsaved comment?}}'); }
   function Editor(props) {
     var edit = props.edit;
     var text = useState(edit ? edit.text : ''), author = useState(edit ? edit.author || '' : store('author') || ''), ta = useRef(null);
     var cur = useRef(''); cur.current = text[0];
+    draft = text[0].trim() !== (edit ? edit.text : '');
+    useEffect(function () { return function () { draft = false; }; }, []);
+    function cancel() { if (leaveDraft()) { props.close(); } }
     useEffect(function () { if (ta.current) { ta.current.focus(); } }, []);
     function ok() {
       var t = text[0].trim(), a = author[0].trim();
@@ -344,12 +356,12 @@
         onInput=${function (e) { text[1](e.target.value); }}
         onKeyDown=${function (e) {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { ok(); }
-          if (e.key === 'Escape') { props.close(); }
+          if (e.key === 'Escape') { cancel(); }
         }}></textarea>
       <div class="ed-row">
         <${Mic} get=${function () { return cur.current; }} set=${text[1]} />
         <span class="sp"></span>
-        <button type="button" onClick=${props.close}>{{t:Cancel}}</button>
+        <button type="button" onClick=${cancel}>{{t:Cancel}}</button>
         <button type="button" class="pri" onClick=${ok} disabled=${!text[0].trim()}>{{t:Save}}</button>
       </div>
     </div>`;
@@ -411,7 +423,7 @@
       ${changed && !isNew && html`<button type="button" class="chg-b" aria-expanded=${showDiff[0] ? 'true' : 'false'}
         onClick=${function () { showDiff[1](!showDiff[0]); }}>{{t:What changed}}</button>`}
       <button type="button" aria-label=${n ? '{{t:Comments}}: ' + n : '{{t:Comment on this paragraph}}'} title="{{t:Comment on this paragraph}}"
-        onClick=${function () { mode[1](mode[0] === 'c' ? null : 'c'); }}>💬${n ? ' ' + n : ''}</button>
+        onClick=${function () { if (mode[0] !== 'c' || leaveDraft()) { mode[1](mode[0] === 'c' ? null : 'c'); } }}>💬${n ? ' ' + n : ''}</button>
       ${vs.length > 1 && html`<button type="button" aria-label=${'{{t:History of the paragraph}}: ' + vs.length} title="{{t:History of the paragraph}}"
         onClick=${function () { mode[1](mode[0] === 'h' ? null : 'h'); }}>🕘 ${vs.length}</button>`}
     </span>`;
