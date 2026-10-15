@@ -100,6 +100,7 @@ type Config struct {
 	Lang          string // "en" or "ru": language of the fixed labels in the output
 	MaxWarnings   int
 	HasMaxWarning bool
+	ChangesSince  string // Git revision the HTML file counts the changes from; "" for none
 
 	Rules     RuleSet
 	Custom    []*Custom
@@ -252,6 +253,11 @@ func Parse(data []byte, root, file string) (*Config, error) {
 		case "maxWarnings":
 			c.MaxWarnings, e = w.nonNegInt(m.Value)
 			c.HasMaxWarning = e == nil
+		case "changesSince":
+			c.ChangesSince, e = w.str(m.Value)
+			if e == nil && strings.TrimSpace(c.ChangesSince) == "" {
+				e = w.errAt(m.Value.Start, "changesSince must name a Git revision")
+			}
 		case "rules":
 			c.Rules, e = w.ruleSet(c, m.Value)
 		case "trace":

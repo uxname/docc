@@ -438,8 +438,8 @@ func noArgs(pos []string) error {
 
 // build validates, and when there are no errors of groups 1xx-2xx writes the
 // Markdown into out (or outFull) and returns the number of files. With single
-// and html it also writes the one-file Markdown and HTML next to the directory
-// and returns their paths in extra.
+// and html, or when that file is already there, it also writes the one-file
+// Markdown and HTML next to the directory and returns their paths in extra.
 func build(p *engine.Project, full, single, html bool) (n int, extra []string, err error) {
 	if engine.Structural(p.Diags) {
 		return 0, nil, nil
@@ -451,6 +451,14 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 	if err := render.CheckDir(p, dir); err != nil {
 		return 0, nil, err
 	}
+	// a one-file build made once is kept up to date by every later build
+	for ext, on := range map[string]*bool{".md": &single, ".html": &html} {
+		if f, err := render.SingleFile(p, dir, ext); err == nil && !*on {
+			if _, err := os.Stat(f); err == nil {
+				*on = true
+			}
+		}
+	}
 	r := &render.Renderer{P: p, Full: full}
 	files := r.Files()
 	one := map[string]string{} // extension -> content of a single-file build
@@ -458,7 +466,9 @@ func build(p *engine.Project, full, single, html bool) (n int, extra []string, e
 		one[".md"] = r.Single()
 	}
 	if html {
-		one[".html"] = r.HTML()
+		if one[".html"], err = r.HTML(); err != nil {
+			return 0, nil, err
+		}
 	}
 	paths := map[string]string{}
 	for ext := range one {

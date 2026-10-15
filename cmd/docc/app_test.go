@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -138,5 +140,72 @@ func TestComments(t *testing.T) {
 	}
 	if got := readFile(t, "docc.comments.json"); got != "{\"comments\": []}\n" {
 		t.Errorf("after rm: %q", got)
+	}
+}
+
+// Comments copied from the page as text come in through standard input; the
+// team's own (--internal) stay out of the HTML file, a reply goes into it.
+func TestCommentsCopiedAndInternal(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"I","body":["Alpha text here."]}`,
+	})
+	export := func(id string) string {
+		js := `{"docc":"comments","version":1,"comments":[{"id":"` + id + `","doc":"index","path":"/body/0","quote":"Alpha text here.","text":"Note ` + id + `"}]}`
+		return "Замечания (1):\n1. «Alpha» — Note\n\n" + "docc-comments:" + base64.StdEncoding.EncodeToString([]byte(js)) + "\n"
+	}
+	defer func(r io.Reader) { stdin = r }(stdin)
+	stdin = strings.NewReader(export("cust0001"))
+	if code, out, errs := do("comments", "import", "-"); code != 0 || !strings.Contains(out, "imported 1 comments") {
+		t.Fatalf("copied text: %d %s %s", code, out, errs)
+	}
+	stdin = strings.NewReader(export("team0001"))
+	if code, out, errs := do("comments", "import", "--internal", "-"); code != 0 {
+		t.Fatalf("internal: %d %s %s", code, out, errs)
+	}
+	stdin = strings.NewReader("just some words")
+	if code, _, errs := do("comments", "import", "-"); code != 2 || !strings.Contains(errs, "no comments in it") {
+		t.Fatalf("text without comments: %d %s", code, errs)
+	}
+	if code, _, errs := do("comments", "rm", "--reply", "x", "cust"); code != 2 || !strings.Contains(errs, "--reply is only for done") {
+		t.Fatalf("reply outside done: %d %s", code, errs)
+	}
+	if code, out, errs := do("comments", "done", "cust", "--reply", "Fixed in 5.2"); code != 0 {
+		t.Fatalf("done --reply: %d %s %s", code, out, errs)
+	}
+	if _, out, _ := do("comments", "--all"); !strings.Contains(out, "reply: Fixed in 5.2") || !strings.Contains(out, "team0001  open internal") {
+		t.Errorf("list:\n%s", out)
+	}
+	if code, out, errs := do("build", "--html"); code != 0 {
+		t.Fatal(out, errs)
+	}
+	html := readFile(t, "docs/out.html")
+	if strings.Contains(html, "team0001") || !strings.Contains(html, "Fixed in 5.2") {
+		t.Errorf("the file must have the reply and no internal comment")
+	}
+}
+
+// Once made, the HTML file is rebuilt by a plain docc build, so a stale file
+// is never sent; changesSince must name a revision of the repository.
+func TestHTMLKeptUpToDate(t *testing.T) {
+	project(t, map[string]string{
+		"docs/src/index.json": `{"title":"I","body":["One."]}`,
+	})
+	if code, out, errs := do("build", "--html"); code != 0 {
+		t.Fatal(out, errs)
+	}
+	if err := os.WriteFile("docs/src/index.json", []byte(`{"title":"I","kind":"page","body":["Two."]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, errs := do("build"); code != 0 || !strings.Contains(out, "built docs/out.html") {
+		t.Fatalf("%d %s %s", code, out, errs)
+	}
+	if html := readFile(t, "docs/out.html"); !strings.Contains(html, "Two.") {
+		t.Error("docs/out.html was not rebuilt")
+	}
+	if err := os.WriteFile("docc.json", []byte(`{"changesSince":"no-such-tag"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, errs := do("build"); code != 2 || !strings.Contains(errs, `changes since "no-such-tag"`) {
+		t.Fatalf("unknown revision: %d %s", code, errs)
 	}
 }

@@ -30,8 +30,9 @@ func TestLangRu(t *testing.T) {
 	}
 	html := readFile(t, "docs/out.html")
 	for _, want := range []string{
-		">Страницы раздела<", ">Связанные<", ">Родитель<", "<small>Далее</small>", "<small>Назад</small>", `<html lang="ru">`,
-		`placeholder="Поиск  ( / )"`, `aria-label="На этой странице"`, `'Копировать'`, ">Ничего не найдено<", " ещё ↓", "🎤 Зажмите и говорите",
+		">Страницы раздела<", ">Связанные<", "<small>Далее</small>", "<small>Назад</small>", `<html lang="ru">`,
+		`placeholder="Поиск  ( / )"`, `aria-label="На этой странице"`, `'Копировать'`, `'Ничего не найдено'`, " ещё ↓", "🎤 Надиктовать",
+		">Ваши замечания<", "Показать изменения с",
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("out.html lacks %q", want)

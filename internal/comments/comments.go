@@ -4,11 +4,13 @@ package comments
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/uxname/docc/internal/history"
 	"github.com/uxname/docc/internal/loader"
@@ -35,6 +37,10 @@ type Item struct {
 	Created string `json:"created,omitempty"`
 	Build   string `json:"build,omitempty"`
 	Status  string `json:"status,omitempty"`
+	// Reply is the team's answer, shown under the comment in the next HTML file.
+	Reply string `json:"reply,omitempty"`
+	// Internal comments (imported with --internal) stay out of the HTML file.
+	Internal bool `json:"internal,omitempty"`
 }
 
 // Export is the file the HTML page downloads.
@@ -98,16 +104,29 @@ func marshal(v any) ([]byte, error) {
 	return bytes.TrimSuffix(b.Bytes(), []byte("\n")), nil
 }
 
-// ReadExport reads a file downloaded from the HTML page.
-func ReadExport(path string) ([]Item, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
+// Marker starts the machine part of the comments copied from the HTML page
+// as text: the export JSON in base64, so a messenger cannot mangle it.
+const Marker = "docc-comments:"
+
+var markerRe = regexp.MustCompile(regexp.QuoteMeta(Marker) + `\s*([A-Za-z0-9+/]+=*)`)
+
+// ParseExport reads what the HTML page gives away: the downloaded file, or
+// the copied text with a Marker line anywhere in it. name is for errors.
+func ParseExport(name string, b []byte) ([]Item, error) {
+	if m := markerRe.FindSubmatch(b); m != nil {
+		raw, err := base64.StdEncoding.DecodeString(string(m[1]))
+		if err != nil {
+			return nil, fmt.Errorf("%s: the %s line is damaged: copy the comments again", name, Marker)
+		}
+		b = raw
+	} else if t := bytes.TrimSpace(b); len(t) == 0 || t[0] != '{' {
+		return nil, fmt.Errorf("%s: no comments in it: give the file downloaded from the page or the text copied there (it has a %s line)", name, Marker)
 	}
 	var e Export
 	if err := json.Unmarshal(b, &e); err != nil {
-		return nil, fmt.Errorf("%s: %v", path, err)
+		return nil, fmt.Errorf("%s: %v", name, err)
 	}
+	path := name
 	if e.Docc != "comments" {
 		return nil, fmt.Errorf("%s: not a comments file of docc (no \"docc\": \"comments\")", path)
 	}

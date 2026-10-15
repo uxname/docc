@@ -24,6 +24,24 @@ func statusClass(s string) string {
 	return ""
 }
 
+// statusRu names the usual statuses in Russian on the badge of the HTML page;
+// other values are shown as written.
+var statusRu = map[string]string{
+	"accepted": "принято", "approved": "согласовано", "done": "готово", "implemented": "реализовано",
+	"stable": "действует", "active": "действует", "resolved": "решено", "verified": "проверено",
+	"draft": "черновик", "proposed": "предложено", "open": "открыто", "planned": "запланировано",
+	"review": "на согласовании", "in-progress": "в работе", "wip": "в работе", "pending": "ожидает",
+	"rejected": "отклонено", "deprecated": "устарело", "obsolete": "устарело", "superseded": "заменено",
+	"blocked": "заблокировано", "wontfix": "не будет сделано",
+}
+
+func (r *Renderer) statusLabel(s string) string {
+	if v, ok := statusRu[strings.ToLower(s)]; ok && r.P.Cfg.Lang == "ru" {
+		return v
+	}
+	return s
+}
+
 func strField(d *engine.Doc, key string) string {
 	if v := d.Root.Get(key); v != nil && (v.Kind == loader.String || v.Kind == loader.Number) {
 		return oneLine.Replace(v.Str)

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/uxname/docc/internal/comments"
@@ -11,21 +12,25 @@ import (
 )
 
 func init() {
-	cmdUsage["comments"] = `Usage: docc comments [--all] | import <file>... | done <id>... | rm <id>...
+	cmdUsage["comments"] = `Usage: docc comments [--all] | import [--internal] <file|->... | done [--reply TEXT] <id>... | rm <id>...
 
-Review comments left on blocks of the HTML file (docc build --html) are downloaded from
-the page as a JSON file. import adds them to docc.comments.json in the project root, which
-belongs in git, as not processed; a comment already there (same id) is skipped, and a
-comment whose block moved is attached to the block with the quoted text.
+Review comments left on blocks of the HTML file (docc build --html) leave the page as text
+copied for a messenger or as a downloaded JSON file. import adds them to docc.comments.json
+in the project root, which belongs in git, as not processed; - reads the copied text from
+standard input. A comment already there (same id) is skipped, and a comment whose block
+moved is attached to the block with the quoted text. --internal marks the imported comments
+as the team's own: they are not put into the HTML file.
 Without a subcommand docc comments lists the comments not processed yet, each with the
 quoted block and its current text; --all lists every comment. done marks comments as
-processed, rm deletes them. An id may be shortened to any unique prefix.
+processed, with --reply the answer the reader sees under the comment in the next HTML
+file; rm deletes them. An id may be shortened to any unique prefix.
 
 Examples:
   docc comments import ~/Downloads/comments-2026-10-15.json
+  wl-paste | docc comments import -
   docc comments
   docc comments --format json
-  docc comments done 3f2a91bc
+  docc comments done 3f2a91bc --reply "Added to section 5.2"
   docc comments rm 3f2a91bc
 `
 }
@@ -33,6 +38,8 @@ Examples:
 func cmdComments(c *common, args []string, stdout io.Writer) (int, error) {
 	fs := newFlags("comments", c)
 	all := fs.Bool("all", false, "list processed comments too")
+	internal := fs.Bool("internal", false, "import: the team's own comments, kept out of the HTML file")
+	reply := fs.String("reply", "", "done: the answer shown under the comment in the HTML file")
 	pos, err := parse(fs, args)
 	if err == nil {
 		err = c.check()
@@ -52,6 +59,12 @@ func cmdComments(c *common, args []string, stdout io.Writer) (int, error) {
 	if sub == "" && len(pos) > 0 {
 		return 2, usageErr("unexpected argument %q", pos[0])
 	}
+	if *internal && sub != "import" {
+		return 2, usageErr("--internal is only for import")
+	}
+	if *reply != "" && sub != "done" {
+		return 2, usageErr("--reply is only for done")
+	}
 	if sub != "" && len(pos) == 0 {
 		if sub == "import" {
 			return 2, usageErr("give the files to import")
@@ -68,9 +81,9 @@ func cmdComments(c *common, args []string, stdout io.Writer) (int, error) {
 	}
 	switch sub {
 	case "import":
-		return importComments(c, p, cfg.Root, items, pos, stdout)
+		return importComments(c, p, cfg.Root, items, pos, *internal, stdout)
 	case "done", "rm":
-		return changeComments(c, cfg.Root, items, pos, sub, stdout)
+		return changeComments(c, cfg.Root, items, pos, sub, *reply, stdout)
 	}
 	return listComments(c, p, items, *all, stdout)
 }
@@ -83,14 +96,28 @@ func rootOf(p *engine.Project, it comments.Item) *loader.Node {
 	return nil
 }
 
-func importComments(c *common, p *engine.Project, root string, items []comments.Item, files []string, stdout io.Writer) (int, error) {
+// stdin is where import - reads the copied comments; tests replace it.
+var stdin io.Reader = os.Stdin
+
+func importComments(c *common, p *engine.Project, root string, items []comments.Item, files []string, internal bool, stdout io.Writer) (int, error) {
 	have := map[string]bool{}
 	for _, it := range items {
 		have[it.ID] = true
 	}
 	added, dups, moved, lost := 0, 0, 0, 0
 	for _, f := range files {
-		in, err := comments.ReadExport(f)
+		var b []byte
+		var err error
+		if f == "-" {
+			b, err = io.ReadAll(stdin)
+			f = "standard input"
+		} else {
+			b, err = os.ReadFile(f)
+		}
+		if err != nil {
+			return 2, err
+		}
+		in, err := comments.ParseExport(f, b)
 		if err != nil {
 			return 2, err
 		}
@@ -108,7 +135,7 @@ func importComments(c *common, p *engine.Project, root string, items []comments.
 			case comments.Changed, comments.Removed, comments.Missing:
 				lost++
 			}
-			it.Status = comments.Open
+			it.Status, it.Internal, it.Reply = comments.Open, internal, ""
 			items = append(items, it)
 			added++
 		}
@@ -157,7 +184,7 @@ func find(items []comments.Item, id string) (int, error) {
 	return at, nil
 }
 
-func changeComments(c *common, root string, items []comments.Item, ids []string, sub string, stdout io.Writer) (int, error) {
+func changeComments(c *common, root string, items []comments.Item, ids []string, sub, reply string, stdout io.Writer) (int, error) {
 	drop := map[int]bool{}
 	var done []string
 	for _, id := range ids {
@@ -167,6 +194,9 @@ func changeComments(c *common, root string, items []comments.Item, ids []string,
 		}
 		if sub == "done" {
 			items[i].Status = comments.Done
+			if reply != "" {
+				items[i].Reply = reply
+			}
 		} else {
 			drop[i] = true
 		}
@@ -232,7 +262,11 @@ func listComments(c *common, p *engine.Project, items []comments.Item, all bool,
 		return 0, writeJSON(stdout, map[string]any{"open": open, "total": len(items), "comments": out})
 	}
 	for _, l := range out {
-		say(stdout, "%s  %s  %s %q %s\n", short(l.ID), statusWord(l.Status), l.Doc, l.Title, l.Path)
+		kind := ""
+		if l.Internal {
+			kind = " internal"
+		}
+		say(stdout, "%s  %s%s  %s %q %s\n", short(l.ID), statusWord(l.Status), kind, l.Doc, l.Title, l.Path)
 		who := l.Author
 		if l.Created != "" {
 			who = strings.TrimSpace(who + " " + l.Created[:min(10, len(l.Created))])
@@ -241,6 +275,9 @@ func listComments(c *common, p *engine.Project, items []comments.Item, all bool,
 			who += ": "
 		}
 		say(stdout, "  %s%s\n", who, indent(l.Text))
+		if l.Reply != "" {
+			say(stdout, "  reply: %s\n", indent(l.Reply))
+		}
 		switch l.State {
 		case comments.Unchanged, comments.Moved:
 			say(stdout, "  block: %s\n", indent(l.Quote))

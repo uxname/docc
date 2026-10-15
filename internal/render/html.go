@@ -45,8 +45,8 @@ var vendorJS string
 // whose script (Preact, embedded) draws the pages from a JSON island. Go
 // renders the Markdown of every block to HTML; the page adds the tree,
 // search, block history from Git, comments and the Markdown export. Same call
-// contract as Files.
-func (r *Renderer) HTML() string {
+// contract as Files; the error is a bad changesSince revision.
+func (r *Renderer) HTML() (string, error) {
 	s := *r
 	s.single, s.html = true, true // in-file links; the headings get their ids from the converter
 	fnPrefix := ""                // footnote ids are <page id>--fn:1, unique across the pages of the file
@@ -103,6 +103,7 @@ func (r *Renderer) HTML() string {
 			Kind: strField(d, "kind"), Status: strField(d, "status"), Priority: strField(d, "priority"),
 			Summary: s.summary(d), Covers: s.P.Covers[d.ID]}
 		pd.StatusClass = statusClass(pd.Status)
+		pd.Status = s.statusLabel(pd.Status)
 		for _, t := range engine.StringList(d.Root.Get("tags")) {
 			pd.Tags = append(pd.Tags, t.Str)
 		}
@@ -156,14 +157,23 @@ func (r *Renderer) HTML() string {
 	if len(data.Pages) > 0 {
 		data.Title = data.Pages[0].Title
 	}
-	data.Hist = history.Load(s.P.Cfg.Abs(s.P.Cfg.Src), current)
-	data.Comments, _ = comments.Load(s.P.Cfg.Root) // docc comments reports a broken file
-	for i, it := range data.Comments {             // show a comment on its block even after the block moved
-		var root *loader.Node
+	hist, err := history.Load(s.P.Cfg.Abs(s.P.Cfg.Src), current, history.Options{Full: s.Full, Since: s.P.Cfg.ChangesSince})
+	if err != nil {
+		return "", err
+	}
+	data.Hist = hist
+	all, _ := comments.Load(s.P.Cfg.Root) // docc comments reports a broken file
+	data.Comments = []comments.Item{}
+	for _, it := range all {
+		if it.Internal && !s.Full { // the team's own notes stay out of the file for the customer
+			continue
+		}
+		var root *loader.Node // show a comment on its block even after the block moved
 		if d := s.P.Graph[it.Doc]; d != nil {
 			root = d.Root
 		}
-		data.Comments[i].Path, _, _ = comments.Locate(root, it)
+		it.Path, _, _ = comments.Locate(root, it)
+		data.Comments = append(data.Comments, it)
 	}
 	files := r.Files()
 	for p, b := range files {
@@ -190,7 +200,7 @@ func (r *Renderer) HTML() string {
 		"{{VENDOR}}", vendorJS,
 		"{{JS}}", s.labels(htmlJS, true),
 	).Replace(s.labels(htmlTemplate, false))
-	return lf(out)
+	return lf(out), nil
 }
 
 type appData struct {

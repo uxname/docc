@@ -1,9 +1,11 @@
 package history
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/uxname/docc/internal/loader"
@@ -46,8 +48,8 @@ func TestHistoryFollowsBlocks(t *testing.T) {
 	write(`{"title":"A","body":["one!","new","two edited"],"f":"y"}`)
 	cur := loader.Parse([]byte(`{"title":"A","body":["one!","new","two edited"],"f":"y"}`)).Root
 
-	h := Load(src, map[string]*loader.Node{"a.json": cur})
-	if h == nil || len(h.Commits) != 4 || h.Commits[3].Hash != "" || h.Commits[1].Subject != "second" {
+	h, err := Load(src, map[string]*loader.Node{"a.json": cur}, Options{Full: true})
+	if err != nil || h == nil || len(h.Commits) != 4 || h.Commits[3].Hash != "" || h.Commits[1].Subject != "second" {
 		t.Fatalf("commits: %+v", h)
 	}
 	d := h.Docs["a.json"]
@@ -69,7 +71,76 @@ func TestHistoryFollowsBlocks(t *testing.T) {
 }
 
 func TestNoRepository(t *testing.T) {
-	if h := Load(t.TempDir(), nil); h != nil {
-		t.Errorf("history outside a repository: %+v", h)
+	if h, err := Load(t.TempDir(), nil, Options{}); h != nil || err != nil {
+		t.Errorf("history outside a repository: %+v %v", h, err)
+	}
+	if _, err := Load(t.TempDir(), nil, Options{Since: "v1"}); err == nil {
+		t.Error("changes since a revision outside a repository must be an error")
+	}
+}
+
+// The file for the reader has no hidden fields, no authors or messages of
+// the commits and nothing before the starting point; the full build keeps all.
+func TestHistoryForTheReader(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("no git")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "docs", "src")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=Secret Author", "GIT_AUTHOR_EMAIL=a@x", "GIT_COMMITTER_NAME=A", "GIT_COMMITTER_EMAIL=a@x")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	step := func(doc, msg string) {
+		if err := os.WriteFile(filepath.Join(src, "a.json"), []byte(doc), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		run("add", "-A")
+		run("commit", "-q", "-m", msg)
+	}
+	run("init", "-q")
+	step(`{"title":"A","body":["draft one"],"notes":["internal guess"]}`, "draft by the agents")
+	step(`{"title":"A","body":["sent one"],"notes":["internal guess 2"]}`, "sent to the customer")
+	run("tag", "sent")
+	step(`{"title":"A","body":["sent one","added later"],"notes":["internal guess 3"]}`, "after the call")
+	cur := loader.Parse([]byte(`{"title":"A","body":["sent one","added later"],"notes":["internal guess 3"]}`)).Root
+	files := map[string]*loader.Node{"a.json": cur}
+
+	h, err := Load(src, files, Options{Since: "sent"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	js, _ := json.Marshal(h)
+	for _, leak := range []string{"internal guess", "/notes", "Secret Author", "draft by the agents", "after the call", "draft one"} {
+		if strings.Contains(string(js), leak) {
+			t.Errorf("the reader's history holds %q:\n%s", leak, js)
+		}
+	}
+	d := h.Docs["a.json"]
+	if !h.Base || len(h.Commits) != 2 {
+		t.Fatalf("commits from the starting point: %+v", h.Commits)
+	}
+	if vs := d.Blocks["/body/0"]; len(vs) != 1 || vs[0].C != 0 || vs[0].Text != "sent one" {
+		t.Errorf("block as sent: %+v", vs)
+	}
+	if vs := d.Blocks["/body/1"]; len(vs) != 1 || vs[0].C != 1 {
+		t.Errorf("block added after: %+v", vs)
+	}
+	if len(d.Changes) != 1 || d.Changes[0].C != 1 || len(d.Changes[0].Added) != 1 {
+		t.Errorf("changes after the starting point: %+v", d.Changes)
+	}
+	if _, err := Load(src, files, Options{Since: "no-such-tag"}); err == nil || !strings.Contains(err.Error(), "no such Git revision") {
+		t.Errorf("unknown revision: %v", err)
+	}
+	full, _ := Load(src, files, Options{Full: true})
+	if js, _ := json.Marshal(full); !strings.Contains(string(js), "internal guess 3") || !strings.Contains(string(js), "Secret Author") {
+		t.Errorf("the full build keeps the notes and authors:\n%s", js)
 	}
 }

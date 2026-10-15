@@ -18,12 +18,13 @@ import (
 )
 
 // Commit is one commit that touched the documents. The working tree, when it
-// differs from HEAD, is the last entry with an empty Hash.
+// differs from HEAD, is the last entry with an empty Hash. Author and Subject
+// are filled only for a full build: they are the team's words, not the reader's.
 type Commit struct {
 	Hash    string `json:"h"`
-	Author  string `json:"a"`
+	Author  string `json:"a,omitempty"`
 	Date    string `json:"d"`
-	Subject string `json:"m"`
+	Subject string `json:"m,omitempty"`
 }
 
 // Version is the text of a block after commit C (an index into Commits).
@@ -48,23 +49,78 @@ type Doc struct {
 	Changes []Change             `json:"ch"`
 }
 
-// History of the documents; Docs is keyed by the path relative to src.
+// History of the documents; Docs is keyed by the path relative to src. With
+// Base the first commit is the starting point (Options.Since): every document
+// is as it was then, and only the later commits are history.
 type History struct {
 	Commits []Commit        `json:"commits"`
 	Docs    map[string]*Doc `json:"docs"`
 	Head    string          `json:"head,omitempty"`
+	Base    bool            `json:"base,omitempty"`
+}
+
+// Options of Load. Full keeps everything (the audit build). Otherwise the
+// hidden fields of a document (notes, docIgnore, hidden) are left out, as in
+// the pages, and so are the authors and messages of the commits. Since, a Git
+// revision, cuts the history: what changed before it is not in the file.
+type Options struct {
+	Full  bool
+	Since string
+}
+
+// hiddenFields are the top-level fields a reader never sees.
+var hiddenFields = []string{"/notes", "/docIgnore", "/hidden"}
+
+// visible lists the blocks of a document that may go into the file.
+func (o Options) visible(root *loader.Node) []Leaf {
+	all := Flatten(root)
+	if o.Full {
+		return all
+	}
+	out := all[:0:0]
+	for _, l := range all {
+		hide := false
+		for _, f := range hiddenFields {
+			if l.Ptr == f || strings.HasPrefix(l.Ptr, f+"/") {
+				hide = true
+			}
+		}
+		if !hide {
+			out = append(out, l)
+		}
+	}
+	return out
 }
 
 // Load reads the history of the JSON files in srcDir. current maps the path
 // of every document relative to srcDir to its parsed root as it is on disk;
 // a document that differs from HEAD gets a last version from the working
-// tree. Without git or a repository it returns nil.
+// tree. Without git or a repository it returns nil; an unknown Since is an
+// error.
 // ponytail: commits are replayed in log order with the full file at each one;
 // on merged branches the order is by date, not by topology.
-func Load(srcDir string, current map[string]*loader.Node) *History {
+func Load(srcDir string, current map[string]*loader.Node, o Options) (*History, error) {
 	prefix, err := git(srcDir, nil, "rev-parse", "--show-prefix")
 	if err != nil {
-		return nil
+		if o.Since != "" {
+			return nil, fmt.Errorf("changes since %q: the project is not in a Git repository", o.Since)
+		}
+		return nil, nil
+	}
+	var before map[string]bool // full hashes of the commits up to Since
+	sinceDate := ""
+	if o.Since != "" {
+		list, err := git(srcDir, nil, "rev-list", "--end-of-options", o.Since+"^{commit}")
+		if err != nil {
+			return nil, fmt.Errorf("changes since %q: no such Git revision", o.Since)
+		}
+		if d, err := git(srcDir, nil, "log", "-1", "--format=%aI", "--end-of-options", o.Since+"^{commit}"); err == nil {
+			sinceDate = strings.TrimSpace(d)
+		}
+		before = map[string]bool{}
+		for _, l := range strings.Fields(list) {
+			before[l] = true
+		}
 	}
 	prefix = strings.TrimSpace(prefix)
 	h := &History{Docs: map[string]*Doc{}}
@@ -74,7 +130,7 @@ func Load(srcDir string, current map[string]*loader.Node) *History {
 	log, err := git(srcDir, nil, "-c", "core.quotePath=false", "log", "--reverse", "-M", "--name-status",
 		"--format=%x01%H%x1f%an%x1f%aI%x1f%s", "--", ".")
 	if err != nil {
-		return h
+		return h, nil
 	}
 	type entry struct {
 		c         int
@@ -90,7 +146,11 @@ func Load(srcDir string, current map[string]*loader.Node) *History {
 			continue
 		}
 		c := len(h.Commits)
-		h.Commits = append(h.Commits, Commit{Hash: f[0][:8], Author: f[1], Date: f[2], Subject: f[3]})
+		cm := Commit{Hash: f[0][:8], Date: f[2]}
+		if o.Full {
+			cm.Author, cm.Subject = f[1], f[3]
+		}
+		h.Commits = append(h.Commits, cm)
 		full = append(full, f[0])
 		for _, l := range lines[1:] {
 			p := strings.Split(l, "\t")
@@ -124,7 +184,7 @@ func Load(srcDir string, current map[string]*loader.Node) *History {
 	}
 	blobs, err := catFiles(srcDir, &req)
 	if err != nil {
-		return h
+		return h, nil
 	}
 	state := map[string]*replay{}
 	for _, e := range entries {
@@ -145,7 +205,7 @@ func Load(srcDir string, current map[string]*loader.Node) *History {
 			continue
 		}
 		if state[e.path] == nil {
-			state[e.path] = &replay{doc: &Doc{}}
+			state[e.path] = &replay{doc: &Doc{}, o: o}
 		}
 		state[e.path].step(root, e.c)
 	}
@@ -153,10 +213,10 @@ func Load(srcDir string, current map[string]*loader.Node) *History {
 	for rel, root := range current {
 		st := state[rel]
 		if st == nil {
-			st = &replay{doc: &Doc{}}
+			st = &replay{doc: &Doc{}, o: o}
 			state[rel] = st
 		}
-		if st.root != nil && same(st.root, root) {
+		if st.root != nil && o.same(st.root, root) {
 			continue
 		}
 		if work < 0 {
@@ -173,7 +233,49 @@ func Load(srcDir string, current map[string]*loader.Node) *History {
 		}
 		h.Docs[rel] = st.doc
 	}
-	return h
+	if before != nil {
+		base := -1 // the last commit of the log at or before Since
+		for c := range full {
+			if before[full[c]] {
+				base = c
+			}
+		}
+		if base >= 0 {
+			h.cut(base)
+			h.Commits[0].Date = sinceDate // the version is the one sent, even if the documents did not change in that commit
+		}
+	}
+	return h, nil
+}
+
+// cut makes commit base the starting point: the blocks keep their text at
+// base as version 0, and the changes before it are dropped.
+func (h *History) cut(base int) {
+	h.Commits = h.Commits[base:]
+	h.Base = true
+	for _, d := range h.Docs {
+		for p, vs := range d.Blocks {
+			var out []Version
+			for _, v := range vs {
+				if v.C > base {
+					out = append(out, Version{v.C - base, v.Text})
+				} else if len(out) == 0 {
+					out = []Version{{0, v.Text}}
+				} else {
+					out[0].Text = v.Text
+				}
+			}
+			d.Blocks[p] = out
+		}
+		var ch []Change
+		for _, c := range d.Changes {
+			if c.C > base {
+				c.C -= base
+				ch = append(ch, c)
+			}
+		}
+		d.Changes = ch
+	}
 }
 
 func parse(data []byte) *loader.Node {
@@ -184,8 +286,8 @@ func parse(data []byte) *loader.Node {
 	return res.Root
 }
 
-func same(a, b *loader.Node) bool {
-	fa, fb := Flatten(a), Flatten(b)
+func (o Options) same(a, b *loader.Node) bool {
+	fa, fb := o.visible(a), o.visible(b)
 	if len(fa) != len(fb) {
 		return false
 	}
@@ -203,10 +305,11 @@ type replay struct {
 	leaves []Leaf
 	blocks map[string][]Version
 	doc    *Doc
+	o      Options
 }
 
 func (st *replay) step(root *loader.Node, c int) {
-	leaves := Flatten(root)
+	leaves := st.o.visible(root)
 	match := Align(st.leaves, leaves)
 	old := map[string]Leaf{}
 	for _, l := range st.leaves {

@@ -6,10 +6,12 @@
 <style>
 :root{color-scheme:light dark;
 --bg:#fff;--bg2:#f6f7f9;--fg:#1c2128;--muted:#5d6875;--line:#e2e5ea;--accent:#2f5fd0;--accent-bg:#eaf0fd;--code:#f1f3f6;
---ok:#1a7f45;--ok-bg:#e3f5ea;--warn:#a15c00;--warn-bg:#fdf1d8;--bad:#b42323;--bad-bg:#fbe7e7;--shadow:0 6px 24px rgba(20,30,50,.12)}
+--ok:#1a7f45;--ok-bg:#e3f5ea;--warn:#a15c00;--warn-bg:#fdf1d8;--bad:#b42323;--bad-bg:#fbe7e7;--shadow:0 6px 24px rgba(20,30,50,.12);
+--chg:#6d28d9;--chg-bg:#f1ebfd;--on-accent:#fff;--field:#7a8592}
 @media (prefers-color-scheme:dark){:root{
 --bg:#0f1318;--bg2:#161b22;--fg:#e4e8ee;--muted:#9aa5b1;--line:#2b323b;--accent:#6c9bff;--accent-bg:#1a2742;--code:#1b2129;
---ok:#4cc17f;--ok-bg:#12301f;--warn:#e5a93b;--warn-bg:#3a2d0f;--bad:#f07a7a;--bad-bg:#3a1717;--shadow:0 6px 24px rgba(0,0,0,.5)}}
+--ok:#4cc17f;--ok-bg:#12301f;--warn:#e5a93b;--warn-bg:#3a2d0f;--bad:#f07a7a;--bad-bg:#3a1717;--shadow:0 6px 24px rgba(0,0,0,.5);
+--chg:#b794f6;--chg-bg:#251a3d;--on-accent:#0f1318;--field:#6b7684}}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:1.5rem}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -17,21 +19,23 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 system-ui,-appl
 a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
 .skip{position:absolute;left:-999px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .skip:focus{left:1rem;top:1rem;z-index:30;background:var(--bg);padding:.5rem 1rem;box-shadow:var(--shadow)}
 .bar{display:none}
 .shell{display:grid;grid-template-columns:17.5rem minmax(0,1fr) 15rem;min-height:100vh}
 /* sidebar */
 #side{position:sticky;top:0;height:100vh;overflow:auto;background:var(--bg2);border-right:1px solid var(--line);padding:1rem .9rem 2rem;font-size:.9rem;line-height:1.45}
 .search{position:relative}
-#q{width:100%;padding:.55rem .8rem;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:.55rem}
+#q{width:100%;padding:.55rem .8rem;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--field);border-radius:.55rem}
 #q:focus{border-color:var(--accent)}
 #results{position:absolute;left:0;right:0;top:calc(100% + .35rem);z-index:20;margin:0;padding:.3rem;list-style:none;max-height:70vh;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:.6rem;box-shadow:var(--shadow)}
+#results ul{margin:0;padding:0;list-style:none}
+#results .count{margin:.2rem .6rem .3rem;color:var(--muted);font-size:.8rem}
 #results li{padding:.5rem .6rem;border-radius:.4rem;cursor:pointer}
 #results li[aria-selected=true],#results li:hover{background:var(--accent-bg)}
 #results b{display:block;font-weight:600}
 #results span{display:block;color:var(--muted);font-size:.82rem;overflow-wrap:anywhere}
 #results mark{background:var(--warn-bg);color:inherit;border-radius:2px}
-#results .none{color:var(--muted);cursor:default}
 #tree h2{margin:1.4rem 0 .4rem;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 #tree .gt{display:flex;width:100%;gap:.4rem;align-items:center;padding:0;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left}
 #tree .gt::before{content:"▾";transition:transform .12s}
@@ -50,12 +54,12 @@ a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
 .tw[aria-expanded=false]~ul{display:none}
 .banner{margin:.9rem 0 0;padding:.5rem .7rem;font-size:.82rem;border-radius:.5rem;background:var(--warn-bg);color:var(--warn)}
 /* page */
-main{padding:2.5rem 3rem 5rem;max-width:56rem;width:100%;margin:0 auto;outline:0}
+main{padding:2.5rem 3rem 5rem;max-width:52rem;width:100%;margin:0 auto;outline:0}
 .crumbs{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.85rem;color:var(--muted);margin-bottom:.6rem}
 .crumbs a{color:var(--muted);text-decoration:none}
 .crumbs a:hover{color:var(--accent);text-decoration:underline}
 h1{margin:0 0 1rem;font-size:2.2rem;line-height:1.2;letter-spacing:-.02em;font-weight:700}
-.badges{display:flex;flex-wrap:wrap;gap:.4rem;margin:-.4rem 0 1.6rem}
+.badges{display:flex;flex-wrap:wrap;gap:.4rem;margin:.2rem 0 1.6rem}
 .badge,.tag{display:inline-block;padding:.05rem .6rem;font-size:.78rem;line-height:1.6;border-radius:99px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);white-space:nowrap}
 .badge.kind{background:var(--accent-bg);border-color:transparent;color:var(--accent);font-weight:600}
 .badge.ok{background:var(--ok-bg);border-color:transparent;color:var(--ok)}
@@ -116,21 +120,29 @@ blockquote p{margin:0}
 .pn .next{grid-column:2;text-align:right}
 .pn .prev{grid-column:1}
 /* blocks: tools on hover, comments, history, changes */
-.ttl{display:flex;align-items:flex-start;gap:1rem}
+.ttl{display:flex;flex-wrap:wrap;align-items:flex-start;gap:0 1rem}
 .ttl h1{flex:1}
 button{font:inherit;color:inherit;cursor:pointer}
 .ph-b,.toolbar button,.ed-row button,.menu button{padding:.25rem .7rem;font-size:.85rem;background:var(--bg);border:1px solid var(--line);border-radius:.45rem;white-space:nowrap}
 .ph-b{margin-top:.6rem}
 .ph-b:hover,.toolbar button:hover,.ed-row button:hover,.menu button:hover,.toolbar button.on{border-color:var(--accent);color:var(--accent)}
-button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
-button.pri:hover{color:#fff}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+button.pri:hover{color:var(--on-accent)}
 button:disabled{opacity:.45;cursor:default}
 button.link{padding:0;border:0;background:none;color:var(--accent);font-size:.82rem}
 .sp{flex:1}
 .muted{color:var(--muted);font-size:.88rem}
-.toolbar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:-1.2rem 0 1.2rem;padding:.5rem 0;background:var(--bg);border-bottom:1px solid var(--line);font-size:.88rem}
-.since-l{display:flex;align-items:center;gap:.4rem;color:var(--muted)}
-.since-l select{max-width:22rem;padding:.2rem .4rem;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:.45rem}
+.toolbar{position:sticky;top:0;z-index:10;display:flex;flex-direction:column;gap:.4rem;margin:-1.2rem 0 1.2rem;padding:.5rem 0;background:var(--bg);border-bottom:1px solid var(--line);font-size:.88rem}
+.tb-row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.since-l{display:flex;align-items:center;gap:.4rem;min-width:0;color:var(--muted)}
+.since-l select{min-width:0;max-width:20rem;padding:.2rem .4rem;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:.45rem}
+.chg-nav{display:flex;align-items:center;gap:.3rem}
+.toolbar .chg-nav button{color:var(--chg);border-color:var(--chg)}
+.pos{min-width:4.5rem;text-align:center;color:var(--muted)}
+.ver-l{color:var(--muted)}
+.chg-list{margin:0;padding:0;list-style:none}
+.chg-list li{display:flex;flex-wrap:wrap;gap:.2rem .7rem;align-items:baseline;padding:.35rem 0;border-top:1px solid var(--line)}
+.chg-list small{color:var(--muted)}
 .panel{margin:0 0 1.2rem;padding:1rem 1.1rem;background:var(--bg2);border:1px solid var(--line);border-radius:.7rem}
 .menu{display:flex;flex-wrap:wrap;gap:.5rem}
 .hh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem}
@@ -138,22 +150,31 @@ button.link{padding:0;border:0;background:none;color:var(--accent);font-size:.82
 .ptr{margin-left:.5rem;color:var(--muted);font-size:.8rem}
 .blk{position:relative;margin:0 -.8rem;padding:0 .8rem;border-left:3px solid transparent;border-radius:.3rem}
 .blk:hover{background:var(--bg2)}
-.blk.chg{border-left-color:var(--warn);background:var(--warn-bg)}
-.blk.flash{outline:2px solid var(--accent)}
+.blk.chg{border-left-color:var(--chg)}
+.blk.new{border-left-color:var(--chg);border-left-style:dashed}
+.blk.flash{outline:2px solid var(--accent);outline-offset:2px}
 dd.blk{margin:0;padding:0 .4rem}
 .tools{position:absolute;top:.1rem;right:-.4rem;display:flex;gap:.2rem;opacity:0;transition:opacity .1s}
-.blk:hover>.tools,.blk.has-c>.tools,.blk.chg>.tools,.tools:focus-within{opacity:1}
-.tools button{padding:.05rem .4rem;font-size:.8rem;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:.4rem}
+.blk:hover>.tools,.blk.has-c>.tools,.blk.chg>.tools,.blk.new>.tools,.tools:focus-within{opacity:1}
+/* tools that stay visible get a row of their own, so they never cover the text */
+.blk.has-c>.tools,.blk.chg>.tools,.blk.new>.tools{position:static;justify-content:flex-end;margin:-.5rem 0 .5rem}
+.tools button{min-height:1.75rem;padding:.05rem .45rem;font-size:.8rem;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:.4rem}
 .tools button:hover{border-color:var(--accent)}
-.tools .chg-b{color:var(--warn);font-weight:700}
-.note{margin:.4rem 0 .8rem;padding:.5rem .8rem;background:var(--accent-bg);border-radius:.5rem;font-size:.92rem}
-.note.repo{background:var(--bg2);border:1px solid var(--line)}
+.tools .chg-b{color:var(--chg);border-color:var(--chg)}
+.tag-new{align-self:center;padding:0 .45rem;font-size:.75rem;color:var(--chg);border:1px dashed var(--chg);border-radius:.4rem;background:var(--bg)}
+.note{margin:.4rem 0 .8rem;padding:.5rem .8rem;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:.5rem;font-size:.92rem}
+.note.repo{background:var(--bg2)}
 .nh{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline}
 .nh small{color:var(--muted)}
-.nh button{margin-left:auto}
+.acts{display:flex;gap:.8rem;margin-left:auto}
+.reply{margin-top:.4rem;padding-top:.4rem;border-top:1px dashed var(--line)}
+.reply small{display:block;color:var(--muted)}
 .nt{white-space:pre-wrap}
 .editor{margin:.4rem 0 1rem;padding:.7rem;background:var(--bg);border:1px solid var(--accent);border-radius:.6rem}
-.editor textarea,.editor .who{display:block;width:100%;margin-bottom:.5rem;padding:.5rem .6rem;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:.45rem}
+.who-l{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;color:var(--muted);font-size:.88rem}
+.editor .who{flex:1;max-width:16rem;padding:.3rem .5rem}
+.editor textarea{display:block;width:100%;margin-bottom:.5rem;padding:.5rem .6rem}
+.editor textarea,.editor .who{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:.45rem}
 .editor textarea{resize:vertical}
 .ed-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
 .mic-w{display:flex;align-items:center;gap:.5rem}
@@ -165,16 +186,27 @@ dd.blk{margin:0;padding:0 .4rem}
 .ver{padding:.5rem 0;border-top:1px solid var(--line)}
 .vh{color:var(--muted);font-size:.82rem;margin-bottom:.25rem}
 .dv{white-space:pre-wrap;overflow-wrap:anywhere}
-.dv ins{background:var(--ok-bg);color:var(--ok);text-decoration:none}
+.dv ins{background:var(--ok-bg);color:var(--ok);text-decoration:underline;text-decoration-thickness:1px}
 .dv del{background:var(--bad-bg);color:var(--bad)}
 .dv.whole del,.dv.whole ins{display:block;padding:.2rem .4rem;border-radius:.3rem}
 .dv.whole del{margin-bottom:.3rem}
-.since{margin:.2rem 0 .8rem;padding:.5rem .7rem;background:var(--bg);border:1px dashed var(--warn);border-radius:.5rem;font-size:.92rem}
+.dv.whole ins{text-decoration:none}
+.since{margin:.2rem 0 .8rem;padding:.5rem .7rem;background:var(--bg);border:1px dashed var(--chg);border-radius:.5rem;font-size:.92rem}
+.since>small{display:block;color:var(--muted)}
+.gone{margin:1.4rem 0;padding:.6rem .9rem;border:1px dashed var(--chg);border-radius:.6rem;font-size:.92rem}
+.gone summary{cursor:pointer;color:var(--chg)}
+.gone .dv{margin-top:.5rem}
+.notice{margin:0 0 1.2rem;padding:.6rem .9rem;background:var(--warn-bg);color:var(--fg);border-radius:.5rem}
+.toast-w{position:fixed;left:50%;bottom:1.2rem;z-index:40;transform:translateX(-50%);max-width:calc(100vw - 2rem)}
+.toast{display:flex;gap:1rem;align-items:baseline;padding:.6rem 1rem;background:var(--fg);color:var(--bg);border-radius:.6rem;box-shadow:var(--shadow)}
+.toast .link{color:var(--bg);text-decoration:underline;font-size:inherit}
+.side-x{display:none}
+.scrim{display:none}
 .pg-g{margin:.3rem 0}
 .pg-g>small{color:var(--muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.06em}
 .pg-i{margin:.2rem 0 .4rem}
 .pg-i .ptr{margin:0;display:block}
-.dot{color:var(--warn);font-size:.7rem}
+.cnt{display:inline-block;margin-left:.3rem;padding:0 .4rem;font-size:.72rem;line-height:1.5;color:var(--chg);border:1px solid var(--chg);border-radius:99px}
 .noscript{padding:2rem}
 /* table of contents */
 #toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:2.6rem 1rem 2rem 0;font-size:.85rem;line-height:1.4}
@@ -189,18 +221,35 @@ dd.blk{margin:0;padding:0 .4rem}
 @media (max-width:820px){
 .shell{display:block}
 .bar{display:flex;align-items:center;gap:.7rem;position:sticky;top:0;z-index:15;padding:.5rem .8rem;background:var(--bg);border-bottom:1px solid var(--line)}
-.bar button{font:inherit;font-size:1.2rem;color:inherit;background:none;border:1px solid var(--line);border-radius:.4rem;padding:.1rem .6rem;cursor:pointer}
-#bar-title{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#side{position:fixed;z-index:25;left:0;top:0;bottom:0;width:min(20rem,88vw);height:auto;transform:translateX(-102%);transition:transform .18s;box-shadow:var(--shadow)}
-#side.open{transform:none}
+.bar button{min-width:2.75rem;min-height:2.75rem;font:inherit;font-size:1.2rem;color:inherit;background:none;border:1px solid var(--line);border-radius:.4rem;padding:.1rem .6rem;cursor:pointer}
+#side{position:fixed;z-index:25;left:0;top:0;bottom:0;width:min(20rem,88vw);height:auto;transform:translateX(-102%);visibility:hidden;transition:transform .18s,visibility .18s;box-shadow:var(--shadow)}
+#side.open{transform:none;visibility:visible}
+.side-x{display:block;margin:0 0 .8rem auto;min-height:2.75rem;padding:.2rem .8rem;background:var(--bg);border:1px solid var(--line);border-radius:.45rem}
+.side-brand{display:none}
+.scrim{display:block;position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35)}
+.toolbar{position:static;margin-top:0}
+.since-l{flex:1 1 100%;flex-wrap:wrap}
+.chg-nav{flex:1 1 100%;min-width:0}
+.toolbar .chg-nav>button:first-child{flex:1;min-width:0;white-space:normal;text-align:left}
+.pos{min-width:3.5rem}
+.since-l select{flex:1 1 100%;max-width:none}
+.ttl h1{flex:1 1 100%}
+.ph-b{margin:0 0 .4rem}
 main{padding:1.5rem 1.1rem 4rem}
 h1{font-size:1.8rem}
 .doc h2 .anchor,.doc h3 .anchor,.doc h4 .anchor{display:none}
 .pn{grid-template-columns:1fr}
 .pn .next{grid-column:1}
 }
+/* touch: no hover, so the actions of a paragraph are always there and big enough */
+@media (hover:none){
+.tools{position:static;justify-content:flex-end;opacity:1;margin:-.3rem 0 .6rem}
+.tools button{min-height:2.75rem;min-width:2.75rem;padding:.1rem .7rem;font-size:.9rem}
+.blk:hover{background:none}
+.tw{width:2.4rem;height:2.4rem;top:-.1rem;left:-.5rem}
+}
 @media print{
-.bar,#side,#toc,.skip,.copy,.pn{display:none!important}
+.bar,#side,#toc,.skip,.copy,.pn,.scrim,.toast-w,.notice,.gone,.tag-new{display:none!important}
 .shell{display:block}
 main{max-width:none;padding:0}
 .toolbar,.panel,.tools,.ph-b,.editor,.hist{display:none!important}
@@ -211,7 +260,7 @@ a{color:inherit;text-decoration:none}
 
 </style>
 <div id="app"><noscript><p class="noscript">This documentation is an application: turn on JavaScript to read it, or read the Markdown in the output folder.</p></noscript></div>
-<script type="application/json" id="docc-data">{"title":"Index","lang":"en","full":true,"key":"docc:001","nav":{"tree":[["index",0],["deep",1],["req",1]],"orphans":[["secret",0]],"uncovered":null},"pages":[{"id":"index","title":"Index","file":"index.json","kind":"note","status":"accepted","sc":"ok","tags":["draft","x"],"kids":["deep","req"],"refs":["deep","req","secret"],"summary":"Welcome. See Deep doc, Requirement and Requirement.","props":[{"k":"Owner name","id":"index--owner-name","p":"/owner_name","s":"Team","h":"Team"},{"k":"Count","id":"index--count","p":"/count","s":"3","h":"3"},{"k":"Flag","id":"index--flag","p":"/flag","s":"true","h":"true"}],"blocks":[{"p":"/body/0","s":"Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].","h":"\u003cp>Welcome. See \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>, \u003ca href=\"#req\">Requirement\u003c/a> and \u003ca href=\"#req\">Requirement\u003c/a>.\u003c/p>\n"},{"p":"/body/1","s":"{{req#statement}}","h":"\u003c!-- raw HTML omitted -->\n\u003cp>First fact.\u003c/p>\n\u003cp>Second fact.\u003c/p>\n\u003c!-- raw HTML omitted -->\n"},{"p":"/body/2","s":"Quote: {{req#^first}}","h":"\u003cp>Quote: \u003c!-- raw HTML omitted -->First fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"index--meta\">Meta\u003c/h2>\n"},{"p":"/meta","s":"a: x; nested: k: v; list: p\nq; multi: line1\nline2; skip: ","h":"\u003cul>\n\u003cli>\u003cstrong>a:\u003c/strong> x\u003c/li>\n\u003cli>\u003cstrong>nested:\u003c/strong>\n\u003cul>\n\u003cli>\u003cstrong>k:\u003c/strong> v\u003c/li>\n\u003cli>\u003cstrong>list:\u003c/strong>\n\u003cul>\n\u003cli>p\u003c/li>\n\u003cli>q\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\u003cstrong>multi:\u003c/strong> line1\nline2\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--steps\">Steps\u003c/h2>\n"},{"p":"/steps","s":"name: one; done: true\nname: two; items: a\nb","h":"\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> one\u003c/li>\n\u003cli>\u003cstrong>done:\u003c/strong> true\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> two\u003c/li>\n\u003cli>\u003cstrong>items:\u003c/strong>\n\u003cul>\n\u003cli>a\u003c/li>\n\u003cli>b\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"},{"h":"\u003ch2 id=\"index--inline\">Inline\u003c/h2>\n"},{"p":"/inline","s":"Text {{req#title}} here and `{{literal}}` code and [[deep]].","h":"\u003cp>Text \u003c!-- raw HTML omitted -->Requirement\u003c!-- raw HTML omitted --> here and \u003ccode>{{literal}}\u003c/code> code and \u003ca href=\"#deep\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"index--numbers\">Numbers\u003c/h2>\n"},{"p":"/numbers","s":"1\n2.50","h":"\u003cul>\n\u003cli>1\u003c/li>\n\u003cli>2.50\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>note about \u003ca href=\"#deep\">Deep doc\u003c/a> stays hidden\u003c/li>\n\u003c/ul>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](a/deep.md#acceptance-criteria), [Requirement](req.md) and [Requirement](req.md).\n\n\u003c!-- include req#statement -->\n\nFirst fact.\n\nSecond fact.\n\n\u003c!-- /include -->\n\nQuote: \u003c!-- include req#^first -->First fact.\u003c!-- /include -->\n\n## Owner name\n\nTeam\n\n## Count\n\n3\n\n## Flag\n\ntrue\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n## Inline\n\nText \u003c!-- include req#title -->Requirement\u003c!-- /include --> here and `{{literal}}` code and [Deep doc](a/deep.md).\n\n## Numbers\n\n- 1\n- 2.50\n\n## Notes (hidden)\n\n> Service information.\n\n- note about [Deep doc](a/deep.md) stays hidden\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Requirement](req.md)\n- [Secret](secret.md)\n\nDocument tree: [_tree.md](_tree.md)\n"},{"id":"deep","title":"Deep doc","file":"a/deep.json","kind":"page","crumbs":["index"],"parent":"index","refs":["index","req"],"summary":"Back to Index and Index.","blocks":[{"p":"/body","s":"Back to [[index]] and [[index#owner_name]].","h":"\u003cp>Back to \u003ca href=\"#index\">Index\u003c/a> and \u003ca href=\"#index--owner-name\">Index\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"deep--acceptance-criteria\">Acceptance criteria\u003c/h2>\n"},{"p":"/acceptance_criteria/0","s":"Given X.","h":"\u003cp>Given X.\u003c/p>\n"},{"p":"/acceptance_criteria/1","s":"Then Y with [[req#statement]] and [[req#^first]].","h":"\u003cp>Then Y with \u003ca href=\"#req--statement\">Requirement\u003c/a> and \u003ca href=\"#req--first\">Requirement\u003c/a>.\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Deep doc\n\npage\n\nBack to [Index](../index.md) and [Index](../index.md#owner-name).\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](../req.md#statement) and [Requirement](../req.md#first).\n\n## Parent\n\n[Index](../index.md)\n\n## Referenced by\n\n- [Index](../index.md)\n- [Requirement](../req.md)\n"},{"id":"req","title":"Requirement","file":"req.json","kind":"page","crumbs":["index"],"parent":"index","refs":["deep","index"],"summary":"Requirement body, see Deep doc.","blocks":[{"p":"/body","s":"Requirement body, see [[deep#acceptance_criteria]].","h":"\u003cp>Requirement body, see \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--statement\">Statement\u003c/h2>\n"},{"p":"/statement/0","s":"First fact. ^first","h":"\u003cp>\u003ca id=\"req--first\">\u003c/a>First fact.\u003c/p>\n"},{"p":"/statement/1","s":"Second fact.","h":"\u003cp>Second fact.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--checks\">Checks\u003c/h2>\n"},{"p":"/checks","s":"Plain check. ^check\nname: n","h":"\u003cul>\n\u003cli>\u003ca id=\"req--check\">\u003c/a>Plain check.\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"req--formula\">Formula\u003c/h2>\n"},{"p":"/formula","s":"x ^2","h":"\u003cp>x ^2\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](a/deep.md#acceptance-criteria).\n\n## Statement\n\n\u003ca id=\"first\">\u003c/a>First fact.\n\nSecond fact.\n\n## Checks\n\n- \u003ca id=\"check\">\u003c/a>Plain check.\n- - **name:** n\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](index.md)\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Index](index.md)\n"},{"id":"secret","title":"Secret","file":"secret.json","hidden":true,"kind":"page","summary":"Hidden text about Index with First fact. Second fact.","blocks":[{"p":"/body","s":"Hidden text about [[index]] with {{req#statement}}","h":"\u003cp>Hidden text about \u003ca href=\"#index\">Index\u003c/a> with \u003c!-- raw HTML omitted -->First fact. Second fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"secret--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>private note\u003c/li>\n\u003c/ul>\n\u003ch2 id=\"secret--suppressions-docignore\">Suppressions (docIgnore)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>rule:\u003c/strong> DOC303\u003c/li>\n\u003cli>\u003cstrong>reason:\u003c/strong> demo\u003c/li>\n\u003cli>\u003cstrong>path:\u003c/strong> /body\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Secret\n\npage\n\n> Hidden document.\n\nHidden text about [Index](index.md) with \u003c!-- include req#statement -->First fact. Second fact.\u003c!-- /include -->\n\n## Notes (hidden)\n\n> Service information.\n\n- private note\n\n## Suppressions (docIgnore)\n\n> Service information.\n\n1. - **rule:** DOC303\n   - **reason:** demo\n   - **path:** /body\n"}],"hist":null,"comments":null,"brand":{},"single":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n> full build: includes hidden documents and notes — do not publish\n\n# Document tree\n\n- [Index](#index)\n  - [Deep doc](#deep)\n  - [Requirement](#req)\n\n## Without parent\n\n- [Secret](#secret) (hidden)\n\n---\n\n\u003ca id=\"index\">\u003c/a>\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](#deep--acceptance-criteria), [Requirement](#req) and [Requirement](#req).\n\n\u003c!-- include req#statement -->\n\nFirst fact.\n\nSecond fact.\n\n\u003c!-- /include -->\n\nQuote: \u003c!-- include req#^first -->First fact.\u003c!-- /include -->\n\n\u003ca id=\"index--owner-name\">\u003c/a>\n\n## Owner name\n\nTeam\n\n\u003ca id=\"index--count\">\u003c/a>\n\n## Count\n\n3\n\n\u003ca id=\"index--flag\">\u003c/a>\n\n## Flag\n\ntrue\n\n\u003ca id=\"index--meta\">\u003c/a>\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n\u003ca id=\"index--steps\">\u003c/a>\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n\u003ca id=\"index--inline\">\u003c/a>\n\n## Inline\n\nText \u003c!-- include req#title -->Requirement\u003c!-- /include --> here and `{{literal}}` code and [Deep doc](#deep).\n\n\u003ca id=\"index--numbers\">\u003c/a>\n\n## Numbers\n\n- 1\n- 2.50\n\n## Notes (hidden)\n\n> Service information.\n\n- note about [Deep doc](#deep) stays hidden\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Requirement](#req)\n- [Secret](#secret)\n\n\n---\n\n\u003ca id=\"deep\">\u003c/a>\n\n# Deep doc\n\npage\n\nBack to [Index](#index) and [Index](#index--owner-name).\n\n\u003ca id=\"deep--acceptance-criteria\">\u003c/a>\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](#req--statement) and [Requirement](#req--first).\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Index](#index)\n- [Requirement](#req)\n\n\n---\n\n\u003ca id=\"req\">\u003c/a>\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](#deep--acceptance-criteria).\n\n\u003ca id=\"req--statement\">\u003c/a>\n\n## Statement\n\n\u003ca id=\"req--first\">\u003c/a>First fact.\n\nSecond fact.\n\n\u003ca id=\"req--checks\">\u003c/a>\n\n## Checks\n\n- \u003ca id=\"req--check\">\u003c/a>Plain check.\n- - **name:** n\n\n\u003ca id=\"req--formula\">\u003c/a>\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Index](#index)\n\n\n---\n\n\u003ca id=\"secret\">\u003c/a>\n\n# Secret\n\npage\n\n> Hidden document.\n\nHidden text about [Index](#index) with \u003c!-- include req#statement -->First fact. Second fact.\u003c!-- /include -->\n\n## Notes (hidden)\n\n> Service information.\n\n- private note\n\n## Suppressions (docIgnore)\n\n> Service information.\n\n1. - **rule:** DOC303\n   - **reason:** demo\n   - **path:** /body\n\n","zip":"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"}</script>
+<script type="application/json" id="docc-data">{"title":"Index","lang":"en","full":true,"key":"docc:001","nav":{"tree":[["index",0],["deep",1],["req",1]],"orphans":[["secret",0]],"uncovered":null},"pages":[{"id":"index","title":"Index","file":"index.json","kind":"note","status":"accepted","sc":"ok","tags":["draft","x"],"kids":["deep","req"],"refs":["deep","req","secret"],"summary":"Welcome. See Deep doc, Requirement and Requirement.","props":[{"k":"Owner name","id":"index--owner-name","p":"/owner_name","s":"Team","h":"Team"},{"k":"Count","id":"index--count","p":"/count","s":"3","h":"3"},{"k":"Flag","id":"index--flag","p":"/flag","s":"true","h":"true"}],"blocks":[{"p":"/body/0","s":"Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].","h":"\u003cp>Welcome. See \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>, \u003ca href=\"#req\">Requirement\u003c/a> and \u003ca href=\"#req\">Requirement\u003c/a>.\u003c/p>\n"},{"p":"/body/1","s":"{{req#statement}}","h":"\u003c!-- raw HTML omitted -->\n\u003cp>First fact.\u003c/p>\n\u003cp>Second fact.\u003c/p>\n\u003c!-- raw HTML omitted -->\n"},{"p":"/body/2","s":"Quote: {{req#^first}}","h":"\u003cp>Quote: \u003c!-- raw HTML omitted -->First fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"index--meta\">Meta\u003c/h2>\n"},{"p":"/meta","s":"a: x; nested: k: v; list: p\nq; multi: line1\nline2; skip: ","h":"\u003cul>\n\u003cli>\u003cstrong>a:\u003c/strong> x\u003c/li>\n\u003cli>\u003cstrong>nested:\u003c/strong>\n\u003cul>\n\u003cli>\u003cstrong>k:\u003c/strong> v\u003c/li>\n\u003cli>\u003cstrong>list:\u003c/strong>\n\u003cul>\n\u003cli>p\u003c/li>\n\u003cli>q\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\u003cstrong>multi:\u003c/strong> line1\nline2\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--steps\">Steps\u003c/h2>\n"},{"p":"/steps","s":"name: one; done: true\nname: two; items: a\nb","h":"\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> one\u003c/li>\n\u003cli>\u003cstrong>done:\u003c/strong> true\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> two\u003c/li>\n\u003cli>\u003cstrong>items:\u003c/strong>\n\u003cul>\n\u003cli>a\u003c/li>\n\u003cli>b\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"},{"h":"\u003ch2 id=\"index--inline\">Inline\u003c/h2>\n"},{"p":"/inline","s":"Text {{req#title}} here and `{{literal}}` code and [[deep]].","h":"\u003cp>Text \u003c!-- raw HTML omitted -->Requirement\u003c!-- raw HTML omitted --> here and \u003ccode>{{literal}}\u003c/code> code and \u003ca href=\"#deep\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"index--numbers\">Numbers\u003c/h2>\n"},{"p":"/numbers","s":"1\n2.50","h":"\u003cul>\n\u003cli>1\u003c/li>\n\u003cli>2.50\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>note about \u003ca href=\"#deep\">Deep doc\u003c/a> stays hidden\u003c/li>\n\u003c/ul>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](a/deep.md#acceptance-criteria), [Requirement](req.md) and [Requirement](req.md).\n\n\u003c!-- include req#statement -->\n\nFirst fact.\n\nSecond fact.\n\n\u003c!-- /include -->\n\nQuote: \u003c!-- include req#^first -->First fact.\u003c!-- /include -->\n\n## Owner name\n\nTeam\n\n## Count\n\n3\n\n## Flag\n\ntrue\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n## Inline\n\nText \u003c!-- include req#title -->Requirement\u003c!-- /include --> here and `{{literal}}` code and [Deep doc](a/deep.md).\n\n## Numbers\n\n- 1\n- 2.50\n\n## Notes (hidden)\n\n> Service information.\n\n- note about [Deep doc](a/deep.md) stays hidden\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Requirement](req.md)\n- [Secret](secret.md)\n\nDocument tree: [_tree.md](_tree.md)\n"},{"id":"deep","title":"Deep doc","file":"a/deep.json","kind":"page","crumbs":["index"],"parent":"index","refs":["index","req"],"summary":"Back to Index and Index.","blocks":[{"p":"/body","s":"Back to [[index]] and [[index#owner_name]].","h":"\u003cp>Back to \u003ca href=\"#index\">Index\u003c/a> and \u003ca href=\"#index--owner-name\">Index\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"deep--acceptance-criteria\">Acceptance criteria\u003c/h2>\n"},{"p":"/acceptance_criteria/0","s":"Given X.","h":"\u003cp>Given X.\u003c/p>\n"},{"p":"/acceptance_criteria/1","s":"Then Y with [[req#statement]] and [[req#^first]].","h":"\u003cp>Then Y with \u003ca href=\"#req--statement\">Requirement\u003c/a> and \u003ca href=\"#req--first\">Requirement\u003c/a>.\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Deep doc\n\npage\n\nBack to [Index](../index.md) and [Index](../index.md#owner-name).\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](../req.md#statement) and [Requirement](../req.md#first).\n\n## Parent\n\n[Index](../index.md)\n\n## Referenced by\n\n- [Index](../index.md)\n- [Requirement](../req.md)\n"},{"id":"req","title":"Requirement","file":"req.json","kind":"page","crumbs":["index"],"parent":"index","refs":["deep","index"],"summary":"Requirement body, see Deep doc.","blocks":[{"p":"/body","s":"Requirement body, see [[deep#acceptance_criteria]].","h":"\u003cp>Requirement body, see \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--statement\">Statement\u003c/h2>\n"},{"p":"/statement/0","s":"First fact. ^first","h":"\u003cp>\u003ca id=\"req--first\">\u003c/a>First fact.\u003c/p>\n"},{"p":"/statement/1","s":"Second fact.","h":"\u003cp>Second fact.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--checks\">Checks\u003c/h2>\n"},{"p":"/checks","s":"Plain check. ^check\nname: n","h":"\u003cul>\n\u003cli>\u003ca id=\"req--check\">\u003c/a>Plain check.\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"req--formula\">Formula\u003c/h2>\n"},{"p":"/formula","s":"x ^2","h":"\u003cp>x ^2\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](a/deep.md#acceptance-criteria).\n\n## Statement\n\n\u003ca id=\"first\">\u003c/a>First fact.\n\nSecond fact.\n\n## Checks\n\n- \u003ca id=\"check\">\u003c/a>Plain check.\n- - **name:** n\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](index.md)\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Index](index.md)\n"},{"id":"secret","title":"Secret","file":"secret.json","hidden":true,"kind":"page","summary":"Hidden text about Index with First fact. Second fact.","blocks":[{"p":"/body","s":"Hidden text about [[index]] with {{req#statement}}","h":"\u003cp>Hidden text about \u003ca href=\"#index\">Index\u003c/a> with \u003c!-- raw HTML omitted -->First fact. Second fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"secret--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>private note\u003c/li>\n\u003c/ul>\n\u003ch2 id=\"secret--suppressions-docignore\">Suppressions (docIgnore)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>rule:\u003c/strong> DOC303\u003c/li>\n\u003cli>\u003cstrong>reason:\u003c/strong> demo\u003c/li>\n\u003cli>\u003cstrong>path:\u003c/strong> /body\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Secret\n\npage\n\n> Hidden document.\n\nHidden text about [Index](index.md) with \u003c!-- include req#statement -->First fact. Second fact.\u003c!-- /include -->\n\n## Notes (hidden)\n\n> Service information.\n\n- private note\n\n## Suppressions (docIgnore)\n\n> Service information.\n\n1. - **rule:** DOC303\n   - **reason:** demo\n   - **path:** /body\n"}],"hist":null,"comments":[],"brand":{},"single":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n> full build: includes hidden documents and notes — do not publish\n\n# Document tree\n\n- [Index](#index)\n  - [Deep doc](#deep)\n  - [Requirement](#req)\n\n## Without parent\n\n- [Secret](#secret) (hidden)\n\n---\n\n\u003ca id=\"index\">\u003c/a>\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](#deep--acceptance-criteria), [Requirement](#req) and [Requirement](#req).\n\n\u003c!-- include req#statement -->\n\nFirst fact.\n\nSecond fact.\n\n\u003c!-- /include -->\n\nQuote: \u003c!-- include req#^first -->First fact.\u003c!-- /include -->\n\n\u003ca id=\"index--owner-name\">\u003c/a>\n\n## Owner name\n\nTeam\n\n\u003ca id=\"index--count\">\u003c/a>\n\n## Count\n\n3\n\n\u003ca id=\"index--flag\">\u003c/a>\n\n## Flag\n\ntrue\n\n\u003ca id=\"index--meta\">\u003c/a>\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n\u003ca id=\"index--steps\">\u003c/a>\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n\u003ca id=\"index--inline\">\u003c/a>\n\n## Inline\n\nText \u003c!-- include req#title -->Requirement\u003c!-- /include --> here and `{{literal}}` code and [Deep doc](#deep).\n\n\u003ca id=\"index--numbers\">\u003c/a>\n\n## Numbers\n\n- 1\n- 2.50\n\n## Notes (hidden)\n\n> Service information.\n\n- note about [Deep doc](#deep) stays hidden\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Requirement](#req)\n- [Secret](#secret)\n\n\n---\n\n\u003ca id=\"deep\">\u003c/a>\n\n# Deep doc\n\npage\n\nBack to [Index](#index) and [Index](#index--owner-name).\n\n\u003ca id=\"deep--acceptance-criteria\">\u003c/a>\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](#req--statement) and [Requirement](#req--first).\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Index](#index)\n- [Requirement](#req)\n\n\n---\n\n\u003ca id=\"req\">\u003c/a>\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](#deep--acceptance-criteria).\n\n\u003ca id=\"req--statement\">\u003c/a>\n\n## Statement\n\n\u003ca id=\"req--first\">\u003c/a>First fact.\n\nSecond fact.\n\n\u003ca id=\"req--checks\">\u003c/a>\n\n## Checks\n\n- \u003ca id=\"req--check\">\u003c/a>Plain check.\n- - **name:** n\n\n\u003ca id=\"req--formula\">\u003c/a>\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Index](#index)\n\n\n---\n\n\u003ca id=\"secret\">\u003c/a>\n\n# Secret\n\npage\n\n> Hidden document.\n\nHidden text about [Index](#index) with \u003c!-- include req#statement -->First fact. Second fact.\u003c!-- /include -->\n\n## Notes (hidden)\n\n> Service information.\n\n- private note\n\n## Suppressions (docIgnore)\n\n> Service information.\n\n1. - **rule:** DOC303\n   - **reason:** demo\n   - **path:** /body\n\n","zip":"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"}</script>
 <script>
 /* htm/preact/standalone 3.1.1 (https://github.com/developit/htm): htm under the Apache License 2.0, Preact (https://preactjs.com) under the MIT License. */
 !function(e,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n(e.htmPreact={})}(this,function(e){var n,_,t,o,r,u,l,i={},c=[],f=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i;function s(e,n){for(var _ in n)e[_]=n[_];return e}function a(e){var n=e.parentNode;n&&n.removeChild(e)}function p(e,_,t){var o,r,u,l={};for(u in _)"key"==u?o=_[u]:"ref"==u?r=_[u]:l[u]=_[u];if(arguments.length>2&&(l.children=arguments.length>3?n.call(arguments,2):t),"function"==typeof e&&null!=e.defaultProps)for(u in e.defaultProps)void 0===l[u]&&(l[u]=e.defaultProps[u]);return h(e,l,o,r,null)}function h(e,n,o,r,u){var l={type:e,props:n,key:o,ref:r,__k:null,__:null,__b:0,__e:null,__d:void 0,__c:null,__h:null,constructor:void 0,__v:null==u?++t:u};return null!=_.vnode&&_.vnode(l),l}function d(e){return e.children}function v(e,n){this.props=e,this.context=n}function y(e,n){if(null==n)return e.__?y(e.__,e.__.__k.indexOf(e)+1):null;for(var _;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e)return _.__e;return"function"==typeof e.type?y(e):null}function m(e){var n,_;if(null!=(e=e.__)&&null!=e.__c){for(e.__e=e.__c.base=null,n=0;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e){e.__e=e.__c.base=_.__e;break}return m(e)}}function g(e){(!e.__d&&(e.__d=!0)&&o.push(e)&&!k.__r++||u!==_.debounceRendering)&&((u=_.debounceRendering)||r)(k)}function k(){for(var e;k.__r=o.length;)e=o.sort(function(e,n){return e.__v.__b-n.__v.__b}),o=[],e.some(function(e){var n,_,t,o,r,u;e.__d&&(r=(o=(n=e).__v).__e,(u=n.__P)&&(_=[],(t=s({},o)).__v=o.__v+1,D(u,o,t,n.__n,void 0!==u.ownerSVGElement,null!=o.__h?[r]:null,_,null==r?y(o):r,o.__h),w(_,o),o.__e!=r&&m(o)))})}function b(e,n,_,t,o,r,u,l,f,s){var a,p,v,m,g,k,b,H=t&&t.__k||c,E=H.length;for(_.__k=[],a=0;a<n.length;a++)if(null!=(m=_.__k[a]=null==(m=n[a])||"boolean"==typeof m?null:"string"==typeof m||"number"==typeof m||"bigint"==typeof m?h(null,m,null,null,m):Array.isArray(m)?h(d,{children:m},null,null,null):m.__b>0?h(m.type,m.props,m.key,null,m.__v):m)){if(m.__=_,m.__b=_.__b+1,null===(v=H[a])||v&&m.key==v.key&&m.type===v.type)H[a]=void 0;else for(p=0;p<E;p++){if((v=H[p])&&m.key==v.key&&m.type===v.type){H[p]=void 0;break}v=null}D(e,m,v=v||i,o,r,u,l,f,s),g=m.__e,(p=m.ref)&&v.ref!=p&&(b||(b=[]),v.ref&&b.push(v.ref,null,m),b.push(p,m.__c||g,m)),null!=g?(null==k&&(k=g),"function"==typeof m.type&&null!=m.__k&&m.__k===v.__k?m.__d=f=C(m,f,e):f=x(e,m,v,H,g,f),s||"option"!==_.type?"function"==typeof _.type&&(_.__d=f):e.value=""):f&&v.__e==f&&f.parentNode!=e&&(f=y(v))}for(_.__e=k,a=E;a--;)null!=H[a]&&("function"==typeof _.type&&null!=H[a].__e&&H[a].__e==_.__d&&(_.__d=y(t,a+1)),A(H[a],H[a]));if(b)for(a=0;a<b.length;a++)U(b[a],b[++a],b[++a])}function C(e,n,_){var t,o;for(t=0;t<e.__k.length;t++)(o=e.__k[t])&&(o.__=e,n="function"==typeof o.type?C(o,n,_):x(_,o,o,e.__k,o.__e,n));return n}function x(e,n,_,t,o,r){var u,l,i;if(void 0!==n.__d)u=n.__d,n.__d=void 0;else if(null==_||o!=r||null==o.parentNode)e:if(null==r||r.parentNode!==e)e.appendChild(o),u=null;else{for(l=r,i=0;(l=l.nextSibling)&&i<t.length;i+=2)if(l==o)break e;e.insertBefore(o,r),u=r}return void 0!==u?u:o.nextSibling}function H(e,n,_){"-"===n[0]?e.setProperty(n,_):e[n]=null==_?"":"number"!=typeof _||f.test(n)?_:_+"px"}function E(e,n,_,t,o){var r;e:if("style"===n)if("string"==typeof _)e.style.cssText=_;else{if("string"==typeof t&&(e.style.cssText=t=""),t)for(n in t)_&&n in _||H(e.style,n,"");if(_)for(n in _)t&&_[n]===t[n]||H(e.style,n,_[n])}else if("o"===n[0]&&"n"===n[1])r=n!==(n=n.replace(/Capture$/,"")),n=n.toLowerCase()in e?n.toLowerCase().slice(2):n.slice(2),e.l||(e.l={}),e.l[n+r]=_,_?t||e.addEventListener(n,r?S:P,r):e.removeEventListener(n,r?S:P,r);else if("dangerouslySetInnerHTML"!==n){if(o)n=n.replace(/xlink[H:h]/,"h").replace(/sName$/,"s");else if("href"!==n&&"list"!==n&&"form"!==n&&"tabIndex"!==n&&"download"!==n&&n in e)try{e[n]=null==_?"":_;break e}catch(e){}"function"==typeof _||(null!=_&&(!1!==_||"a"===n[0]&&"r"===n[1])?e.setAttribute(n,_):e.removeAttribute(n))}}function P(e){this.l[e.type+!1](_.event?_.event(e):e)}function S(e){this.l[e.type+!0](_.event?_.event(e):e)}function D(e,n,t,o,r,u,l,i,c){var f,a,p,h,y,m,g,k,C,x,H,E=n.type;if(void 0!==n.constructor)return null;null!=t.__h&&(c=t.__h,i=n.__e=t.__e,n.__h=null,u=[i]),(f=_.__b)&&f(n);try{e:if("function"==typeof E){if(k=n.props,C=(f=E.contextType)&&o[f.__c],x=f?C?C.props.value:f.__:o,t.__c?g=(a=n.__c=t.__c).__=a.__E:("prototype"in E&&E.prototype.render?n.__c=a=new E(k,x):(n.__c=a=new v(k,x),a.constructor=E,a.render=M),C&&C.sub(a),a.props=k,a.state||(a.state={}),a.context=x,a.__n=o,p=a.__d=!0,a.__h=[]),null==a.__s&&(a.__s=a.state),null!=E.getDerivedStateFromProps&&(a.__s==a.state&&(a.__s=s({},a.__s)),s(a.__s,E.getDerivedStateFromProps(k,a.__s))),h=a.props,y=a.state,p)null==E.getDerivedStateFromProps&&null!=a.componentWillMount&&a.componentWillMount(),null!=a.componentDidMount&&a.__h.push(a.componentDidMount);else{if(null==E.getDerivedStateFromProps&&k!==h&&null!=a.componentWillReceiveProps&&a.componentWillReceiveProps(k,x),!a.__e&&null!=a.shouldComponentUpdate&&!1===a.shouldComponentUpdate(k,a.__s,x)||n.__v===t.__v){a.props=k,a.state=a.__s,n.__v!==t.__v&&(a.__d=!1),a.__v=n,n.__e=t.__e,n.__k=t.__k,n.__k.forEach(function(e){e&&(e.__=n)}),a.__h.length&&l.push(a);break e}null!=a.componentWillUpdate&&a.componentWillUpdate(k,a.__s,x),null!=a.componentDidUpdate&&a.__h.push(function(){a.componentDidUpdate(h,y,m)})}a.context=x,a.props=k,a.state=a.__s,(f=_.__r)&&f(n),a.__d=!1,a.__v=n,a.__P=e,f=a.render(a.props,a.state,a.context),a.state=a.__s,null!=a.getChildContext&&(o=s(s({},o),a.getChildContext())),p||null==a.getSnapshotBeforeUpdate||(m=a.getSnapshotBeforeUpdate(h,y)),H=null!=f&&f.type===d&&null==f.key?f.props.children:f,b(e,Array.isArray(H)?H:[H],n,t,o,r,u,l,i,c),a.base=n.__e,n.__h=null,a.__h.length&&l.push(a),g&&(a.__E=a.__=null),a.__e=!1}else null==u&&n.__v===t.__v?(n.__k=t.__k,n.__e=t.__e):n.__e=T(t.__e,n,t,o,r,u,l,c);(f=_.diffed)&&f(n)}catch(e){n.__v=null,(c||null!=u)&&(n.__e=i,n.__h=!!c,u[u.indexOf(i)]=null),_.__e(e,n,t)}}function w(e,n){_.__c&&_.__c(n,e),e.some(function(n){try{e=n.__h,n.__h=[],e.some(function(e){e.call(n)})}catch(e){_.__e(e,n.__v)}})}function T(e,_,t,o,r,u,l,c){var f,s,p,h=t.props,d=_.props,v=_.type,m=0;if("svg"===v&&(r=!0),null!=u)for(;m<u.length;m++)if((f=u[m])&&(f===e||(v?f.localName==v:3==f.nodeType))){e=f,u[m]=null;break}if(null==e){if(null===v)return document.createTextNode(d);e=r?document.createElementNS("http://www.w3.org/2000/svg",v):document.createElement(v,d.is&&d),u=null,c=!1}if(null===v)h===d||c&&e.data===d||(e.data=d);else{if(u=u&&n.call(e.childNodes),s=(h=t.props||i).dangerouslySetInnerHTML,p=d.dangerouslySetInnerHTML,!c){if(null!=u)for(h={},m=0;m<e.attributes.length;m++)h[e.attributes[m].name]=e.attributes[m].value;(p||s)&&(p&&(s&&p.__html==s.__html||p.__html===e.innerHTML)||(e.innerHTML=p&&p.__html||""))}if(function(e,n,_,t,o){var r;for(r in _)"children"===r||"key"===r||r in n||E(e,r,null,_[r],t);for(r in n)o&&"function"!=typeof n[r]||"children"===r||"key"===r||"value"===r||"checked"===r||_[r]===n[r]||E(e,r,n[r],_[r],t)}(e,d,h,r,c),p)_.__k=[];else if(m=_.props.children,b(e,Array.isArray(m)?m:[m],_,t,o,r&&"foreignObject"!==v,u,l,u?u[0]:t.__k&&y(t,0),c),null!=u)for(m=u.length;m--;)null!=u[m]&&a(u[m]);c||("value"in d&&void 0!==(m=d.value)&&(m!==e.value||"progress"===v&&!m)&&E(e,"value",m,h.value,!1),"checked"in d&&void 0!==(m=d.checked)&&m!==e.checked&&E(e,"checked",m,h.checked,!1))}return e}function U(e,n,t){try{"function"==typeof e?e(n):e.current=n}catch(e){_.__e(e,t)}}function A(e,n,t){var o,r;if(_.unmount&&_.unmount(e),(o=e.ref)&&(o.current&&o.current!==e.__e||U(o,null,n)),null!=(o=e.__c)){if(o.componentWillUnmount)try{o.componentWillUnmount()}catch(e){_.__e(e,n)}o.base=o.__P=null}if(o=e.__k)for(r=0;r<o.length;r++)o[r]&&A(o[r],n,"function"!=typeof e.type);t||null==e.__e||a(e.__e),e.__e=e.__d=void 0}function M(e,n,_){return this.constructor(e,_)}n=c.slice,_={__e:function(e,n){for(var _,t,o;n=n.__;)if((_=n.__c)&&!_.__)try{if((t=_.constructor)&&null!=t.getDerivedStateFromError&&(_.setState(t.getDerivedStateFromError(e)),o=_.__d),null!=_.componentDidCatch&&(_.componentDidCatch(e),o=_.__d),o)return _.__E=_}catch(n){e=n}throw e}},t=0,v.prototype.setState=function(e,n){var _;_=null!=this.__s&&this.__s!==this.state?this.__s:this.__s=s({},this.state),"function"==typeof e&&(e=e(s({},_),this.props)),e&&s(_,e),null!=e&&this.__v&&(n&&this.__h.push(n),g(this))},v.prototype.forceUpdate=function(e){this.__v&&(this.__e=!0,e&&this.__h.push(e),g(this))},v.prototype.render=d,o=[],r="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,k.__r=0,l=0;var F,L,N,W=0,R=[],I=_.__b,O=_.__r,V=_.diffed,q=_.__c,B=_.unmount;function $(e,n){_.__h&&_.__h(L,e,W||n),W=0;var t=L.__H||(L.__H={__:[],__h:[]});return e>=t.__.length&&t.__.push({}),t.__[e]}function j(e){return W=1,G(ee,e)}function G(e,n,_){var t=$(F++,2);return t.t=e,t.__c||(t.__=[_?_(n):ee(void 0,n),function(e){var n=t.t(t.__[0],e);t.__[0]!==n&&(t.__=[n,t.__[1]],t.__c.setState({}))}],t.__c=L),t.__}function z(e,n){var t=$(F++,4);!_.__s&&Z(t.__H,n)&&(t.__=e,t.__H=n,L.__h.push(t))}function J(e,n){var _=$(F++,7);return Z(_.__H,n)&&(_.__=e(),_.__H=n,_.__h=e),_.__}function K(){R.forEach(function(e){if(e.__P)try{e.__H.__h.forEach(X),e.__H.__h.forEach(Y),e.__H.__h=[]}catch(n){e.__H.__h=[],_.__e(n,e.__v)}}),R=[]}_.__b=function(e){L=null,I&&I(e)},_.__r=function(e){O&&O(e),F=0;var n=(L=e.__c).__H;n&&(n.__h.forEach(X),n.__h.forEach(Y),n.__h=[])},_.diffed=function(e){V&&V(e);var n=e.__c;n&&n.__H&&n.__H.__h.length&&(1!==R.push(n)&&N===_.requestAnimationFrame||((N=_.requestAnimationFrame)||function(e){var n,_=function(){clearTimeout(t),Q&&cancelAnimationFrame(n),setTimeout(e)},t=setTimeout(_,100);Q&&(n=requestAnimationFrame(_))})(K)),L=void 0},_.__c=function(e,n){n.some(function(e){try{e.__h.forEach(X),e.__h=e.__h.filter(function(e){return!e.__||Y(e)})}catch(t){n.some(function(e){e.__h&&(e.__h=[])}),n=[],_.__e(t,e.__v)}}),q&&q(e,n)},_.unmount=function(e){B&&B(e);var n=e.__c;if(n&&n.__H)try{n.__H.__.forEach(X)}catch(e){_.__e(e,n.__v)}};var Q="function"==typeof requestAnimationFrame;function X(e){var n=L;"function"==typeof e.__c&&e.__c(),L=n}function Y(e){var n=L;e.__c=e.__(),L=n}function Z(e,n){return!e||e.length!==n.length||n.some(function(n,_){return n!==e[_]})}function ee(e,n){return"function"==typeof n?n(e):n}var ne=function(e,n,_,t){var o;n[0]=0;for(var r=1;r<n.length;r++){var u=n[r++],l=n[r]?(n[0]|=u?1:2,_[n[r++]]):n[++r];3===u?t[0]=l:4===u?t[1]=Object.assign(t[1]||{},l):5===u?(t[1]=t[1]||{})[n[++r]]=l:6===u?t[1][n[++r]]+=l+"":u?(o=e.apply(l,ne(e,l,_,["",null])),t.push(o),l[0]?n[0]|=2:(n[r-2]=0,n[r]=o)):t.push(l)}return t},_e=new Map,te=function(e){var n=_e.get(this);return n||(n=new Map,_e.set(this,n)),(n=ne(this,n.get(e)||(n.set(e,n=function(e){for(var n,_,t=1,o="",r="",u=[0],l=function(e){1===t&&(e||(o=o.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?u.push(0,e,o):3===t&&(e||o)?(u.push(3,e,o),t=2):2===t&&"..."===o&&e?u.push(4,e,0):2===t&&o&&!e?u.push(5,0,!0,o):t>=5&&((o||!e&&5===t)&&(u.push(t,0,o,_),t=6),e&&(u.push(t,e,0,_),t=6)),o=""},i=0;i<e.length;i++){i&&(1===t&&l(),l(i));for(var c=0;c<e[i].length;c++)n=e[i][c],1===t?"<"===n?(l(),u=[u],t=3):o+=n:4===t?"--"===o&&">"===n?(t=1,o=""):o=n+o[0]:r?n===r?r="":o+=n:'"'===n||"'"===n?r=n:">"===n?(l(),t=1):t&&("="===n?(t=5,_=o,o=""):"/"===n&&(t<5||">"===e[i][c+1])?(l(),3===t&&(u=u[0]),t=u,(u=u[0]).push(2,0,t),t=0):" "===n||"\t"===n||"\n"===n||"\r"===n?(l(),t=2):o+=n),3===t&&"!--"===o&&(t=4,u=u[0])}return l(),u}(e)),n),arguments,[])).length>1?n:n[0]}.bind(p);e.h=p,e.html=te,e.render=function(e,t,o){var r,u,l;_.__&&_.__(e,t),u=(r="function"==typeof o)?null:o&&o.__k||t.__k,l=[],D(t,e=(!r&&o||t).__k=p(d,null,[e]),u||i,i,void 0!==t.ownerSVGElement,!r&&o?[o]:u?null:t.firstChild?n.call(t.childNodes):null,l,!r&&o?o:u?u.__e:t.firstChild,r),w(l,e)},e.Component=v,e.createContext=function(e,n){var _={__c:n="__cC"+l++,__:e,Consumer:function(e,n){return e.children(n)},Provider:function(e){var _,t;return this.getChildContext||(_=[],(t={})[n]=this,this.getChildContext=function(){return t},this.shouldComponentUpdate=function(e){this.props.value!==e.value&&_.some(g)},this.sub=function(e){_.push(e);var n=e.componentWillUnmount;e.componentWillUnmount=function(){_.splice(_.indexOf(e),1),n&&n.call(e)}}),e.children}};return _.Provider.__=_.Consumer.contextType=_},e.useState=j,e.useReducer=G,e.useEffect=function(e,n){var t=$(F++,3);!_.__s&&Z(t.__H,n)&&(t.__=e,t.__H=n,L.__H.__h.push(t))},e.useLayoutEffect=z,e.useRef=function(e){return W=5,J(function(){return{current:e}},[])},e.useImperativeHandle=function(e,n,_){W=6,z(function(){"function"==typeof e?e(n()):e&&(e.current=n())},null==_?_:_.concat(e))},e.useMemo=J,e.useCallback=function(e,n){return W=8,J(function(){return e},n)},e.useContext=function(e){var n=L.context[e.__c],_=$(F++,9);return _.c=e,n?(null==_.__&&(_.__=!0,n.sub(L)),n.props.value):e.__},e.useDebugValue=function(e,n){_.useDebugValue&&_.useDebugValue(n?n(e):e)},e.useErrorBoundary=function(e){var n=$(F++,10),_=j();return n.__=e,L.componentDidCatch||(L.componentDidCatch=function(e){n.__&&n.__(e),_[1](e)}),[_[0],function(){_[1](void 0)}]}});
@@ -231,6 +280,7 @@ a{color:inherit;text-decoration:none}
   pages.forEach(function (p, i) { p.i = i; byId[p.id] = p; });
   var H = D.hist || { commits: [], docs: {} };
   var commits = H.commits || [];
+  var touch = window.matchMedia && matchMedia('(hover: none)').matches;
 
   // ---- small helpers ----
   function store(k, v) {
@@ -243,33 +293,40 @@ a{color:inherit;text-decoration:none}
     h = h.replace(/^#/, '');
     try { return decodeURIComponent(h); } catch (e) { return h; }
   }
-  // the page a hash belongs to: a page id, or <page id>--<anchor>
+  // the page a hash belongs to: a page id, <page id>--<anchor> (a heading or
+  // field) or <page id>/<JSON Pointer> (a paragraph)
   function route(hash) {
     var id = decode(hash);
-    if (byId[id]) { return { page: byId[id], target: null }; }
+    if (byId[id]) { return { page: byId[id] }; }
     var best = null;
     pages.forEach(function (p) {
       if (id.indexOf(p.id + '--') === 0 && (!best || p.id.length > best.id.length)) { best = p; }
     });
-    return best ? { page: best, target: id } : { page: pages[0], target: null };
+    if (best) { return { page: best, target: id }; }
+    var k = id.indexOf('/');
+    if (k > 0 && byId[id.slice(0, k)]) { return { page: byId[id.slice(0, k)], block: id.slice(k) }; }
+    return { page: pages[0], missing: id && id !== 'main' ? id : null };
   }
-  // "/13.1 Migration sources/2" -> "13.1 Migration sources › 3"
-  function ptrLabel(p) {
-    return p.split('/').slice(1).map(function (s) {
-      s = s.replace(/~1/g, '/').replace(/~0/g, '~');
-      return /^\d+$/.test(s) ? String(+s + 1) : s;
-    }).join(' › ');
+  function blockHash(doc, ptr) { return '#' + doc + (ptr || ''); }
+  function date(c) {
+    var cm = commits[c];
+    if (!cm || !cm.d) { return ''; }
+    var d = new Date(cm.d);
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
   }
   function when(c) {
     var cm = commits[c];
-    if (!cm || !cm.h) { return 'not committed'; }
+    if (!cm || !cm.h) { return 'not saved yet'; }
     var d = new Date(cm.d);
     var pad = function (n) { return (n < 10 ? '0' : '') + n; };
-    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    return date(c) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
-  function commitLine(c) {
+  // a version for the reader is its date; the full build adds the author and message
+  function versionLine(c) {
     var cm = commits[c] || {};
-    return cm.h ? when(c) + ' · ' + cm.a + ' · ' + cm.h + ' · ' + cm.m : 'not committed';
+    if (!cm.h) { return 'not saved yet'; }
+    return when(c) + (cm.a ? ' · ' + cm.a : '') + (cm.m ? ' · ' + cm.m : '');
   }
   function save(name, type, data) {
     var a = document.createElement('a');
@@ -278,10 +335,27 @@ a{color:inherit;text-decoration:none}
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
+  function copy(text) {
+    function old() {
+      var t = document.createElement('textarea');
+      t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      t.remove();
+      return ok ? Promise.resolve() : Promise.reject();
+    }
+    return navigator.clipboard ? navigator.clipboard.writeText(text).catch(old) : old();
+  }
   function unzip64(s) {
     var b = atob(s), u = new Uint8Array(b.length);
     for (var i = 0; i < b.length; i++) { u[i] = b.charCodeAt(i); }
     return u;
+  }
+  function b64(s) {
+    var u = new TextEncoder().encode(s), b = '';
+    for (var i = 0; i < u.length; i++) { b += String.fromCharCode(u[i]); }
+    return btoa(b);
   }
   function uuid() {
     if (window.crypto && crypto.randomUUID) { return crypto.randomUUID(); }
@@ -290,8 +364,48 @@ a{color:inherit;text-decoration:none}
       return (c === 'x' ? r : (r & 3 | 8)).toString(16);
     });
   }
-  var plain = document.createElement('div');
-  function textOf(h) { plain.innerHTML = h; return plain.textContent.replace(/\s+/g, ' ').trim(); }
+  var box = document.createElement('div');
+  function textOf(h) { box.innerHTML = h; return box.textContent.replace(/\s+/g, ' ').trim(); }
+  // the source text of a block as a reader sees it: links by their names, no marks
+  // ponytail: a few regexes for the usual marks, not a Markdown parser
+  function plain(s) {
+    return (s || '')
+      .replace(/\[\[([^\]#|]+)(?:#([^\]|]*))?\]\]/g, function (m, id, a) {
+        if (a && a.indexOf('/') > 0) { return a.slice(a.lastIndexOf('/') + 1); }
+        return byId[id] ? byId[id].title : id;
+      })
+      .replace(/\{\{([^}#]+)#[^}]*\}\}/g, function (m, id) { return '«' + (byId[id] ? byId[id].title : id) + '»'; })
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/(\*\*|__)(.+?)\1/g, '$2')
+      .replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1$2')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/^>\s?/gm, '')
+      .replace(/\s\^[a-z0-9-]+$/gm, '');
+  }
+  function snip(s, n) {
+    s = plain(s).replace(/\s+/g, ' ').trim();
+    return s.length > n ? s.slice(0, n).replace(/\s\S*$/, '') + '…' : s;
+  }
+
+  // ---- toasts: one line at the bottom, with an optional action ----
+  var toastFns = [];
+  function toast(text, action, fn) { toastFns.forEach(function (f) { f({ text: text, action: action, fn: fn, k: Date.now() }); }); }
+  function Toast() {
+    var s = useState(null);
+    useEffect(function () {
+      var f = function (t) { s[1](t); };
+      toastFns.push(f);
+      return function () { toastFns.splice(toastFns.indexOf(f), 1); };
+    }, []);
+    useEffect(function () {
+      if (!s[0]) { return; }
+      var t = setTimeout(function () { s[1](null); }, 6000);
+      return function () { clearTimeout(t); };
+    }, [s[0]]);
+    return html`<div class="toast-w" role="status" aria-live="polite">${s[0] && html`<div class="toast">${s[0].text}
+      ${s[0].action && html`<button type="button" class="link" onClick=${function () { s[0].fn(); s[1](null); }}>${s[0].action}</button>`}</div>`}</div>`;
+  }
 
   // word diff: a longest common subsequence over words and spaces
   function diff(a, b) {
@@ -323,15 +437,17 @@ a{color:inherit;text-decoration:none}
     if (same < 0.4 * Math.max(a.replace(/\s+/g, '').length, b.replace(/\s+/g, '').length)) { return [[-1, a], [1, b]]; }
     return out;
   }
+  // was and now in reading form; removed words are struck out, added underlined
   function Diff(props) {
-    if (props.a == null) { return html`<div class="dv"><ins>${props.b}</ins></div>`; }
-    var ds = diff(props.a, props.b), whole = ds.length === 2 && ds[0][1] === props.a && ds[1][1] === props.b;
+    var b = plain(props.b);
+    if (props.a == null) { return html`<div class="dv"><ins>${b}</ins></div>`; }
+    var a = plain(props.a), ds = diff(a, b), whole = ds.length === 2 && ds[0][1] === a && ds[1][1] === b;
     return html`<div class=${'dv' + (whole ? ' whole' : '')}>${ds.map(function (d) {
-      return d[0] < 0 ? html`<del>${d[1]}</del>` : d[0] > 0 ? html`<ins>${d[1]}</ins>` : d[1];
+      return d[0] < 0 ? html`<del><span class="sr">removed: </span>${d[1]}</del>` : d[0] > 0 ? html`<ins><span class="sr">added: </span>${d[1]}</ins>` : d[1];
     })}</div>`;
   }
 
-  // ---- history ----
+  // ---- history and changes ----
   function versions(page, ptr) {
     var h = H.docs && H.docs[page.file];
     return (h && h.b && h.b[ptr]) || [];
@@ -348,11 +464,48 @@ a{color:inherit;text-decoration:none}
     vs.forEach(function (v) { if (v.c <= since) { before = v.t; } else { after = true; } });
     return after ? before : undefined;
   }
-  function pageChangedSince(page, since) {
-    return since != null && since >= 0 && pageChanges(page).some(function (c) { return c.c > since; });
+  function blocksOf(page) { return (page.props || []).concat(page.blocks).filter(function (b) { return b.p; }); }
+  // what changed on a page after `since`: changed and new blocks in page order, removed texts
+  var deltaCache = {};
+  function pageDelta(page, since) {
+    var key = page.id + ':' + since;
+    if (deltaCache[key]) { return deltaCache[key]; }
+    var d = { list: [], chg: 0, add: 0, rm: [] }, now = {};
+    if (since != null && since >= 0) {
+      blocksOf(page).forEach(function (b) {
+        now[b.s] = true;
+        var before = changedSince(page, b.p, since);
+        if (before === undefined) { return; }
+        d.list.push(b.p);
+        if (before === null) { d.add++; } else { d.chg++; }
+      });
+      var gone = {};
+      pageChanges(page).forEach(function (c) {
+        if (c.c <= since) { return; }
+        (c.rm || []).forEach(function (x) { if (!now[x[1]] && !gone[x[1]]) { gone[x[1]] = true; d.rm.push(x[1]); } });
+      });
+    }
+    deltaCache[key] = d;
+    return d;
+  }
+  // every change after `since` in the order of the pages
+  function allChanges(since) {
+    var list = [], pagesN = 0, rm = 0;
+    pages.forEach(function (p) {
+      var d = pageDelta(p, since);
+      if (d.list.length || d.rm.length) { pagesN++; }
+      rm += d.rm.length;
+      d.list.forEach(function (ptr) { list.push({ page: p, ptr: ptr }); });
+    });
+    return { list: list, pages: pagesN, rm: rm };
+  }
+  // where a pointer is, for the reader: the start of its text
+  function placeOf(page, ptr, fallback) {
+    var b = page && blocksOf(page).filter(function (x) { return x.p === ptr; })[0];
+    return '«' + snip(b ? b.s : fallback || '', 70) + '»';
   }
 
-  // ---- comments: kept in localStorage until downloaded as JSON ----
+  // ---- comments: kept in localStorage until they are sent ----
   var listeners = [];
   var imported = D.comments || [], inRepo = {};
   imported.forEach(function (c) { inRepo[c.id] = true; });
@@ -372,22 +525,43 @@ a{color:inherit;text-decoration:none}
     }, []);
     return s[0];
   }
-  function exportComments() {
-    var d = new Date().toISOString().slice(0, 10);
-    save('comments-' + d + '.json', 'application/json',
-      JSON.stringify({ docc: 'comments', version: 1, comments: local }, null, 2) + '\n');
+  function unsent(list) { return list.filter(function (c) { return !c.sent; }).length; }
+  function markSent() { setLocal(local.map(function (c) { return Object.assign({}, c, { sent: true }); })); }
+  function exportJSON() {
+    return JSON.stringify({ docc: 'comments', version: 1, comments: local.map(function (c) {
+      var o = Object.assign({}, c); delete o.sent; return o;
+    }) }, null, 2) + '\n';
+  }
+  function exportText() {
+    var lines = ['Comments on «' + D.title + '» — ' + local.length, ''];
+    local.forEach(function (c, k) {
+      var p = byId[c.doc];
+      lines.push((k + 1) + '. ' + (p ? p.title : c.doc) + ' — «' + snip(c.quote, 80) + '»');
+      lines.push(c.text);
+      if (c.author) { lines.push('— ' + c.author); }
+      lines.push('');
+    });
+    lines.push('For the team, do not edit:');
+    lines.push('docc-comments:' + b64(exportJSON()));
+    return lines.join('\n') + '\n';
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (unsent(local)) { e.preventDefault(); e.returnValue = ''; }
+  });
+  function removeComment(c) {
+    var before = local;
+    setLocal(local.filter(function (x) { return x.id !== c.id; }));
+    toast('Comment deleted.', 'Undo', function () { setLocal(before); });
   }
 
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
 
-  // hold the button and speak; the words go into the text box as they come
+  // press to dictate, press again to stop; the words go into the text box as they come
   function Mic(props) {
     var rec = useRef(null), st = useState(''), on = useState(false);
     if (!Rec) { return null; }
-    function start(e) {
-      e.preventDefault();
-      if (rec.current) { return; }
+    function start() {
       var base = props.get(), r = new Rec();
       r.lang = speechLang; r.interimResults = true; r.continuous = true;
       r.onresult = function (ev) {
@@ -398,36 +572,40 @@ a{color:inherit;text-decoration:none}
       r.onerror = function (ev) {
         st[1](ev.error === 'not-allowed' ? 'No access to the microphone' :
           ev.error === 'network' ? 'Speech service unreachable' :
-          ev.error === 'no-speech' ? 'No speech heard' : ev.error);
+          ev.error === 'no-speech' ? 'No speech heard' : 'Dictation failed, type the text instead');
       };
       r.onend = function () { rec.current = null; on[1](false); };
-      try { r.start(); rec.current = r; on[1](true); st[1](''); } catch (err) { st[1](String(err)); }
+      try { r.start(); rec.current = r; on[1](true); st[1](''); } catch (err) { st[1]('Dictation failed, type the text instead'); }
     }
-    function stop() { if (rec.current) { rec.current.stop(); } }
+    function toggle() { if (rec.current) { rec.current.stop(); } else { start(); } }
     return html`<span class="mic-w">
-      <button type="button" class=${'mic' + (on[0] ? ' on' : '')} onPointerDown=${start} onPointerUp=${stop}
-        onPointerLeave=${stop} onPointerCancel=${stop} onContextMenu=${function (e) { e.preventDefault(); }}
-        title="Hold and speak">${on[0] ? '● Listening…' : '🎤 Hold and speak'}</button>
+      <button type="button" class=${'mic' + (on[0] ? ' on' : '')} aria-pressed=${on[0] ? 'true' : 'false'} onClick=${toggle}>
+        ${on[0] ? '■ Stop dictation' : '🎤 Dictate'}</button>
       ${st[0] && html`<small class="err">${st[0]}</small>`}
     </span>`;
   }
 
   function Editor(props) {
-    var text = useState(''), author = useState(store('author') || ''), ta = useRef(null);
+    var edit = props.edit;
+    var text = useState(edit ? edit.text : ''), author = useState(edit ? edit.author || '' : store('author') || ''), ta = useRef(null);
     var cur = useRef(''); cur.current = text[0];
     useEffect(function () { if (ta.current) { ta.current.focus(); } }, []);
     function ok() {
-      var t = text[0].trim();
+      var t = text[0].trim(), a = author[0].trim();
       if (!t) { return; }
-      if (author[0].trim()) { store('author', author[0].trim()); }
-      setLocal(local.concat([{ id: uuid(), doc: props.page.id, path: props.ptr, quote: props.quote, text: t,
-        author: author[0].trim(), created: new Date().toISOString(), build: H.head || '' }]));
+      if (a) { store('author', a); }
+      if (edit) {
+        setLocal(local.map(function (c) { return c.id === edit.id ? Object.assign({}, c, { text: t, author: a, sent: false }) : c; }));
+      } else {
+        setLocal(local.concat([{ id: uuid(), doc: props.page.id, path: props.ptr, quote: props.quote, text: t,
+          author: a, created: new Date().toISOString(), build: H.head || '' }]));
+      }
       props.close();
     }
     return html`<div class="editor">
-      ${!store('author') && html`<input class="who" placeholder="Your name" value=${author[0]}
-        onInput=${function (e) { author[1](e.target.value); }} />`}
-      <textarea ref=${ta} rows="3" placeholder="Comment on this block" value=${text[0]}
+      <label class="who-l">From <input class="who" autocomplete="name" enterkeyhint="next" placeholder="Your name" value=${author[0]}
+        onInput=${function (e) { author[1](e.target.value); }} /></label>
+      <textarea ref=${ta} rows="3" aria-label="Comment on this paragraph" placeholder="Comment on this paragraph" value=${text[0]}
         onInput=${function (e) { text[1](e.target.value); }}
         onKeyDown=${function (e) {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { ok(); }
@@ -443,17 +621,19 @@ a{color:inherit;text-decoration:none}
   }
 
   function Note(props) {
-    var c = props.c;
+    var c = props.c, edit = useState(false);
+    if (edit[0]) { return html`<${Editor} edit=${c} close=${function () { edit[1](false); }} />`; }
     return html`<div class=${'note' + (props.repo ? ' repo' : '')}>
-      <div class="nh"><b>${c.author || 'Anonymous'}</b>
-        <small>${c.created ? new Date(c.created).toLocaleString() : ''}</small>
+      <div class="nh"><b>💬 ${c.author || 'Anonymous'}</b>
+        <small>${c.created ? new Date(c.created).toLocaleDateString() : ''}</small>
         ${props.repo ? html`<span class=${'badge ' + (c.status === 'done' ? 'ok' : 'warn')}>
-          ${c.status === 'done' ? 'processed' : 'not processed'}</span>`
-          : html`<button type="button" class="link" onClick=${function () {
-            setLocal(local.filter(function (x) { return x.id !== c.id; }));
-          }}>Delete</button>`}
+          ${c.status === 'done' ? 'taken into account' : 'the team is working on it'}</span>`
+          : html`${!c.sent && html`<span class="badge warn">not sent</span>`}<span class="acts">
+            <button type="button" class="link" onClick=${function () { edit[1](true); }}>Edit</button>
+            <button type="button" class="link" onClick=${function () { removeComment(c); }}>Delete</button></span>`}
       </div>
       <div class="nt">${c.text}</div>
+      ${c.reply && html`<div class="reply"><small>Team\'s answer</small>${c.reply}</div>`}
     </div>`;
   }
 
@@ -461,11 +641,11 @@ a{color:inherit;text-decoration:none}
   function History(props) {
     var vs = props.vs.slice().reverse();
     return html`<div class="hist">
-      <div class="hh"><b>History of the block</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
+      <div class="hh"><b>History of the paragraph</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
       ${vs.map(function (v, k) {
         var prev = vs[k + 1];
         return html`<div class="ver">
-          <div class="vh">${commitLine(v.c)}${!prev && html` · <i>created</i>`}</div>
+          <div class="vh">${versionLine(v.c)}${!prev && html` · <i>first version</i>`}</div>
           <${Diff} a=${prev ? prev.t : null} b=${v.t} />
         </div>`;
       })}
@@ -479,45 +659,53 @@ a{color:inherit;text-decoration:none}
     var repo = imported.filter(function (c) { return c.doc === page.id && c.path === ptr; });
     var vs = ptr ? versions(page, ptr) : [];
     var before = ptr ? changedSince(page, ptr, props.since) : undefined;
-    var changed = before !== undefined;
+    var changed = before !== undefined, isNew = before === null;
     var body = props.tag === 'dd'
       ? html`<dd class="bc" id=${props.id} dangerouslySetInnerHTML=${{ __html: b.h }}></dd>`
       : html`<div class="bc" dangerouslySetInnerHTML=${{ __html: b.h }}></div>`;
     if (!ptr) { return props.tag === 'dd' ? body : html`<div class="blk">${body}</div>`; }
+    var n = mine.length + repo.length;
     var extra = html`
-      ${changed && showDiff[0] && html`<div class="since"><small>Text at the chosen version → now</small><${Diff} a=${before} b=${b.s} /></div>`}
+      ${changed && !isNew && showDiff[0] && html`<div class="since"><small>Was → now</small><${Diff} a=${before} b=${b.s} /></div>`}
       ${repo.map(function (c) { return html`<${Note} c=${c} repo=${true} />`; })}
       ${mine.map(function (c) { return html`<${Note} c=${c} />`; })}
       ${mode[0] === 'c' && html`<${Editor} page=${page} ptr=${ptr} quote=${b.s} close=${function () { mode[1](null); }} />`}
       ${mode[0] === 'h' && html`<${History} vs=${vs} close=${function () { mode[1](null); }} />`}`;
     var tools = html`<span class="tools">
-      ${changed && html`<button type="button" class="chg-b" title="Changed after the chosen version"
-        onClick=${function () { showDiff[1](!showDiff[0]); }}>Δ</button>`}
-      <button type="button" title="Comment" onClick=${function () { mode[1](mode[0] === 'c' ? null : 'c'); }}>💬${mine.length + repo.length ? ' ' + (mine.length + repo.length) : ''}</button>
-      ${vs.length > 1 && html`<button type="button" title="History of the block" onClick=${function () { mode[1](mode[0] === 'h' ? null : 'h'); }}>🕘 ${vs.length}</button>`}
+      ${isNew && html`<span class="tag-new">new</span>`}
+      ${changed && !isNew && html`<button type="button" class="chg-b" aria-expanded=${showDiff[0] ? 'true' : 'false'}
+        onClick=${function () { showDiff[1](!showDiff[0]); }}>What changed</button>`}
+      <button type="button" aria-label=${n ? 'Comments: ' + n : 'Comment on this paragraph'} title="Comment on this paragraph"
+        onClick=${function () { mode[1](mode[0] === 'c' ? null : 'c'); }}>💬${n ? ' ' + n : ''}</button>
+      ${vs.length > 1 && html`<button type="button" aria-label=${'History of the paragraph: ' + vs.length} title="History of the paragraph"
+        onClick=${function () { mode[1](mode[0] === 'h' ? null : 'h'); }}>🕘 ${vs.length}</button>`}
     </span>`;
-    var cls = 'blk' + (changed ? ' chg' : '') + (mine.length + repo.length ? ' has-c' : '');
+    var cls = 'blk' + (changed ? (isNew ? ' new' : ' chg') : '') + (n ? ' has-c' : '');
     if (props.tag === 'dd') {
-      return html`<dd class=${cls} id=${props.id}><div class="bc" dangerouslySetInnerHTML=${{ __html: b.h }}></div>${tools}${extra}</dd>`;
+      return html`<dd class=${cls} id=${props.id} data-p=${ptr}><div class="bc" dangerouslySetInnerHTML=${{ __html: b.h }}></div>${tools}${extra}</dd>`;
     }
     return html`<div class=${cls} data-p=${ptr}>${body}${tools}${extra}</div>`;
   }
 
   // ---- page ----
   function PageHistory(props) {
-    var ch = pageChanges(props.page).slice().reverse();
+    var page = props.page, ch = pageChanges(page).slice().reverse();
     function list(label, items, fn) {
       return items && items.length ? html`<div class="pg-g"><small>${label}</small>${items.map(fn)}</div>` : null;
     }
+    function place(ptr, text) {
+      var b = blocksOf(page).some(function (x) { return x.p === ptr; });
+      return b ? html`<a class="ptr" href=${blockHash(page.id, ptr)}>${placeOf(page, ptr, text)}</a>` : html`<span class="ptr">${placeOf(page, ptr, text)}</span>`;
+    }
     return html`<div class="hist page-hist">
       <div class="hh"><b>History of the page</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
-      ${!ch.length && html`<p class="muted">No history: the project is not in Git.</p>`}
+      ${!ch.length && html`<p class="muted">No changes in this file\'s history.</p>`}
       ${ch.map(function (c) {
         return html`<div class="ver">
-          <div class="vh">${commitLine(c.c)}${c.new && html` · <i>page created</i>`}</div>
-          ${list('Changed', c.ch, function (x) { return html`<div class="pg-i"><span class="ptr">${ptrLabel(x[0])}</span><${Diff} a=${x[1]} b=${x[2]} /></div>`; })}
-          ${list('Added', c.add, function (x) { return html`<div class="pg-i"><span class="ptr">${ptrLabel(x[0])}</span><${Diff} a=${null} b=${x[1]} /></div>`; })}
-          ${list('Removed', c.rm, function (x) { return html`<div class="pg-i"><span class="ptr">${ptrLabel(x[0])}</span><div class="dv"><del>${x[1]}</del></div></div>`; })}
+          <div class="vh">${versionLine(c.c)}${c.new && html` · <i>page created</i>`}</div>
+          ${list('Changed', c.ch, function (x) { return html`<div class="pg-i">${place(x[0], x[2])}<${Diff} a=${x[1]} b=${x[2]} /></div>`; })}
+          ${list('Added', c.add, function (x) { return html`<div class="pg-i">${place(x[0], x[1])}<${Diff} a=${null} b=${x[1]} /></div>`; })}
+          ${list('Removed', c.rm, function (x) { return html`<div class="pg-i"><div class="dv"><del>${plain(x[1])}</del></div></div>`; })}
         </div>`;
       })}
     </div>`;
@@ -548,8 +736,7 @@ a{color:inherit;text-decoration:none}
         b.addEventListener('click', function () {
           var code = pre.querySelector('code'), text = (code || pre).textContent;
           var done = function (m) { b.textContent = m; setTimeout(function () { b.textContent = 'Copy'; }, 1500); };
-          if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { done('Copied'); }, function () { done('Failed'); }); }
-          else { done('Failed'); }
+          copy(text).then(function () { done('Copied'); }, function () { done('Failed'); });
         });
         pre.appendChild(b);
       });
@@ -561,16 +748,19 @@ a{color:inherit;text-decoration:none}
     var shown = {}; shown[page.id] = true;
     (page.kids || []).forEach(function (k) { shown[k] = true; });
     if (page.parent) { shown[page.parent] = true; }
+    (page.crumbs || []).forEach(function (k) { shown[k] = true; });
     var refs = (page.refs || []).filter(function (r) { return !shown[r]; });
     var bl = { comments: props.comments, since: props.since, page: page };
+    var gone = pageDelta(page, props.since).rm;
     return html`<article class="page" ref=${main}>
       ${D.brand.print && html`<div dangerouslySetInnerHTML=${{ __html: D.brand.print }}></div>`}
+      ${props.missing && html`<p class="notice" role="alert">Nothing is found at this link: «${props.missing}». The first page is shown; find the place in the tree or the search.</p>`}
       ${page.crumbs && html`<nav class="crumbs" aria-label="Breadcrumb">${page.crumbs.map(function (id, k) {
         return html`${k > 0 && html`<span aria-hidden="true">›</span>`}<a href=${'#' + id}>${byId[id] ? byId[id].title : id}</a>`;
       })}</nav>`}
       <div class="ttl">
         <h1>${page.title}</h1>
-        ${commits.length > 0 && html`<button type="button" class="ph-b" onClick=${function () { ph[1](!ph[0]); }}>🕘 Page history</button>`}
+        ${commits.length > 0 && html`<button type="button" class="ph-b" aria-expanded=${ph[0] ? 'true' : 'false'} onClick=${function () { ph[1](!ph[0]); }}>🕘 Page history</button>`}
       </div>
       ${(page.kind || page.status || page.priority || page.hidden || page.tags) && html`<div class="badges">
         ${page.kind && html`<span class="badge kind">${page.kind}</span>`}
@@ -586,12 +776,13 @@ a{color:inherit;text-decoration:none}
         })}</dl>`}
         ${page.blocks.map(function (b) { return html`<${Block} ...${bl} b=${b} />`; })}
       </div>
+      ${gone.length > 0 && html`<details class="gone"><summary>Removed from this page since the chosen version: ${gone.length}</summary>
+        ${gone.map(function (t) { return html`<div class="dv"><del>${plain(t)}</del></div>`; })}</details>`}
       ${page.kids && html`<h2 class="rh">Pages in this section</h2><div class="rows">${page.kids.map(function (id) {
         var k = byId[id];
         return k && html`<a class="row" href=${'#' + id}><span class="ct">${k.title}${k.kind && html` <span class="badge kind">${k.kind}</span>`}</span>${k.summary && html`<span class="cs">${k.summary}</span>`}</a>`;
       })}</div>`}
-      ${(page.parent || refs.length || page.covers) && html`<h2 class="rh">Related</h2><div class="related">
-        ${page.parent && html`<div class="rg"><span class="rl">Parent</span><${Chip} id=${page.parent} /></div>`}
+      ${(refs.length || page.covers) && html`<h2 class="rh">Related</h2><div class="related">
         ${refs.length > 0 && html`<div class="rg"><span class="rl">Referenced by</span>${refs.map(function (id) { return html`<${Chip} id=${id} />`; })}</div>`}
         ${page.covers && html`<div class="rg"><span class="rl">Covered by</span>${page.covers.map(function (c) { return html`<code>${c}</code>`; })}</div>`}
       </div>`}
@@ -638,11 +829,11 @@ a{color:inherit;text-decoration:none}
     var isOpen = open[0] == null ? inside : open[0];
     useEffect(function () { if (inside) { open[1](null); } }, [props.cur]);
     if (!p) { return null; }
-    var mark = pageChangedSince(p, props.since);
+    var d = pageDelta(p, props.since), n = d.list.length + d.rm.length;
     return html`<li class=${x.kids.length ? 'parent' : ''}>
       ${x.kids.length > 0 && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
-        aria-label=${isOpen ? 'Collapse' : 'Expand'} onClick=${function () { open[1](!isOpen); }}></button>`}
-      <a href=${'#' + p.id} aria-current=${p.id === props.cur ? 'page' : undefined}>${p.title}${p.hidden && html` <span class="badge bad">hidden</span>`}${mark && html` <span class="dot" title="Changed after the chosen version">●</span>`}</a>
+        aria-label=${(isOpen ? 'Collapse' : 'Expand') + ': ' + p.title} onClick=${function () { open[1](!isOpen); }}></button>`}
+      <a href=${'#' + p.id} aria-current=${p.id === props.cur ? 'page' : undefined}>${p.title}${p.hidden && html` <span class="badge bad">hidden</span>`}${n > 0 && html` <span class="cnt" title="Changes on the page"><span class="sr">Changes on the page: </span>${n}</span>`}</a>
       ${x.kids.length > 0 && isOpen && html`<${Items} nodes=${x.kids} cur=${props.cur} since=${props.since} />`}
     </li>`;
   }
@@ -653,54 +844,61 @@ a{color:inherit;text-decoration:none}
       ${open[0] && html`<div class="gb">${props.children}</div>`}`;
   }
 
-  var index = null;
+  // the search finds paragraphs: every word in the paragraph or in the title of its page
+  var index = null, LIMIT = 30;
   function Search(props) {
-    var q = useState(''), sel = useState(0), box = useRef(null);
+    var q = useState(''), sel = useState(0), inp = useRef(null);
     useEffect(function () {
       function key(e) {
         var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
         if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
-          e.preventDefault(); props.openSide(); box.current.focus(); box.current.select();
+          e.preventDefault(); props.openSide(); inp.current.focus(); inp.current.select();
         }
       }
       document.addEventListener('keydown', key);
       return function () { document.removeEventListener('keydown', key); };
     }, []);
-    var v = q[0].trim(), hits = [];
+    var v = q[0].trim(), hits = [], total = 0;
     if (v) {
-      index = index || pages.map(function (p) {
-        return { p: p, text: p.blocks.concat(p.props || []).map(function (b) { return textOf(b.h); }).join(' ') };
-      });
+      index = index || [].concat.apply([], pages.map(function (p) {
+        return [{ p: p, ptr: '', text: '' }].concat(blocksOf(p).map(function (b) { return { p: p, ptr: b.p, text: textOf(b.h) }; }));
+      }));
       var esc = function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
       var words = v.split(/\s+/).map(function (w) { return new RegExp(esc(w), 'i'); });
       index.forEach(function (t) {
         if (!words.every(function (w) { return w.test(t.p.title) || w.test(t.text); })) { return; }
-        var score = words.reduce(function (s, w) { return s + (w.test(t.p.title) ? 10 : 0); }, 0);
-        var m = words[0].exec(t.text), i = m ? m.index : 0;
-        var from = Math.max(0, i - 40), snip = (from > 0 ? '… ' : '') + t.text.slice(from, i + 110) + (i + 110 < t.text.length ? ' …' : '');
-        hits.push({ p: t.p, score: score, snip: snip });
+        if (!t.ptr && !words.every(function (w) { return w.test(t.p.title); })) { return; } // a page by its title alone
+        if (t.ptr && !words.some(function (w) { return w.test(t.text); })) { return; }
+        var score = words.reduce(function (s, w) { return s + (w.test(t.p.title) ? 10 : 0); }, 0) + (t.ptr ? 0 : 5);
+        var m = words[0].exec(t.text) || (words.length > 1 && words[1].exec(t.text)), i = m ? m.index : 0;
+        var from = Math.max(0, i - 40), snp = t.text ? (from > 0 ? '… ' : '') + t.text.slice(from, i + 110) + (i + 110 < t.text.length ? ' …' : '') : '';
+        hits.push({ p: t.p, ptr: t.ptr, score: score, snip: snp });
       });
       hits.sort(function (a, b) { return b.score - a.score; });
-      hits = hits.slice(0, 20);
+      total = hits.length;
+      hits = hits.slice(0, LIMIT);
     }
     var re = v ? new RegExp('(' + v.split(/\s+/).map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')', 'gi') : null;
-    function go(h) { q[1](''); box.current.blur(); location.hash = '#' + h.p.id; }
+    function go(h) { q[1](''); inp.current.blur(); location.hash = blockHash(h.p.id, h.ptr); }
     return html`<div class="search">
-      <input type="search" id="q" ref=${box} placeholder="Search  ( / )" aria-label="Search the documentation" autocomplete="off"
+      <input type="search" id="q" ref=${inp} placeholder="Search  ( / )" aria-label="Search the documentation" autocomplete="off"
+        role="combobox" aria-expanded=${v ? 'true' : 'false'} aria-controls="results"
+        aria-activedescendant=${v && hits.length ? 'hit-' + sel[0] : undefined}
         value=${q[0]} onInput=${function (e) { q[1](e.target.value); sel[1](0); }}
         onKeyDown=${function (e) {
           if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); sel[1]((sel[0] + 1) % hits.length); }
           else if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); sel[1]((sel[0] + hits.length - 1) % hits.length); }
           else if (e.key === 'Enter' && hits[sel[0]]) { e.preventDefault(); go(hits[sel[0]]); }
-          else if (e.key === 'Escape') { q[1](''); box.current.blur(); }
+          else if (e.key === 'Escape') { q[1](''); inp.current.blur(); }
         }} />
-      ${v && html`<ul id="results" role="listbox" aria-label="Search results">
-        ${!hits.length && html`<li class="none">Nothing found</li>`}
+      ${v && html`<div id="results">
+        <p class="count" role="status">${total ? 'Found: ' + total + (total > LIMIT ? ' · the first ones are shown, add a word' : '') : 'Nothing found'}</p>
+        <ul role="listbox" aria-label="Search results">
         ${hits.map(function (h, k) {
-          return html`<li role="option" aria-selected=${k === sel[0] ? 'true' : 'false'} onClick=${function () { go(h); }}>
-            <b>${h.p.title}</b><span>${h.snip.split(re).map(function (part, n) { return n % 2 ? html`<mark>${part}</mark>` : part; })}</span></li>`;
+          return html`<li id=${'hit-' + k} role="option" aria-selected=${k === sel[0] ? 'true' : 'false'} onClick=${function () { go(h); }}>
+            <b>${h.p.title}</b>${h.snip && html`<span>${h.snip.split(re).map(function (part, n) { return n % 2 ? html`<mark>${part}</mark>` : part; })}</span>`}</li>`;
         })}
-      </ul>`}
+      </ul></div>`}
     </div>`;
   }
 
@@ -721,27 +919,48 @@ a{color:inherit;text-decoration:none}
     </aside>`;
   }
 
-  // ---- toolbar: changes since a version, comments, export ----
+  // ---- panels: comments, changes, export ----
   function Comments(props) {
-    var list = props.comments;
+    var list = props.comments, wait = unsent(list);
     var open = imported.filter(function (c) { return c.status !== 'done'; }).length;
-    return html`<div class="panel">
-      <div class="hh"><b>Comments</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
-      <p class="muted">New comments stay in this browser until you download them and run docc comments import.</p>
+    function send() {
+      copy(exportText()).then(function () {
+        markSent(); toast('Copied. Paste it into a message to the team.');
+      }, function () { toast('Could not copy: download the file instead.'); });
+    }
+    function item(c, repo) {
+      var p = byId[c.doc];
+      return html`<div class="pc"><a href=${blockHash(c.doc, c.path)} onClick=${props.close}>${p ? p.title : c.doc}</a>
+        <small class="ptr">${placeOf(p, c.path, c.quote)}</small><${Note} c=${c} repo=${repo} /></div>`;
+    }
+    return html`<section class="panel" aria-label="Comments">
+      <div class="hh"><b>Your comments</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
+      ${list.length > 0 && html`<p class="muted">${wait ? 'Comments are kept only in this browser until you send them to the team.' : 'All comments are sent.'}</p>
       <div class="ed-row">
-        <button type="button" class="pri" disabled=${!list.length} onClick=${exportComments}>Download JSON</button>
-        <button type="button" disabled=${!list.length} onClick=${function () {
+        <button type="button" class="pri" onClick=${send}>📋 Copy for sending</button>
+        <button type="button" onClick=${function () { save('comments-' + new Date().toISOString().slice(0, 10) + '.json', 'application/json', exportJSON()); markSent(); }}>Download as a file</button>
+        <button type="button" onClick=${function () {
           if (confirm('Delete all comments of this browser?')) { setLocal([]); }
-        }}>Clear</button>
-      </div>
-      ${!list.length && html`<p class="muted">No new comments. Point at a block and press 💬.</p>`}
-      ${list.map(function (c) {
-        var p = byId[c.doc];
-        return html`<div class="pc"><a href=${'#' + c.doc} onClick=${function () { props.goto(c); }}>${p ? p.title : c.doc}</a>
-          <small class="ptr">${ptrLabel(c.path)}</small><${Note} c=${c} /></div>`;
-      })}
-      ${imported.length > 0 && html`<p class="muted">In the repository: ${imported.length}, not processed: ${open}</p>`}
-    </div>`;
+        }}>Delete all</button>
+      </div>`}
+      ${!list.length && html`<p class="muted">${touch ? 'No comments yet. Tap 💬 next to a paragraph to write one.' : 'No comments yet. Point at a paragraph and press 💬.'}</p>`}
+      ${list.map(function (c) { return item(c, false); })}
+      ${imported.length > 0 && html`<h3 class="rh">Received by the team: ${imported.length} · in work: ${open}</h3>
+        ${imported.map(function (c) { return item(c, true); })}`}
+    </section>`;
+  }
+
+  function Changes(props) {
+    var since = props.since;
+    var rows = pages.map(function (p) { return { p: p, d: pageDelta(p, since) }; })
+      .filter(function (r) { return r.d.list.length || r.d.rm.length; });
+    return html`<section class="panel" aria-label="Changes">
+      <div class="hh"><b>Changes by page</b><button type="button" class="link" onClick=${props.close}>Close</button></div>
+      <ul class="chg-list">${rows.map(function (r) {
+        return html`<li><a href=${r.d.list.length ? blockHash(r.p.id, r.d.list[0]) : '#' + r.p.id} onClick=${props.close}>${r.p.title}</a>
+          <small>${[r.d.chg && 'changed: ' + r.d.chg, r.d.add && 'new: ' + r.d.add, r.d.rm.length && 'removed: ' + r.d.rm.length].filter(Boolean).join(' · ')}</small></li>`;
+      })}</ul>
+    </section>`;
   }
 
   function Export(props) {
@@ -756,80 +975,117 @@ a{color:inherit;text-decoration:none}
   function Toolbar(props) {
     var real = [];
     commits.forEach(function (c, k) { if (c.h) { real.push(k); } });
-    return html`<div class="toolbar">
-      ${real.length > 0 && html`<label class="since-l">Changes since
+    var ch = props.changes, last = commits.length - 1;
+    function label(k) { return k === 0 && H.base ? 'the version sent on ' + date(0) : versionLine(k); }
+    var ver = html`${last >= 0 && commits[last].h && html`<small class="ver-l">Version of ${date(last)}</small>`}
+      <button type="button" class=${props.panel === 'e' ? 'on' : ''} onClick=${function () { props.setPanel(props.panel === 'e' ? null : 'e'); }}>⬇ Export</button>`;
+    return html`<div class="toolbar"><div class="tb-row">
+      ${real.length > 0 && html`<label class="since-l">Show changes since
         <select value=${props.since == null ? '' : String(props.since)} onChange=${function (e) {
           props.setSince(e.target.value === '' ? null : +e.target.value);
         }}>
-          <option value="">off</option>
-          ${real.slice().reverse().map(function (k) { return html`<option value=${String(k)}>${when(k)} · ${commits[k].m}</option>`; })}
+          <option value="">do not show</option>
+          ${real.slice().reverse().map(function (k) { return html`<option value=${String(k)}>${label(k)}</option>`; })}
         </select></label>`}
       <span class="sp"></span>
-      <button type="button" class=${props.panel === 'c' ? 'on' : ''} onClick=${function () { props.setPanel(props.panel === 'c' ? null : 'c'); }}>💬 Comments${props.comments.length ? ' (' + props.comments.length + ')' : ''}</button>
-      <button type="button" class=${props.panel === 'e' ? 'on' : ''} onClick=${function () { props.setPanel(props.panel === 'e' ? null : 'e'); }}>⬇ Export</button>
+      ${!ch && ver}
+      <button type="button" class=${props.panel === 'c' ? 'on' : ''} onClick=${function () { props.setPanel(props.panel === 'c' ? null : 'c'); }}>💬 Comments${props.comments.length ? ' ' + props.comments.length : ''}${unsent(props.comments) ? html` <span class="badge warn">${unsent(props.comments)} not sent</span>` : ''}</button>
+      </div>
+      ${ch && html`<div class="tb-row"><span class="chg-nav">
+        <button type="button" class=${props.panel === 'd' ? 'on' : ''} onClick=${function () { props.setPanel(props.panel === 'd' ? null : 'd'); }}>
+          ${ch.list.length ? 'Changed paragraphs: ' + ch.list.length + ' · pages: ' + ch.pages : (ch.rm ? 'Only removals' : 'No changes')}</button>
+        ${ch.list.length > 0 && html`<button type="button" aria-label="Previous change" onClick=${function () { props.step(-1); }}>←</button>
+          <span class="pos">${props.at >= 0 ? (props.at + 1) + ' of ' + ch.list.length : ''}</span>
+          <button type="button" aria-label="Next change" onClick=${function () { props.step(1); }}>→</button>`}
+      </span><span class="sp"></span>${ver}</div>`}
     </div>`;
   }
 
   // ---- application ----
   function App() {
     var r = useState(route(location.hash)), side = useState(false), toc = useState([]);
-    var sinceHash = useState(store('since')), panel = useState(null);
+    var sinceHash = useState(store('since')), panel = useState(null), at = useState(-1);
     var comments = useComments();
     var page = r[0].page;
-    // the chosen version is kept by hash: indexes change with every commit
-    var since = [null];
-    commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { since[0] = k; } });
+    // the chosen version is kept by hash: indexes change with every commit;
+    // the file's own starting point is the default, "off" turns it off
+    var since = null;
+    commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { since = k; } });
+    if (since == null && sinceHash[0] !== 'off' && H.base && commits.length) { since = 0; }
+    var changes = since != null ? allChanges(since) : null;
     useEffect(function () {
       function on() { r[1](route(location.hash)); side[1](false); }
       window.addEventListener('hashchange', on);
-      return function () { window.removeEventListener('hashchange', on); };
+      // the place of reading goes into the history entry, so Back returns to it
+      var t;
+      function onScroll() {
+        clearTimeout(t);
+        t = setTimeout(function () { try { history.replaceState({ y: window.scrollY }, ''); } catch (e) { /* not allowed */ } }, 150);
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      return function () { window.removeEventListener('hashchange', on); window.removeEventListener('scroll', onScroll); };
     }, []);
     useEffect(function () {
+      function key(e) { if (e.key === 'Escape' && side[0]) { side[1](false); document.getElementById('menu').focus(); } }
+      document.addEventListener('keydown', key);
+      return function () { document.removeEventListener('keydown', key); };
+    }, [side[0]]);
+    useEffect(function () {
       document.title = page === pages[0] ? D.title : page.title + ' · ' + D.title;
-      var t = r[0].target && document.getElementById(r[0].target);
-      if (t) { t.scrollIntoView({ behavior: 'instant' }); } else { window.scrollTo({ top: 0, behavior: 'instant' }); }
+      var st = history.state, t = r[0].target && document.getElementById(r[0].target);
+      var b = r[0].block && document.querySelector('[data-p="' + CSS.escape(r[0].block) + '"]');
+      if (st && st.y != null && !r[0].block) { window.scrollTo({ top: st.y, behavior: 'instant' }); }
+      else if (b) {
+        b.scrollIntoView({ block: 'center', behavior: 'instant' }); b.classList.add('flash');
+        setTimeout(function () { b.classList.remove('flash'); }, 1600);
+        if (changes) { changes.list.forEach(function (x, k) { if (x.page === page && x.ptr === r[0].block) { at[1](k); } }); }
+      } else if (t) { t.scrollIntoView({ behavior: 'instant' }); } else { window.scrollTo({ top: 0, behavior: 'instant' }); }
       var cur = document.querySelector('#tree [aria-current]'), sd = document.getElementById('side');
       if (cur && sd) {
         var a = cur.getBoundingClientRect(), s = sd.getBoundingClientRect();
         if (a.top < s.top + 60 || a.bottom > s.bottom - 20) { sd.scrollTop += a.top - s.top - 120; }
       }
     }, [r[0]]);
-    function setSince(v) { var h = v == null ? null : commits[v].h; sinceHash[1](h); store('since', h); }
+    function setSince(v) { var h = v == null ? 'off' : commits[v].h; sinceHash[1](h); store('since', h); at[1](-1); }
     function setToc(items) { if (JSON.stringify(items) !== JSON.stringify(toc[0])) { toc[1](items); } }
-    function goto(c) {
-      panel[1](null);
-      setTimeout(function () {
-        var el = document.querySelector('.blk[data-p="' + CSS.escape(c.path) + '"]');
-        if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 1500); }
-      }, 50);
+    function step(d) {
+      var n = changes.list.length, k = at[0] < 0 ? (d > 0 ? 0 : n - 1) : (at[0] + d + n) % n, x = changes.list[k];
+      at[1](k);
+      var h = blockHash(x.page.id, x.ptr);
+      if (location.hash === h) { r[1](route(h)); } else { location.hash = h; }
     }
+    function closeSide() { side[1](false); }
     return html`
-      <a class="skip" href="#main">Skip to content</a>
+      <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>Skip to content</a>
       <header class="bar">
-        <button id="menu" type="button" aria-label="Menu" aria-expanded=${side[0] ? 'true' : 'false'} onClick=${function () { side[1](!side[0]); }}>☰</button>
+        <button id="menu" type="button" aria-label="Menu" aria-expanded=${side[0] ? 'true' : 'false'} aria-controls="side" onClick=${function () { side[1](!side[0]); }}>☰</button>
         ${D.brand.head && html`<span dangerouslySetInnerHTML=${{ __html: D.brand.head }}></span>`}
-        <span id="bar-title">${page.title}</span>
       </header>
       <div class="shell">
-        <aside id="side" class=${side[0] ? 'open' : ''}>
-          ${D.brand.head && html`<div dangerouslySetInnerHTML=${{ __html: D.brand.head }}></div>`}
+        ${side[0] && html`<div class="scrim" onClick=${closeSide}></div>`}
+        <aside id="side" class=${side[0] ? 'open' : ''} aria-label="Navigation">
+          <button type="button" class="side-x" onClick=${closeSide}>✕ Close</button>
+          ${D.brand.head && html`<div class="side-brand" dangerouslySetInnerHTML=${{ __html: D.brand.head }}></div>`}
           <${Search} openSide=${function () { side[1](true); }} />
           ${D.full && html`<p class="banner">Full build: includes hidden documents and notes. Do not publish.</p>`}
           <nav id="tree" aria-label="Document tree">
-            ${tree.length > 0 && html`<h2>Pages</h2><${Items} nodes=${tree} cur=${page.id} since=${since[0]} />`}
-            ${orphans.length > 0 && html`<${Group} label="Without parent" n=${D.nav.orphans.length}><${Items} nodes=${orphans} cur=${page.id} since=${since[0]} /><//>`}
+            ${tree.length > 0 && html`<h2>Pages</h2><${Items} nodes=${tree} cur=${page.id} since=${since} />`}
+            ${orphans.length > 0 && html`<${Group} label="Without parent" n=${D.nav.orphans.length}><${Items} nodes=${orphans} cur=${page.id} since=${since} /><//>`}
             ${D.nav.uncovered && html`<${Group} label="Documents without code coverage" n=${D.nav.uncovered.length}>
               <ul>${D.nav.uncovered.map(function (id) { return html`<li><a href=${'#' + id}>${byId[id] ? byId[id].title : id}</a></li>`; })}</ul><//>`}
           </nav>
         </aside>
         <main id="main" tabindex="-1">
-          <${Toolbar} since=${since[0]} setSince=${setSince} panel=${panel[0]} setPanel=${panel[1]} comments=${comments} />
-          ${panel[0] === 'c' && html`<${Comments} comments=${comments} close=${function () { panel[1](null); }} goto=${goto} />`}
+          <${Toolbar} since=${since} setSince=${setSince} panel=${panel[0]} setPanel=${panel[1]} comments=${comments}
+            changes=${changes} at=${at[0]} step=${step} />
+          ${panel[0] === 'c' && html`<${Comments} comments=${comments} close=${function () { panel[1](null); }} />`}
+          ${panel[0] === 'd' && changes && html`<${Changes} since=${since} close=${function () { panel[1](null); }} />`}
           ${panel[0] === 'e' && html`<${Export} page=${page} close=${function () { panel[1](null); }} />`}
-          <${Page} key=${page.id} page=${page} comments=${comments} since=${since[0]} onToc=${setToc} />
+          <${Page} key=${page.id} page=${page} comments=${comments} since=${since} onToc=${setToc} missing=${r[0].missing} />
         </main>
         <${Toc} items=${toc[0]} />
-      </div>`;
+      </div>
+      <${Toast} />`;
   }
 
   render(html`<${App} />`, document.getElementById('app'));
