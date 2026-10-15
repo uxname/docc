@@ -296,6 +296,9 @@ func (c *common) check() error {
 	if c.maxDiag < 0 {
 		return usageErr("--max-diagnostics must not be negative (0: no limit)")
 	}
+	if c.maxWarnings < -1 {
+		return usageErr("--max-warnings must be 0 or more (-1: no limit)")
+	}
 	return nil
 }
 
@@ -597,6 +600,43 @@ const initSchema = `{
 
 const initHook = "#!/bin/sh\n# docc: refuse a commit with invalid documentation\nexec docc check\n"
 
+// builtIgnore are the single-file and audit builds that are not committed.
+var builtIgnore = []string{"docs/out.md", "docs/out.html", "docs/out-full/", "docs/out-full.md", "docs/out-full.html"}
+
+// ignoreBuilt adds the lines of builtIgnore that .gitignore lacks, creating the file.
+func ignoreBuilt(stdout io.Writer) error {
+	old, err := os.ReadFile(".gitignore")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	have := map[string]bool{}
+	for _, l := range strings.Split(string(old), "\n") {
+		have[strings.TrimSpace(l)] = true
+	}
+	text := string(old)
+	if text != "" && !strings.HasSuffix(text, "\n") {
+		text += "\n"
+	}
+	added := false
+	for _, l := range builtIgnore {
+		if !have[l] {
+			text, added = text+l+"\n", true
+		}
+	}
+	if !added {
+		return nil
+	}
+	if err := os.WriteFile(".gitignore", []byte(text), 0o644); err != nil {
+		return err
+	}
+	if len(old) == 0 {
+		say(stdout, "created .gitignore\n")
+	} else {
+		say(stdout, "updated .gitignore\n")
+	}
+	return nil
+}
+
 func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 	fs := newFlags("init", c)
 	pos, err := parse(fs, args)
@@ -624,6 +664,9 @@ func cmdInit(c *common, args []string, stdout, stderr io.Writer) (int, error) {
 		return os.Chmod(name, mode) // WriteFile leaves the umask on
 	}
 	if err := create("docc.json", initConfig, 0o644); err != nil {
+		return 2, err
+	}
+	if err := ignoreBuilt(stdout); err != nil {
 		return 2, err
 	}
 	if err := create(filepath.Join("docs", "schemas", "page.json"), initSchema, 0o644); err != nil {

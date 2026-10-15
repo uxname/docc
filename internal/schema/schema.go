@@ -213,6 +213,16 @@ func (s *Set) CheckKind(kindName string, root *loader.Node) []Violation {
 		}
 	}
 	vs := append(s.run(k.schema, inst, root), k.unknownFields(root)...)
+	if t := root.Get("title"); t == nil || (t.Kind == loader.String && strings.TrimSpace(t.Str) == "") {
+		out := vs[:0] // a missing or blank title is DOC103 already
+		for _, v := range vs {
+			if v.Pointer == "/title" || (v.Pointer == "" && strings.HasPrefix(v.Message, "missing property \"title\"")) {
+				continue
+			}
+			out = append(out, v)
+		}
+		vs = out
+	}
 	sortViolations(vs)
 	return vs
 }

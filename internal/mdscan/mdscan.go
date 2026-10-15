@@ -269,6 +269,22 @@ func init() {
 	}
 }
 
+var scriptLinkRe = regexp.MustCompile(`(?i)\]\(\s*<?((?:javascript|vbscript|data):[^)\s>]*)`)
+
+// ScriptLinks returns the destinations of Markdown links that run script or
+// embed a page (javascript:, vbscript:, data:) outside code; Start and End
+// cover the destination.
+func (sc *Scan) ScriptLinks() []Ref {
+	var out []Ref
+	for _, sp := range sc.Plain {
+		for _, m := range scriptLinkRe.FindAllStringSubmatchIndex(sc.S[sp.Start:sp.End], -1) {
+			a, b := sp.Start+m[2], sp.Start+m[3]
+			out = append(out, Ref{a, b, sc.S[a:b]})
+		}
+	}
+	return out
+}
+
 // Tag is a raw HTML opening tag.
 type Tag struct {
 	Span

@@ -657,3 +657,52 @@ func TestFileProblemsGetSpecificHints(t *testing.T) {
 		t.Fatalf("hints for encoding and size:\n%s", out)
 	}
 }
+
+func TestSmallCLIPolish(t *testing.T) {
+	project(t, map[string]string{"docs/src/index.json": `{"title":"I","kind":"page"}`})
+	if code, _, errs := do("validate", "--max-warnings", "-2"); code != 2 || !strings.Contains(errs, "--max-warnings") {
+		t.Errorf("negative limit: %d %q", code, errs)
+	}
+	if code, out, _ := do("explain", "doc209"); code != 0 || !strings.HasPrefix(out, "DOC209 graph/suspect-link") {
+		t.Errorf("lower-case code: %d %q", code, out)
+	}
+	if code, out, _ := do("explain", "graph"); code != 0 || !strings.Contains(out, "DOC209") || strings.Contains(out, "DOC301") {
+		t.Errorf("a group lists its rules: %d %q", code, out)
+	}
+	if code, _, _ := do("explain", "nonsense"); code != 2 {
+		t.Error("an unknown name is still an error")
+	}
+	// a blank title is DOC103 only, not DOC106 as well
+	project(t, map[string]string{
+		"docs/src/index.json":    `{"title":"  ","kind":"page"}`,
+		"docs/schemas/page.json": `{"type":"object","required":["title"],"properties":{"title":{"type":"string","minLength":1}},"additionalProperties":true}`,
+	})
+	if _, out, _ := do("validate"); !strings.Contains(out, "DOC103") || strings.Contains(out, "DOC106") {
+		t.Errorf("one diagnostic for a blank title:\n%s", out)
+	}
+}
+
+func TestInitIgnoresBuiltFiles(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.WriteFile(".gitignore", []byte("node_modules\ndocs/out.md"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, _ := do("init"); code != 0 || !strings.Contains(out, "updated .gitignore") {
+		t.Fatalf("%d %s", code, out)
+	}
+	got := readFile(t, ".gitignore")
+	if got != "node_modules\ndocs/out.md\ndocs/out.html\ndocs/out-full/\ndocs/out-full.md\ndocs/out-full.html\n" {
+		t.Fatalf("existing lines stay, missing ones are added once:\n%s", got)
+	}
+	if _, out, _ := do("init"); strings.Contains(out, ".gitignore") {
+		t.Errorf("a second init changes nothing: %s", out)
+	}
+}
+
+func TestScriptLinksAreDOC310(t *testing.T) {
+	project(t, map[string]string{"docs/src/index.json": `{"title":"I","kind":"page","body":"[x](javascript:alert(1)) [y](DATA:text/html,hi) [ok](https://example.com) ` + "`[z](javascript:no)`" + `"}`})
+	_, out, _ := do("validate")
+	if strings.Count(out, "DOC310") != 2 || !strings.Contains(out, "javascript:alert") || strings.Contains(out, "javascript:no") {
+		t.Fatalf("two script links, none in code, none for https:\n%s", out)
+	}
+}

@@ -37,14 +37,27 @@ func cmdRules(c *common, args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
-	cfg, err := loadConfig(c)
+	rows, err := ruleRows(c)
 	if err != nil {
 		return 2, err
+	}
+	if c.format == "json" {
+		return 0, writeJSON(stdout, rows)
+	}
+	return 0, writeTable(stdout, rows)
+}
+
+// ruleRows lists the rules with the levels the config gives them; a custom
+// rule stands in the place of the generic DOC800.
+func ruleRows(c *common) ([]ruleRow, error) {
+	cfg, err := loadConfig(c)
+	if err != nil {
+		return nil, err
 	}
 	res := cfg.Resolve()
 	var rows []ruleRow
 	for _, r := range rules.All() {
-		if r.Code == "DOC800" { // custom rules are listed individually, in its place
+		if r.Code == "DOC800" {
 			for _, cr := range cfg.Custom {
 				rows = append(rows, ruleRow{"DOC800", cr.ID, "custom", res.Custom(cr.ID).Level.String(), cr.Message})
 			}
@@ -52,10 +65,7 @@ func cmdRules(c *common, args []string, stdout io.Writer) (int, error) {
 		}
 		rows = append(rows, ruleRow{r.Code, r.Name, r.Group, res.Rule(r.Code).Level.String(), r.Desc})
 	}
-	if c.format == "json" {
-		return 0, writeJSON(stdout, rows)
-	}
-	return 0, writeTable(stdout, rows)
+	return rows, nil
 }
 
 // firstSentence shortens a description for the table.
@@ -109,6 +119,22 @@ func cmdExplain(c *common, args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 2, err
 	}
+	if rules.Lookup(strings.ToUpper(pos[0])) == nil && rules.IsGroup(pos[0]) { // a group: its rules
+		all, err := ruleRows(c)
+		if err != nil {
+			return 2, err
+		}
+		var rows []ruleRow
+		for _, r := range all {
+			if r.Group == pos[0] {
+				rows = append(rows, r)
+			}
+		}
+		if c.format == "json" {
+			return 0, writeJSON(stdout, rows)
+		}
+		return 0, writeTable(stdout, rows)
+	}
 	e, err := explain(c, pos[0])
 	if err != nil {
 		return 2, err
@@ -144,7 +170,10 @@ func configure(e *explanation) string {
 
 func explain(c *common, key string) (*explanation, error) {
 	cfg, err := loadConfig(c)
-	if r := rules.Lookup(key); r != nil {
+	if r := rules.Lookup(strings.ToUpper(key)); r != nil || rules.Lookup(key) != nil {
+		if r == nil {
+			r = rules.Lookup(key)
+		}
 		e := &explanation{Code: r.Code, Rule: r.Name, Group: r.Group, Level: r.Default.String(), Description: r.Desc, Bad: r.Bad, Good: r.Good, core: r.Core}
 		if err == nil && !r.Core && r.Code != "DOC800" { // a broken config must not stop a reference lookup
 			if l := cfg.Resolve().Rule(r.Code).Level.String(); l != e.Level {

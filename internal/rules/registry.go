@@ -50,7 +50,7 @@ var all = []Rule{
 	{"DOC304", "text/empty-field", "text", W, false, "A string is empty or only spaces.", `"rationale": ""`, `remove the field or fill it`},
 	{"DOC308", "markdown/unclosed-fence", "markdown", W, false, "A code fence is opened but not closed in the same value.", "```go", "```go ... ```"},
 	{"DOC309", "markdown/heading-in-field", "markdown", W, false, "A line starting with # inside a field breaks the heading structure of the output.", `"body": "# Title"`, `"body": "Title"`},
-	{"DOC310", "markdown/raw-html", "markdown", W, false, "Raw HTML or script in text.", `"body": "<div>x</div>"`, `"body": "x"`},
+	{"DOC310", "markdown/raw-html", "markdown", W, false, "Raw HTML, or a link with a javascript:, vbscript: or data: address, in text.", `"body": "<div>x</div>"`, `"body": "x"`},
 	{"DOC312", "markdown/broken-anchor", "markdown", E, false, "[[id#field]] points to a field that does not exist or is a service field.", `[[b#missing]]`, `[[b#statement]]`},
 	{"DOC313", "text/repeated-word", "text", W, false, "The same word twice in a row.", `"body": "the the system"`, `"body": "the system"`},
 	{"DOC314", "style/manual-number", "style", W, false, "With \"numbering\": true in docc.json, a document title or a section key starts with its own number (\"2.1 Scope\"); docc adds the numbers. Field text is not checked.", `"title": "2.1 Scope"`, `"title": "Scope", "order": 1`},

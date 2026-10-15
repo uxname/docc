@@ -50,6 +50,11 @@ func (p *Project) checkMarkdown() {
 					p.emit(d, "DOC310", a, b, fmt.Sprintf("raw HTML tag <%s> in the text", tg.Name),
 						"Use Markdown instead of HTML; scripts are never allowed.")
 				}
+				for _, l := range sc.ScriptLinks() {
+					a, b := d.Range(sn.Node, l.Start, l.End)
+					p.emit(d, "DOC310", a, b, "link that runs script or embeds a page: "+l.Inner,
+						"Link to an https: URL or to a document with [[id]]; docc never rewrites the text, so the unsafe link stays in the generated Markdown.")
+				}
 			}
 		}
 		if on("DOC312") && p.inGraph(d) {
