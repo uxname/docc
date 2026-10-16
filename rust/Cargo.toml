@@ -5,6 +5,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
+base64 = "0.22.1"
 hex = "0.4.3"
 jsonschema = { version = "0.58.6", default-features = false }
 regex = "1.13.1"
