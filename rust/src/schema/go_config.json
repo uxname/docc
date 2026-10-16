@@ -1,0 +1,326 @@
+{
+  "$defs": {
+    "level": {
+      "enum": [
+        "error",
+        "warn",
+        "off"
+      ]
+    },
+    "ruleSetting": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/level"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "allow": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "level": {
+              "$ref": "#/$defs/level"
+            },
+            "words": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Configuration of docc. Every field is optional; unknown keys are errors.",
+  "properties": {
+    "branding": {
+      "additionalProperties": false,
+      "description": "Company branding of the HTML build (docc build --html); absent: no branding. The Markdown output is not branded.",
+      "properties": {
+        "accent": {
+          "description": "Accent colour for the dark theme and the header; links in the page body use it too when accentLight is absent.",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$",
+          "type": "string"
+        },
+        "accentLight": {
+          "description": "Accent colour on the light theme; must read on white (contrast 4.5 and more).",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$",
+          "type": "string"
+        },
+        "header": {
+          "default": "#1f1f1f",
+          "description": "Background of the header with the logo.",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$",
+          "type": "string"
+        },
+        "logo": {
+          "description": "Logo file from the project root (png, jpg, jpeg, gif, svg, webp), embedded in the HTML. It sits on the dark header, so a light logo is expected.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Company name in the header, the footer and the printed first page.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "url": {
+          "description": "Company site; the logo and the name in the footer link to it.",
+          "pattern": "^https?://",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "changesSince": {
+      "description": "Git revision (tag, branch or commit) of the version the reader last received: the HTML file shows the changes since it by default and keeps no history before it.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "customRules": {
+      "items": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "forbid"
+            ]
+          },
+          {
+            "required": [
+              "require"
+            ]
+          }
+        ],
+        "properties": {
+          "forbid": {
+            "description": "Go (RE2) regular expression; a match is a violation.",
+            "type": "string"
+          },
+          "given": {
+            "description": "JSON pointer to a string field; * matches any array element or object key.",
+            "pattern": "^/",
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^custom/[a-z0-9-]+$",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/$defs/level"
+          },
+          "message": {
+            "type": "string"
+          },
+          "require": {
+            "description": "Go (RE2) regular expression that must match.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "level",
+          "message",
+          "given"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "lang": {
+      "default": "en",
+      "description": "Language of the fixed labels in the generated Markdown and HTML (Parent, Referenced by, On this page...).",
+      "enum": [
+        "en",
+        "ru"
+      ]
+    },
+    "maxWarnings": {
+      "description": "Exit code 1 when there are more warnings than this.",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "numbering": {
+      "default": false,
+      "description": "true numbers pages below the roots (1, 1.2) and the sections of their $sections fields (1.2.1) in headings, navigation and link text.",
+      "type": "boolean"
+    },
+    "out": {
+      "default": "docs/out",
+      "description": "Generated Markdown (committed).",
+      "type": "string"
+    },
+    "outFull": {
+      "default": "docs/out-full",
+      "description": "Audit build (docc build --full), not committed.",
+      "type": "string"
+    },
+    "recommended": {
+      "default": true,
+      "description": "false turns the recommended preset off; core rules stay on.",
+      "type": "boolean"
+    },
+    "roots": {
+      "default": [
+        "index"
+      ],
+      "description": "Ids of the root documents; reachability is counted from them.",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "rules": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ruleSetting"
+      },
+      "description": "Rule code, rule name or group name to a level or an object with parameters.",
+      "propertyNames": {
+        "anyOf": [
+          {
+            "enum": [
+              "DOC101",
+              "syntax/invalid-json",
+              "DOC102",
+              "syntax/duplicate-key",
+              "DOC103",
+              "syntax/missing-title",
+              "DOC104",
+              "syntax/invalid-id",
+              "DOC105",
+              "syntax/document-schema",
+              "DOC106",
+              "schema/violation",
+              "DOC107",
+              "schema/unregistered",
+              "DOC108",
+              "syntax/invalid-ignore",
+              "DOC109",
+              "schema/missing-kind-schema",
+              "DOC110",
+              "syntax/reserved-field-typo",
+              "DOC201",
+              "graph/duplicate-id",
+              "DOC202",
+              "graph/broken-ref",
+              "DOC203",
+              "graph/orphan",
+              "DOC204",
+              "graph/parent-cycle",
+              "DOC205",
+              "graph/root-not-found",
+              "DOC209",
+              "graph/suspect-link",
+              "DOC210",
+              "graph/link-to-hidden",
+              "DOC211",
+              "graph/bad-include",
+              "DOC212",
+              "graph/duplicate-anchor",
+              "DOC213",
+              "graph/broken-file",
+              "DOC214",
+              "graph/wrong-target-kind",
+              "DOC301",
+              "text/forbidden-words",
+              "DOC303",
+              "text/placeholder",
+              "DOC304",
+              "text/empty-field",
+              "DOC308",
+              "markdown/unclosed-fence",
+              "DOC309",
+              "markdown/heading-in-field",
+              "DOC310",
+              "markdown/raw-html",
+              "DOC312",
+              "markdown/broken-anchor",
+              "DOC313",
+              "text/repeated-word",
+              "DOC314",
+              "style/manual-number",
+              "DOC352",
+              "style/hedging",
+              "DOC353",
+              "style/timeless-words",
+              "DOC401",
+              "trace/unknown-id",
+              "DOC403",
+              "trace/uncovered",
+              "DOC402",
+              "trace/code-changed",
+              "DOC501",
+              "build/stale-output",
+              "DOC503",
+              "build/stale-lock",
+              "DOC800",
+              "DOC901",
+              "meta/unused-ignore",
+              "syntax",
+              "schema",
+              "graph",
+              "text",
+              "markdown",
+              "style",
+              "trace",
+              "build",
+              "meta",
+              "custom"
+            ]
+          },
+          {
+            "pattern": "^custom/[a-z0-9-]+$"
+          }
+        ]
+      },
+      "type": "object"
+    },
+    "schemas": {
+      "default": "docs/schemas",
+      "description": "Kind schemas: \u003ckind\u003e.json.",
+      "type": "string"
+    },
+    "src": {
+      "default": "docs/src",
+      "description": "Source documents, relative to the project root.",
+      "type": "string"
+    },
+    "tags": {
+      "description": "Registry of allowed tags; absent: no registry.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "trace": {
+      "additionalProperties": false,
+      "properties": {
+        "scan": {
+          "description": "Masks from the project root for docc: tags in code; absent: DOC401 and DOC403 do not run.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "title": "docc.json",
+  "type": "object"
+}
