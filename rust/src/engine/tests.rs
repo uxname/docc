@@ -128,7 +128,8 @@ fn golden_json(work: &Path, check: bool) -> Result<(String, Vec<Diagnostic>), St
     let mut p = load(cfg).map_err(|e| e.to_string())?;
     let mut ds = p.validate();
     if check && !structural(&ds) {
-        // ponytail: render.CheckFresh is left out until render is ported
+        let files = crate::render::Renderer::new(&p, false).files();
+        crate::render::check_fresh(&p, &p.cfg.out, &files);
         p.check_lock_file();
         ds = p.sorted();
     }
@@ -229,7 +230,6 @@ fn golden_check() {
 }
 
 #[test]
-#[ignore = "needs render"]
 fn golden_check_fresh() {
     run_golden(golden_cases(&["check"]), true);
 }
