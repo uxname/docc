@@ -17,8 +17,8 @@ fails=0
 step() {
 	c=$1 n=$2 && shift 2
 	mkdir -p "$out/$c"
-	(cd "$work/$c/go" && "$go_bin" "$@" >"$out/$c/$n.go.out" 2>"$out/$c/$n.go.err"; echo $? >"$out/$c/$n.go.code")
-	(cd "$work/$c/rs" && "$rs_bin" "$@" >"$out/$c/$n.rs.out" 2>"$out/$c/$n.rs.err"; echo $? >"$out/$c/$n.rs.code")
+	(cd "$work/go/$c" && "$go_bin" "$@" >"$out/$c/$n.go.out" 2>"$out/$c/$n.go.err"; echo $? >"$out/$c/$n.go.code")
+	(cd "$work/rs/$c" && "$rs_bin" "$@" >"$out/$c/$n.rs.out" 2>"$out/$c/$n.rs.err"; echo $? >"$out/$c/$n.rs.code")
 	for s in out err code; do
 		if ! cmp -s "$out/$c/$n.go.$s" "$out/$c/$n.rs.$s"; then
 			echo "$c: $* ($s)" >>"$out/summary.txt"
@@ -27,14 +27,27 @@ step() {
 	done
 }
 
+# unzip_html replaces the base64 zip in the data of each HTML file it is given
+# with the names and contents of the files in it
+unzip_html='
+import base64, io, json, re, sys, zipfile
+for f in sys.argv[1:]:
+    s = open(f, encoding="utf-8").read()
+    def sub(m):
+        z = zipfile.ZipFile(io.BytesIO(base64.b64decode(m.group(1))))
+        files = {i.filename: z.read(i).decode() for i in z.infolist()}
+        return "\"zip\":" + json.dumps(files, sort_keys=True, ensure_ascii=False).replace("<", "\\u003c")
+    open(f, "w", encoding="utf-8").write(re.sub(r"\"zip\":\"([A-Za-z0-9+/=]*)\"", sub, s))
+'
+
 # project CASE SRC [ARGS...]: copy SRC twice and run the command set on it
 project() {
 	c=$1 src=$2 && shift 2
-	mkdir -p "$work/$c"
+	mkdir -p "$work/go" "$work/rs"
 	if [ -d "$src/.git" ]; then
-		git clone -q --no-hardlinks "$src" "$work/$c/go" && git clone -q --no-hardlinks "$src" "$work/$c/rs"
+		git clone -q --no-hardlinks "$src" "$work/go/$c" && git clone -q --no-hardlinks "$src" "$work/rs/$c"
 	else
-		cp -a "$src" "$work/$c/go" && cp -a "$src" "$work/$c/rs"
+		cp -a "$src" "$work/go/$c" && cp -a "$src" "$work/rs/$c"
 	fi
 	if [ $# -gt 0 ]; then
 		step "$c" args "$@" --format json --max-diagnostics 0
@@ -44,7 +57,11 @@ project() {
 	step "$c" check check --max-diagnostics 0
 	step "$c" build build
 	step "$c" check-after check --max-warnings 0 --max-diagnostics 0
-	if ! diff -r --exclude=.git "$work/$c/go" "$work/$c/rs" >"$out/$c/tree.diff" 2>&1; then
+	step "$c" build-html build --single --html
+	step "$c" build-full build --full --single --html
+	# the zip inside the HTML is compressed by another library: compare what it holds
+	find "$work/go/$c" "$work/rs/$c" -name '*.html' -path '*docs/out*' -exec python3 -I -c "$unzip_html" {} +
+	if ! diff -r --exclude=.git "$work/go/$c" "$work/rs/$c" >"$out/$c/tree.diff" 2>&1; then
 		echo "$c: written files differ" >>"$out/summary.txt"
 		fails=$((fails + 1))
 	fi
@@ -67,7 +84,7 @@ project self "$repo"
 [ -d "$HOME/Документы/Work/o2" ] && project o2 "$HOME/Документы/Work/o2"
 
 # commands that need no project
-mkdir -p "$work/cli/go" "$work/cli/rs"
+mkdir -p "$work/go/cli" "$work/rs/cli"
 step cli help --help
 step cli version --version
 step cli none
