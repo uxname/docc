@@ -1,0 +1,1706 @@
+[
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W119",
+  "items": []
+ },
+ {
+  "in": "eA==",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "ICA=",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "ew==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJkb2NjIjoxfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.docc of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLjV9",
+  "items": null,
+  "err": "t: json: cannot unmarshal number 1.5 into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoiMSJ9",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoyfQ==",
+  "items": null,
+  "err": "t: unsupported version 2"
+ },
+ {
+  "in": "eyJkb2NjIjoieCJ9",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6e319",
+  "items": null,
+  "err": "t: json: cannot unmarshal object into Go struct field Export.comments of type []comments.Item"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6WyJ4Il19",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Export.comments.0 of type comments.Item"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOjF9XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.0.id of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiaW50ZXJuYWwiOiJ5ZXMifV19",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go struct field Export.comments.0.internal of type bool"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siSUQiOiJhIiwiRG9jIjoiZCIsIlRFWFQiOiJ0Iiwixb90YXR1cyI6ImRvbmUiLCJpZCI6ImIiLCJJbnRlcm5hbCI6dHJ1ZX1dfQ==",
+  "items": [
+   {
+    "id": "b",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t",
+    "status": "done",
+    "internal": true
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxfSB4",
+  "items": null,
+  "err": "t: invalid character 'x' after top-level value"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLH0=",
+  "items": null,
+  "err": "t: invalid character '}' looking for beginning of object key string"
+ },
+ {
+  "in": "eyJkb2NjIiAiY29tbWVudHMifQ==",
+  "items": null,
+  "err": "t: invalid character '\"' after object key"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiICJhIn0=",
+  "items": null,
+  "err": "t: invalid character '\"' after object key:value pair"
+ },
+ {
+  "in": "eyJhIjp0cnV9",
+  "items": null,
+  "err": "t: invalid character '}' in literal true (expecting 'e')"
+ },
+ {
+  "in": "eyJhIjpudWx9",
+  "items": null,
+  "err": "t: invalid character '}' in literal null (expecting 'l')"
+ },
+ {
+  "in": "eyJhIjpmYWxzfQ==",
+  "items": null,
+  "err": "t: invalid character '}' in literal false (expecting 'e')"
+ },
+ {
+  "in": "eyJhIjoiXHgifQ==",
+  "items": null,
+  "err": "t: invalid escape sequence `\\x` in string"
+ },
+ {
+  "in": "eyJhIjoiXHUxMmc0In0=",
+  "items": null,
+  "err": "t: invalid escape sequence `\\u12g4` in string"
+ },
+ {
+  "in": "eyJhIjowMX0=",
+  "items": null,
+  "err": "t: invalid character '1' after object key:value pair"
+ },
+ {
+  "in": "eyJhIjotfQ==",
+  "items": null,
+  "err": "t: invalid character '}' in numeric literal"
+ },
+ {
+  "in": "eyJhIjoxLn0=",
+  "items": null,
+  "err": "t: invalid character '}' in numeric literal"
+ },
+ {
+  "in": "eyJhIjoxZX0=",
+  "items": null,
+  "err": "t: invalid character '}' in numeric literal"
+ },
+ {
+  "in": "eyJhIjoxZSt9",
+  "items": null,
+  "err": "t: invalid character '}' in numeric literal"
+ },
+ {
+  "in": "eyJhIjoiASJ9",
+  "items": null,
+  "err": "t: invalid character '\\x01' in string"
+ },
+ {
+  "in": "e/99",
+  "items": null,
+  "err": "t: invalid character '\\xff' looking for beginning of object key string"
+ },
+ {
+  "in": "eyJhIjqAfQ==",
+  "items": null,
+  "err": "t: invalid character '\\x80' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjonfQ==",
+  "items": null,
+  "err": "t: invalid character '\\'' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjoifQ==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIn0=",
+  "items": null,
+  "err": "t: invalid character '}' after object key"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhXHVkODAwIiwiZG9jIjoiZP8iLCJ0ZXh0IjoiXHVkODNkXHVkZTAwXHVkODAwXHUwMDQxXHVkYzAweFx1ZDgwMFx1ZDgwMCJ9XX0=",
+  "items": [
+   {
+    "id": "a�",
+    "doc": "d�",
+    "path": "",
+    "quote": "",
+    "text": "😀�A�x��"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjo5OTk5OTk5OTk5OTk5OTk5OTk5OX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal number 99999999999999999999 into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxZTB9",
+  "items": null,
+  "err": "t: json: cannot unmarshal number 1e0 into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjotMCwiY29tbWVudHMiOltdfQ==",
+  "items": null,
+  "err": "t: unsupported version 0"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiIiLCJkb2MiOiJkIiwidGV4dCI6InQifV19",
+  "items": null,
+  "err": "t: comment 1 lacks id, doc or text"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6bnVsbH0=",
+  "items": null
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W251bGxdfQ==",
+  "items": null,
+  "err": "t: comment 1 lacks id, doc or text"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicXVvdGUiOlsieCJdfV19",
+  "items": null,
+  "err": "t: json: cannot unmarshal array into Go struct field Export.comments.0.quote of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoxLCJ2ZXJzaW9uIjoieCJ9",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.docc of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJleHRyYSI6eyJhIjpbMSx7ImIiOm51bGx9XX0sImNvbW1lbnRzIjpbeyJpZCI6ImEiLCJkb2MiOiJkIiwidGV4dCI6InQiLCJ4Ijpbe31dfV19",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjpudWxsLCJ2ZXJzaW9uIjpudWxsfQ==",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjp0cnVlfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal bool into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiaW50ZXJuYWwiOjF9XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.0.internal of type bool"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiZnJhZ21lbnQiOiJmIiwicHJlZml4IjoicCIsInN1ZmZpeCI6InMiLCJhdXRob3IiOiJhdSIsImNyZWF0ZWQiOiJjIiwiYnVpbGQiOiJiIiwic3RhdHVzIjoiZG9uZSIsInJlcGx5IjoiciIsInBhdGgiOiIveCIsInF1b3RlIjoicSJ9XX0=",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "/x",
+    "quote": "q",
+    "fragment": "f",
+    "prefix": "p",
+    "suffix": "s",
+    "text": "t",
+    "author": "au",
+    "created": "c",
+    "build": "b",
+    "status": "done",
+    "reply": "r"
+   }
+  ]
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRUQ==",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRUj09",
+  "items": null,
+  "err": "t: invalid character 'A' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czogCg==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czo=",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUprYjJOaklqb2lZMjl0YldWdWRITWlMQ0oyWlhKemFXOXVJam94ZlEKPT0=",
+  "items": null
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUprYjJOaklqb2lZMjl0YldWdWRITWlMQ0oyWlhKemFXOXVJam94ZlE9PQs=",
+  "items": null
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUprYjJOaklqb2lZMjl0YldWdWRITWlMQ0oyWlhKemFXOXVJam94ZlE9PVFRPT0=",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUprYjJOaklqb2lZMjl0YldWdWRITWlMQ0oyWlhKemFXOXVJam94ZlE9PT0=",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUprYjJOaklqb2lZMjl0YldWdWRITWlMQ0oyWlhKemFXOXVJam94ZlE9PQtRUT09",
+  "items": null
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRUT09IGRvY2MtY29tbWVudHM6",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czphIGRvY2MtY29tbWVudHM6UVE9PQ==",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMzA9",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMzA=",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMzA9Cgpkb2NjLWNvbW1lbnRzOiBlMwkwID0=",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0XHUwMDAwIn1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t\u0000"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In0seyJpZCI6ImIiLCJkb2MiOiJkIiwidGV4dCI6InQiLCJpZCI6MX1dfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.1.id of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicXVvdGUiOnsiYSI6MX19XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal object into Go struct field Export.comments.0.quote of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicXVvdGUiOjEuNWUzfV19",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.0.quote of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicXVvdGUiOmZhbHNlfV19",
+  "items": null,
+  "err": "t: json: cannot unmarshal bool into Go struct field Export.comments.0.quote of type string"
+ },
+ {
+  "in": "eyJjb21tZW50cyI6IngifQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go struct field Export.comments of type []comments.Item"
+ },
+ {
+  "in": "eyJhIjpbMSAyXX0=",
+  "items": null,
+  "err": "t: invalid character '2' after array element"
+ },
+ {
+  "in": "eyJhIjpbMSxdfQ==",
+  "items": null,
+  "err": "t: invalid character ']' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjpbLDFdfQ==",
+  "items": null,
+  "err": "t: invalid character ',' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjpbfQ==",
+  "items": null,
+  "err": "t: invalid character '}' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjp7ImIifX0=",
+  "items": null,
+  "err": "t: invalid character '}' after object key"
+ },
+ {
+  "in": "eyJhIjp7LH19",
+  "items": null,
+  "err": "t: invalid character ',' looking for beginning of object key string"
+ },
+ {
+  "in": "eyx9",
+  "items": null,
+  "err": "t: invalid character ',' looking for beginning of object key string"
+ },
+ {
+  "in": "ezE6Mn0=",
+  "items": null,
+  "err": "t: invalid character '1' looking for beginning of object key string"
+ },
+ {
+  "in": "eyJhIjp0fQ==",
+  "items": null,
+  "err": "t: invalid character '}' in literal true (expecting 'r')"
+ },
+ {
+  "in": "eyJhIjp0eH0=",
+  "items": null,
+  "err": "t: invalid character 'x' in literal true (expecting 'r')"
+ },
+ {
+  "in": "eyJhIjp0cnV4fQ==",
+  "items": null,
+  "err": "t: invalid character 'x' in literal true (expecting 'e')"
+ },
+ {
+  "in": "eyJhIjpUcnVlfQ==",
+  "items": null,
+  "err": "t: invalid character 'T' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjpudWxMfQ==",
+  "items": null,
+  "err": "t: invalid character 'L' in literal null (expecting 'l')"
+ },
+ {
+  "in": "eyJhIjpmfQ==",
+  "items": null,
+  "err": "t: invalid character '}' in literal false (expecting 'a')"
+ },
+ {
+  "in": "eyJhIjoxLnh9",
+  "items": null,
+  "err": "t: invalid character 'x' in numeric literal"
+ },
+ {
+  "in": "eyJhIjoteH0=",
+  "items": null,
+  "err": "t: invalid character 'x' in numeric literal"
+ },
+ {
+  "in": "eyJhIjoxZXh9",
+  "items": null,
+  "err": "t: invalid character 'x' in numeric literal"
+ },
+ {
+  "in": "eyJhIjoweH0=",
+  "items": null,
+  "err": "t: invalid character 'x' after object key:value pair"
+ },
+ {
+  "in": "eyJhIjowMH0=",
+  "items": null,
+  "err": "t: invalid character '0' after object key:value pair"
+ },
+ {
+  "in": "eyJhIjotMDF9",
+  "items": null,
+  "err": "t: invalid character '1' after object key:value pair"
+ },
+ {
+  "in": "eyJhIjoxLjVlKzV4fQ==",
+  "items": null,
+  "err": "t: invalid character 'x' after object key:value pair"
+ },
+ {
+  "in": "eyJhIjoxRTV9",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJhIjouNX0=",
+  "items": null,
+  "err": "t: invalid character '.' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjorMX0=",
+  "items": null,
+  "err": "t: invalid character '+' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjox",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoieA==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjp0cg==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjot",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIg==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjo=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjpbMQ==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjpb",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoiXA==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoiXHUxMg==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoxLg==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoxZQ==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoxZS0=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjp7",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIiAg",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyA=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoiXHVkODAwXHUxMmc0In0=",
+  "items": null,
+  "err": "t: invalid escape sequence `\\u12g4` in string"
+ },
+ {
+  "in": "eyJhIjoiXFUxMjM0In0=",
+  "items": null,
+  "err": "t: invalid escape sequence `\\U` in string"
+ },
+ {
+  "in": "eyJhIjoiXCcifQ==",
+  "items": null,
+  "err": "t: invalid escape sequence `\\'` in string"
+ },
+ {
+  "in": "eyJhIjoiXC9cYlxmIn0=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJhIjoiCiJ9",
+  "items": null,
+  "err": "t: invalid character '\\n' in string"
+ },
+ {
+  "in": "eyJhIjoifyJ9",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJhIjoiHyJ9",
+  "items": null,
+  "err": "t: invalid character '\\x1f' in string"
+ },
+ {
+  "in": "eyJhIjoiCSJ9",
+  "items": null,
+  "err": "t: invalid character '\\t' in string"
+ },
+ {
+  "in": "eyJhIjrDqX0=",
+  "items": null,
+  "err": "t: invalid character 'é' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjrigKh9",
+  "items": null,
+  "err": "t: invalid character '\\u2028' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjrDfQ==",
+  "items": null,
+  "err": "t: invalid character '\\xc3' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjrigH0=",
+  "items": null,
+  "err": "t: invalid character '\\xe2' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIgB9",
+  "items": null,
+  "err": "t: invalid character '\\x00' after object key"
+ },
+ {
+  "in": "eyJhIjoAfQ==",
+  "items": null,
+  "err": "t: invalid character '\\x00' looking for beginning of value"
+ },
+ {
+  "in": "eyJhIjoiACJ9",
+  "items": null,
+  "err": "t: invalid character '\\x00' in string"
+ },
+ {
+  "in": "eyJkb2NjIjoxLCB4fQ==",
+  "items": null,
+  "err": "t: invalid character 'x' looking for beginning of object key string"
+ },
+ {
+  "in": "eyJkb2NjIjoxLCJjb21tZW50cyI6WzEsIHhdfQ==",
+  "items": null,
+  "err": "t: invalid character 'x' looking for beginning of value"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6WzFdfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Export.comments.0 of type comments.Item"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W1tdXX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal array into Export.comments.0 of type comments.Item"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3RydWVdfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal bool into Export.comments.0 of type comments.Item"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siSUQiOjF9XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.0.ID of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siXHUwMDY5ZCI6IngiLCJkb2MiOiJkIiwidGV4dCI6InQifV19",
+  "items": [
+   {
+    "id": "x",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3sixb90YXR1cyI6MX1dfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.0.ſtatus of type string"
+ },
+ {
+  "in": "eyJET0NDIjoxfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.DOCC of type string"
+ },
+ {
+  "in": "eyJWZXJzaW9uIjoiMSJ9",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go struct field Export.Version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLjB9",
+  "items": null,
+  "err": "t: json: cannot unmarshal number 1.0 into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjotMX0=",
+  "items": null,
+  "err": "t: unsupported version -1"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxRTB9",
+  "items": null,
+  "err": "t: json: cannot unmarshal number 1E0 into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjo5MjIzMzcyMDM2ODU0Nzc1ODA3fQ==",
+  "items": null,
+  "err": "t: unsupported version 9223372036854775807"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjotOTIyMzM3MjAzNjg1NDc3NTgwOX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal number -9223372036854775809 into Go struct field Export.version of type int"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dLCJjb21tZW50cyI6W3siaWQiOiJiIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dfQ==",
+  "items": [
+   {
+    "id": "b",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dLCJjb21tZW50cyI6bnVsbH0=",
+  "items": null
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicXVvdGUiOiJxIn0seyJpZCI6ImIiLCJkb2MiOiJkIiwidGV4dCI6InQiLCJxdW90ZSI6bnVsbH1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "q",
+    "text": "t"
+   },
+   {
+    "id": "b",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiaW50ZXJuYWwiOnRydWUsImludGVybmFsIjpudWxsfV19",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t",
+    "internal": true
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiaWQiOm51bGx9XX0=",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "IHsiZG9jYyI6ImNvbW1lbnRzIiwidmVyc2lvbiI6MSwiY29tbWVudHMiOltdfSA=",
+  "items": []
+ },
+ {
+  "in": "77u/eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxfQ==",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dfXt9",
+  "items": null,
+  "err": "t: invalid character '{' after top-level value"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dfSAx",
+  "items": null,
+  "err": "t: invalid character '1' after top-level value"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dfV0=",
+  "items": null,
+  "err": "t: invalid character ']' after top-level value"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29cdTAwNmRtZW50cyIsInZlcnNpb24iOjF9",
+  "items": null
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In0=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "eyJhIjoiXHVEODNEXHVERTAwIn0=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJhIjoiXHVERTAwXHVEODNEIn0=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0Iiwi/yI6MX1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiLtoIAiLCJkb2MiOiLAryIsInRleHQiOiL0kICAIn1dfQ==",
+  "items": [
+   {
+    "id": "���",
+    "doc": "��",
+    "path": "",
+    "quote": "",
+    "text": "����"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiSUQiOjF9XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.0.ID of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siSWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0Iiwi4oSqZCI6MX1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siSWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiUGF0aCI6MX1dfQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go struct field Export.comments.0.Path of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siSWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicEF0SCI6WzEsMl19XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal array into Go struct field Export.comments.0.pAtH of type string"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiaW50ZXJuYWwiOiJ4IiwicXVvdGUiOjF9XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go struct field Export.comments.0.internal of type bool"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiaW50ZXJuYWwiOiJ4In1dLCJ2ZXJzaW9uIjoieSJ9",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go struct field Export.comments.0.internal of type bool"
+ },
+ {
+  "in": "eyJEb2NjIjoiY29tbWVudHMiLCJWRVJTSU9OIjoxLCJDb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dLCJjb21tZW50cyI6W3sicXVvdGUiOiJ4In1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "x",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicXVvdGUiOiJ4In1dLCJjb21tZW50cyI6W3siaWQiOiJiIn1dfQ==",
+  "items": [
+   {
+    "id": "b",
+    "doc": "d",
+    "path": "",
+    "quote": "x",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiSW50ZXJuYWwiOnRydWV9XSwiY29tbWVudHMiOlt7ImlkIjoiYiJ9LHsiaWQiOiJjIn1dfQ==",
+  "items": null,
+  "err": "t: comment 2 lacks id, doc or text"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIn0seyJpZCI6ImEyIn1dLCJjb21tZW50cyI6W3siZG9jIjoiYiJ9XX0=",
+  "items": null,
+  "err": "t: comment 1 lacks id, doc or text"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czo=",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpJQT09",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpYUT09",
+  "items": null,
+  "err": "t: invalid character ']' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpmUT09",
+  "items": null,
+  "err": "t: invalid character '}' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpMQT09",
+  "items": null,
+  "err": "t: invalid character ',' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpPZz09",
+  "items": null,
+  "err": "t: invalid character ':' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpMREU9",
+  "items": null,
+  "err": "t: invalid character ',' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpPakU9",
+  "items": null,
+  "err": "t: invalid character ':' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpMQ0E9",
+  "items": null,
+  "err": "t: invalid character ',' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpNWGc9",
+  "items": null,
+  "err": "t: invalid character 'x' after top-level value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpMUT09",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpiblZz",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpJbUU9",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpXekZk",
+  "items": null,
+  "err": "t: json: cannot unmarshal array into Go value of type comments.Export"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpNU0F5",
+  "items": null,
+  "err": "t: invalid character '2' after top-level value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czovdz09",
+  "items": null,
+  "err": "t: invalid character '\\xff' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czo3N3UvZTMwPQ==",
+  "items": null,
+  "err": "t: invalid character '\\ufeff' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMzA9",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpNUT09",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go value of type comments.Export"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpiblZzYkE9PQ==",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpJbmdp",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go value of type comments.Export"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpkSEoxWlE9PQ==",
+  "items": null,
+  "err": "t: json: cannot unmarshal bool into Go value of type comments.Export"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpXdz09",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpMWGc9",
+  "items": null,
+  "err": "t: invalid character 'x' in numeric literal"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpNREU9",
+  "items": null,
+  "err": "t: invalid character '1' after top-level value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpNUzQx",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Go value of type comments.Export"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpZUT09",
+  "items": null,
+  "err": "t: invalid character 'a' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpDUTBLSUh0OUlBaz0=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMzBM",
+  "items": null,
+  "err": "t: invalid character '\\v' after top-level value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpESHQ5",
+  "items": null,
+  "err": "t: invalid character '\\f' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czp3cUI3ZlE9PQ==",
+  "items": null,
+  "err": "t: invalid character '\\u00a0' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVXhNaUo5",
+  "items": null,
+  "err": "t: invalid escape sequence `\\u12\"}` in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVXhNZz09",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVmtPREF3",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVmtPREF3WEE9PQ==",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVmtPREF3WEhnaWZRPT0=",
+  "items": null,
+  "err": "t: invalid escape sequence `\\x` in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhNT3BJbjA9",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\\\xc3\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVXhNc09wSW4wPQ==",
+  "items": null,
+  "err": "t: invalid escape sequence `\\u12é` in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVmdNVEl6SW4wPQ==",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\u`123\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhHQWlmUT09",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\`\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhBb2lmUT09",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\\\n\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhDQWlmUT09",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\ \" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhBQWlmUT09",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\\\x00\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhPS0FxQ0o5",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\\\xe2\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhOQzJJbjA9",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\\\xd0\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIWFF0aUo5",
+  "items": null,
+  "err": "t: invalid escape sequence `\\uж\"}` in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVXhNdUtBSWc9PQ==",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\u12\\xe2\\x80\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVXhNdUk9",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\u12\\xe2\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVXg=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVXhadz09",
+  "items": null,
+  "err": "t: invalid escape sequence `\\u1g` in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhIVjZlZz09",
+  "items": null,
+  "err": "t: invalid escape sequence `\\uzz` in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaTRnPT0=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaTRpSjk=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaTRvQT0=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaTRvQWk=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaTRvQWlmUT09",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaS95Sjk=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpyaWdBPT0=",
+  "items": null,
+  "err": "t: invalid character '\\xe2' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpydnY3NTk=",
+  "items": null,
+  "err": "t: invalid character '\\ufffe' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpyTnVIMD0=",
+  "items": null,
+  "err": "t: invalid character '\\u0378' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpyaWdJdDk=",
+  "items": null,
+  "err": "t: invalid character '\\u200b' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpyd241aUFmUT09",
+  "items": null,
+  "err": "t: invalid character '😀' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpyQ29IMD0=",
+  "items": null,
+  "err": "t: invalid character '\\u00a0' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpyQ2hYMD0=",
+  "items": null,
+  "err": "t: invalid character '\\u0085' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpyQ3JYMD0=",
+  "items": null,
+  "err": "t: invalid character '\\u00ad' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwL2ZRPT0=",
+  "items": null,
+  "err": "t: invalid character '\\x7f' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvSGZRPT0=",
+  "items": null,
+  "err": "t: invalid character '\\a' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwY2ZRPT0=",
+  "items": null,
+  "err": "t: invalid character '\\\\' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwZ2ZRPT0=",
+  "items": null,
+  "err": "t: invalid character '`' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaVhQOGlmUT09",
+  "items": null,
+  "err": "t: invalid escape sequence \"\\\\\\xff\" in string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvaWVGeDFNREJsT1Z4MU1EQXdNRnh1WENKY1hGd3ZYR0pjWmx4eVhIUWlmUT09",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpveGZRPT0=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwMGNuMD0=",
+  "items": null,
+  "err": "t: invalid character '}' in literal true (expecting 'u')"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwMGNuVT0=",
+  "items": null,
+  "err": "t: unexpected end of JSON input"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwMC93PT0=",
+  "items": null,
+  "err": "t: invalid character '\\xff' in literal true (expecting 'r')"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwMHc2bDk=",
+  "items": null,
+  "err": "t: invalid character 'é' in literal true (expecting 'r')"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvdHc2bDk=",
+  "items": null,
+  "err": "t: invalid character 'é' in numeric literal"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSXNPcGZRPT0=",
+  "items": null,
+  "err": "t: invalid character 'é' after object key"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpveHc2bDk=",
+  "items": null,
+  "err": "t: invalid character 'é' after object key:value pair"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplOE9wZlE9PQ==",
+  "items": null,
+  "err": "t: invalid character 'é' looking for beginning of object key string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpXekhEcVYwPQ==",
+  "items": null,
+  "err": "t: invalid character 'é' after array element"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czp3Nms9",
+  "items": null,
+  "err": "t: invalid character 'é' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpNY09w",
+  "items": null,
+  "err": "t: invalid character 'é' after top-level value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwYk1Td3lMRjE5",
+  "items": null,
+  "err": "t: invalid character ']' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwYk1Ub3lYWDA9",
+  "items": null,
+  "err": "t: invalid character ':' after array element"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwN0ltSWlPakVzZlgwPQ==",
+  "items": null,
+  "err": "t: invalid character '}' looking for beginning of object key string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwN0ltSWlMSDE5",
+  "items": null,
+  "err": "t: invalid character ',' after object key"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvNk1YMD0=",
+  "items": null,
+  "err": "t: invalid character ':' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpvc2ZRPT0=",
+  "items": null,
+  "err": "t: invalid character ',' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpwOQ==",
+  "items": null,
+  "err": "t: invalid character '}' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpXMzA9",
+  "items": null,
+  "err": "t: invalid character '}' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMTA9",
+  "items": null,
+  "err": "t: invalid character ']' looking for beginning of object key string"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWpveFhRPT0=",
+  "items": null,
+  "err": "t: invalid character ']' after object key:value pair"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpXekY5",
+  "items": null,
+  "err": "t: invalid character '}' after array element"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUpoSWlBNklERWdMQ0FpWWlJZ09pQmJJREVnTENBeUlGMGdmUT09",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dLCJjb21tZW50cyI6W251bGxdfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIn0seyJpZCI6ImIiLCJkb2MiOiJ4In0seyJpZCI6ImMifV0sImNvbW1lbnRzIjpbeyJkb2MiOiJkIn1dLCJjb21tZW50cyI6W3sidGV4dCI6InQifSx7InRleHQiOiJ1In1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   },
+   {
+    "id": "b",
+    "doc": "x",
+    "path": "",
+    "quote": "",
+    "text": "u"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIn0seyJpZCI6ImIiLCJkb2MiOiJ4In0seyJpZCI6ImMifV0sImNvbW1lbnRzIjpbeyJkb2MiOiJkIn1dLCJjb21tZW50cyI6W3sidGV4dCI6InQifSx7InRleHQiOiJ1In0seyJ0ZXh0IjoidiJ9LHsidGV4dCI6IncifV19",
+  "items": null,
+  "err": "t: comment 3 lacks id, doc or text"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIn0seyJpZCI6ImIiLCJkb2MiOiJ4In1dLCJjb21tZW50cyI6W10sImNvbW1lbnRzIjpbeyJ0ZXh0IjoidCJ9LHsidGV4dCI6InUifV19",
+  "items": null,
+  "err": "t: comment 1 lacks id, doc or text"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIn0seyJpZCI6ImIiLCJkb2MiOiJ4In1dLCJjb21tZW50cyI6bnVsbCwiY29tbWVudHMiOlt7InRleHQiOiJ0In0seyJ0ZXh0IjoidSJ9XX0=",
+  "items": null,
+  "err": "t: comment 1 lacks id, doc or text"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In0seyJpZCI6ImIiLCJkb2MiOiJ4IiwidGV4dCI6InQifSx7ImlkIjoiYyIsImRvYyI6ImQiLCJ0ZXh0IjoidCJ9LHsiaWQiOiJlIiwiZG9jIjoiZCIsInRleHQiOiJ0In0seyJpZCI6ImYiLCJkb2MiOiJkIiwidGV4dCI6InQifV0sImNvbW1lbnRzIjpbeyJ0ZXh0IjoiMSJ9XSwiY29tbWVudHMiOlt7InRleHQiOiJ0In0seyJ0ZXh0IjoidSJ9LHsidGV4dCI6InYifSx7InRleHQiOiJ3In0seyJ0ZXh0IjoieCJ9LHsidGV4dCI6InkifSx7InRleHQiOiJ6In0seyJ0ZXh0IjoicSJ9LHsiaWQiOiI5IiwiZG9jIjoiZCIsInRleHQiOiJ0In1dfQ==",
+  "items": null,
+  "err": "t: comment 6 lacks id, doc or text"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In0sMSx7ImlkIjoiYiJ9XX0=",
+  "items": null,
+  "err": "t: json: cannot unmarshal number into Export.comments.1 of type comments.Item"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In0seyJpZCI6ImIiLCJkb2MiOiJkIiwidGV4dCI6InQifV0sImNvbW1lbnRzIjpbeyJpZCI6IngifSwiYmFkIl19",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Export.comments.1 of type comments.Item"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiaW50ZXJuYWwiOnRydWV9XSwiY29tbWVudHMiOlt7ImludGVybmFsIjpmYWxzZX1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dLCJ2ZXJzaW9uIjoyfQ==",
+  "items": null,
+  "err": "t: unsupported version 2"
+ },
+ {
+  "in": "eyJ2ZXJzaW9uIjoxLCJkb2NjIjoiY29tbWVudHMiLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0In1dfQ==",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaS9kIjoxLCJhfmIiOjIsImlkIjoiYSIsImRvYyI6ImQiLCJ0ZXh0IjoidCJ9XX0=",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaW50ZXJfbmFsIjoxLCJpLWQiOjIsImlkIjoiYSIsImRvYyI6ImQiLCJ0ZXh0IjoidCJ9XX0=",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwiXHUwMDY5bnRlcm5hbCI6IngifV19",
+  "items": null,
+  "err": "t: json: cannot unmarshal string into Go struct field Export.comments.0.internal of type bool"
+ },
+ {
+  "in": "eyJkb2NjIjoiY29tbWVudHMiLCJ2ZXJzaW9uIjoxLCJjb21tZW50cyI6W3siaWQiOiJhIiwiZG9jIjoiZCIsInRleHQiOiJ0IiwicXVvdGUiOiJ4XHVkODNkXHVkZTAwXHVERTAwXHVEODNEeVx1MDBlOVx1MDAwMCJ9XX0=",
+  "items": [
+   {
+    "id": "a",
+    "doc": "d",
+    "path": "",
+    "quote": "x😀��yé\u0000",
+    "text": "t"
+   }
+  ]
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czo9",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czo9PQ==",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czo9PT09",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRUT0=",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRPT09",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRVUpEPT09PQ==",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRVUk9",
+  "items": null,
+  "err": "t: invalid character 'A' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRVUpE",
+  "items": null,
+  "err": "t: invalid character 'A' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRVUo9",
+  "items": null,
+  "err": "t: invalid character 'A' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpR",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpRUT09DQo=",
+  "items": null,
+  "err": "t: invalid character 'A' looking for beginning of value"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMzA9DA==",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "eCBkb2NjLWNvbW1lbnRzOmUzMD0=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMzA9CmRvY2MtY29tbWVudHM6V3pGZAo=",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czogZTMKMD0=",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czplMyAwPSB0YWls",
+  "items": null,
+  "err": "t: the docc-comments: line is damaged: copy the comments again"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50OmUzMD0=",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "RE9DQy1DT01NRU5UUzplMzA9",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "ICDCoHt9",
+  "items": null,
+  "err": "t: invalid character '\\u00a0' looking for beginning of value"
+ },
+ {
+  "in": "woV7ImRvY2MiOiJjb21tZW50cyIsInZlcnNpb24iOjF9",
+  "items": null,
+  "err": "t: invalid character '\\u0085' looking for beginning of value"
+ },
+ {
+  "in": "C3t9",
+  "items": null,
+  "err": "t: invalid character '\\v' looking for beginning of value"
+ },
+ {
+  "in": "44CAe30=",
+  "items": null,
+  "err": "t: invalid character '\\u3000' looking for beginning of value"
+ },
+ {
+  "in": "/3t9",
+  "items": null,
+  "err": "t: no comments in it: give the file downloaded from the page or the text copied there (it has a docc-comments: line)"
+ },
+ {
+  "in": "CXt9CQ==",
+  "items": null,
+  "err": "t: not a comments file of docc (no \"docc\": \"comments\")"
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUprYjJOaklqb2lZMjl0YldWdWRITWlMQ0oyWlhKemFXOXVJam94TENKamIyMXRaVzUwY3lJNlczc2lhV1FpT2lKak1TSXNJbVJ2WXlJNkltUWlMQ0owWlhoMElqb2lkR2hsSUdSdlkyTXRZMjl0YldWdWRITTZJR3hwYm1VaWZWMTk=",
+  "items": [
+   {
+    "id": "c1",
+    "doc": "d",
+    "path": "",
+    "quote": "",
+    "text": "the docc-comments: line"
+   }
+  ]
+ },
+ {
+  "in": "ZG9jYy1jb21tZW50czpleUprYjJOaklqb2lZMjl0YldWdWRITWlMQ0oyWlhKemFXOXVJam94TENKamIyMXRaVzUwY3lJNlczc2lhV1FpT2lKak1TSXNJbVJ2WXlJNkltUWlMQ0p3WVhSb0lqb2lMMkV2TUNJc0luRjFiM1JsSWpvaVBIRStJQ1lnNG9Db0lpd2lkR1Y0ZENJNkluaGNkVEF3TTJONUlpd2lZWFYwYUc5eUlqb2lRU0lzSW5OMFlYUjFjeUk2SW05d1pXNGlmVjE5",
+  "items": [
+   {
+    "id": "c1",
+    "doc": "d",
+    "path": "/a/0",
+    "quote": "<q> &  ",
+    "text": "x<y",
+    "author": "A",
+    "status": "open"
+   }
+  ]
+ }
+]
