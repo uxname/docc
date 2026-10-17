@@ -372,6 +372,17 @@ impl<'a> Page<'_, 'a> {
         self.refs(s)
     }
 
+    /// source renders an old version of a string block the way paragraphs
+    /// renders the current one, for the history of the HTML file.
+    pub fn source(&self, s: &str) -> String {
+        let (s, _) = engine::split_anchor(s);
+        self.expand(s, 0)
+            .iter()
+            .map(|x| self.refs(x))
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    }
+
     /// listLines renders an object or array value as a nested Markdown list.
     pub fn list_lines(&self, n: &Node, indent: &str, includes: bool) -> Vec<String> {
         let mut out = Vec::new();

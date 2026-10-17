@@ -1,6 +1,6 @@
 // Checks the pure parts of app.js in Node: the word marks of an edit, the
-// place of a commented fragment, the place of a removed paragraph and the
-// edits of a page. Run by render::tests::app_logic: node app_test.js app.js
+// place of a commented fragment, the place of a removed paragraph, the
+// edits of a page and the page at an earlier moment of the timeline. Run by render::tests::app_logic: node app_test.js app.js
 'use strict';
 const fs = require('fs');
 const assert = require('assert');
@@ -58,6 +58,15 @@ const d = T.pageDelta(page, 0);
 assert.deepStrictEqual(d.items.map((x) => x.k + ' ' + x.ptr), ['rm /body/1', 'chg /body/1', 'new /body/2', 'rm /body/3']);
 assert.deepStrictEqual([d.chg, d.add, d.rm], [1, 1, 2]);
 assert.strictEqual(T.pageDelta(page, 1).items.length, 0, 'nothing changed after the last commit');
+
+// the page at the first commit: the blocks removed later were still there
+const p0 = T.pageDelta(page, 0, 0);
+assert.strictEqual(p0.items.length, 0, 'no edits between a moment and itself');
+assert.deepStrictEqual(p0.olds.map((g) => g.ptr), ['/body/3', '/body/1']);
+assert.strictEqual(T.between(page, '/body/1', 0, 1), 'Beta', 'the text at the start of the edits');
+assert.strictEqual(T.between(page, '/body/2', 0, 1), null, 'a block that came later did not exist then');
+assert.strictEqual(T.between(page, '/body/0', 0, 1), undefined, 'an unchanged block');
+assert.strictEqual(T.between(page, '/body/1', 0, 0), undefined, 'nothing changes between a moment and itself');
 
 // a table row reads as its cells in the lists
 assert.strictEqual(T.snip('| Module | Owner |\n|---|---|', 60), 'Module Owner');

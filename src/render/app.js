@@ -1,9 +1,10 @@
 // The documentation application: one page at a time drawn from the JSON
 // island #docc-data with Preact and htm (vendor/htm-preact-standalone.js).
 // Labels are marked as t:English in double braces and translated by the build (lang.rs).
-// Two modes: Reading shows the final text only; Work adds the edits since the
-// starting point (word diff in the text, gutter bars, removed paragraphs in
-// place, a navigator), comments on the margin and the tools.
+// A timeline over the saved versions sets where the edits start and the
+// moment the page is shown at; the edits are drawn into the text (word diff,
+// gutter bars, removed paragraphs in place). Comments are left on selected
+// words and kept in the browser until they are copied out.
 (function () {
   'use strict';
   var P = window.htmPreact;
@@ -82,11 +83,6 @@
     }
     return navigator.clipboard ? navigator.clipboard.writeText(text).catch(old) : old();
   }
-  function unzip64(s) {
-    var b = atob(s), u = new Uint8Array(b.length);
-    for (var i = 0; i < b.length; i++) { u[i] = b.charCodeAt(i); }
-    return u;
-  }
   function b64(s) {
     var u = new TextEncoder().encode(s), b = '';
     for (var i = 0; i < u.length; i++) { b += String.fromCharCode(u[i]); }
@@ -99,7 +95,7 @@
       return (c === 'x' ? r : (r & 3 | 8)).toString(16);
     });
   }
-  // a short hash of a text: a viewed edit is kept with the text it had
+  // a short hash of a text: the id of a removed block
   function hash(s) {
     var h = 5381;
     for (var i = 0; i < s.length; i++) { h = (h * 33 + s.charCodeAt(i)) | 0; }
@@ -107,6 +103,7 @@
   }
   var box = document.createElement('div');
   function textOf(h) { box.innerHTML = h; return box.textContent.replace(/\s+/g, ' ').trim(); }
+  function esc(s) { box.textContent = s; return box.innerHTML; }
   // the source text of a block as a reader sees it: links by their names, no marks
   // ponytail: a few regexes for the usual marks, not a Markdown parser
   function plain(s) {
@@ -187,27 +184,6 @@
     ops.forEach(function (o) { if (o[0] === 0) { same += y[o[1]].replace(/\s+/g, '').length; } });
     return same < 0.4 * Math.max(len(x), len(y));
   }
-  // word diff of two texts for the history: [op, text] runs
-  function diff(a, b) {
-    var x = (a || '').split(/(\s+)/), y = (b || '').split(/(\s+)/), ops = lcs(x, y);
-    if (!ops || rewrite(ops, x, y)) { return [[-1, a], [1, b]]; }
-    var out = [];
-    ops.forEach(function (o) {
-      var s = o[0] < 0 ? x[o[1]] : y[o[1]];
-      if (out.length && out[out.length - 1][0] === o[0]) { out[out.length - 1][1] += s; } else { out.push([o[0], s]); }
-    });
-    return out;
-  }
-  // was and now in reading form; removed words are struck out, added underlined
-  function Diff(props) {
-    var b = plain(props.b);
-    if (props.a == null) { return html`<div class="dv"><ins>${b}</ins></div>`; }
-    var a = plain(props.a), ds = diff(a, b), whole = ds.length === 2 && ds[0][1] === a && ds[1][1] === b;
-    return html`<div class=${'dv' + (whole ? ' whole' : '')}>${ds.map(function (d) {
-      return d[0] < 0 ? html`<del><span class="sr">{{t:removed:}} </span>${d[1]}</del>` : d[0] > 0 ? html`<ins><span class="sr">{{t:added:}} </span>${d[1]}</ins>` : d[1];
-    })}</div>`;
-  }
-
   // ---- edits drawn into the rendered paragraph ----
   // The old source words are matched with the words of the rendered new text,
   // so the paragraph keeps its links, lists and tables: added words are wrapped
@@ -339,7 +315,9 @@
     return best;
   }
 
-  // ---- history and changes ----
+  // ---- history: a timeline over the commits. S is where the edits start,
+  // T the moment the text is shown at (the last commit is now) ----
+  var last = commits.length - 1;
   function versions(page, ptr) {
     var h = H.docs && H.docs[page.file];
     return (h && h.b && h.b[ptr]) || [];
@@ -348,15 +326,29 @@
     var h = H.docs && H.docs[page.file];
     return (h && h.ch) || [];
   }
-  // the text of a block right after commit `since`: undefined when the block
-  // did not change after it, null when it did not exist yet
-  function changedSince(page, ptr, since) {
-    if (since == null || since < 0) { return undefined; }
-    var vs = versions(page, ptr), before = null, after = false;
-    vs.forEach(function (v) { if (v.c <= since) { before = v.t; } else { after = true; } });
-    return after ? before : undefined;
+  // the version of a block at commit k: null when it did not exist yet
+  function versionAt(vs, k) {
+    var at = null;
+    vs.forEach(function (v) { if (v.c <= k) { at = v; } });
+    return at;
+  }
+  // the text of a block at S when it changed between S and T: undefined when
+  // it did not change, null when it did not exist at S
+  function between(page, ptr, s, t) {
+    if (s == null || s >= t) { return undefined; }
+    var vs = versions(page, ptr), at = versionAt(vs, t);
+    if (!at || at.c <= s) { return undefined; }
+    var was = versionAt(vs, s);
+    return was ? was.t : null;
+  }
+  // a block of the page now that did not exist at T
+  function absent(page, ptr, t) {
+    var vs = versions(page, ptr);
+    return t < last && vs.length > 0 && !versionAt(vs, t);
   }
   function blocksOf(page) { return (page.props || []).concat(page.blocks || []).filter(function (b) { return b.p; }); }
+  // the text of a block at T, for the lists
+  function textAt(page, b, t) { var at = versionAt(versions(page, b.p), t); return at ? at.t : b.s; }
   // Where a removed block stood: it is known by its old pointer only, so it
   // goes before the block that has that pointer now, else after the last
   // block of the same array, else at the end of the page.
@@ -369,93 +361,81 @@
     }
     return last >= 0 ? last + 1 : bs.length;
   }
-  // what changed on a page after `since`, in page order: changed and new
-  // blocks and removed ones (ghosts: {a, ptr, t, at})
+  // What the page shows between S and T, in page order: changed and new
+  // blocks, ghosts (removed between S and T) and olds (removed after T, so
+  // still there at T).
+  // ponytail: an old block shows the last text it had, not its text at T
   var deltaCache = {};
-  function pageDelta(page, since) {
-    var key = page.id + ':' + since;
+  function pageDelta(page, s, t) {
+    if (t == null) { t = last; }
+    var key = page.id + ':' + s + ':' + t;
     if (deltaCache[key]) { return deltaCache[key]; }
-    var d = { items: [], chg: 0, add: 0, rm: 0, ghosts: [] }, now = {}, before = {};
-    if (since != null && since >= 0) {
-      blocksOf(page).forEach(function (b) {
-        now[b.s] = true;
-        var was = changedSince(page, b.p, since);
-        if (was !== undefined) { before[b.p] = was; }
+    var d = { items: [], chg: 0, add: 0, rm: 0, ghosts: [], olds: [] }, now = {}, before = {}, live = s != null && s < t;
+    blocksOf(page).forEach(function (b) {
+      if (!absent(page, b.p, t)) { now[textAt(page, b, t)] = true; }
+      var was = live ? between(page, b.p, s, t) : undefined;
+      if (was !== undefined) { before[b.p] = was; }
+    });
+    // late, later: texts of blocks that came after S (or T); they were not there then
+    var gone = {}, late = {}, later = {};
+    pageChanges(page).forEach(function (c) {
+      if (c.c <= (live ? s : t)) { return; }
+      var after = c.c > t, l = after ? later : late;
+      (c.add || []).forEach(function (x) { l[x[1]] = true; });
+      (c.ch || []).forEach(function (x) { if (l[x[1]]) { l[x[2]] = true; } });
+      (c.rm || []).forEach(function (x) {
+        if (now[x[1]] || gone[x[1]] || l[x[1]]) { return; }
+        gone[x[1]] = true;
+        var g = { a: page.id + '~' + x[0] + '~' + hash(x[1]), ptr: x[0], t: x[1], at: placeGhost(page, x[0]) };
+        if (after) { g.isNew = !!late[x[1]]; d.olds.push(g); } else { d.ghosts.push(g); }
       });
-      var gone = {}, late = {}; // late: texts of blocks that came after `since`; they were not in that version
-      pageChanges(page).forEach(function (c) {
-        if (c.c <= since) { return; }
-        (c.add || []).forEach(function (x) { late[x[1]] = true; });
-        (c.ch || []).forEach(function (x) { if (late[x[1]]) { late[x[2]] = true; } });
-        (c.rm || []).forEach(function (x) {
-          if (now[x[1]] || gone[x[1]] || late[x[1]]) { return; }
-          gone[x[1]] = true;
-          d.ghosts.push({ a: page.id + '~' + x[0] + '~' + hash(x[1]), ptr: x[0], t: x[1], at: placeGhost(page, x[0]) });
-        });
-      });
-      var item = function (b) {
-        if (!(b.p in before)) { return; }
-        var isNew = before[b.p] === null;
-        d.items.push({ a: page.id + b.p, page: page, ptr: b.p, k: isNew ? 'new' : 'chg', t: b.s });
-        if (isNew) { d.add++; } else { d.chg++; }
-      };
-      (page.props || []).forEach(item);
-      var gh = function (i) {
-        d.ghosts.forEach(function (g) { if (g.at === i) { d.items.push({ a: g.a, page: page, ptr: g.ptr, k: 'rm', t: g.t }); d.rm++; } });
-      };
-      (page.blocks || []).forEach(function (b, i) { gh(i); if (b.p) { item(b); } });
-      gh((page.blocks || []).length);
-    }
+    });
+    var item = function (b) {
+      if (!(b.p in before)) { return; }
+      var isNew = before[b.p] === null;
+      d.items.push({ a: page.id + b.p, page: page, ptr: b.p, k: isNew ? 'new' : 'chg', t: textAt(page, b, t) });
+      if (isNew) { d.add++; } else { d.chg++; }
+    };
+    (page.props || []).forEach(item);
+    var gh = function (i) {
+      d.ghosts.forEach(function (g) { if (g.at === i) { d.items.push({ a: g.a, page: page, ptr: g.ptr, k: 'rm', t: g.t }); d.rm++; } });
+      d.olds.forEach(function (g) { if (g.at === i && g.isNew) { d.items.push({ a: g.a, page: page, ptr: g.ptr, k: 'new', t: g.t }); d.add++; } });
+    };
+    (page.blocks || []).forEach(function (b, i) { gh(i); if (b.p) { item(b); } });
+    gh((page.blocks || []).length);
     deltaCache[key] = d;
     return d;
   }
-  // every change after `since` in the order of the pages
-  function allChanges(since) {
-    var list = [], n = { chg: 0, add: 0, rm: 0, pages: 0 };
-    pages.forEach(function (p) {
-      var d = pageDelta(p, since);
-      if (d.items.length) { n.pages++; }
-      n.chg += d.chg; n.add += d.add; n.rm += d.rm;
-      list = list.concat(d.items);
-    });
-    n.list = list;
-    return n;
+  // every edit between S and T in the order of the pages
+  function allChanges(s, t) {
+    var list = [];
+    pages.forEach(function (p) { list = list.concat(pageDelta(p, s, t).items); });
+    return { list: list };
   }
+  // a moment of the timeline for the reader: «3 days ago», the exact date in the title
+  function ago(k) {
+    var cm = commits[k];
+    if (!cm) { return ''; }
+    if (!cm.h) { return '{{t:now, not saved yet}}'; }
+    var sec = (new Date(cm.d) - Date.now()) / 1000, a = Math.abs(sec);
+    var u = a < 60 ? ['second', 1] : a < 3600 ? ['minute', 60] : a < 86400 ? ['hour', 3600] : a < 2592000 ? ['day', 86400] : a < 31536000 ? ['month', 2592000] : ['year', 31536000];
+    try { return new Intl.RelativeTimeFormat(D.lang || 'en', { numeric: 'auto' }).format(Math.round(sec / u[1]), u[0]); } catch (e) { return when(k); }
+  }
+  function sinceLabel(s) { return s >= last ? '{{t:now, edits are not shown}}' : ago(s); }
+  function atLabel(t) { return t >= last ? '{{t:now}}' : ago(t); }
   // where a pointer is, for the reader: the start of its text
   function placeOf(page, ptr, fallback) {
     var b = page && blocksOf(page).filter(function (x) { return x.p === ptr; })[0];
     return '«' + snip(b ? b.s : fallback || '', 70) + '»';
   }
 
-  // ---- viewed edits: kept with the hash of the text they had ----
-  var viewed = store('viewed') || {}, viewFns = [];
-  function viewState(it) {
-    var v = viewed[it.a];
-    return v == null ? '' : v === hash(it.t) ? 'yes' : 'again';
-  }
-  function setViewed(it, on) {
-    viewed = Object.assign({}, viewed);
-    if (on) { viewed[it.a] = hash(it.t); } else { delete viewed[it.a]; }
-    store('viewed', viewed);
-    viewFns.forEach(function (f) { f(viewed); });
-  }
-  function useViewed() {
-    var s = useState(viewed);
-    useEffect(function () {
-      var f = function (v) { s[1](v); };
-      viewFns.push(f);
-      return function () { viewFns.splice(viewFns.indexOf(f), 1); };
-    }, []);
-    return s[0];
-  }
-
-  // ---- comments: kept in localStorage until they are sent ----
+  // ---- comments: kept in localStorage until they are imported into the project ----
   var listeners = [];
   var imported = D.comments || [], inRepo = {};
   imported.forEach(function (c) { inRepo[c.id] = true; });
   // comments already imported into the repository leave the browser
-  var local = (store('comments') || []).filter(function (c) { return !inRepo[c.id]; });
-  store('comments', local);
+  var kept = store('comments') || [], local = kept.filter(function (c) { return !inRepo[c.id]; });
+  if (local.length !== kept.length) { store('comments', local); }
   function setLocal(list) {
     local = list; store('comments', list);
     listeners.forEach(function (f) { f(list); });
@@ -469,8 +449,6 @@
     }, []);
     return s[0];
   }
-  function unsent(list) { return list.filter(function (c) { return !c.sent; }).length; }
-  function markSent() { setLocal(local.map(function (c) { return Object.assign({}, c, { sent: true }); })); }
   function exportJSON() {
     return JSON.stringify({ docc: 'comments', version: 1, comments: local.map(function (c) {
       var o = Object.assign({}, c); delete o.sent; return o;
@@ -485,22 +463,17 @@
       if (c.author) { lines.push('— ' + c.author); }
       lines.push('');
     });
-    lines.push('{{t:For the team, do not edit:}}');
+    lines.push('{{t:For the import, do not edit:}}');
     lines.push('docc-comments:' + b64(exportJSON()));
     return lines.join('\n') + '\n';
   }
   function sendCopy() {
-    copy(exportText()).then(function () {
-      var was = local;
-      markSent(); toast('{{t:Copied. Paste it into a message to the team.}}', '{{t:Not sent yet}}', function () { setLocal(was); });
-    }, function () { toast('{{t:Could not copy: download the file instead.}}'); });
+    copy(exportText()).then(function () { toast('{{t:Copied. Paste it into a message.}}'); },
+      function () { toast('{{t:Could not copy: download the file instead.}}'); });
   }
   function sendFile() {
-    save('comments-' + new Date().toISOString().slice(0, 10) + '.json', 'application/json', exportJSON()); markSent();
+    save('comments-' + new Date().toISOString().slice(0, 10) + '.json', 'application/json', exportJSON());
   }
-  window.addEventListener('beforeunload', function (e) {
-    if (unsent(local)) { e.preventDefault(); e.returnValue = ''; }
-  });
   function removeComment(c) {
     var at = local.indexOf(c);
     setLocal(local.filter(function (x) { return x.id !== c.id; }));
@@ -514,10 +487,16 @@
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
 
-  // press to dictate, press again to stop; the words go into the text box as they come
+  // press to dictate, press again to stop; the words go into the text box as
+  // they come. The browser ends the recognition after a pause, so it is
+  // started again until the second press.
   function Mic(props) {
-    var rec = useRef(null), st = useState(''), on = useState(false);
+    var rec = useRef(null), want = useRef(false), st = useState(''), on = useState(false);
     if (!Rec) { return null; }
+    function stop(msg) {
+      want.current = false; on[1](false); props.listen(false);
+      if (msg) { st[1](msg); }
+    }
     function start() {
       var base = props.get(), r = new Rec();
       r.lang = speechLang; r.interimResults = true; r.continuous = true;
@@ -527,18 +506,20 @@
         props.set((base ? base.replace(/\s*$/, ' ') : '') + s.trim());
       };
       r.onerror = function (ev) {
-        st[1](ev.error === 'not-allowed' ? '{{t:No access to the microphone}}' :
-          ev.error === 'network' ? '{{t:Speech service unreachable}}' :
-          ev.error === 'no-speech' ? '{{t:No speech heard}}' : '{{t:Dictation failed, type the text instead}}');
+        if (ev.error === 'no-speech' || ev.error === 'aborted') { return; } // a pause: onend starts it again
+        stop(ev.error === 'not-allowed' ? '{{t:No access to the microphone}}' :
+          ev.error === 'network' ? '{{t:Speech service unreachable}}' : '{{t:Dictation failed, type the text instead}}');
       };
-      r.onend = function () { rec.current = null; on[1](false); props.listen(false); };
-      try { r.start(); rec.current = r; on[1](true); props.listen(true); st[1](''); } catch (err) { st[1]('{{t:Dictation failed, type the text instead}}'); }
+      r.onend = function () { rec.current = null; if (want.current) { start(); } else { stop(); } };
+      try { r.start(); rec.current = r; on[1](true); props.listen(true); st[1](''); } catch (err) { stop('{{t:Dictation failed, type the text instead}}'); }
     }
-    useEffect(function () { return function () { if (rec.current) { rec.current.abort(); } }; }, []);
-    function toggle() { if (rec.current) { rec.current.stop(); } else { start(); } }
+    useEffect(function () { return function () { want.current = false; if (rec.current) { rec.current.abort(); } }; }, []);
+    function toggle() {
+      if (want.current) { want.current = false; if (rec.current) { rec.current.stop(); } else { stop(); } } else { want.current = true; start(); }
+    }
     return html`<span class="mic-w">
       <button type="button" class=${'btn mic' + (on[0] ? ' on' : '')} aria-pressed=${on[0] ? 'true' : 'false'} onClick=${toggle}>
-        ${on[0] ? '■ {{t:Stop dictation}}' : '🎤 {{t:Dictate}}'}</button>
+        ${on[0] ? '● {{t:Recording, press to stop}}' : '🎤 {{t:Dictate}}'}</button>
       ${st[0] && html`<small class="err">${st[0]}</small>`}
     </span>`;
   }
@@ -559,14 +540,14 @@
       if (!t) { return; }
       if (a) { store('author', a); }
       if (edit) {
-        setLocal(local.map(function (c) { return c.id === edit.id ? Object.assign({}, c, { text: t, author: a, sent: false }) : c; }));
+        setLocal(local.map(function (c) { return c.id === edit.id ? Object.assign({}, c, { text: t, author: a }) : c; }));
       } else {
-        var first = !unsent(local), c = { id: uuid(), doc: props.page.id, path: props.ptr, quote: props.quote, text: t,
+        var first = !local.length, c = { id: uuid(), doc: props.page.id, path: props.ptr, quote: props.quote, text: t,
           author: a, created: new Date().toISOString(), build: H.head || '' };
         if (props.frag) { c.fragment = props.frag.fragment; c.prefix = props.frag.prefix; c.suffix = props.frag.suffix; }
         setLocal(local.concat([c]));
         // nothing leaves the file by itself: say so once
-        if (first) { toast('{{t:Saved in this browser only. Send your comments to the team from the Comments tab.}}'); }
+        if (first) { toast('{{t:Saved in this browser only. Copy your comments in the Comments tab to pass them on.}}'); }
       }
       draft = false;
       props.close();
@@ -590,11 +571,6 @@
     </div>`;
   }
 
-  function Status(props) {
-    var c = props.c;
-    if (!props.repo) { return c.sent ? html`<span class="chip">{{t:sent}}</span>` : html`<span class="chip warn">{{t:not sent}}</span>`; }
-    return c.status === 'done' ? html`<span class="chip ok">{{t:taken into account}}</span>` : html`<span class="chip">{{t:the team is working on it}}</span>`;
-  }
   // one comment as a card on the margin (or under the paragraph on a narrow screen)
   function Card(props) {
     var c = props.c, edit = useState(false);
@@ -604,73 +580,33 @@
       <div class="nt">${c.text}</div>
       <div class="meta"><b>${c.author || '{{t:Anonymous}}'}</b>
         <small>${c.created ? new Date(c.created).toLocaleDateString() : ''}</small>
-        <${Status} c=${c} repo=${props.repo} />
         ${!props.repo && html`<span class="acts">
-          ${c.sent && html`<button type="button" class="link" onClick=${function () {
-            setLocal(local.map(function (x) { return x.id === c.id ? Object.assign({}, x, { sent: false }) : x; }));
-          }}>{{t:Not sent yet}}</button>`}
           <button type="button" class="link" onClick=${function () { edit[1](true); }}>{{t:Edit}}</button>
           <button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button></span>`}
       </div>
-      ${c.reply && html`<div class="reply"><small>{{t:Team's answer}}</small>${c.reply}</div>`}
+      ${c.reply && html`<div class="reply"><small>{{t:Answer}}</small>${c.reply}</div>`}
     </aside>`;
   }
 
-  // a dialog: native <dialog>, so focus stays inside and Esc closes it
-  function Modal(props) {
-    var d = useRef(null);
-    useEffect(function () { var el = d.current; if (el.showModal && !el.open) { el.showModal(); } }, []);
-    return html`<dialog ref=${d} class=${'dlg ' + (props.cls || '')} aria-label=${props.title} onClose=${props.close}
-      onClick=${function (e) { if (e.target === d.current) { d.current.close(); } }}>
-      <div class="dlg-h"><h2>${props.title}</h2><button type="button" class="btn" onClick=${function () { d.current.close(); }}>{{t:Close}}</button></div>
-      <div class="dlg-b">${props.children}</div>
-    </dialog>`;
-  }
-
-  function History(props) {
-    var vs = props.vs.slice().reverse();
-    return html`${vs.map(function (v, k) {
-      var prev = vs[k + 1];
-      return html`<div class="ver">
-        <div class="vh">${versionLine(v.c)}${!prev && html` · <i>{{t:first version}}</i>`}</div>
-        <${Diff} a=${prev ? prev.t : null} b=${v.t} />
-      </div>`;
-    })}`;
-  }
-  function PageHistory(props) {
-    var page = props.page, ch = pageChanges(page).slice().reverse();
-    function list(label, items, fn) {
-      return items && items.length ? html`<div class="pg-g"><small>${label}</small>${items.map(fn)}</div>` : null;
-    }
-    function place(ptr, text) {
-      var b = blocksOf(page).some(function (x) { return x.p === ptr; });
-      return b ? html`<a class="ptr" href=${blockHash(page.id, ptr)} onClick=${props.close}>${placeOf(page, ptr, text)}</a>` : html`<span class="ptr">${placeOf(page, ptr, text)}</span>`;
-    }
-    return html`${!ch.length && html`<p class="muted">{{t:No changes in this file's history.}}</p>`}
-      ${ch.map(function (c) {
-        return html`<div class="ver">
-          <div class="vh">${versionLine(c.c)}${c.new && html` · <i>{{t:page created}}</i>`}</div>
-          ${list('{{t:Changed}}', c.ch, function (x) { return html`<div class="pg-i">${place(x[0], x[2])}<${Diff} a=${x[1]} b=${x[2]} /></div>`; })}
-          ${list('{{t:Added}}', c.add, function (x) { return html`<div class="pg-i">${place(x[0], x[1])}<${Diff} a=${null} b=${x[1]} /></div>`; })}
-          ${list('{{t:Removed}}', c.rm, function (x) { return html`<div class="pg-i"><div class="dv"><del>${plain(x[1])}</del></div></div>`; })}
-        </div>`;
-      })}`;
-  }
-
-  // ---- one block: its HTML, the edits drawn into it, its comments and tools ----
+  // ---- one block: its HTML at T, the edits since S drawn into it, its comments ----
   function Block(props) {
-    var b = props.b, page = props.page, ptr = b.p, work = props.work, a = page.id + (ptr || '');
+    var b = props.b, page = props.page, ptr = b.p, s = props.s, t = props.t, past = t < last, a = page.id + (ptr || '');
     var body = useRef(null), whole = useState(null), lost = useState({}), more = useState(false);
-    var before = work && ptr ? changedSince(page, ptr, props.since) : undefined;
+    var at = past && ptr ? versionAt(versions(page, ptr), t) : null, h = b.h;
+    if (at && at.t !== b.s) {
+      // tables, lists and objects have no old HTML: their old text is shown plain
+      h = at.h || (props.label ? '' : '<p>') + esc(plain(at.t)).replace(/\n/g, '<br>') + (props.label ? '' : '</p>');
+    }
+    var before = ptr ? between(page, ptr, s, t) : undefined;
     var changed = before !== undefined, isNew = before === null;
-    var mine = work && ptr ? commentsOn(props.comments, page.id, ptr) : [];
-    var repo = work && ptr ? commentsOn(imported, page.id, ptr) : [];
+    var mine = ptr && !past ? commentsOn(props.comments, page.id, ptr) : [];
+    var repo = ptr && !past ? commentsOn(imported, page.id, ptr) : [];
     var frags = mine.concat(repo).filter(function (c) { return c.fragment; });
-    var key = (work ? 'w' : 'r') + props.since + frags.map(function (c) { return c.id; }).join();
+    var key = s + ':' + t + ':' + frags.map(function (c) { return c.id; }).join();
     useEffect(function () {
       var el = body.current, gone = {};
       whole[1](null);
-      if (!el || !work) { lost[1](gone); return; }
+      if (!el) { lost[1](gone); return; }
       if (changed && !isNew && !drawDiff(el, before)) { whole[1](el.querySelector('pre') ? 'code' : 'text'); }
       var text = readText(el).text;
       frags.forEach(function (c) {
@@ -682,24 +618,17 @@
       });
       lost[1](gone);
     }, [key]);
-    var inner = html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: b.h }}></div>`;
-    if (props.label) { inner = html`<div class="blk-body prop" key=${key} id=${props.id}><div class="pk">${props.label}</div><div ref=${body} dangerouslySetInnerHTML=${{ __html: b.h }}></div></div>`; }
-    if (!ptr || !work) { return html`<div class=${'blk' + (props.label ? ' is-prop' : '')} data-p=${ptr || undefined} data-a=${ptr ? a : undefined} tabindex=${ptr ? '-1' : undefined}>${inner}</div>`; }
+    var inner = html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: h }}></div>`;
+    if (props.label) { inner = html`<div class="blk-body prop" key=${key} id=${props.id}><div class="pk">${props.label}</div><div ref=${body} dangerouslySetInnerHTML=${{ __html: h }}></div></div>`; }
+    if (!ptr) { return html`<div class=${'blk' + (props.label ? ' is-prop' : '')}>${inner}</div>`; }
     var cards = repo.map(function (c) { return [c, true]; }).concat(mine.map(function (c) { return [c, false]; }));
     var shown = more[0] || cards.length <= 2 ? cards : cards.slice(0, 2);
-    var vs = versions(page, ptr), item = props.item, seen = item ? viewState(item) : '';
-    var cls = 'blk' + (props.label ? ' is-prop' : '') + (changed ? (isNew ? ' new' : ' chg') : '') + (seen === 'yes' ? ' seen' : '') +
-      (props.cur === a ? ' cur' : '') + (cards.length ? ' has-c' : '');
-    return html`<div class=${cls} data-p=${ptr} data-a=${a} tabindex="-1"
-      onClick=${function (e) { if (!e.target.closest('a,button,input,textarea,summary,.blk-side')) { props.setCur(a); } }}>
+    var cls = 'blk' + (props.label ? ' is-prop' : '') + (changed ? (isNew ? ' new' : ' chg') : '') + (props.cur === a ? ' cur' : '') + (cards.length ? ' has-c' : '');
+    return html`<div class=${cls} data-p=${ptr} data-a=${a} tabindex="-1">
       ${changed && html`<span class="sr">${isNew ? '{{t:new paragraph}}' : '{{t:changed paragraph}}'}</span>`}
       ${whole[0] && html`<details class="old" open=${whole[0] === 'code'}><summary>{{t:Previous text}}</summary><div class="dv"><del>${plain(before)}</del></div></details>`}
       ${inner}
       <div class="blk-side">
-        <div class="tools">
-          <button type="button" class="btn sm" onClick=${function () { props.setCur(a); props.openEditor({ page: page, ptr: ptr, quote: b.s }); }}>💬 {{t:Comment}}</button>
-          ${vs.length > 1 && html`<button type="button" class="btn sm" onClick=${function () { props.history(page, ptr); }}>🕘 {{t:History}}</button>`}
-        </div>
         ${shown.map(function (x) { return html`<${Card} key=${x[0].id} c=${x[0]} repo=${x[1]} lost=${lost[0][x[0].id]} active=${props.activeC === x[0].id} />`; })}
         ${cards.length > 2 && !more[0] && html`<button type="button" class="link" onClick=${function () { more[1](true); }}>{{t:More comments:}} ${cards.length - 2}</button>`}
         ${props.editor && props.editor.ptr === ptr && props.editor.page === page && html`<${Editor} page=${page} ptr=${ptr} quote=${b.s} frag=${props.editor.frag} close=${props.closeEditor} />`}
@@ -707,13 +636,46 @@
     </div>`;
   }
 
-  // a removed paragraph in its old place, folded
+  // a paragraph removed between S and T, in its old place, folded
   function Ghost(props) {
-    var g = props.g, it = { a: g.a, t: g.t };
-    return html`<details class=${'ghost' + (viewState(it) === 'yes' ? ' seen' : '') + (props.cur === g.a ? ' cur' : '')} data-a=${g.a} tabindex="-1">
+    var g = props.g;
+    return html`<details class=${'ghost' + (props.cur === g.a ? ' cur' : '')} data-a=${g.a} tabindex="-1">
       <summary><span class="sr">{{t:removed paragraph}}. </span>{{t:Removed paragraph:}} “${snip(g.t, 60)}”</summary>
       <div class="dv"><del>${plain(g.t)}</del></div>
     </details>`;
+  }
+  // a paragraph removed after T: at T it was still there
+  function Old(props) {
+    var g = props.g;
+    return html`<div class=${'blk' + (g.isNew ? ' new' : '') + (props.cur === g.a ? ' cur' : '')} data-a=${g.a} tabindex="-1">
+      ${g.isNew && html`<span class="sr">{{t:new paragraph}}</span>`}<div class="blk-body"><p class="dv">${plain(g.t)}</p></div></div>`;
+  }
+
+  // the timeline: two ends on one track, the edits are drawn between them
+  function Timeline(props) {
+    var s = props.s, t = props.t, touched = {};
+    pageChanges(props.page).forEach(function (c) { touched[c.c] = true; });
+    var pc = function (k) { return (k / last * 100).toFixed(2) + '%'; };
+    // a range input that was clamped keeps the clamped value on screen
+    function input(fn) { return function (e) { var v = fn(+e.target.value); if (v !== +e.target.value) { e.target.value = v; } }; }
+    return html`<div class="tl" role="group" aria-label="{{t:Timeline}}">
+      <div class="tl-h">
+        <span class="tl-s-l">{{t:Edits since:}} <b>${sinceLabel(s)}</b></span>
+        <span class="tl-t-l">{{t:Text as of:}} <b>${atLabel(t)}</b></span>
+      </div>
+      <div class=${'tl-r' + (s === t && t === last ? ' s-top' : '')}>
+        <div class="tl-in">
+          <div class="tl-line"></div>
+          <div class="tl-sel" style=${'left:' + pc(s) + ';width:' + pc(t - s)}></div>
+          ${commits.map(function (c, k) { return html`<span class=${'tl-k' + (touched[k] ? ' on' : '')} style=${'left:' + pc(k)} title=${ago(k) + ' · ' + versionLine(k)}></span>`; })}
+        </div>
+        <input type="range" class="tl-s" min="0" max=${last} step="1" value=${s} aria-label="{{t:Edits since:}}" aria-valuetext=${sinceLabel(s)}
+          onInput=${input(function (v) { v = Math.min(v, t); props.setS(v); return v; })} />
+        <input type="range" class="tl-t" min="0" max=${last} step="1" value=${t} aria-label="{{t:Text as of:}}" aria-valuetext=${atLabel(t)}
+          onInput=${input(function (v) { props.setT(v); return v; })} />
+      </div>
+      <div class="tl-f"><span>${ago(0)}</span><small>{{t:Darker marks: saves that changed this page}}</small><span>{{t:now}}</span></div>
+    </div>`;
   }
 
   // ---- page ----
@@ -731,23 +693,9 @@
       low = top + shift + h;
     });
   }
-  function Chip(props) {
-    var p = byId[props.id];
-    return p ? html`<a class="pchip" href=${'#' + p.id}>${p.title}</a>` : null;
-  }
-  function Overview(props) {
-    var ch = props.changes, rows = pages.filter(function (p) { return pageDelta(p, props.since).items.length; });
-    return html`<section class="overview" aria-label="{{t:Overview of edits}}">
-      <h2>{{t:Edits since}} ${props.from}</h2>
-      <p>{{t:Changed:}} ${ch.chg} · {{t:Added:}} ${ch.add} · {{t:Removed:}} ${ch.rm}</p>
-      <ul>${rows.map(function (p) { return html`<li><a href=${'#' + p.id}>${p.title}</a> — ${pageDelta(p, props.since).items.length}</li>`; })}</ul>
-      <div class="row"><button type="button" class="btn pri" onClick=${props.start}>{{t:Start review}}</button>
-        <button type="button" class="btn" onClick=${props.hide}>{{t:Not now}}</button></div>
-    </section>`;
-  }
 
   function Page(props) {
-    var page = props.page, main = useRef(null), work = props.work;
+    var page = props.page, main = useRef(null), s = props.s, t = props.t, past = t < last;
     // heading anchors and copy buttons inside the rendered Markdown
     useEffect(function () {
       var el = main.current;
@@ -793,53 +741,38 @@
         window.removeEventListener('resize', relayout); document.removeEventListener('toggle', relayout, true); document.removeEventListener('input', relayout, true);
       };
     });
-    var prev = pages[page.i - 1], next = pages[page.i + 1];
-    var shown = {}; shown[page.id] = true;
-    (page.kids || []).forEach(function (k) { shown[k] = true; });
-    if (page.parent) { shown[page.parent] = true; }
-    (page.crumbs || []).forEach(function (k) { shown[k] = true; });
-    var refs = (page.refs || []).filter(function (r) { return !shown[r]; });
-    var d = pageDelta(page, work ? props.since : null), items = {};
-    d.items.forEach(function (it) { items[it.a] = it; });
-    var bl = { comments: props.comments, since: props.since, page: page, work: work, cur: props.cur, setCur: props.setCur,
-      editor: props.editor, openEditor: props.openEditor, closeEditor: props.closeEditor, history: props.history, activeC: props.activeC };
-    function ghosts(i) {
-      return work ? d.ghosts.filter(function (g) { return g.at === i; }).map(function (g) { return html`<${Ghost} key=${g.a} g=${g} cur=${props.cur} />`; }) : null;
+    var prev = pages[page.i - 1], next = pages[page.i + 1], d = pageDelta(page, s, t);
+    var bl = { comments: props.comments, s: s, t: t, page: page, cur: props.cur, editor: props.editor, closeEditor: props.closeEditor, activeC: props.activeC };
+    function extra(i) {
+      return d.ghosts.filter(function (g) { return g.at === i; }).map(function (g) { return html`<${Ghost} key=${g.a} g=${g} cur=${props.cur} />`; })
+        .concat(d.olds.filter(function (g) { return g.at === i; }).map(function (g) { return html`<${Old} key=${g.a} g=${g} cur=${props.cur} />`; }));
     }
-    var badges = work && (page.kind || page.status || page.priority || page.hidden || page.tags);
-    return html`<article class=${'page' + (work ? ' work' : '')} ref=${main}>
+    var here = function (b) { return !b.p || !absent(page, b.p, t); };
+    var ps = (page.props || []).filter(here);
+    return html`<article class="page" ref=${main}>
       ${D.brand.print && html`<div dangerouslySetInnerHTML=${{ __html: D.brand.print }}></div>`}
       ${props.missing && html`<p class="notice" role="alert">{{t:Nothing is found at this link:}} «${props.missing}». {{t:The first page is shown; find the place in the tree or the search.}}</p>`}
-      ${props.overview}
       ${page.crumbs && html`<nav class="crumbs" aria-label="{{t:Breadcrumb}}">${page.crumbs.map(function (id, k) {
         return html`${k > 0 && html`<span aria-hidden="true">›</span>`}<a href=${'#' + id}>${byId[id] ? byId[id].title : id}</a>`;
       })}</nav>`}
+      ${last > 0 && html`<${Timeline} page=${page} s=${s} t=${t} setS=${props.setS} setT=${props.setT} />`}
+      ${past && html`<p class="notice past" role="status">{{t:You are looking at the page as it was}} ${ago(t)} (${when(t)}). {{t:Comments can be left on the current text only.}}
+        <button type="button" class="btn sm" onClick=${function () { props.setT(last); }}>{{t:Back to now}}</button></p>`}
       <h1>${page.title}</h1>
-      ${page.hidden && !work && html`<p class="badges"><span class="chip bad">{{t:hidden}}</span></p>`}
-      ${badges && html`<p class="badges">
-        ${page.kind && html`<span class="chip kind">${page.kind}</span>`}
-        ${page.status && html`<span class=${'chip ' + (page.sc || '')}>${page.status}</span>`}
-        ${page.priority && html`<span class="chip">{{t:priority}} ${page.priority}</span>`}
-        ${page.hidden && html`<span class="chip bad">{{t:hidden}}</span>`}
-        ${(page.tags || []).map(function (t) { return html`<span class="chip tag">#${t}</span>`; })}
-      </p>`}
+      ${page.hidden && html`<p class="badges"><span class="chip bad">{{t:hidden}}</span></p>`}
       <div class="doc">
-        ${page.props && html`<div class="props">${page.props.map(function (p) {
-          return html`<${Block} ...${bl} key=${p.p || p.k} b=${p} label=${p.k} id=${p.id} item=${items[page.id + p.p]} />`;
+        ${ps.length > 0 && html`<div class="props">${ps.map(function (p) {
+          return html`<${Block} ...${bl} key=${p.p || p.k} b=${p} label=${p.k} id=${p.id} />`;
         })}</div>`}
         ${(page.blocks || []).map(function (b, i) {
-          return html`${ghosts(i)}<${Block} ...${bl} key=${b.p || 'x' + i} b=${b} item=${items[page.id + b.p]} />`;
+          return html`${extra(i)}${here(b) && html`<${Block} ...${bl} key=${b.p || 'x' + i} b=${b} />`}`;
         })}
-        ${ghosts((page.blocks || []).length)}
+        ${extra((page.blocks || []).length)}
       </div>
       ${page.kids && html`<h2 class="rh">{{t:Pages in this section}}</h2><div class="rows">${page.kids.map(function (id) {
         var k = byId[id];
         return k && html`<a class="row" href=${'#' + id}><span class="ct">${k.title}</span>${k.summary && html`<span class="cs">${k.summary}</span>`}</a>`;
       })}</div>`}
-      ${work && (refs.length || page.covers) && html`<h2 class="rh">{{t:Related}}</h2><div class="related">
-        ${refs.length > 0 && html`<div class="rg"><span class="rl">{{t:Referenced by}}</span>${refs.map(function (id) { return html`<${Chip} id=${id} />`; })}</div>`}
-        ${page.covers && html`<div class="rg"><span class="rl">{{t:Covered by}}</span>${page.covers.map(function (c) { return html`<code>${c}</code>`; })}</div>`}
-      </div>`}
       ${(prev || next) && html`<nav class="pn" aria-label="{{t:Neighbouring pages}}">
         ${prev && html`<a class="prev" href=${'#' + prev.id}><small>{{t:Previous}}</small><span>${prev.title}</span></a>`}
         ${next && html`<a class="next" href=${'#' + next.id}><small>{{t:Next}}</small><span>${next.title}</span></a>`}
@@ -859,14 +792,10 @@
     });
     return root.kids;
   }
-  var tree = nest(D.nav.tree), orphans = nest(D.nav.orphans);
+  // pages without a parent follow the tree at its top level
+  var tree = nest(D.nav.tree).concat(nest(D.nav.orphans));
   function contains(node, id) {
     return node.id === id || node.kids.some(function (k) { return contains(k, id); });
-  }
-  function subtreeEdits(node, since) {
-    var n = byId[node.id] ? pageDelta(byId[node.id], since).items.length : 0;
-    node.kids.forEach(function (k) { n += subtreeEdits(k, since); });
-    return n;
   }
   // long lists show a window of 30 items with buttons for the rest
   function Items(props) {
@@ -882,35 +811,27 @@
       ${hi < n && html`<li><button type="button" class="more" onClick=${function () { win[1]([lo, Math.min(n, hi + 30)]); }}>${n - hi} {{t:more}} ↓</button></li>`}
     </ul>`;
   }
+  // the top level is always open: folding it would leave an empty tree
   function Node(props) {
-    var x = props.node, p = byId[x.id], inside = contains(x, props.cur);
+    var x = props.node, p = byId[x.id], inside = contains(x, props.cur), top = !props.depth;
     var open = useState(null);
-    var isOpen = open[0] == null ? inside : open[0];
+    var isOpen = top || (open[0] == null ? inside : open[0]);
     useEffect(function () { if (inside) { open[1](null); } }, [props.cur]);
     if (!p) { return null; }
-    var n = props.work ? subtreeEdits(x, props.since) : 0, here = p.id === props.cur;
+    var here = p.id === props.cur;
     return html`<li class=${x.kids.length ? 'parent' : ''}>
-      ${x.kids.length > 0 && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
+      ${x.kids.length > 0 && !top && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
         aria-label=${(isOpen ? '{{t:Collapse}}' : '{{t:Expand}}') + ': ' + p.title} onClick=${function () { open[1](!isOpen); }}></button>`}
-      <a href=${'#' + p.id} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><span>${p.title}</span>${p.hidden && html` <span class="chip bad">{{t:hidden}}</span>`}${n > 0 && html`<span class="cnt" title=${'{{t:Edits}}: ' + n}><span class="sr">{{t:Edits}}: </span>${n}</span>`}</a>
+      <a href=${'#' + p.id} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><span>${p.title}</span>${p.hidden && html` <span class="chip bad">{{t:hidden}}</span>`}</a>
       ${here && props.toc.length > 0 && html`<ul class="toc">${props.toc.map(function (h) {
         return html`<li><a href=${'#' + h.id} class=${'l' + h.level + (props.spy === h.id ? ' on' : '')} onClick=${props.picked}>${h.text}</a></li>`;
       })}</ul>`}
-      ${x.kids.length > 0 && isOpen && html`<${Items} ...${props} nodes=${x.kids} />`}
+      ${x.kids.length > 0 && isOpen && html`<${Items} ...${props} depth=${(props.depth || 0) + 1} nodes=${x.kids} />`}
     </li>`;
-  }
-  function Group(props) {
-    var open = useState(false);
-    return html`<h3 class="gh"><button class="gt" type="button" aria-expanded=${open[0] ? 'true' : 'false'}
-      onClick=${function () { open[1](!open[0]); }}>${props.label} <span>${props.n}</span></button></h3>
-      ${open[0] && html`<div class="gb">${props.children}</div>`}`;
   }
   function Tree(props) {
     return html`<nav id="tree" aria-label="{{t:Document tree}}">
-      ${tree.length > 0 && html`<${Items} ...${props} nodes=${tree} />`}
-      ${orphans.length > 0 && html`<${Group} label="{{t:Without parent}}" n=${D.nav.orphans.length}><${Items} ...${props} nodes=${orphans} /><//>`}
-      ${D.nav.uncovered && html`<${Group} label="{{t:Documents without code coverage}}" n=${D.nav.uncovered.length}>
-        <ul>${D.nav.uncovered.map(function (id) { return html`<li><a href=${'#' + id} onClick=${props.picked}>${byId[id] ? byId[id].title : id}</a></li>`; })}</ul><//>`}
+      ${tree.length > 0 && html`<${Items} ...${props} depth=${0} nodes=${tree} />`}
     </nav>`;
   }
 
@@ -966,60 +887,61 @@
     </div>`;
   }
 
-  function glyph(k) { return k === 'new' ? '+' : k === 'rm' ? '−' : '~'; }
-  function left(list) { return list.filter(function (it) { return viewState(it) !== 'yes'; }).length; }
+  var kindWord = { chg: '{{t:edited}}', 'new': '{{t:new}}', rm: '{{t:removed}}' };
   function EditsTab(props) {
-    var list = props.changes ? props.changes.list : [], groups = [];
+    var list = props.changes.list, groups = [];
     list.forEach(function (it, k) {
       var g = groups[groups.length - 1];
-      if (!g || g.page !== it.page) { g = { page: it.page, rows: [] }; groups.push(g); }
-      g.rows.push([it, k]);
+      if (!g || g.page !== it.page) { g = { page: it.page, rows: [], n: { chg: 0, 'new': 0, rm: 0 } }; groups.push(g); }
+      g.rows.push([it, k]); g.n[it.k]++;
     });
     // the list opens at the current edit, else at the current page
     useEffect(function () {
       var on = document.querySelector('.er.on') || document.querySelector('.eg[data-pg="' + CSS.escape(props.page.id) + '"]');
       if (on) { on.scrollIntoView({ block: 'center' }); }
     }, [props.cur, props.page]);
-    if (!list.length) { return html`<p class="muted pad">{{t:No changes}}</p>`; }
-    var rest = left(list);
+    if (last < 1) { return html`<p class="muted pad">{{t:The documentation has no saved history yet.}}</p>`; }
+    if (!list.length) { return html`<p class="muted pad">{{t:No edits in the chosen period. Move the left end of the timeline above the page to the past to see them.}}</p>`; }
     return html`<div class="pad">
-      <p class="left">${rest ? '{{t:Left}} ' + rest + ' {{t:of}} ' + list.length : '{{t:All changes viewed}}'}</p>
-      <progress max=${list.length} value=${list.length - rest} aria-label="{{t:Viewed}}"></progress>
+      <p class="left">{{t:Edits}}: ${list.length} · ${sinceLabel(props.s)} → ${atLabel(props.t)}</p>
       ${groups.map(function (g) {
-        return html`<h3 class="eg" data-pg=${g.page.id}>${g.page.title} <span>${g.rows.length}</span></h3><ul class="edits">${g.rows.map(function (x) {
-          var it = x[0], st = viewState(it);
+        var n = [['{{t:Changed:}}', g.n.chg], ['{{t:Added:}}', g.n['new']], ['{{t:Removed:}}', g.n.rm]].filter(function (x) { return x[1]; });
+        return html`<h3 class="eg" data-pg=${g.page.id}>${g.page.title}</h3>
+          <p class="es">${n.map(function (x) { return x[0] + ' ' + x[1]; }).join(' · ')}</p>
+          <ul class="edits">${g.rows.map(function (x) {
+          var it = x[0];
           return html`<li><button type="button" class=${'er ' + it.k + (x[1] === props.cur ? ' on' : '')} onClick=${function () { props.go(x[1]); }}>
-            <span class=${'g ' + it.k} aria-hidden="true">${st === 'yes' ? '✓' : glyph(it.k)}</span>
-            <span class="sr">${it.k === 'new' ? '{{t:new paragraph}}' : it.k === 'rm' ? '{{t:removed paragraph}}' : '{{t:changed paragraph}}'}${st === 'yes' ? ', {{t:viewed}}' : ''}: </span>
-            <span class="et">${snip(it.t, 60)}${st === 'again' && html` <small class="again">{{t:Changed after you viewed it}}</small>`}</span></button></li>`;
+            <span class=${'g ' + it.k}>${kindWord[it.k]}</span><span class="et">${snip(it.t, 60)}</span></button></li>`;
         })}</ul>`;
       })}
     </div>`;
   }
   function CommentsTab(props) {
-    var list = props.comments, wait = unsent(list), rows = [];
+    var list = props.comments, rows = [];
     list.forEach(function (c) { rows.push([c, false]); });
     imported.forEach(function (c) { rows.push([c, true]); });
     return html`<div class="pad">
-      ${wait > 0 && html`<div class="send" id="send">
-        <p>{{t:Comments are kept only in this browser until you send them to the team.}}</p>
-        <div class="row"><button type="button" class="btn pri" onClick=${sendCopy}>📋 {{t:Copy for sending}}</button>
+      ${list.length > 0 && html`<div class="send" id="send">
+        <p>{{t:Your comments are kept only in this browser. Copy them or download a file and pass it to whoever keeps the documentation.}}</p>
+        <div class="row"><button type="button" class="btn pri" onClick=${sendCopy}>📋 {{t:Copy comments}}</button>
           <button type="button" class="btn" onClick=${sendFile}>{{t:Download as a file}}</button></div>
       </div>`}
-      ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text or press «Comment» next to a paragraph.}}</p>`}
+      ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text on the page to comment on it.}}</p>`}
       <ul class="clist">${rows.map(function (x) {
         var c = x[0], p = byId[c.doc];
         return html`<li><button type="button" class="cr" onClick=${function () { props.show(c); }}>
           <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : placeOf(p, c.path, c.quote)}</span>
-          <span class="ctx">${c.text}</span><${Status} c=${c} repo=${x[1]} /></button></li>`;
+          <span class="ctx">${c.text}</span>
+          ${c.author && html`<span class="cp">— ${c.author}</span>`}
+          ${c.reply && html`<span class="crep"><b>{{t:Answer}}:</b> ${c.reply}</span>`}</button></li>`;
       })}</ul>
     </div>`;
   }
   // tabs after the WAI-ARIA pattern: arrows move between them
   function Side(props) {
-    var tabs = props.work ? [['pages', '{{t:Pages}}', 0], ['edits', '{{t:Edits}}', props.changes ? props.changes.list.length : 0],
-      ['comments', '{{t:Comments}}', props.comments.length + imported.length]] : null;
-    var tab = props.work ? props.tab : 'pages';
+    var tabs = [['pages', '{{t:Pages}}', 0], ['edits', '{{t:Edits}}', props.changes.list.length],
+      ['comments', '{{t:Comments}}', props.comments.length + imported.length]];
+    var tab = props.tab;
     function key(e) {
       var k = tabs.map(function (t) { return t[0]; }).indexOf(tab), n = tabs.length;
       var to = e.key === 'ArrowRight' ? (k + 1) % n : e.key === 'ArrowLeft' ? (k + n - 1) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
@@ -1033,107 +955,37 @@
         <${Search} q=${props.q} picked=${props.picked} go=${props.goHash} />
         ${D.full && html`<p class="banner">{{t:Full build: includes hidden documents and notes. Do not publish.}}</p>`}
       </div>
-      ${tabs && html`<div class="tabs" role="tablist" aria-label="{{t:Navigation}}" onKeyDown=${key}>${tabs.map(function (t) {
+      <div class="tabs" role="tablist" aria-label="{{t:Navigation}}" onKeyDown=${key}>${tabs.map(function (t) {
         return html`<button type="button" role="tab" id=${'tab-' + t[0]} aria-selected=${t[0] === tab ? 'true' : 'false'} aria-controls="tabpanel"
           tabindex=${t[0] === tab ? '0' : '-1'} onClick=${function () { props.setTab(t[0]); }}>${t[1]}${t[2] > 0 && html` <span class="tc">${t[2]}</span>`}</button>`;
-      })}</div>`}
-      <div id="tabpanel" role=${tabs ? 'tabpanel' : undefined} aria-labelledby=${tabs ? 'tab-' + tab : undefined} class="panel">
-        ${tab === 'pages' && html`<${Tree} cur=${props.page.id} since=${props.since} work=${props.work} toc=${props.toc} spy=${props.spy} picked=${props.picked} />`}
-        ${tab === 'edits' && html`<${EditsTab} changes=${props.changes} cur=${props.cur} page=${props.page} go=${function (k) { props.picked(); props.goItem(k); }} />`}
+      })}</div>
+      <div id="tabpanel" role="tabpanel" aria-labelledby=${'tab-' + tab} class="panel">
+        ${tab === 'pages' && html`<${Tree} cur=${props.page.id} toc=${props.toc} spy=${props.spy} picked=${props.picked} />`}
+        ${tab === 'edits' && html`<${EditsTab} changes=${props.changes} s=${props.s} t=${props.t} cur=${props.cur} page=${props.page} go=${function (k) { props.picked(); props.goItem(k); }} />`}
         ${tab === 'comments' && html`<${CommentsTab} comments=${props.comments} show=${function (c) { props.picked(); props.showComment(c); }} />`}
       </div>
     </div>`;
   }
 
-  // the edits one by one, like F7 in an IDE
-  function Navigator(props) {
-    var list = props.changes.list, it = list[props.cur], rest = left(list);
-    var text = props.cur < 0 ? '{{t:Edits}}: ' + list.length : '{{t:Change}} ' + (props.cur + 1) + ' {{t:of}} ' + list.length;
-    if (props.frag) {
-      return html`<div class="nav" role="region" aria-label="{{t:Comment on the selection}}">
-        <button type="button" class="btn pri" onMouseDown=${function (e) { e.preventDefault(); }} onClick=${props.fragGo}>💬 {{t:Comment on the selection}}</button></div>`;
-    }
-    return html`<div class="nav" role="region" aria-label="{{t:Edit navigation}}">
-      <button type="button" class="btn ico" aria-label="{{t:Previous change}}" title="{{t:Previous change}} (K)" onClick=${function () { props.step(-1); }}>◀</button>
-      <span class="pos">${text}${rest ? html`<span class="rest"> · {{t:left}} ${rest}</span>` : html`<span class="rest"> · {{t:All changes viewed}}</span>`}
-        ${it && viewState(it) === 'again' && html`<small class="again"> · {{t:Changed after you viewed it}}</small>`}
-        ${it && html`<span class="npg">${it.page.title}</span>`}</span>
-      <button type="button" class="btn ico" aria-label="{{t:Next change}}" title="{{t:Next change}} (J)" onClick=${function () { props.step(1); }}>▶</button>
-      ${it && html`<label class="seen-l"><input type="checkbox" checked=${viewState(it) === 'yes'} onChange=${function (e) { setViewed(it, e.target.checked); }} /> {{t:Viewed}}</label>`}
-    </div>`;
-  }
-  // ticks of the page's edits along the window edge, like the scrollbar of an IDE
-  function ChangeMap(props) {
-    var ticks = useState([]);
-    useEffect(function () {
-      function measure() {
-        var h = document.documentElement.scrollHeight || 1;
-        ticks[1](props.items.map(function (it) {
-          var el = document.querySelector('[data-a="' + CSS.escape(it.a) + '"]');
-          return el ? { it: it, y: (el.getBoundingClientRect().top + window.scrollY) / h } : null;
-        }).filter(Boolean));
-      }
-      measure();
-      var t = setTimeout(measure, 300);
-      window.addEventListener('resize', measure);
-      document.addEventListener('toggle', measure, true);
-      return function () { clearTimeout(t); window.removeEventListener('resize', measure); document.removeEventListener('toggle', measure, true); };
-    }, [props.items, props.comments]);
-    return html`<div class="cmap" aria-hidden="true">${ticks[0].map(function (x) {
-      return html`<span class=${'tk ' + x.it.k + (viewState(x.it) === 'yes' ? ' seen' : '') + (props.curA === x.it.a ? ' on' : '')}
-        style=${'top:' + (x.y * 100).toFixed(2) + '%'} title=${snip(x.it.t, 40)} onClick=${function () { props.go(x.it); }}></span>`;
-    })}</div>`;
-  }
-
-  function Keys() {
-    var rows = [['F7 · J', '{{t:next change}}'], ['Shift+F7 · K', '{{t:previous change}}'], ['V', '{{t:mark viewed and go to the next}}'],
-      ['C', '{{t:comment on the selection or the paragraph}}'], ['/ · Ctrl+K', '{{t:Search}}'], ['?', '{{t:this help}}'], ['Esc', '{{t:close}}'], ['Ctrl+Enter', '{{t:save the comment}}']];
-    return html`<h3>{{t:Colours}}</h3>
-      <ul class="legend">
-        <li><ins>{{t:added text}}</ins></li><li><del>{{t:removed text}}</del></li>
-        <li><span class="lb chg"></span>{{t:changed paragraph}}</li><li><span class="lb new"></span>{{t:new paragraph}}</li>
-        <li><span class="lb rm"></span>{{t:removed paragraph}}</li><li><span class="lb chg seen"></span>{{t:viewed}}</li>
-        <li><mark class="frag">{{t:commented fragment}}</mark></li>
-      </ul>
-      <h3>{{t:Keys}}</h3>
-      <dl class="keys">${rows.map(function (r) { return html`<dt><kbd>${r[0]}</kbd></dt><dd>${r[1]}</dd>`; })}</dl>
-      <p class="muted">{{t:The letter keys work in the Work mode, outside text fields.}}</p>`;
-  }
-  function SinceDialog(props) {
-    var real = [];
-    commits.forEach(function (c, k) { if (c.h) { real.push(k); } });
-    function label(k) { return k === 0 && H.base ? '{{t:the version sent on}} ' + date(0) : versionLine(k); }
-    return html`<label class="since-l">{{t:Show changes since}}
-      <select value=${props.since == null ? '' : String(props.since)} onChange=${function (e) { props.set(e.target.value === '' ? null : +e.target.value); }}>
-        <option value="">{{t:do not show}}</option>
-        ${real.slice().reverse().map(function (k) { return html`<option value=${String(k)}>${label(k)}</option>`; })}
-      </select></label>`;
-  }
-  // «⋯»: a native popover with plain buttons
+  // «⋯»: a native popover; it holds the reset
   function More(props) {
     var pop = useRef(null);
-    function item(label, fn, cls) {
-      return html`<button type="button" class=${'mi' + (cls ? ' ' + cls : '')} onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } fn(); }}>${label}</button>`;
-    }
-    var page = props.page, work = props.work, n = unsent(props.comments);
-    return html`<button type="button" class="btn ico more-b" popovertarget="more" aria-label="{{t:More actions}}" title="{{t:More actions}}">⋯${n > 0 && html`<span class="dot" aria-hidden="true"></span>`}</button>
+    return html`<button type="button" class="btn ico more-b" popovertarget="more" aria-label="{{t:More actions}}" title="{{t:More actions}}">⋯</button>
       <div id="more" popover="auto" ref=${pop} class="pop">
-        ${work && props.changes && props.changes.list.length > 0 && item('{{t:Overview of edits}}', props.overview)}
-        ${commits.some(function (c) { return c.h; }) && item('{{t:Starting point…}}', function () { props.dialog('since'); })}
-        ${work && commits.length > 0 && item('{{t:History of the page}}', function () { props.dialog('page'); })}
-        ${work && props.blockHist && item('{{t:History of the paragraph}}', props.blockHist)}
-        <hr />
-        ${item('{{t:Download this page (.md)}}', function () { save(page.id + '.md', 'text/markdown', page.md); })}
-        ${item('{{t:Download all in one file (.md)}}', function () { save('docs.md', 'text/markdown', D.single); })}
-        ${item('{{t:Download all as an archive (.zip)}}', function () { save('docs.zip', 'application/zip', unzip64(D.zip)); })}
-        ${item('{{t:Print}}', function () { window.print(); })}
-        <hr />
-        ${n > 0 && item('{{t:Send comments}} (' + n + ')', props.send, 'phone')}
-        ${item('{{t:Keys and colours}}', function () { props.dialog('keys'); })}
-        ${props.comments.length > 0 && item('{{t:Delete all my comments}}', function () {
-          if (confirm('{{t:Delete all comments of this browser?}}')) { setLocal([]); }
-        }, 'bad')}
+        <button type="button" class="mi bad" onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } props.reset(); }}>{{t:Reset everything…}}</button>
       </div>`;
+  }
+  // everything this file keeps in the browser: the name, the timeline, the tab, the comments
+  function resetAll() {
+    if (!confirm('{{t:Delete from this browser your name, the chosen point of the timeline, the open tab and your comments}} (' + local.length + ')?')) { return; }
+    draft = false;
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(D.key + ':') === 0) { localStorage.removeItem(k); }
+      }
+    } catch (e) { /* storage blocked: nothing kept */ }
+    location.reload();
   }
 
   // the selected text of one block, with what stands around it, for a comment on a fragment
@@ -1141,7 +993,7 @@
     var s = window.getSelection();
     if (!s || s.isCollapsed || !s.rangeCount) { return null; }
     var r = s.getRangeAt(0), start = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentNode;
-    var body = start.closest && start.closest('.blk-body'), blk = body && body.closest('.blk[data-a]');
+    var body = start.closest && start.closest('.blk-body'), blk = body && body.closest('.blk[data-p]');
     if (!blk) { return null; }
     if (!body.contains(r.endContainer)) { r = r.cloneRange(); r.setEnd(body, body.childNodes.length); }
     var frag = cleanText(r.cloneContents()).replace(/\s+/g, ' ').trim();
@@ -1156,72 +1008,43 @@
 
   function App() {
     var r = useState(route(location.hash)), wide = useState(mq('(min-width: 1280px)')), drawer = useState(false);
-    var q = useState(''), tab = useState(store('tab') || 'pages'), mode = useState(store('mode') || 'read');
-    var sinceHash = useState(store('since')), cur = useState(-1), curA = useState(null), editor = useState(null);
-    var dlg = useState(null), toc = useState([]), spy = useState(null), frag = useState(null), activeC = useState(null);
-    var ovOff = useState(!!store('overview')), hint = useState(!!store('hint')), live = useState('');
-    var comments = useComments(), seen = useViewed(), pending = useRef(null), keep = useRef(null), dr = useRef(null);
-    var page = r[0].page, work = mode[0] === 'work';
-    // the chosen version is kept by hash: indexes change with every commit;
-    // the file's own starting point is the default, "off" turns it off
-    var since = null;
-    commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { since = k; } });
-    if (since == null && sinceHash[0] !== 'off' && H.base && commits.length) { since = 0; }
-    var all = since != null ? allChanges(since) : null, changes = work ? all : null;
-    var count = all ? all.list.length : 0, from = since != null ? date(since) : '';
-    void seen;
+    var q = useState(''), tab = useState(store('tab') || 'pages');
+    // S is kept by hash (indexes change with every commit), «now» as now;
+    // the starting point of docc.json is the default. T always opens at now.
+    var sinceHash = useState(store('since')), atK = useState(last), cur = useState(-1), editor = useState(null);
+    var toc = useState([]), spy = useState(null), frag = useState(null), activeC = useState(null);
+    var comments = useComments(), pending = useRef(null), dr = useRef(null);
+    var page = r[0].page, t = atK[0], s = -1, past = t < last;
+    if (sinceHash[0] === 'now') { s = last; } else { commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { s = k; } }); }
+    if (s < 0) { s = H.base ? 0 : last; }
+    s = Math.min(s, t);
+    var all = allChanges(s, t);
 
-    function setMode(m) {
-      // keep the paragraph at the top of the window where it is
-      var top = [].filter.call(document.querySelectorAll('.blk[data-a]'), function (b) { return b.getBoundingClientRect().bottom > 80; })[0];
-      keep.current = top && window.scrollY > 40 ? top.getAttribute('data-a') : null;
-      mode[1](m); store('mode', m);
-      if (m === 'work') { hint[1](true); store('hint', true); }
-    }
     function setTab(t) { tab[1](t); store('tab', t); }
-    function setSince(v) { var h = v == null ? 'off' : commits[v].h; sinceHash[1](h); store('since', h); cur[1](-1); }
+    function setS(v) { var h = v >= last ? 'now' : commits[v].h; sinceHash[1](h); store('since', h); cur[1](-1); }
+    function setT(v) {
+      if (v < last && editor[0]) { if (!leaveDraft()) { return; } draft = false; editor[1](null); }
+      atK[1](v); cur[1](-1); frag[1](null);
+      if (v < s) { setS(v); }
+    }
     function find(a) { return a && document.querySelector('[data-a="' + CSS.escape(a) + '"]'); }
-    function focusEl(el, say) {
+    function focusEl(el) {
       (el.tagName === 'DETAILS' ? el.querySelector('summary') : el).focus({ preventScroll: true });
       var tall = el.offsetHeight > window.innerHeight - 160;
       el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: reduced ? 'auto' : 'smooth' });
       if (!reduced) { el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 900); }
-      if (say) { live[1](say); }
     }
     function goItem(k) {
-      var list = all.list, it = list[k];
+      var it = all.list[k];
       if (!it) { return; }
-      cur[1](k); curA[1](it.a); pending.current = it.a;
-      if (!ovOff[0]) { ovOff[1](true); store('overview', true); }
-      var kind = it.k === 'new' ? '{{t:new paragraph}}' : it.k === 'rm' ? '{{t:removed paragraph}}' : '{{t:changed paragraph}}';
-      pending.say = '{{t:Change}} ' + (k + 1) + ' {{t:of}} ' + list.length + ': ' + kind + ', ' + it.page.title;
-      if (it.page !== page) { toast('{{t:Page:}} «' + it.page.title + '»'); }
-      var h = it.k === 'rm' ? '#' + it.page.id : blockHash(it.page.id, it.ptr);
-      if (it.page === page && (it.k === 'rm' || decode(location.hash) === decode(h))) { var el = find(it.a); pending.current = null; if (el) { focusEl(el, pending.say); } }
+      cur[1](k); pending.current = it.a;
+      // removed blocks have no address of their own: the page, then the block
+      var gone = it.a.indexOf('~') > 0, h = gone ? '#' + it.page.id : blockHash(it.page.id, it.ptr);
+      if (it.page === page && (gone || decode(location.hash) === decode(h))) { var el = find(it.a); pending.current = null; if (el) { focusEl(el); } }
       else { location.hash = h; }
     }
-    function step(d) {
-      var n = all.list.length;
-      if (!n) { return; }
-      goItem(cur[0] < 0 ? (d > 0 ? 0 : n - 1) : (cur[0] + d + n) % n);
-    }
-    function nextUnviewed() {
-      var list = all.list, n = list.length;
-      for (var i = 1; i <= n; i++) {
-        var k = ((cur[0] < 0 ? -1 : cur[0]) + i) % n;
-        if (viewState(list[k]) !== 'yes') { goItem(k); return; }
-      }
-      toast('{{t:All changes viewed}}');
-    }
-    function markViewed() {
-      var it = all.list[cur[0]];
-      if (!it) { nextUnviewed(); return; }
-      setViewed(it, true);
-      toast('{{t:Marked as viewed.}}', '{{t:Undo}}', function () { setViewed(it, false); });
-      nextUnviewed();
-    }
     function openEditor(e) {
-      if (!work || (editor[0] && !leaveDraft())) { return; }
+      if (past || (editor[0] && !leaveDraft())) { return; }
       draft = false; editor[1](e); frag[1](null);
     }
     function blockOf(a) {
@@ -1229,29 +1052,15 @@
       var ptr = a.slice(page.id.length);
       return blocksOf(page).filter(function (b) { return b.p === ptr; })[0] || null;
     }
-    function commentKey() {
+    function commentSel() {
       var f = frag[0] || selected();
-      if (f) { openEditor({ page: page, ptr: f.ptr, quote: (blockOf(f.a) || {}).s, frag: f.frag }); return; }
-      var b = blockOf(curA[0]) || blockOf((function () {
-        // only a paragraph in the window: an editor out of sight would take the typing
-        var seen = [].filter.call(document.querySelectorAll('.blk[data-a]'), function (x) {
-          var q = x.getBoundingClientRect(); return q.bottom > 80 && q.top < window.innerHeight * 0.6;
-        });
-        var mid = seen[seen.length - 1];
-        return mid && mid.getAttribute('data-a');
-      })());
-      if (b) { curA[1](page.id + b.p); openEditor({ page: page, ptr: b.p, quote: b.s }); } else { toast('{{t:No paragraph in the window to comment on.}}'); }
+      if (f) { openEditor({ page: page, ptr: f.ptr, quote: (blockOf(f.a) || {}).s, frag: f.frag }); }
     }
     function showComment(c) {
-      if (!work) { setMode('work'); }
+      if (past) { setT(last); }
       activeC[1](c.id); pending.current = 'c:' + c.id;
       var h = blockHash(c.doc, c.path);
       if (decode(location.hash) === decode(h)) { r[1](route(h)); } else { location.hash = h; }
-    }
-    function openSend() {
-      if (!work) { setMode('work'); }
-      setTab('comments'); if (!wide[0]) { drawer[1](true); }
-      setTimeout(function () { var s = document.querySelector('#send .btn'); if (s) { s.focus(); } }, 50);
     }
     function picked() { if (!wide[0]) { drawer[1](false); } }
 
@@ -1271,6 +1080,7 @@
       function bp() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.dataset.was = d.open ? '1' : ''; d.open = true; }); }
       function ap() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.open = !!d.dataset.was; }); }
       window.addEventListener('beforeprint', bp); window.addEventListener('afterprint', ap);
+      document.documentElement.classList.toggle('has-tl', last > 0);
       return function () {
         window.removeEventListener('hashchange', on); window.removeEventListener('scroll', onScroll);
         if (m && m.removeEventListener) { m.removeEventListener('change', w); }
@@ -1280,28 +1090,22 @@
     // after a new page or address: the place to show
     useEffect(function () {
       document.title = page === pages[0] ? D.title : page.title + ' · ' + D.title;
-      var st = history.state, t = r[0].target && document.getElementById(r[0].target);
+      var st = history.state, tg = r[0].target && document.getElementById(r[0].target);
       var b = r[0].block && document.querySelector('[data-p="' + CSS.escape(r[0].block) + '"]');
       var p = pending.current;
       pending.current = null;
       if (p && p.indexOf('c:') === 0) {
         var card = document.querySelector('.card[data-c="' + CSS.escape(p.slice(2)) + '"]');
         if (card) { focusEl(card); } else if (b) { focusEl(b); }
-      } else if (p && find(p)) { focusEl(find(p), pending.say); }
+      } else if (p && find(p)) { focusEl(find(p)); }
       else if (st && st.y != null && !r[0].block) { window.scrollTo({ top: st.y, behavior: 'instant' }); }
       else if (b) {
         focusEl(b);
-        if (all) { all.list.forEach(function (x, k) { if (x.page === page && x.ptr === r[0].block && x.k !== 'rm') { cur[1](k); curA[1](x.a); } }); }
-      } else if (t) { t.scrollIntoView({ behavior: 'instant' }); } else { window.scrollTo({ top: 0, behavior: 'instant' }); }
+        all.list.forEach(function (x, k) { if (x.page === page && x.ptr === r[0].block && x.k !== 'rm') { cur[1](k); } });
+      } else if (tg) { tg.scrollIntoView({ behavior: 'instant' }); } else { window.scrollTo({ top: 0, behavior: 'instant' }); }
       var here = document.querySelector('#tree [aria-current]');
       if (here) { here.scrollIntoView({ block: 'nearest' }); }
     }, [r[0]]);
-    useEffect(function () {
-      var el = keep.current && find(keep.current);
-      keep.current = null;
-      if (el) { el.scrollIntoView({ block: 'start', behavior: 'instant' }); }
-      document.documentElement.classList.toggle('w-mode', work && count > 0);
-    }, [mode[0]]);
     // the drawer is a modal <dialog> below 1280px
     useEffect(function () {
       var d = dr.current;
@@ -1319,35 +1123,28 @@
       toc[0].forEach(function (x) { var el = document.getElementById(x.id); if (el) { o.observe(el); } });
       return function () { o.disconnect(); };
     }, [toc[0]]);
-    // a comment on the selected words: a button under the selection, or a pill in the bottom bar on touch
+    // a comment on the selected words: a button under the selection, or in the bottom bar on touch
     useEffect(function () {
-      if (!work) { frag[1](null); return; }
-      var t;
+      if (past) { frag[1](null); return; }
+      var tm;
       function up() { setTimeout(function () { frag[1](selected()); }, 0); }
       function change() {
         var s = window.getSelection();
         if (!s || s.isCollapsed) { frag[1](null); return; }
-        if (coarse) { clearTimeout(t); t = setTimeout(function () { frag[1](selected()); }, 300); }
+        if (coarse) { clearTimeout(tm); tm = setTimeout(function () { frag[1](selected()); }, 300); }
       }
       function scroll() { if (!coarse) { frag[1](null); } }
       document.addEventListener('mouseup', up); document.addEventListener('selectionchange', change);
       window.addEventListener('scroll', scroll, { passive: true });
       return function () { document.removeEventListener('mouseup', up); document.removeEventListener('selectionchange', change); window.removeEventListener('scroll', scroll); };
-    }, [work]);
-    // keys: search, help, and the edits in the Work mode
+    }, [past]);
+    // keys: the search
     useEffect(function () {
       function key(e) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); goSearch(); return; }
         if (e.key === 'Escape') { frag[1](null); return; }
         if (e.ctrlKey || e.metaKey || e.altKey || typing() || document.querySelector('dialog[open]')) { return; }
-        var k = e.key;
-        if (k === '/') { e.preventDefault(); goSearch(); }
-        else if (k === '?') { dlg[1]('keys'); }
-        else if (!work) { return; }
-        else if ((k === 'F7' && !e.shiftKey) || k === 'j' || k === 'о') { e.preventDefault(); step(1); }
-        else if ((k === 'F7' && e.shiftKey) || k === 'k' || k === 'л') { e.preventDefault(); step(-1); }
-        else if (k === 'v' || k === 'м') { markViewed(); }
-        else if (k === 'c' || k === 'с') { e.preventDefault(); commentKey(); }
+        if (e.key === '/') { e.preventDefault(); goSearch(); }
       }
       document.addEventListener('keydown', key);
       return function () { document.removeEventListener('keydown', key); };
@@ -1357,59 +1154,40 @@
     }
     function setToc(items) { if (JSON.stringify(items) !== JSON.stringify(toc[0])) { toc[1](items); } }
 
-    var sideProps = { q: q, page: page, since: since, work: work, toc: toc[0], spy: spy[0], picked: picked, changes: changes, cur: cur[0],
+    var sideProps = { q: q, page: page, s: s, t: t, toc: toc[0], spy: spy[0], picked: picked, changes: all, cur: cur[0],
       goItem: goItem, comments: comments, tab: tab[0], setTab: setTab, showComment: showComment, goHash: function (h) { r[1](route(h)); } };
     var side = html`<${Side} ...${sideProps} />`;
-    var n = unsent(comments), pageItems = changes ? pageDelta(page, since).items : [];
-    var curBlock = blockOf(curA[0]), curHist = curBlock && versions(page, curBlock.p).length > 1;
-    var overview = work && changes && changes.list.length > 0 && !ovOff[0] && html`<${Overview} changes=${changes} since=${since} from=${from}
-      start=${function () { ovOff[1](true); store('overview', true); nextUnviewed(); }} hide=${function () { ovOff[1](true); store('overview', true); }} />`;
+    var curA = all.list[cur[0]] ? all.list[cur[0]].a : null;
+    // the margin for the cards opens only when the page has comments or an editor
+    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id; }));
     return html`
       <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>{{t:Skip to content}}</a>
       <header class="top" role="banner">
         ${!wide[0] && html`<button id="menu" type="button" class="btn ico" aria-label="{{t:Menu}}" aria-expanded=${drawer[0] ? 'true' : 'false'} onClick=${function () { drawer[1](true); }}>☰</button>`}
         <div class="proj">${D.brand.head && html`<span dangerouslySetInnerHTML=${{ __html: D.brand.head }}></span>`}<a href=${'#' + pages[0].id}>${D.title}</a></div>
-        <fieldset class="mode"><legend class="sr">{{t:Mode}}</legend>
-          <label class=${work ? '' : 'on'}><input type="radio" name="mode" checked=${!work} onChange=${function () { setMode('read'); }} />{{t:Reading}}</label>
-          <label class=${work ? 'on' : ''}><input type="radio" name="mode" checked=${work} onChange=${function () { setMode('work'); }} />{{t:Work}}${count > 0 && html`<span class="mc"> · <span class="sr">{{t:changes:}} </span>${count}</span>`}</label>
-        </fieldset>
         <span class="sp"></span>
         ${!wide[0] && html`<button type="button" class="btn mid" onClick=${goSearch}>🔍 {{t:Search}}</button>`}
-        ${n > 0 && html`<button type="button" class="chip warn unsent" onClick=${openSend}>{{t:Not sent:}} ${n}</button>`}
-        <button type="button" class="btn ico mid" aria-label="{{t:Keys and colours}}" title="{{t:Keys and colours}} (?)" onClick=${function () { dlg[1]('keys'); }}>?</button>
-        <${More} page=${page} work=${work} comments=${comments} changes=${changes} dialog=${dlg[1]} send=${openSend}
-          overview=${function () { ovOff[1](false); store('overview', false); window.scrollTo({ top: 0 }); }}
-          blockHist=${curHist ? function () { dlg[1]({ ptr: curBlock.p }); } : null} />
+        <${More} reset=${resetAll} />
       </header>
-      ${!work && !hint[0] && html`<p class="hint">${count ? (H.base ? '{{t:There are changes since the version sent on}} ' : '{{t:There are changes since}} ') + from + '. {{t:Turn on «Work» to see them and leave comments.}}' : '{{t:Turn on «Work» to leave comments.}}'}
-        <button type="button" class="btn sm" onClick=${function () { hint[1](true); store('hint', true); }}>{{t:Got it}}</button></p>`}
-      <div class=${'shell' + (work ? ' work' : '')}>
+      <div class=${'shell' + (rail ? ' work' : '')}>
         ${wide[0] ? html`<aside id="side" aria-label="{{t:Navigation}}">${side}</aside>`
           : html`<dialog id="drawer" ref=${dr} class="drawer" aria-label="{{t:Navigation}}" onClose=${function () { drawer[1](false); var m = document.getElementById('menu'); if (m) { m.focus(); } }}
               onClick=${function (e) { if (e.target === dr.current) { dr.current.close(); } }}>
               <button type="button" class="btn side-x" onClick=${function () { dr.current.close(); }}>✕ {{t:Close}}</button>
               ${drawer[0] && side}</dialog>`}
         <main id="main" tabindex="-1">
-          <${Page} key=${page.id} page=${page} comments=${comments} since=${since} work=${work} onToc=${setToc} missing=${r[0].missing}
-            cur=${curA[0]} setCur=${curA[1]} editor=${editor[0]} openEditor=${openEditor} closeEditor=${function () { editor[1](null); }}
-            history=${function (pg, ptr) { dlg[1]({ ptr: ptr }); }} activeC=${activeC[0]} overview=${overview} />
+          <${Page} key=${page.id} page=${page} comments=${comments} s=${s} t=${t} setS=${setS} setT=${setT} onToc=${setToc} missing=${r[0].missing}
+            cur=${curA} editor=${editor[0]} closeEditor=${function () { editor[1](null); }} activeC=${activeC[0]} />
         </main>
       </div>
-      ${work && pageItems.length > 0 && !coarse && html`<${ChangeMap} items=${pageItems} curA=${curA[0]} comments=${comments}
-        go=${function (it) { goItem(all.list.indexOf(it)); }} />`}
-      ${work && ((changes && changes.list.length > 0) || (coarse && frag[0])) && html`<${Navigator} changes=${changes || { list: [] }} cur=${cur[0]} step=${step}
-        frag=${coarse ? frag[0] : null} fragGo=${commentKey} />`}
-      ${work && frag[0] && !coarse && html`<button type="button" class="btn pri fragb" style=${'left:' + Math.min(frag[0].x, window.innerWidth - 220) + 'px;top:' + (frag[0].y + 8) + 'px'}
-        onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentKey}>💬 {{t:Comment on the selection}}</button>`}
-      ${dlg[0] === 'keys' && html`<${Modal} title="{{t:Keys and colours}}" close=${function () { dlg[1](null); }}><${Keys} /><//>`}
-      ${dlg[0] === 'since' && html`<${Modal} title="{{t:Starting point}}" close=${function () { dlg[1](null); }}><${SinceDialog} since=${since} set=${setSince} /><//>`}
-      ${dlg[0] === 'page' && html`<${Modal} title=${'{{t:History of the page}}: ' + page.title} cls="wide" close=${function () { dlg[1](null); }}><${PageHistory} page=${page} close=${function () { dlg[1](null); }} /><//>`}
-      ${dlg[0] && dlg[0].ptr && html`<${Modal} title="{{t:History of the paragraph}}" cls="wide" close=${function () { dlg[1](null); }}><${History} vs=${versions(page, dlg[0].ptr)} /><//>`}
-      <div class="sr" aria-live="polite">${live[0]}</div>
+      ${frag[0] && coarse && html`<div class="nav" role="region" aria-label="{{t:Comment on the selection}}">
+        <button type="button" class="btn pri" onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 {{t:Comment on the selection}}</button></div>`}
+      ${frag[0] && !coarse && html`<button type="button" class="btn pri fragb" style=${'left:' + Math.min(frag[0].x, window.innerWidth - 220) + 'px;top:' + (frag[0].y + 8) + 'px'}
+        onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 {{t:Comment on the selection}}</button>`}
       <${Toast} />`;
   }
 
   // the pure parts, for app_test.js; nothing else sets this
-  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, hash: hash }); return; }
+  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

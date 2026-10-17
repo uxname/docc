@@ -84,8 +84,8 @@ Validates and writes Markdown into docs/out and the links into docc.lock (new li
 confirmed, vanished ones dropped). With errors in groups 1xx-2xx nothing is written.
 --single also writes every page into one Markdown file next to the directory (docs/out.md), --html
 into one self-contained HTML application (docs/out.html), no network needed: a document tree,
-search, dark theme, the Git history of every block, changes since a chosen commit, comments on
-blocks (typed or dictated) downloaded as JSON for docc comments import, and Markdown export. With --full the files are docs/out-full.md and docs/out-full.html. They
+search, dark theme, a timeline of the Git history with the edits drawn in the text, and comments
+on selected words (typed or dictated) copied or downloaded for docc comments import. With --full the files are docs/out-full.md and docs/out-full.html. They
 are for reading, are not checked by docc check and are usually kept out of git.
 
 Examples:

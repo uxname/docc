@@ -30,11 +30,15 @@ pub struct Commit {
 }
 
 /// Version is the text of a block after commit C (an index into Commits).
-#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Html, the rendered text, is filled by the HTML build for the old versions
+/// of string blocks, so a page can be shown as it was.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct Version {
     pub c: usize,
     #[serde(rename = "t")]
     pub text: String,
+    #[serde(rename = "h", skip_serializing_if = "String::is_empty")]
+    pub html: String,
 }
 
 /// Change is what one commit did to a document.
@@ -354,10 +358,10 @@ impl History {
                     if v.c > base {
                         out.push(Version {
                             c: v.c - base,
-                            text: v.text,
+                            ..v
                         });
                     } else if out.is_empty() {
-                        out.push(Version { c: 0, text: v.text });
+                        out.push(Version { c: 0, ..v });
                     } else {
                         out[0].text = v.text;
                     }
@@ -415,6 +419,7 @@ impl Replay {
                         vs.push(Version {
                             c,
                             text: l.text.clone(),
+                            ..Default::default()
                         });
                         ch.changed
                             .push(vec![l.ptr.clone(), old_text.to_string(), l.text.clone()]);
@@ -429,6 +434,7 @@ impl Replay {
                     vec![Version {
                         c,
                         text: l.text.clone(),
+                        ..Default::default()
                     }]
                 }
             };

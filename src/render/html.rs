@@ -1,18 +1,16 @@
 use std::collections::{HashMap, HashSet};
-use std::io::Write as _;
 
-use base64::Engine as _;
 use regex::Regex;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 
 use crate::comments;
 use crate::engine::{self, Doc};
 use crate::history;
 use crate::loader::{Kind, Node};
 
-use super::htmlparts::{children_of, status_class, str_field};
+use super::htmlparts::children_of;
 use super::lang::html_escape as esc;
-use super::render::{Renderer, lf, page_path, root};
+use super::render::{Renderer, lf, root};
 use super::text::Page;
 
 mod markdown;
@@ -29,7 +27,7 @@ impl<'a> Renderer<'a> {
     /// HTML returns the single-page application: one self-contained HTML file
     /// whose script (Preact, embedded) draws the pages from a JSON island. Go
     /// renders the Markdown of every block to HTML; the page adds the tree,
-    /// search, block history from Git, comments and the Markdown export. Same call
+    /// search, block history from Git and comments. Same call
     /// contract as Files; the error is a bad changesSince revision.
     pub fn html(&self) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         // in-file links; the headings get their ids from the converter
@@ -64,11 +62,21 @@ impl<'a> Renderer<'a> {
         };
         data.nav.tree = nav(&tree);
         data.nav.orphans = nav(&orphans);
-        data.nav.uncovered = s.uncovered().iter().map(|d| d.id.clone()).collect();
-        let mut current: HashMap<String, &Node> = HashMap::new();
+        let current: HashMap<String, &Node> = s
+            .ordered()
+            .iter()
+            .map(|d| (d.rel.clone(), root(d)))
+            .collect();
+        let mut hist = history::load(
+            &s.p.cfg.abs(&s.p.cfg.src),
+            &current,
+            &history::Options {
+                full: s.full,
+                since: s.p.cfg.changes_since.clone(),
+            },
+        )?;
         let mut pages: Vec<PageData> = Vec::new();
         for d in s.ordered() {
-            current.insert(d.rel.clone(), root(d));
             // a marker name that the text of the page does not contain, so no agent text can cut it
             let mut pg = Page::new(&s, d);
             let mut src = pg.build();
@@ -86,30 +94,14 @@ impl<'a> Renderer<'a> {
             let marker = pg.mark_re();
             let ptrs = history::pointers(root(d));
             let ptr = |n: &Node| ptrs.get(&(n as *const Node)).cloned().unwrap_or_default();
-            let status = str_field(d, "status");
             let mut pd = PageData {
                 id: d.id.clone(),
                 title: s.title(d),
                 file: d.rel.clone(),
                 hidden: s.full && d.hidden,
-                kind: str_field(d, "kind"),
-                status_class: status_class(&status).to_string(),
-                status: s.status_label(&status),
-                priority: str_field(d, "priority"),
                 summary: s.summary(d),
-                covers: s
-                    .p
-                    .covers
-                    .as_ref()
-                    .and_then(|c| c.get(&d.id))
-                    .cloned()
-                    .unwrap_or_default(),
                 ..Default::default()
             };
-            pd.tags = engine::string_list(root(d).get("tags"))
-                .iter()
-                .map(|t| t.str.clone())
-                .collect();
             pd.crumbs = s.crumb_ids(d);
             pd.kids = kids
                 .get(d.id.as_str())
@@ -123,14 +115,9 @@ impl<'a> Renderer<'a> {
             {
                 pd.parent = n.str.clone();
             }
-            pd.refs = s
-                .backrefs()
-                .get(&d.id)
-                .into_iter()
-                .flatten()
-                .map(|b| b.id.clone())
-                .collect();
             let out = conv(d, &src, &marker);
+            // string blocks: [pointer, current text, is a prop]; their old versions get HTML
+            let mut strs: Vec<(String, String, bool)> = Vec::new();
             // cut the page at the block markers; footnotes become a block of their own
             let mut add = |n: Option<&Node>, h: &str| {
                 if h.trim().is_empty() {
@@ -143,6 +130,9 @@ impl<'a> Renderer<'a> {
                 if let Some(n) = n {
                     b.p = ptr(n);
                     b.s = history::text(n);
+                    if n.kind == Kind::String {
+                        strs.push((b.p.clone(), b.s.clone(), false));
+                    }
                 }
                 pd.blocks.push(b);
             };
@@ -170,6 +160,9 @@ impl<'a> Renderer<'a> {
                 let h = h.trim();
                 let h = h.strip_prefix("<p>").unwrap_or(h);
                 let h = h.strip_suffix("</p>").unwrap_or(h);
+                if n.kind == Kind::String {
+                    strs.push((ptr(n), history::text(n), true));
+                }
                 pd.props.push(PropData {
                     k: p.key.clone(),
                     id: p.id.clone(),
@@ -178,25 +171,36 @@ impl<'a> Renderer<'a> {
                     s: history::text(n),
                 });
             }
+            // ponytail: old tables, lists and objects stay plain text in the
+            // file (their text is flattened); includes and links in old text
+            // resolve against the documents as they are now
+            if let Some(h) = hist.as_mut().and_then(|h| h.docs.get_mut(&d.rel)) {
+                for (p, cur, prop) in &strs {
+                    for v in h.blocks.get_mut(p).into_iter().flatten() {
+                        if v.text == *cur {
+                            continue;
+                        }
+                        let out = conv(d, &pg.source(&v.text), &marker);
+                        let mut o = out.trim();
+                        if *prop {
+                            o = o.strip_prefix("<p>").unwrap_or(o);
+                            o = o.strip_suffix("</p>").unwrap_or(o);
+                        }
+                        v.html = o.to_string();
+                    }
+                }
+            }
             pages.push(pd);
         }
         if let Some(p) = pages.first() {
             data.title = p.title.clone();
         }
-        let hist = history::load(
-            &s.p.cfg.abs(&s.p.cfg.src),
-            &current,
-            &history::Options {
-                full: s.full,
-                since: s.p.cfg.changes_since.clone(),
-            },
-        )?;
         data.hist = hist;
         // docc comments reports a broken file
         let all = comments::load(&s.p.cfg.root).unwrap_or_default();
         for mut it in all {
             if it.internal && !s.full {
-                // the team's own notes stay out of the file for the customer
+                // the team's own notes stay out of the file for the readers
                 continue;
             }
             // show a comment on its block even after the block moved
@@ -204,25 +208,9 @@ impl<'a> Renderer<'a> {
             it.path = comments::locate(root, &it).0;
             data.comments.push(it);
         }
-        let files = self.files();
-        let by_path: HashMap<String, usize> = pages
-            .iter()
-            .enumerate()
-            .filter_map(|(i, p)| s.p.doc(&p.id).map(|d| (page_path(d), i)))
-            .collect();
-        for (p, b) in &files {
-            if p.ends_with(".md")
-                && p != "_tree.md"
-                && let Some(&i) = by_path.get(p)
-            {
-                pages[i].md = String::from_utf8_lossy(b).into_owned();
-            }
-        }
         if !pages.is_empty() {
             data.pages = Some(pages);
         }
-        data.single = self.single();
-        data.zip = zip_files(&files);
         let (brand_css, head, print, foot) = s.brand();
         data.brand = BrandData { head, print, foot };
         let title = if data.title.is_empty() {
@@ -321,26 +309,12 @@ struct AppData {
     hist: Option<history::History>,
     comments: Vec<comments::Item>,
     brand: BrandData,
-    single: String,
-    zip: String,
 }
 
 #[derive(Serialize, Default)]
 struct NavData {
     tree: Vec<(String, usize)>,
     orphans: Vec<(String, usize)>,
-    #[serde(serialize_with = "null_if_empty")]
-    uncovered: Vec<String>,
-}
-
-/// Go's encoding/json writes a nil slice as null; uncovered is empty exactly
-/// when it is nil in Go.
-fn null_if_empty<S: Serializer>(v: &[String], s: S) -> Result<S::Ok, S::Error> {
-    if v.is_empty() {
-        s.serialize_none()
-    } else {
-        v.serialize(s)
-    }
 }
 
 #[derive(Serialize, Default)]
@@ -361,32 +335,17 @@ struct PageData {
     file: String,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     hidden: bool,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    kind: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    status: String,
-    #[serde(rename = "sc", skip_serializing_if = "String::is_empty")]
-    status_class: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    priority: String,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    tags: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     crumbs: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     kids: Vec<String>,
     #[serde(skip_serializing_if = "String::is_empty")]
     parent: String,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    refs: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    covers: Vec<String>,
     #[serde(skip_serializing_if = "String::is_empty")]
     summary: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     props: Vec<PropData>,
     blocks: Vec<BlockData>,
-    md: String,
 }
 
 /// blockData is one block of a page: its JSON Pointer and source text ("" for
@@ -419,25 +378,6 @@ fn script_json<T: Serialize>(v: &T) -> String {
         .replace('\u{2028}', "\\u2028")
         .replace('\u{2029}', "\\u2029")
         .replace('<', "\\u003c")
-}
-
-/// zipFiles packs the Markdown folder for the "all pages as .zip" export. The
-/// file times are fixed, so the build stays deterministic.
-fn zip_files(files: &HashMap<String, Vec<u8>>) -> String {
-    let mut names: Vec<&String> = files.keys().collect();
-    names.sort();
-    let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
-    let opts = zip::write::SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated)
-        .last_modified_time(zip::DateTime::from_date_and_time(2000, 1, 1, 0, 0, 0).unwrap());
-    for n in names {
-        if w.start_file(format!("docs/{n}"), opts).is_ok() {
-            let _ = w.write_all(&files[n]);
-        }
-    }
-    // writes to memory
-    let b = w.finish().map(|c| c.into_inner()).unwrap_or_default();
-    base64::engine::general_purpose::STANDARD.encode(b)
 }
 
 /// ids gives heading ids <prefix>--<anchor>: the page id plus the same anchor

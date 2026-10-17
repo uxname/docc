@@ -152,12 +152,7 @@ fn html_build() {
     );
     let req = &ps[1];
     assert!(
-        s(req, "kind") == "requirement"
-            && s(req, "status") == "accepted"
-            && s(req, "sc") == "ok"
-            && s(req, "priority") == "2"
-            && strs(&req["tags"]) == "t1"
-            && strs(&req["crumbs"]) == "index"
+        strs(&req["crumbs"]) == "index"
             && s(req, "parent") == "index"
             && strs(&ps[0]["kids"]) == "req",
         "req: {req}"

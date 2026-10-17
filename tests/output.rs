@@ -26,18 +26,17 @@ fn lang_ru() {
     let html = p.read("docs/out.html");
     for want in [
         ">Страницы раздела<",
-        ">Связанные<",
         "<small>Далее</small>",
         "<small>Назад</small>",
         r#"<html lang="ru">"#,
         r#"placeholder="Поиск  ( / )""#,
-        r#"aria-label="Переход по правкам""#,
+        r#"aria-label="Шкала времени""#,
         "'Копировать'",
         "'Ничего не найдено'",
         " ещё ↓",
         "🎤 Надиктовать",
-        "Скопировать для отправки",
-        "Показать изменения с",
+        "Скопировать комментарии",
+        "Правки с:",
     ] {
         assert!(html.contains(want), "out.html lacks {want:?}");
     }

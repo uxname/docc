@@ -17,13 +17,12 @@
 @media (max-width:820px){:root{--top:48px}}
 *{box-sizing:border-box}
 html{scroll-padding-top:calc(var(--top) + 16px)}
-html.w-mode{scroll-padding-bottom:88px}
 body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 @media (max-width:820px){body{font-size:16px}}
 a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:.15em}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:3px}
 [tabindex="-1"]:focus{outline:0}
-.shell.work .blk.cur>.blk-body,.shell.work .ghost.cur{outline:2px solid var(--accent);outline-offset:6px;border-radius:2px}
+.blk.cur>.blk-body,.ghost.cur{outline:2px solid var(--accent);outline-offset:6px;border-radius:2px}
 .skip{position:absolute;left:-999px}
 .skip:focus{left:1rem;top:1rem;z-index:60;background:var(--bg);padding:.5rem 1rem;box-shadow:var(--shadow)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -43,31 +42,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 .btn:disabled{opacity:.45;cursor:default}
 button.link{padding:0;border:0;background:none;color:var(--accent);font-size:.8125rem;min-height:24px}
 .chip{display:inline-flex;align-items:center;padding:.05rem .55rem;font-size:.75rem;line-height:1.6;border-radius:99px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);white-space:nowrap}
-.chip.kind{background:var(--bg2);border-color:var(--line);color:var(--accent);font-weight:600}
-.chip.ok{background:var(--ok-bg);border-color:transparent;color:var(--ok)}
-.chip.warn{background:var(--warn-bg);border-color:transparent;color:var(--warn)}
 .chip.bad{background:var(--bad-bg);border-color:transparent;color:var(--bad)}
-.chip.tag{border-style:dashed}
-button.chip{min-height:var(--tgt);font-size:.8125rem;font-weight:600;padding:0 .7rem}
 /* header */
 .top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:.6rem;height:var(--top);padding:0 1rem;background:var(--hbg);color:var(--hfg);border-bottom:1px solid var(--hline)}
 .proj{display:flex;align-items:center;gap:.6rem;min-width:0;color:inherit;text-decoration:none;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .btn{background:transparent;color:inherit;border-color:var(--hline)}
-.mode{display:inline-flex;margin:0 0 0 .5rem;padding:3px;border:1px solid var(--hline);border-radius:8px;background:var(--bg)}
-.mode label{display:inline-flex;align-items:center;min-height:calc(var(--tgt) - 6px);padding:0 .85rem;font-size:.875rem;font-weight:600;color:var(--muted);border-radius:6px;cursor:pointer;white-space:nowrap}
-.mode label.on{background:var(--accent);color:var(--on-accent)}
-.mode label:focus-within{outline:3px solid var(--accent);outline-offset:2px}
-.mode input{position:absolute;opacity:0;width:1px;height:1px}
-.mc{font-weight:500}
 .more-b{position:relative}
-.dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--warn)}
 .pop{margin:0;inset:auto;position:fixed;top:calc(var(--top) + 4px);right:12px;left:auto;min-width:17rem;padding:.35rem;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
 .pop hr{border:0;border-top:1px solid var(--line);margin:.3rem 0}
 .mi{display:block;width:100%;min-height:var(--tgt);padding:.35rem .7rem;text-align:left;font-size:.875rem;background:none;border:0;border-radius:6px}
 .mi:hover,.mi:focus-visible{background:var(--accent-bg)}
 .mi.bad{color:var(--bad)}
-.mi.phone{display:none}
-.hint{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;margin:0;padding:.45rem 1rem;font-size:.875rem;background:var(--accent-bg);border-bottom:1px solid var(--line)}
 /* layout */
 .shell{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:calc(100vh - var(--top))}
 @media (max-width:1279px){.shell{display:block}}
@@ -118,26 +103,22 @@ main{min-width:0;padding:2rem 1.5rem 6rem;outline:0}
 #tree .toc a{min-height:28px;padding:.15rem .5rem;font-size:.8125rem;color:var(--muted);border-left:2px solid var(--line);border-radius:0}
 #tree .toc a.l3{padding-left:1.2rem}
 #tree .toc a.on{color:var(--accent);border-left-color:var(--accent);font-weight:600}
-.cnt{font-size:.75rem;font-weight:600;color:var(--chg)}
 .tw{position:absolute;left:0;top:calc((var(--tgt) - 1.5rem) / 2);width:1.5rem;height:1.5rem;padding:0;border:0;background:none;color:var(--muted);border-radius:4px}
 @media (pointer:coarse){.tw{width:44px;height:44px;top:0;left:-.6rem}}
 .tw::before{content:"▾";display:block;transition:transform .12s}
 .tw[aria-expanded=false]::before{transform:rotate(-90deg)}
-.gh{margin:1rem 0 .3rem;font-size:.75rem}
-.gt{display:flex;width:100%;gap:.4rem;align-items:center;min-height:var(--tgt);padding:0 .5rem;font:inherit;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:none;border:0;text-align:left}
-.gt span{margin-left:auto;padding:0 .45rem;font-weight:400;background:var(--line);border-radius:99px}
 .more{display:block;width:100%;min-height:var(--tgt);margin-top:.3rem;padding:.3rem;font:inherit;font-size:.8125rem;color:var(--accent);background:none;border:1px dashed var(--line);border-radius:6px}
 /* edits and comments tabs */
 .left{margin:.2rem 0 .3rem;font-weight:600}
-progress{display:block;width:100%;height:6px;margin-bottom:.8rem;accent-color:var(--chg)}
 .eg{display:flex;justify-content:space-between;margin:.9rem .2rem .2rem;font-size:.8125rem;font-weight:700}
 .eg span{color:var(--muted);font-weight:500}
 .edits,.clist{margin:0;padding:0;list-style:none}
 .er,.cr{display:flex;gap:.5rem;width:100%;min-height:var(--tgt);padding:.35rem .5rem;text-align:left;font-size:.8125rem;line-height:1.4;background:none;border:0;border-radius:6px}
 .er:hover,.cr:hover,.er.on{background:var(--accent-bg)}
-.g{flex:none;width:1rem;font-weight:700;text-align:center}
+.g{flex:none;align-self:flex-start;padding:0 .35rem;font-size:.6875rem;font-weight:700;line-height:1.6;border-radius:99px;background:var(--bg)}
+.es{margin:0 .2rem .2rem;color:var(--muted);font-size:.75rem}
+.crep{display:block;margin-top:.15rem;padding-left:.5rem;border-left:2px solid var(--line);color:var(--muted)}
 .g.chg{color:var(--chg)}.g.new{color:var(--new)}.g.rm{color:var(--rem)}
-.again{display:block;color:var(--warn);font-size:.75rem}
 .cr{flex-direction:column;align-items:flex-start;gap:.15rem;border-bottom:1px solid var(--line);border-radius:0}
 .cp{color:var(--muted);font-size:.75rem}
 .ctx{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -186,10 +167,6 @@ blockquote p{margin:0}
 .rows .row:hover{background:var(--accent-bg)}
 .ct{font-weight:600;color:var(--accent)}
 .cs{display:block;margin-top:.2rem;font-size:.9rem;line-height:1.5;color:var(--muted)}
-.related{display:grid;gap:.6rem}
-.rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .5rem}
-.rl{min-width:7.5rem;font-size:.875rem;color:var(--muted)}
-.pchip{display:inline-block;padding:.1rem .7rem;font-size:.875rem;text-decoration:none;color:var(--accent);background:var(--accent-bg);border-radius:99px}
 .pn{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:3rem}
 .pn a{display:flex;flex-direction:column;gap:.1rem;padding:.8rem 1rem;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:8px}
 .pn a:hover{border-color:var(--accent)}
@@ -198,11 +175,7 @@ blockquote p{margin:0}
 .pn .next{grid-column:2;text-align:right}
 @media (max-width:820px){.pn{grid-template-columns:1fr}.pn .next{grid-column:1}}
 .notice{margin:0 0 1.2rem;padding:.6rem .9rem;background:var(--warn-bg);border-radius:8px}
-.overview{margin:0 0 1.8rem;padding:1rem 1.2rem;background:var(--bg2);border:1px solid var(--line);border-radius:8px}
-.overview h2{margin:0 0 .3rem;font-size:18px}
-.overview p{margin:0 0 .5rem;color:var(--muted)}
-.overview ul{margin:0 0 .9rem;padding-left:1.2rem}
-/* blocks in the Work mode: the text, and beside it (under it when narrow) the tools and comment cards */
+/* blocks: the text, and beside it (under it when narrow) the comment cards */
 .blk{position:relative;border-radius:4px;margin-bottom:1rem}
 .blk-body>:last-child{margin-bottom:0}
 .blk.flash>.blk-body,.ghost.flash{background:var(--accent-bg);transition:background .6s}
@@ -214,22 +187,16 @@ blockquote p{margin:0}
 }
 .blk-side{display:flex;flex-direction:column;gap:8px;font-size:.875rem;line-height:1.5}
 .blk-side:empty{display:none}
-.tools{display:none;gap:.3rem;flex-wrap:wrap}
-.blk.cur>.blk-side>.tools{display:flex}
-@media (pointer:fine) and (min-width:1024px){.shell.work .blk[data-a]>.blk-side>.tools{display:flex;visibility:hidden}
-.blk:hover>.blk-side>.tools,.blk:focus-within>.blk-side>.tools,.blk.cur>.blk-side>.tools{visibility:visible!important}}
-@media (max-width:1023px){.blk-side:has(>*:not(.tools)),.blk.cur>.blk-side{margin:.2rem 0 1rem}}
+@media (max-width:1023px){.blk-side:not(:empty){margin:.2rem 0 1rem}}
 /* gutter: a bar left of the text */
 .blk.chg>.blk-body,.blk.new>.blk-body{position:relative}
 .blk.chg>.blk-body::before,.blk.new>.blk-body::before{content:"";position:absolute;left:-14px;top:2px;bottom:2px;width:4px;border-radius:2px;background:var(--chg)}
 .blk.new>.blk-body::before{background:var(--new)}
 .blk.new>.blk-body::after{content:"+";position:absolute;left:-30px;top:-2px;font:700 13px/1 system-ui,sans-serif;color:var(--new)}
-.blk.seen>.blk-body::before{background:var(--field)}
-.blk.seen>.blk-body::after{content:"✓";color:var(--muted)}
 @media (max-width:820px){.blk.chg>.blk-body::before,.blk.new>.blk-body::before{left:-10px;width:3px}.blk.new>.blk-body::after{display:none}
-.blk.new:not(.seen)>.blk-body::before{background:repeating-linear-gradient(var(--new) 0 6px,transparent 6px 9px)}}
-.blk-body ins,.dv ins,.legend ins{color:var(--ins-fg);background:var(--ins-bg);text-decoration:underline 2px;text-underline-offset:3px;border-radius:2px}
-.blk-body del,.dv del,.legend del{color:var(--del-fg);background:var(--del-bg);text-decoration:line-through;border-radius:2px}
+.blk.new>.blk-body::before{background:repeating-linear-gradient(var(--new) 0 6px,transparent 6px 9px)}}
+.blk-body ins,.dv ins{color:var(--ins-fg);background:var(--ins-bg);text-decoration:underline 2px;text-underline-offset:3px;border-radius:2px}
+.blk-body del,.dv del{color:var(--del-fg);background:var(--del-bg);text-decoration:line-through;border-radius:2px}
 .dv{white-space:pre-wrap;overflow-wrap:anywhere}
 .dv.whole del,.dv.whole ins{display:block;padding:.2rem .4rem}
 .dv.whole del{margin-bottom:.3rem}
@@ -240,10 +207,8 @@ blockquote p{margin:0}
 /* removed paragraph, in its old place */
 .ghost{position:relative;margin:0 0 1rem;font-size:.875rem;color:var(--muted)}
 .ghost::before{content:"";position:absolute;left:-14px;top:2px;bottom:2px;border-left:4px dashed var(--rem)}
-.ghost.seen::before{border-left-width:2px}
 .ghost summary{display:flex;align-items:center;min-height:var(--tgt);cursor:pointer;list-style:none}
 .ghost summary::before{content:"−";width:1rem;margin-right:.3rem;color:var(--rem);font-weight:700}
-.ghost.seen summary::before{content:"✓";color:var(--muted)}
 .ghost .dv{padding:.5rem .75rem;background:var(--del-bg);border-radius:6px}
 .ghost .dv del{background:none}
 @media (max-width:820px){.ghost::before{left:-10px;border-left-width:3px}}
@@ -266,68 +231,50 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px dotted var(-
 .editor textarea{display:block;width:100%;min-height:5rem;margin-bottom:.5rem;padding:.5rem .6rem;resize:vertical}
 .editor textarea,.editor .who{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:6px}
 .mic-w{display:flex;align-items:center;gap:.5rem}
-.mic{user-select:none;touch-action:none}
 .mic.on{background:var(--bad);border-color:var(--bad);color:#fff}
 .err{color:var(--bad)}
-/* the edits navigator, the map of edits, the fragment button */
+/* the timeline: two range inputs on one track, the edits lie between the ends */
+html.has-tl{scroll-padding-top:calc(var(--top) + 112px)}
+.tl{position:sticky;top:var(--top);z-index:15;margin:0 0 1.2rem;padding:.5rem .2rem .3rem;background:var(--bg);border-bottom:1px solid var(--line);font-size:.8125rem}
+.tl-h{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.2rem 1rem}
+.tl-h b{font-weight:650}
+.tl-s-l b{color:var(--chg)}
+.tl-r{position:relative;height:28px}
+.tl-in{position:absolute;left:9px;right:9px;top:0;bottom:0;pointer-events:none}
+.tl-line{position:absolute;left:0;right:0;top:13px;height:2px;background:var(--line)}
+.tl-sel{position:absolute;top:12px;height:4px;background:var(--chg);border-radius:2px}
+.tl-k{position:absolute;top:9px;width:2px;height:10px;margin-left:-1px;background:var(--field);opacity:.45}
+.tl-k.on{opacity:1;background:var(--fg)}
+.tl-r input{position:absolute;inset:0;width:100%;height:28px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.tl-r input::-webkit-slider-runnable-track{background:none}
+.tl-r input::-moz-range-track{background:none}
+.tl-r input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--bg);border:3px solid var(--fg);cursor:grab}
+.tl-r input::-moz-range-thumb{pointer-events:auto;width:12px;height:12px;border-radius:50%;background:var(--bg);border:3px solid var(--fg);cursor:grab}
+.tl-r .tl-s::-webkit-slider-thumb{border-color:var(--chg)}
+.tl-r .tl-s::-moz-range-thumb{border-color:var(--chg)}
+.tl-r .tl-t{z-index:1}
+.tl-r.s-top .tl-s{z-index:2}
+.tl-f{display:flex;justify-content:space-between;gap:1rem;color:var(--muted);font-size:.75rem}
+@media (max-width:600px){.tl-f small{display:none}}
+.notice.past{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem}
+/* the comment button of a selection; on touch in a bottom bar */
 .nav{position:fixed;z-index:25;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:.4rem;padding:4px 6px;background:var(--bg2);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);font-size:.875rem;max-width:calc(100vw - 24px)}
 .nav .btn{border-radius:18px}
-.nav .pos{padding:0 .3rem;white-space:nowrap;font-variant-numeric:tabular-nums}
-.nav .rest{color:var(--muted)}
-.npg{display:inline-block;max-width:14rem;margin-left:.4rem;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;color:var(--muted);font-size:.8125rem}
-@media (max-width:820px){.npg{display:none}}
-.seen-l{display:inline-flex;align-items:center;gap:.35rem;min-height:var(--tgt);padding:0 .6rem;border-left:1px solid var(--line);cursor:pointer;white-space:nowrap}
-.seen-l input{width:18px;height:18px;margin:0;accent-color:var(--chg)}
 @media (max-width:820px){
 .nav{left:0;right:0;bottom:0;transform:none;max-width:none;justify-content:space-between;padding:6px 8px calc(6px + env(safe-area-inset-bottom));border-radius:0;border-width:1px 0 0;background:var(--bg)}
-.nav .pos{flex:1;text-align:center;white-space:normal;line-height:1.25}
 .nav>.btn.pri{flex:1}
 }
-@media (max-width:420px){.nav .rest{display:none}}
 @media (pointer:coarse){body:has(textarea:focus) .nav{display:none}}
-.cmap{position:fixed;z-index:20;right:0;top:var(--top);bottom:72px;width:10px;background:var(--bg2);border-left:1px solid var(--line)}
-.tk{position:absolute;left:1px;right:1px;height:3px;background:var(--chg);cursor:pointer}
-.tk.new{background:var(--new)}.tk.rm{background:var(--rem)}
-.tk.seen{background:var(--field)}
-.tk.on{height:6px}
-@media (max-width:1023px),(pointer:coarse){.cmap{display:none}}
 .fragb{position:fixed;z-index:35;min-height:32px;box-shadow:var(--shadow)}
-/* dialogs */
-.dlg{width:min(36rem,calc(100vw - 2rem));max-height:calc(100vh - 4rem);padding:0;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
-.dlg.wide{width:min(52rem,calc(100vw - 2rem))}
-.dlg::backdrop{background:rgba(0,0,0,.4)}
-.dlg-h{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1rem;background:var(--bg);border-bottom:1px solid var(--line)}
-.dlg-h h2{margin:0;font-size:1.05rem}
-.dlg-b{padding:.5rem 1rem 1rem;font-size:.9375rem}
-.dlg-b h3{margin:1rem 0 .4rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.5rem;margin:0;padding:0;list-style:none}
-.legend li{display:flex;align-items:center;gap:.5rem}
-.lb{display:inline-block;width:4px;height:1.2rem;border-radius:2px;background:var(--chg)}
-.lb.new{background:var(--new)}.lb.rm{background:none;border-left:4px dashed var(--rem)}
-.lb.seen{background:var(--field)}
-.keys{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem;margin:0}
-.keys dd{margin:0}
-kbd{padding:.05rem .4rem;font:13px ui-monospace,monospace;background:var(--bg2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px}
-.since-l{display:flex;flex-direction:column;gap:.4rem}
-.since-l select{min-height:var(--tgt);padding:.2rem .4rem;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:6px}
-.ver{padding:.5rem 0;border-top:1px solid var(--line)}
-.vh{color:var(--muted);font-size:.8125rem;margin-bottom:.25rem}
-.pg-g{margin:.3rem 0}
-.pg-g>small{color:var(--muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.06em}
-.pg-i{margin:.2rem 0 .4rem}
-.ptr{display:block;color:var(--muted);font-size:.8rem}
-/* toasts sit under the header, away from the current edit in the middle and the navigator below */
+/* toasts sit under the header */
 .toast-w{position:fixed;left:50%;top:calc(var(--top) + 12px);z-index:50;transform:translateX(-50%);max-width:calc(100vw - 2rem)}
 .toast{display:flex;gap:1rem;align-items:baseline;padding:.6rem 1rem;background:var(--fg);color:var(--bg);border-radius:8px;box-shadow:var(--shadow);font-size:.9rem}
 .toast .link{color:var(--bg);text-decoration:underline;font-size:inherit}
-/* narrow screens: the header keeps the menu, the mode and «⋯» */
-@media (max-width:1279px){.top .proj{max-width:16rem}}
+/* narrow screens: the menu, the title, the search and «⋯» */
+@media (max-width:1279px){.top .proj{max-width:calc(100vw - 14rem)}}
 @media (max-width:820px){
 .top{gap:.4rem;padding:0 .5rem}
-.top .proj,.top .mid,.top .unsent{display:none}
-.mode{margin:0 auto}
-.mode label{padding:0 .7rem}
-.mi.phone{display:block}
+.top .proj{font-size:.9375rem}
 .pop{left:8px;right:8px;top:auto;bottom:8px;min-width:0}
 }
 @media (prefers-reduced-motion:reduce){*,*::before{transition:none!important;animation:none!important}}
@@ -337,7 +284,7 @@ kbd{padding:.05rem .4rem;font:13px ui-monospace,monospace;background:var(--bg2);
 .ghost::before{border-color:CanvasText}
 }
 @media print{
-.top,.hint,#side,.drawer,.nav,.cmap,.fragb,.tools,.overview,.skip,.copy,.pn,.toast-w,.notice,.pop,.editor,.dlg{display:none!important}
+.top,#side,.drawer,.nav,.tl,.fragb,.skip,.copy,.pn,.toast-w,.notice,.pop,.editor{display:none!important}
 .shell{display:block}
 main{padding:0}
 .page,.shell.work .page{max-width:none}
@@ -353,7 +300,7 @@ a{color:inherit;text-decoration:none}
 
 </style>
 <div id="app"><noscript><p class="noscript">This documentation is an application: turn on JavaScript to read it, or read the Markdown in the output folder.</p></noscript></div>
-<script type="application/json" id="docc-data">{"title":"Index","lang":"en","full":true,"key":"docc:001","nav":{"tree":[["index",0],["deep",1],["req",1]],"orphans":[["secret",0]],"uncovered":null},"pages":[{"id":"index","title":"Index","file":"index.json","kind":"note","status":"accepted","sc":"ok","tags":["draft","x"],"kids":["deep","req"],"refs":["deep","req","secret"],"summary":"Welcome. See Deep doc, Requirement and Requirement.","props":[{"k":"Owner name","id":"index--owner-name","p":"/owner_name","s":"Team","h":"Team"},{"k":"Count","id":"index--count","p":"/count","s":"3","h":"3"},{"k":"Flag","id":"index--flag","p":"/flag","s":"true","h":"true"}],"blocks":[{"p":"/body/0","s":"Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].","h":"\u003cp>Welcome. See \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>, \u003ca href=\"#req\">Requirement\u003c/a> and \u003ca href=\"#req\">Requirement\u003c/a>.\u003c/p>\n"},{"p":"/body/1","s":"{{req#statement}}","h":"\u003c!-- raw HTML omitted -->\n\u003cp>First fact.\u003c/p>\n\u003cp>Second fact.\u003c/p>\n\u003c!-- raw HTML omitted -->\n"},{"p":"/body/2","s":"Quote: {{req#^first}}","h":"\u003cp>Quote: \u003c!-- raw HTML omitted -->First fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"index--meta\">Meta\u003c/h2>\n"},{"p":"/meta","s":"a: x; nested: k: v; list: p\nq; multi: line1\nline2; skip: ","h":"\u003cul>\n\u003cli>\u003cstrong>a:\u003c/strong> x\u003c/li>\n\u003cli>\u003cstrong>nested:\u003c/strong>\n\u003cul>\n\u003cli>\u003cstrong>k:\u003c/strong> v\u003c/li>\n\u003cli>\u003cstrong>list:\u003c/strong>\n\u003cul>\n\u003cli>p\u003c/li>\n\u003cli>q\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\u003cstrong>multi:\u003c/strong> line1\nline2\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--steps\">Steps\u003c/h2>\n"},{"p":"/steps","s":"name: one; done: true\nname: two; items: a\nb","h":"\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> one\u003c/li>\n\u003cli>\u003cstrong>done:\u003c/strong> true\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> two\u003c/li>\n\u003cli>\u003cstrong>items:\u003c/strong>\n\u003cul>\n\u003cli>a\u003c/li>\n\u003cli>b\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"},{"h":"\u003ch2 id=\"index--inline\">Inline\u003c/h2>\n"},{"p":"/inline","s":"Text {{req#title}} here and `{{literal}}` code and [[deep]].","h":"\u003cp>Text \u003c!-- raw HTML omitted -->Requirement\u003c!-- raw HTML omitted --> here and \u003ccode>{{literal}}\u003c/code> code and \u003ca href=\"#deep\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"index--numbers\">Numbers\u003c/h2>\n"},{"p":"/numbers","s":"1\n2.50","h":"\u003cul>\n\u003cli>1\u003c/li>\n\u003cli>2.50\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>note about \u003ca href=\"#deep\">Deep doc\u003c/a> stays hidden\u003c/li>\n\u003c/ul>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](a/deep.md#acceptance-criteria), [Requirement](req.md) and [Requirement](req.md).\n\n\u003c!-- include req#statement -->\n\nFirst fact.\n\nSecond fact.\n\n\u003c!-- /include -->\n\nQuote: \u003c!-- include req#^first -->First fact.\u003c!-- /include -->\n\n## Owner name\n\nTeam\n\n## Count\n\n3\n\n## Flag\n\ntrue\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n## Inline\n\nText \u003c!-- include req#title -->Requirement\u003c!-- /include --> here and `{{literal}}` code and [Deep doc](a/deep.md).\n\n## Numbers\n\n- 1\n- 2.50\n\n## Notes (hidden)\n\n> Service information.\n\n- note about [Deep doc](a/deep.md) stays hidden\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Requirement](req.md)\n- [Secret](secret.md)\n\nDocument tree: [_tree.md](_tree.md)\n"},{"id":"deep","title":"Deep doc","file":"a/deep.json","kind":"page","crumbs":["index"],"parent":"index","refs":["index","req"],"summary":"Back to Index and Index.","blocks":[{"p":"/body","s":"Back to [[index]] and [[index#owner_name]].","h":"\u003cp>Back to \u003ca href=\"#index\">Index\u003c/a> and \u003ca href=\"#index--owner-name\">Index\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"deep--acceptance-criteria\">Acceptance criteria\u003c/h2>\n"},{"p":"/acceptance_criteria/0","s":"Given X.","h":"\u003cp>Given X.\u003c/p>\n"},{"p":"/acceptance_criteria/1","s":"Then Y with [[req#statement]] and [[req#^first]].","h":"\u003cp>Then Y with \u003ca href=\"#req--statement\">Requirement\u003c/a> and \u003ca href=\"#req--first\">Requirement\u003c/a>.\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Deep doc\n\npage\n\nBack to [Index](../index.md) and [Index](../index.md#owner-name).\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](../req.md#statement) and [Requirement](../req.md#first).\n\n## Parent\n\n[Index](../index.md)\n\n## Referenced by\n\n- [Index](../index.md)\n- [Requirement](../req.md)\n"},{"id":"req","title":"Requirement","file":"req.json","kind":"page","crumbs":["index"],"parent":"index","refs":["deep","index"],"summary":"Requirement body, see Deep doc.","blocks":[{"p":"/body","s":"Requirement body, see [[deep#acceptance_criteria]].","h":"\u003cp>Requirement body, see \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--statement\">Statement\u003c/h2>\n"},{"p":"/statement/0","s":"First fact. ^first","h":"\u003cp>\u003ca id=\"req--first\">\u003c/a>First fact.\u003c/p>\n"},{"p":"/statement/1","s":"Second fact.","h":"\u003cp>Second fact.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--checks\">Checks\u003c/h2>\n"},{"p":"/checks","s":"Plain check. ^check\nname: n","h":"\u003cul>\n\u003cli>\u003ca id=\"req--check\">\u003c/a>Plain check.\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"req--formula\">Formula\u003c/h2>\n"},{"p":"/formula","s":"x ^2","h":"\u003cp>x ^2\u003c/p>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](a/deep.md#acceptance-criteria).\n\n## Statement\n\n\u003ca id=\"first\">\u003c/a>First fact.\n\nSecond fact.\n\n## Checks\n\n- \u003ca id=\"check\">\u003c/a>Plain check.\n- - **name:** n\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](index.md)\n\n## Referenced by\n\n- [Deep doc](a/deep.md)\n- [Index](index.md)\n"},{"id":"secret","title":"Secret","file":"secret.json","hidden":true,"kind":"page","summary":"Hidden text about Index with First fact. Second fact.","blocks":[{"p":"/body","s":"Hidden text about [[index]] with {{req#statement}}","h":"\u003cp>Hidden text about \u003ca href=\"#index\">Index\u003c/a> with \u003c!-- raw HTML omitted -->First fact. Second fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"secret--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>private note\u003c/li>\n\u003c/ul>\n\u003ch2 id=\"secret--suppressions-docignore\">Suppressions (docIgnore)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>rule:\u003c/strong> DOC303\u003c/li>\n\u003cli>\u003cstrong>reason:\u003c/strong> demo\u003c/li>\n\u003cli>\u003cstrong>path:\u003c/strong> /body\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"}],"md":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n# Secret\n\npage\n\n> Hidden document.\n\nHidden text about [Index](index.md) with \u003c!-- include req#statement -->First fact. Second fact.\u003c!-- /include -->\n\n## Notes (hidden)\n\n> Service information.\n\n- private note\n\n## Suppressions (docIgnore)\n\n> Service information.\n\n1. - **rule:** DOC303\n   - **reason:** demo\n   - **path:** /body\n"}],"hist":null,"comments":[],"brand":{},"single":"\u003c!-- GENERATED by docc, DO NOT EDIT -->\n\n> full build: includes hidden documents and notes — do not publish\n\n# Document tree\n\n- [Index](#index)\n  - [Deep doc](#deep)\n  - [Requirement](#req)\n\n## Without parent\n\n- [Secret](#secret) (hidden)\n\n---\n\n\u003ca id=\"index\">\u003c/a>\n\n# Index\n\nnote · accepted · draft, x\n\nWelcome. See [Deep doc](#deep--acceptance-criteria), [Requirement](#req) and [Requirement](#req).\n\n\u003c!-- include req#statement -->\n\nFirst fact.\n\nSecond fact.\n\n\u003c!-- /include -->\n\nQuote: \u003c!-- include req#^first -->First fact.\u003c!-- /include -->\n\n\u003ca id=\"index--owner-name\">\u003c/a>\n\n## Owner name\n\nTeam\n\n\u003ca id=\"index--count\">\u003c/a>\n\n## Count\n\n3\n\n\u003ca id=\"index--flag\">\u003c/a>\n\n## Flag\n\ntrue\n\n\u003ca id=\"index--meta\">\u003c/a>\n\n## Meta\n\n- **a:** x\n- **nested:**\n  - **k:** v\n  - **list:**\n    - p\n    - q\n- **multi:** line1\n  line2\n\n\u003ca id=\"index--steps\">\u003c/a>\n\n## Steps\n\n1. - **name:** one\n   - **done:** true\n2. - **name:** two\n   - **items:**\n     - a\n     - b\n\n\u003ca id=\"index--inline\">\u003c/a>\n\n## Inline\n\nText \u003c!-- include req#title -->Requirement\u003c!-- /include --> here and `{{literal}}` code and [Deep doc](#deep).\n\n\u003ca id=\"index--numbers\">\u003c/a>\n\n## Numbers\n\n- 1\n- 2.50\n\n## Notes (hidden)\n\n> Service information.\n\n- note about [Deep doc](#deep) stays hidden\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Requirement](#req)\n- [Secret](#secret)\n\n\n---\n\n\u003ca id=\"deep\">\u003c/a>\n\n# Deep doc\n\npage\n\nBack to [Index](#index) and [Index](#index--owner-name).\n\n\u003ca id=\"deep--acceptance-criteria\">\u003c/a>\n\n## Acceptance criteria\n\nGiven X.\n\nThen Y with [Requirement](#req--statement) and [Requirement](#req--first).\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Index](#index)\n- [Requirement](#req)\n\n\n---\n\n\u003ca id=\"req\">\u003c/a>\n\n# Requirement\n\npage\n\nRequirement body, see [Deep doc](#deep--acceptance-criteria).\n\n\u003ca id=\"req--statement\">\u003c/a>\n\n## Statement\n\n\u003ca id=\"req--first\">\u003c/a>First fact.\n\nSecond fact.\n\n\u003ca id=\"req--checks\">\u003c/a>\n\n## Checks\n\n- \u003ca id=\"req--check\">\u003c/a>Plain check.\n- - **name:** n\n\n\u003ca id=\"req--formula\">\u003c/a>\n\n## Formula\n\nx ^2\n\n## Parent\n\n[Index](#index)\n\n## Referenced by\n\n- [Deep doc](#deep)\n- [Index](#index)\n\n\n---\n\n\u003ca id=\"secret\">\u003c/a>\n\n# Secret\n\npage\n\n> Hidden document.\n\nHidden text about [Index](#index) with \u003c!-- include req#statement -->First fact. Second fact.\u003c!-- /include -->\n\n## Notes (hidden)\n\n> Service information.\n\n- private note\n\n## Suppressions (docIgnore)\n\n> Service information.\n\n1. - **rule:** DOC303\n   - **reason:** demo\n   - **path:** /body\n\n","zip":"UEsDBBQACAAIAAAAISgAAAAAAAAAAAAAAAANAAkAZG9jcy9fdHJlZS5tZFVUBQABgENtOESMTWrzMBRF51rF/fBEgU/tvJRAQaZkkkBq6CB4YPvdYoEiO/qBdtZFdIVdSZEpdHR5nPPO4z9j8Nwe2/NT11qMH5Blmv7DnnA8dWjtoYMxe6X2eCveYyzOywNcmHwRJsxOhKE+lStDThiCICyZCd+fX5ClHljL6F2alWpgf03kSCplcDkE4XuvXZ27q+wUYHCx5FqzvR7uhVz/yJm34iJrpNeRt42opsGry/NSMtYhMuSt/cIpMvc6bVtN6NmJMOzUzwBQSwcIc0vX6MQAAAD7AAAAUEsDBBQACAAIAAAAISgAAAAAAAAAAAAAAAAOAAkAZG9jcy9hL2RlZXAubWRVVAUAAYBDbTh0z8Fq8zAQBOD7PsX86PIbKvUFSiHFJuSSFONDS+hBkSaNKF47ito0b19icnRuy87CN/v0z1osm3XTLrqmxu6COITwgHqD9aZDU686WPssYlCT4zUVGf0nRV58+EIZsF1p5O/Hf+ce03VyfazgNc4FZjgrs1Xfs3IixmARAsfiNRAhp8KcvMgy/VDx5kS6AxXvOKdywLbl8Ttl9tQycZlH10dzKr5Myxt752yf8qnc1FefqUVkpmI11Wq5Z6YGRuwuInb2S7H3sEr+BgBQSwcIWD2k+8wAAABZAQAAUEsDBBQACAAIAAAAISgAAAAAAAAAAAAAAAANAAkAZG9jcy9pbmRleC5tZFVUBQABgENtOGxSTWsbMRC9z6+Yshd7yW6alF5MCZTaKTnUobGhh+AmsvTciK4kWzub2IT8rt77y4rkGFK8p9F8vPdmZ9+nd1XFXyfTyc3n+WTMyx2boPUJj695ej3nyfhqzlV1QVTwlTfYEvkg4L9/WGmNtcCkt4lqJSe8JfqBRgeHmmcA346BdSJcDNSpAda1M8Uep7xGpaMVRKuGJ3x7g01nIxy8LAYRm9qZIStv+js1Ud7cet10BhyxKVpRkvH7hS9tbIVXSktNNIMO3hyyDD09YPP09y4IRnxE+nOVaarq4g1fD74o+PrJI7JXDkRzKJeLX0LnhehDTi4b9YtIYoecfoMooorLUo3Kkrf56dEKzKgsiTnlv1Pr8TVpbCv7VsrXr3GTga5rxKbhxnqcEed4noVmgnVLdFZnxrRhmgseiSCVTPC5lFc7/39MnsJhzApce9DnitXhscwyVz5Jpo/fyvElxUqTj/Xmfx4dkh8QkX/7/fNzk9yhmpeXe9bB7Mt9lkpuKAqedm6J2KaLnlHF5/XH93mtaRC0PHiwxsAPiS54hvhoNdj6VYhOiQ2+TrBsbbUMnfTrcCtq1/KeKXPfYIUIr2F4uUsUvbhU73Nxqs+gI2QxaHNMKkTjoLtsZInAiG/vUqydWQzuJAK1M0P6NwBQSwcIvF8Pp+0BAAC5AwAAUEsDBBQACAAIAAAAISgAAAAAAAAAAAAAAAALAAkAZG9jcy9yZXEubWRVVAUAAYBDbThsj8FqwkAQhu/zFFP3osGN0GOxQmli8aIScxMLk9lJu9Rs0s0K5u3LphYK7Wl3vuH7h395pzW+5Nu8eCrzDKsBTcs8x2yH212JebYpUesVgMJCPi/WSyMuAHT0JgC/EFatGebYi+AxE+lizmlKCyPSpY1RxCxdIMei2dsg3tIsBVAKD4HCLXVJaM3jpLa+D5PVckGrdfxiTRxSgINw68zPpBQ+vwt/9AAabyZH8G3uz2QdjiAFjRqTxFEjD0mCbpTXrW8uZwK44uv9SPbkx3LHjTNyPU1tfNLGzMZtIbV4cSwGqyHe/K/nLPI/+tcAUEsHCG/CJt3uAAAAZgEAAFBLAwQUAAgACAAAACEoAAAAAAAAAAAAAAAADgAJAGRvY3Mvc2VjcmV0Lm1kVVQFAAGAQ204fI5BT8JAEIXv8yue4QKNLRpuxJAYW5ULJMLNeFh2B9iE7tTdKcK/N23l6mkyX/Le957u8hxv1ar6eN5WJXZXOLH2HuUaq/UWVbncIs8XRCNs2EZWosYcmGiBd+8cBzixbc1BC6I/onxRmJ20is9lcHz5GvvuFLWb4MfrEb3VB3tqHSPy9yipUe5aOtmrj0mxN1aLTirBDU+fmt5iw6oRVqKcMD727kk3bMPx7C3Dh73E2qiXUBDlaKI/G2UEUe6jm7ZpIqfkJSSMndjlIUjkf0oeC+TIstieeJ5lKNcvs4cZAQNlkyR03HEtN9oYPc6zDNOduCv9DgBQSwcI4+YUZfgAAABwAQAAUEsBAhQAFAAIAAgAAAAhKHNL1+jEAAAA+wAAAA0ACQAAAAAAAAAAAAAAAAAAAGRvY3MvX3RyZWUubWRVVAUAAYBDbThQSwECFAAUAAgACAAAACEoWD2k+8wAAABZAQAADgAJAAAAAAAAAAAAAAAIAQAAZG9jcy9hL2RlZXAubWRVVAUAAYBDbThQSwECFAAUAAgACAAAACEovF8Pp+0BAAC5AwAADQAJAAAAAAAAAAAAAAAZAgAAZG9jcy9pbmRleC5tZFVUBQABgENtOFBLAQIUABQACAAIAAAAIShvwibd7gAAAGYBAAALAAkAAAAAAAAAAAAAAEoEAABkb2NzL3JlcS5tZFVUBQABgENtOFBLAQIUABQACAAIAAAAISjj5hRl+AAAAHABAAAOAAkAAAAAAAAAAAAAAHoFAABkb2NzL3NlY3JldC5tZFVUBQABgENtOFBLBQYAAAAABQAFAFQBAAC3BgAAAAA="}</script>
+<script type="application/json" id="docc-data">{"title":"Index","lang":"en","full":true,"key":"docc:001","nav":{"tree":[["index",0],["deep",1],["req",1]],"orphans":[["secret",0]]},"pages":[{"id":"index","title":"Index","file":"index.json","kids":["deep","req"],"summary":"Welcome. See Deep doc, Requirement and Requirement.","props":[{"k":"Owner name","id":"index--owner-name","p":"/owner_name","s":"Team","h":"Team"},{"k":"Count","id":"index--count","p":"/count","s":"3","h":"3"},{"k":"Flag","id":"index--flag","p":"/flag","s":"true","h":"true"}],"blocks":[{"p":"/body/0","s":"Welcome. See [[deep#acceptance_criteria]], [[req#body]] and [[req]].","h":"\u003cp>Welcome. See \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>, \u003ca href=\"#req\">Requirement\u003c/a> and \u003ca href=\"#req\">Requirement\u003c/a>.\u003c/p>\n"},{"p":"/body/1","s":"{{req#statement}}","h":"\u003c!-- raw HTML omitted -->\n\u003cp>First fact.\u003c/p>\n\u003cp>Second fact.\u003c/p>\n\u003c!-- raw HTML omitted -->\n"},{"p":"/body/2","s":"Quote: {{req#^first}}","h":"\u003cp>Quote: \u003c!-- raw HTML omitted -->First fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"index--meta\">Meta\u003c/h2>\n"},{"p":"/meta","s":"a: x; nested: k: v; list: p\nq; multi: line1\nline2; skip: ","h":"\u003cul>\n\u003cli>\u003cstrong>a:\u003c/strong> x\u003c/li>\n\u003cli>\u003cstrong>nested:\u003c/strong>\n\u003cul>\n\u003cli>\u003cstrong>k:\u003c/strong> v\u003c/li>\n\u003cli>\u003cstrong>list:\u003c/strong>\n\u003cul>\n\u003cli>p\u003c/li>\n\u003cli>q\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\u003cstrong>multi:\u003c/strong> line1\nline2\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--steps\">Steps\u003c/h2>\n"},{"p":"/steps","s":"name: one; done: true\nname: two; items: a\nb","h":"\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> one\u003c/li>\n\u003cli>\u003cstrong>done:\u003c/strong> true\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> two\u003c/li>\n\u003cli>\u003cstrong>items:\u003c/strong>\n\u003cul>\n\u003cli>a\u003c/li>\n\u003cli>b\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"},{"h":"\u003ch2 id=\"index--inline\">Inline\u003c/h2>\n"},{"p":"/inline","s":"Text {{req#title}} here and `{{literal}}` code and [[deep]].","h":"\u003cp>Text \u003c!-- raw HTML omitted -->Requirement\u003c!-- raw HTML omitted --> here and \u003ccode>{{literal}}\u003c/code> code and \u003ca href=\"#deep\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"index--numbers\">Numbers\u003c/h2>\n"},{"p":"/numbers","s":"1\n2.50","h":"\u003cul>\n\u003cli>1\u003c/li>\n\u003cli>2.50\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"index--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>note about \u003ca href=\"#deep\">Deep doc\u003c/a> stays hidden\u003c/li>\n\u003c/ul>\n"}]},{"id":"deep","title":"Deep doc","file":"a/deep.json","crumbs":["index"],"parent":"index","summary":"Back to Index and Index.","blocks":[{"p":"/body","s":"Back to [[index]] and [[index#owner_name]].","h":"\u003cp>Back to \u003ca href=\"#index\">Index\u003c/a> and \u003ca href=\"#index--owner-name\">Index\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"deep--acceptance-criteria\">Acceptance criteria\u003c/h2>\n"},{"p":"/acceptance_criteria/0","s":"Given X.","h":"\u003cp>Given X.\u003c/p>\n"},{"p":"/acceptance_criteria/1","s":"Then Y with [[req#statement]] and [[req#^first]].","h":"\u003cp>Then Y with \u003ca href=\"#req--statement\">Requirement\u003c/a> and \u003ca href=\"#req--first\">Requirement\u003c/a>.\u003c/p>\n"}]},{"id":"req","title":"Requirement","file":"req.json","crumbs":["index"],"parent":"index","summary":"Requirement body, see Deep doc.","blocks":[{"p":"/body","s":"Requirement body, see [[deep#acceptance_criteria]].","h":"\u003cp>Requirement body, see \u003ca href=\"#deep--acceptance-criteria\">Deep doc\u003c/a>.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--statement\">Statement\u003c/h2>\n"},{"p":"/statement/0","s":"First fact. ^first","h":"\u003cp>\u003ca id=\"req--first\">\u003c/a>First fact.\u003c/p>\n"},{"p":"/statement/1","s":"Second fact.","h":"\u003cp>Second fact.\u003c/p>\n"},{"h":"\u003ch2 id=\"req--checks\">Checks\u003c/h2>\n"},{"p":"/checks","s":"Plain check. ^check\nname: n","h":"\u003cul>\n\u003cli>\u003ca id=\"req--check\">\u003c/a>Plain check.\u003c/li>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>name:\u003c/strong> n\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ul>\n"},{"h":"\u003ch2 id=\"req--formula\">Formula\u003c/h2>\n"},{"p":"/formula","s":"x ^2","h":"\u003cp>x ^2\u003c/p>\n"}]},{"id":"secret","title":"Secret","file":"secret.json","hidden":true,"summary":"Hidden text about Index with First fact. Second fact.","blocks":[{"p":"/body","s":"Hidden text about [[index]] with {{req#statement}}","h":"\u003cp>Hidden text about \u003ca href=\"#index\">Index\u003c/a> with \u003c!-- raw HTML omitted -->First fact. Second fact.\u003c!-- raw HTML omitted -->\u003c/p>\n"},{"h":"\u003ch2 id=\"secret--notes-hidden\">Notes (hidden)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003cul>\n\u003cli>private note\u003c/li>\n\u003c/ul>\n\u003ch2 id=\"secret--suppressions-docignore\">Suppressions (docIgnore)\u003c/h2>\n\u003cblockquote>\n\u003cp>Service information.\u003c/p>\n\u003c/blockquote>\n\u003col>\n\u003cli>\n\u003cul>\n\u003cli>\u003cstrong>rule:\u003c/strong> DOC303\u003c/li>\n\u003cli>\u003cstrong>reason:\u003c/strong> demo\u003c/li>\n\u003cli>\u003cstrong>path:\u003c/strong> /body\u003c/li>\n\u003c/ul>\n\u003c/li>\n\u003c/ol>\n"}]}],"hist":null,"comments":[],"brand":{}}</script>
 <script>
 /* htm/preact/standalone 3.1.1 (https://github.com/developit/htm): htm under the Apache License 2.0, Preact (https://preactjs.com) under the MIT License. */
 !function(e,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n(e.htmPreact={})}(this,function(e){var n,_,t,o,r,u,l,i={},c=[],f=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i;function s(e,n){for(var _ in n)e[_]=n[_];return e}function a(e){var n=e.parentNode;n&&n.removeChild(e)}function p(e,_,t){var o,r,u,l={};for(u in _)"key"==u?o=_[u]:"ref"==u?r=_[u]:l[u]=_[u];if(arguments.length>2&&(l.children=arguments.length>3?n.call(arguments,2):t),"function"==typeof e&&null!=e.defaultProps)for(u in e.defaultProps)void 0===l[u]&&(l[u]=e.defaultProps[u]);return h(e,l,o,r,null)}function h(e,n,o,r,u){var l={type:e,props:n,key:o,ref:r,__k:null,__:null,__b:0,__e:null,__d:void 0,__c:null,__h:null,constructor:void 0,__v:null==u?++t:u};return null!=_.vnode&&_.vnode(l),l}function d(e){return e.children}function v(e,n){this.props=e,this.context=n}function y(e,n){if(null==n)return e.__?y(e.__,e.__.__k.indexOf(e)+1):null;for(var _;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e)return _.__e;return"function"==typeof e.type?y(e):null}function m(e){var n,_;if(null!=(e=e.__)&&null!=e.__c){for(e.__e=e.__c.base=null,n=0;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e){e.__e=e.__c.base=_.__e;break}return m(e)}}function g(e){(!e.__d&&(e.__d=!0)&&o.push(e)&&!k.__r++||u!==_.debounceRendering)&&((u=_.debounceRendering)||r)(k)}function k(){for(var e;k.__r=o.length;)e=o.sort(function(e,n){return e.__v.__b-n.__v.__b}),o=[],e.some(function(e){var n,_,t,o,r,u;e.__d&&(r=(o=(n=e).__v).__e,(u=n.__P)&&(_=[],(t=s({},o)).__v=o.__v+1,D(u,o,t,n.__n,void 0!==u.ownerSVGElement,null!=o.__h?[r]:null,_,null==r?y(o):r,o.__h),w(_,o),o.__e!=r&&m(o)))})}function b(e,n,_,t,o,r,u,l,f,s){var a,p,v,m,g,k,b,H=t&&t.__k||c,E=H.length;for(_.__k=[],a=0;a<n.length;a++)if(null!=(m=_.__k[a]=null==(m=n[a])||"boolean"==typeof m?null:"string"==typeof m||"number"==typeof m||"bigint"==typeof m?h(null,m,null,null,m):Array.isArray(m)?h(d,{children:m},null,null,null):m.__b>0?h(m.type,m.props,m.key,null,m.__v):m)){if(m.__=_,m.__b=_.__b+1,null===(v=H[a])||v&&m.key==v.key&&m.type===v.type)H[a]=void 0;else for(p=0;p<E;p++){if((v=H[p])&&m.key==v.key&&m.type===v.type){H[p]=void 0;break}v=null}D(e,m,v=v||i,o,r,u,l,f,s),g=m.__e,(p=m.ref)&&v.ref!=p&&(b||(b=[]),v.ref&&b.push(v.ref,null,m),b.push(p,m.__c||g,m)),null!=g?(null==k&&(k=g),"function"==typeof m.type&&null!=m.__k&&m.__k===v.__k?m.__d=f=C(m,f,e):f=x(e,m,v,H,g,f),s||"option"!==_.type?"function"==typeof _.type&&(_.__d=f):e.value=""):f&&v.__e==f&&f.parentNode!=e&&(f=y(v))}for(_.__e=k,a=E;a--;)null!=H[a]&&("function"==typeof _.type&&null!=H[a].__e&&H[a].__e==_.__d&&(_.__d=y(t,a+1)),A(H[a],H[a]));if(b)for(a=0;a<b.length;a++)U(b[a],b[++a],b[++a])}function C(e,n,_){var t,o;for(t=0;t<e.__k.length;t++)(o=e.__k[t])&&(o.__=e,n="function"==typeof o.type?C(o,n,_):x(_,o,o,e.__k,o.__e,n));return n}function x(e,n,_,t,o,r){var u,l,i;if(void 0!==n.__d)u=n.__d,n.__d=void 0;else if(null==_||o!=r||null==o.parentNode)e:if(null==r||r.parentNode!==e)e.appendChild(o),u=null;else{for(l=r,i=0;(l=l.nextSibling)&&i<t.length;i+=2)if(l==o)break e;e.insertBefore(o,r),u=r}return void 0!==u?u:o.nextSibling}function H(e,n,_){"-"===n[0]?e.setProperty(n,_):e[n]=null==_?"":"number"!=typeof _||f.test(n)?_:_+"px"}function E(e,n,_,t,o){var r;e:if("style"===n)if("string"==typeof _)e.style.cssText=_;else{if("string"==typeof t&&(e.style.cssText=t=""),t)for(n in t)_&&n in _||H(e.style,n,"");if(_)for(n in _)t&&_[n]===t[n]||H(e.style,n,_[n])}else if("o"===n[0]&&"n"===n[1])r=n!==(n=n.replace(/Capture$/,"")),n=n.toLowerCase()in e?n.toLowerCase().slice(2):n.slice(2),e.l||(e.l={}),e.l[n+r]=_,_?t||e.addEventListener(n,r?S:P,r):e.removeEventListener(n,r?S:P,r);else if("dangerouslySetInnerHTML"!==n){if(o)n=n.replace(/xlink[H:h]/,"h").replace(/sName$/,"s");else if("href"!==n&&"list"!==n&&"form"!==n&&"tabIndex"!==n&&"download"!==n&&n in e)try{e[n]=null==_?"":_;break e}catch(e){}"function"==typeof _||(null!=_&&(!1!==_||"a"===n[0]&&"r"===n[1])?e.setAttribute(n,_):e.removeAttribute(n))}}function P(e){this.l[e.type+!1](_.event?_.event(e):e)}function S(e){this.l[e.type+!0](_.event?_.event(e):e)}function D(e,n,t,o,r,u,l,i,c){var f,a,p,h,y,m,g,k,C,x,H,E=n.type;if(void 0!==n.constructor)return null;null!=t.__h&&(c=t.__h,i=n.__e=t.__e,n.__h=null,u=[i]),(f=_.__b)&&f(n);try{e:if("function"==typeof E){if(k=n.props,C=(f=E.contextType)&&o[f.__c],x=f?C?C.props.value:f.__:o,t.__c?g=(a=n.__c=t.__c).__=a.__E:("prototype"in E&&E.prototype.render?n.__c=a=new E(k,x):(n.__c=a=new v(k,x),a.constructor=E,a.render=M),C&&C.sub(a),a.props=k,a.state||(a.state={}),a.context=x,a.__n=o,p=a.__d=!0,a.__h=[]),null==a.__s&&(a.__s=a.state),null!=E.getDerivedStateFromProps&&(a.__s==a.state&&(a.__s=s({},a.__s)),s(a.__s,E.getDerivedStateFromProps(k,a.__s))),h=a.props,y=a.state,p)null==E.getDerivedStateFromProps&&null!=a.componentWillMount&&a.componentWillMount(),null!=a.componentDidMount&&a.__h.push(a.componentDidMount);else{if(null==E.getDerivedStateFromProps&&k!==h&&null!=a.componentWillReceiveProps&&a.componentWillReceiveProps(k,x),!a.__e&&null!=a.shouldComponentUpdate&&!1===a.shouldComponentUpdate(k,a.__s,x)||n.__v===t.__v){a.props=k,a.state=a.__s,n.__v!==t.__v&&(a.__d=!1),a.__v=n,n.__e=t.__e,n.__k=t.__k,n.__k.forEach(function(e){e&&(e.__=n)}),a.__h.length&&l.push(a);break e}null!=a.componentWillUpdate&&a.componentWillUpdate(k,a.__s,x),null!=a.componentDidUpdate&&a.__h.push(function(){a.componentDidUpdate(h,y,m)})}a.context=x,a.props=k,a.state=a.__s,(f=_.__r)&&f(n),a.__d=!1,a.__v=n,a.__P=e,f=a.render(a.props,a.state,a.context),a.state=a.__s,null!=a.getChildContext&&(o=s(s({},o),a.getChildContext())),p||null==a.getSnapshotBeforeUpdate||(m=a.getSnapshotBeforeUpdate(h,y)),H=null!=f&&f.type===d&&null==f.key?f.props.children:f,b(e,Array.isArray(H)?H:[H],n,t,o,r,u,l,i,c),a.base=n.__e,n.__h=null,a.__h.length&&l.push(a),g&&(a.__E=a.__=null),a.__e=!1}else null==u&&n.__v===t.__v?(n.__k=t.__k,n.__e=t.__e):n.__e=T(t.__e,n,t,o,r,u,l,c);(f=_.diffed)&&f(n)}catch(e){n.__v=null,(c||null!=u)&&(n.__e=i,n.__h=!!c,u[u.indexOf(i)]=null),_.__e(e,n,t)}}function w(e,n){_.__c&&_.__c(n,e),e.some(function(n){try{e=n.__h,n.__h=[],e.some(function(e){e.call(n)})}catch(e){_.__e(e,n.__v)}})}function T(e,_,t,o,r,u,l,c){var f,s,p,h=t.props,d=_.props,v=_.type,m=0;if("svg"===v&&(r=!0),null!=u)for(;m<u.length;m++)if((f=u[m])&&(f===e||(v?f.localName==v:3==f.nodeType))){e=f,u[m]=null;break}if(null==e){if(null===v)return document.createTextNode(d);e=r?document.createElementNS("http://www.w3.org/2000/svg",v):document.createElement(v,d.is&&d),u=null,c=!1}if(null===v)h===d||c&&e.data===d||(e.data=d);else{if(u=u&&n.call(e.childNodes),s=(h=t.props||i).dangerouslySetInnerHTML,p=d.dangerouslySetInnerHTML,!c){if(null!=u)for(h={},m=0;m<e.attributes.length;m++)h[e.attributes[m].name]=e.attributes[m].value;(p||s)&&(p&&(s&&p.__html==s.__html||p.__html===e.innerHTML)||(e.innerHTML=p&&p.__html||""))}if(function(e,n,_,t,o){var r;for(r in _)"children"===r||"key"===r||r in n||E(e,r,null,_[r],t);for(r in n)o&&"function"!=typeof n[r]||"children"===r||"key"===r||"value"===r||"checked"===r||_[r]===n[r]||E(e,r,n[r],_[r],t)}(e,d,h,r,c),p)_.__k=[];else if(m=_.props.children,b(e,Array.isArray(m)?m:[m],_,t,o,r&&"foreignObject"!==v,u,l,u?u[0]:t.__k&&y(t,0),c),null!=u)for(m=u.length;m--;)null!=u[m]&&a(u[m]);c||("value"in d&&void 0!==(m=d.value)&&(m!==e.value||"progress"===v&&!m)&&E(e,"value",m,h.value,!1),"checked"in d&&void 0!==(m=d.checked)&&m!==e.checked&&E(e,"checked",m,h.checked,!1))}return e}function U(e,n,t){try{"function"==typeof e?e(n):e.current=n}catch(e){_.__e(e,t)}}function A(e,n,t){var o,r;if(_.unmount&&_.unmount(e),(o=e.ref)&&(o.current&&o.current!==e.__e||U(o,null,n)),null!=(o=e.__c)){if(o.componentWillUnmount)try{o.componentWillUnmount()}catch(e){_.__e(e,n)}o.base=o.__P=null}if(o=e.__k)for(r=0;r<o.length;r++)o[r]&&A(o[r],n,"function"!=typeof e.type);t||null==e.__e||a(e.__e),e.__e=e.__d=void 0}function M(e,n,_){return this.constructor(e,_)}n=c.slice,_={__e:function(e,n){for(var _,t,o;n=n.__;)if((_=n.__c)&&!_.__)try{if((t=_.constructor)&&null!=t.getDerivedStateFromError&&(_.setState(t.getDerivedStateFromError(e)),o=_.__d),null!=_.componentDidCatch&&(_.componentDidCatch(e),o=_.__d),o)return _.__E=_}catch(n){e=n}throw e}},t=0,v.prototype.setState=function(e,n){var _;_=null!=this.__s&&this.__s!==this.state?this.__s:this.__s=s({},this.state),"function"==typeof e&&(e=e(s({},_),this.props)),e&&s(_,e),null!=e&&this.__v&&(n&&this.__h.push(n),g(this))},v.prototype.forceUpdate=function(e){this.__v&&(this.__e=!0,e&&this.__h.push(e),g(this))},v.prototype.render=d,o=[],r="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,k.__r=0,l=0;var F,L,N,W=0,R=[],I=_.__b,O=_.__r,V=_.diffed,q=_.__c,B=_.unmount;function $(e,n){_.__h&&_.__h(L,e,W||n),W=0;var t=L.__H||(L.__H={__:[],__h:[]});return e>=t.__.length&&t.__.push({}),t.__[e]}function j(e){return W=1,G(ee,e)}function G(e,n,_){var t=$(F++,2);return t.t=e,t.__c||(t.__=[_?_(n):ee(void 0,n),function(e){var n=t.t(t.__[0],e);t.__[0]!==n&&(t.__=[n,t.__[1]],t.__c.setState({}))}],t.__c=L),t.__}function z(e,n){var t=$(F++,4);!_.__s&&Z(t.__H,n)&&(t.__=e,t.__H=n,L.__h.push(t))}function J(e,n){var _=$(F++,7);return Z(_.__H,n)&&(_.__=e(),_.__H=n,_.__h=e),_.__}function K(){R.forEach(function(e){if(e.__P)try{e.__H.__h.forEach(X),e.__H.__h.forEach(Y),e.__H.__h=[]}catch(n){e.__H.__h=[],_.__e(n,e.__v)}}),R=[]}_.__b=function(e){L=null,I&&I(e)},_.__r=function(e){O&&O(e),F=0;var n=(L=e.__c).__H;n&&(n.__h.forEach(X),n.__h.forEach(Y),n.__h=[])},_.diffed=function(e){V&&V(e);var n=e.__c;n&&n.__H&&n.__H.__h.length&&(1!==R.push(n)&&N===_.requestAnimationFrame||((N=_.requestAnimationFrame)||function(e){var n,_=function(){clearTimeout(t),Q&&cancelAnimationFrame(n),setTimeout(e)},t=setTimeout(_,100);Q&&(n=requestAnimationFrame(_))})(K)),L=void 0},_.__c=function(e,n){n.some(function(e){try{e.__h.forEach(X),e.__h=e.__h.filter(function(e){return!e.__||Y(e)})}catch(t){n.some(function(e){e.__h&&(e.__h=[])}),n=[],_.__e(t,e.__v)}}),q&&q(e,n)},_.unmount=function(e){B&&B(e);var n=e.__c;if(n&&n.__H)try{n.__H.__.forEach(X)}catch(e){_.__e(e,n.__v)}};var Q="function"==typeof requestAnimationFrame;function X(e){var n=L;"function"==typeof e.__c&&e.__c(),L=n}function Y(e){var n=L;e.__c=e.__(),L=n}function Z(e,n){return!e||e.length!==n.length||n.some(function(n,_){return n!==e[_]})}function ee(e,n){return"function"==typeof n?n(e):n}var ne=function(e,n,_,t){var o;n[0]=0;for(var r=1;r<n.length;r++){var u=n[r++],l=n[r]?(n[0]|=u?1:2,_[n[r++]]):n[++r];3===u?t[0]=l:4===u?t[1]=Object.assign(t[1]||{},l):5===u?(t[1]=t[1]||{})[n[++r]]=l:6===u?t[1][n[++r]]+=l+"":u?(o=e.apply(l,ne(e,l,_,["",null])),t.push(o),l[0]?n[0]|=2:(n[r-2]=0,n[r]=o)):t.push(l)}return t},_e=new Map,te=function(e){var n=_e.get(this);return n||(n=new Map,_e.set(this,n)),(n=ne(this,n.get(e)||(n.set(e,n=function(e){for(var n,_,t=1,o="",r="",u=[0],l=function(e){1===t&&(e||(o=o.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?u.push(0,e,o):3===t&&(e||o)?(u.push(3,e,o),t=2):2===t&&"..."===o&&e?u.push(4,e,0):2===t&&o&&!e?u.push(5,0,!0,o):t>=5&&((o||!e&&5===t)&&(u.push(t,0,o,_),t=6),e&&(u.push(t,e,0,_),t=6)),o=""},i=0;i<e.length;i++){i&&(1===t&&l(),l(i));for(var c=0;c<e[i].length;c++)n=e[i][c],1===t?"<"===n?(l(),u=[u],t=3):o+=n:4===t?"--"===o&&">"===n?(t=1,o=""):o=n+o[0]:r?n===r?r="":o+=n:'"'===n||"'"===n?r=n:">"===n?(l(),t=1):t&&("="===n?(t=5,_=o,o=""):"/"===n&&(t<5||">"===e[i][c+1])?(l(),3===t&&(u=u[0]),t=u,(u=u[0]).push(2,0,t),t=0):" "===n||"\t"===n||"\n"===n||"\r"===n?(l(),t=2):o+=n),3===t&&"!--"===o&&(t=4,u=u[0])}return l(),u}(e)),n),arguments,[])).length>1?n:n[0]}.bind(p);e.h=p,e.html=te,e.render=function(e,t,o){var r,u,l;_.__&&_.__(e,t),u=(r="function"==typeof o)?null:o&&o.__k||t.__k,l=[],D(t,e=(!r&&o||t).__k=p(d,null,[e]),u||i,i,void 0!==t.ownerSVGElement,!r&&o?[o]:u?null:t.firstChild?n.call(t.childNodes):null,l,!r&&o?o:u?u.__e:t.firstChild,r),w(l,e)},e.Component=v,e.createContext=function(e,n){var _={__c:n="__cC"+l++,__:e,Consumer:function(e,n){return e.children(n)},Provider:function(e){var _,t;return this.getChildContext||(_=[],(t={})[n]=this,this.getChildContext=function(){return t},this.shouldComponentUpdate=function(e){this.props.value!==e.value&&_.some(g)},this.sub=function(e){_.push(e);var n=e.componentWillUnmount;e.componentWillUnmount=function(){_.splice(_.indexOf(e),1),n&&n.call(e)}}),e.children}};return _.Provider.__=_.Consumer.contextType=_},e.useState=j,e.useReducer=G,e.useEffect=function(e,n){var t=$(F++,3);!_.__s&&Z(t.__H,n)&&(t.__=e,t.__H=n,L.__H.__h.push(t))},e.useLayoutEffect=z,e.useRef=function(e){return W=5,J(function(){return{current:e}},[])},e.useImperativeHandle=function(e,n,_){W=6,z(function(){"function"==typeof e?e(n()):e&&(e.current=n())},null==_?_:_.concat(e))},e.useMemo=J,e.useCallback=function(e,n){return W=8,J(function(){return e},n)},e.useContext=function(e){var n=L.context[e.__c],_=$(F++,9);return _.c=e,n?(null==_.__&&(_.__=!0,n.sub(L)),n.props.value):e.__},e.useDebugValue=function(e,n){_.useDebugValue&&_.useDebugValue(n?n(e):e)},e.useErrorBoundary=function(e){var n=$(F++,10),_=j();return n.__=e,L.componentDidCatch||(L.componentDidCatch=function(e){n.__&&n.__(e),_[1](e)}),[_[0],function(){_[1](void 0)}]}});
@@ -363,9 +310,10 @@ a{color:inherit;text-decoration:none}
 // The documentation application: one page at a time drawn from the JSON
 // island #docc-data with Preact and htm (vendor/htm-preact-standalone.js).
 // Labels are marked as t:English in double braces and translated by the build (lang.rs).
-// Two modes: Reading shows the final text only; Work adds the edits since the
-// starting point (word diff in the text, gutter bars, removed paragraphs in
-// place, a navigator), comments on the margin and the tools.
+// A timeline over the saved versions sets where the edits start and the
+// moment the page is shown at; the edits are drawn into the text (word diff,
+// gutter bars, removed paragraphs in place). Comments are left on selected
+// words and kept in the browser until they are copied out.
 (function () {
   'use strict';
   var P = window.htmPreact;
@@ -444,11 +392,6 @@ a{color:inherit;text-decoration:none}
     }
     return navigator.clipboard ? navigator.clipboard.writeText(text).catch(old) : old();
   }
-  function unzip64(s) {
-    var b = atob(s), u = new Uint8Array(b.length);
-    for (var i = 0; i < b.length; i++) { u[i] = b.charCodeAt(i); }
-    return u;
-  }
   function b64(s) {
     var u = new TextEncoder().encode(s), b = '';
     for (var i = 0; i < u.length; i++) { b += String.fromCharCode(u[i]); }
@@ -461,7 +404,7 @@ a{color:inherit;text-decoration:none}
       return (c === 'x' ? r : (r & 3 | 8)).toString(16);
     });
   }
-  // a short hash of a text: a viewed edit is kept with the text it had
+  // a short hash of a text: the id of a removed block
   function hash(s) {
     var h = 5381;
     for (var i = 0; i < s.length; i++) { h = (h * 33 + s.charCodeAt(i)) | 0; }
@@ -469,6 +412,7 @@ a{color:inherit;text-decoration:none}
   }
   var box = document.createElement('div');
   function textOf(h) { box.innerHTML = h; return box.textContent.replace(/\s+/g, ' ').trim(); }
+  function esc(s) { box.textContent = s; return box.innerHTML; }
   // the source text of a block as a reader sees it: links by their names, no marks
   // ponytail: a few regexes for the usual marks, not a Markdown parser
   function plain(s) {
@@ -549,27 +493,6 @@ a{color:inherit;text-decoration:none}
     ops.forEach(function (o) { if (o[0] === 0) { same += y[o[1]].replace(/\s+/g, '').length; } });
     return same < 0.4 * Math.max(len(x), len(y));
   }
-  // word diff of two texts for the history: [op, text] runs
-  function diff(a, b) {
-    var x = (a || '').split(/(\s+)/), y = (b || '').split(/(\s+)/), ops = lcs(x, y);
-    if (!ops || rewrite(ops, x, y)) { return [[-1, a], [1, b]]; }
-    var out = [];
-    ops.forEach(function (o) {
-      var s = o[0] < 0 ? x[o[1]] : y[o[1]];
-      if (out.length && out[out.length - 1][0] === o[0]) { out[out.length - 1][1] += s; } else { out.push([o[0], s]); }
-    });
-    return out;
-  }
-  // was and now in reading form; removed words are struck out, added underlined
-  function Diff(props) {
-    var b = plain(props.b);
-    if (props.a == null) { return html`<div class="dv"><ins>${b}</ins></div>`; }
-    var a = plain(props.a), ds = diff(a, b), whole = ds.length === 2 && ds[0][1] === a && ds[1][1] === b;
-    return html`<div class=${'dv' + (whole ? ' whole' : '')}>${ds.map(function (d) {
-      return d[0] < 0 ? html`<del><span class="sr">removed: </span>${d[1]}</del>` : d[0] > 0 ? html`<ins><span class="sr">added: </span>${d[1]}</ins>` : d[1];
-    })}</div>`;
-  }
-
   // ---- edits drawn into the rendered paragraph ----
   // The old source words are matched with the words of the rendered new text,
   // so the paragraph keeps its links, lists and tables: added words are wrapped
@@ -701,7 +624,9 @@ a{color:inherit;text-decoration:none}
     return best;
   }
 
-  // ---- history and changes ----
+  // ---- history: a timeline over the commits. S is where the edits start,
+  // T the moment the text is shown at (the last commit is now) ----
+  var last = commits.length - 1;
   function versions(page, ptr) {
     var h = H.docs && H.docs[page.file];
     return (h && h.b && h.b[ptr]) || [];
@@ -710,15 +635,29 @@ a{color:inherit;text-decoration:none}
     var h = H.docs && H.docs[page.file];
     return (h && h.ch) || [];
   }
-  // the text of a block right after commit `since`: undefined when the block
-  // did not change after it, null when it did not exist yet
-  function changedSince(page, ptr, since) {
-    if (since == null || since < 0) { return undefined; }
-    var vs = versions(page, ptr), before = null, after = false;
-    vs.forEach(function (v) { if (v.c <= since) { before = v.t; } else { after = true; } });
-    return after ? before : undefined;
+  // the version of a block at commit k: null when it did not exist yet
+  function versionAt(vs, k) {
+    var at = null;
+    vs.forEach(function (v) { if (v.c <= k) { at = v; } });
+    return at;
+  }
+  // the text of a block at S when it changed between S and T: undefined when
+  // it did not change, null when it did not exist at S
+  function between(page, ptr, s, t) {
+    if (s == null || s >= t) { return undefined; }
+    var vs = versions(page, ptr), at = versionAt(vs, t);
+    if (!at || at.c <= s) { return undefined; }
+    var was = versionAt(vs, s);
+    return was ? was.t : null;
+  }
+  // a block of the page now that did not exist at T
+  function absent(page, ptr, t) {
+    var vs = versions(page, ptr);
+    return t < last && vs.length > 0 && !versionAt(vs, t);
   }
   function blocksOf(page) { return (page.props || []).concat(page.blocks || []).filter(function (b) { return b.p; }); }
+  // the text of a block at T, for the lists
+  function textAt(page, b, t) { var at = versionAt(versions(page, b.p), t); return at ? at.t : b.s; }
   // Where a removed block stood: it is known by its old pointer only, so it
   // goes before the block that has that pointer now, else after the last
   // block of the same array, else at the end of the page.
@@ -731,93 +670,81 @@ a{color:inherit;text-decoration:none}
     }
     return last >= 0 ? last + 1 : bs.length;
   }
-  // what changed on a page after `since`, in page order: changed and new
-  // blocks and removed ones (ghosts: {a, ptr, t, at})
+  // What the page shows between S and T, in page order: changed and new
+  // blocks, ghosts (removed between S and T) and olds (removed after T, so
+  // still there at T).
+  // ponytail: an old block shows the last text it had, not its text at T
   var deltaCache = {};
-  function pageDelta(page, since) {
-    var key = page.id + ':' + since;
+  function pageDelta(page, s, t) {
+    if (t == null) { t = last; }
+    var key = page.id + ':' + s + ':' + t;
     if (deltaCache[key]) { return deltaCache[key]; }
-    var d = { items: [], chg: 0, add: 0, rm: 0, ghosts: [] }, now = {}, before = {};
-    if (since != null && since >= 0) {
-      blocksOf(page).forEach(function (b) {
-        now[b.s] = true;
-        var was = changedSince(page, b.p, since);
-        if (was !== undefined) { before[b.p] = was; }
+    var d = { items: [], chg: 0, add: 0, rm: 0, ghosts: [], olds: [] }, now = {}, before = {}, live = s != null && s < t;
+    blocksOf(page).forEach(function (b) {
+      if (!absent(page, b.p, t)) { now[textAt(page, b, t)] = true; }
+      var was = live ? between(page, b.p, s, t) : undefined;
+      if (was !== undefined) { before[b.p] = was; }
+    });
+    // late, later: texts of blocks that came after S (or T); they were not there then
+    var gone = {}, late = {}, later = {};
+    pageChanges(page).forEach(function (c) {
+      if (c.c <= (live ? s : t)) { return; }
+      var after = c.c > t, l = after ? later : late;
+      (c.add || []).forEach(function (x) { l[x[1]] = true; });
+      (c.ch || []).forEach(function (x) { if (l[x[1]]) { l[x[2]] = true; } });
+      (c.rm || []).forEach(function (x) {
+        if (now[x[1]] || gone[x[1]] || l[x[1]]) { return; }
+        gone[x[1]] = true;
+        var g = { a: page.id + '~' + x[0] + '~' + hash(x[1]), ptr: x[0], t: x[1], at: placeGhost(page, x[0]) };
+        if (after) { g.isNew = !!late[x[1]]; d.olds.push(g); } else { d.ghosts.push(g); }
       });
-      var gone = {}, late = {}; // late: texts of blocks that came after `since`; they were not in that version
-      pageChanges(page).forEach(function (c) {
-        if (c.c <= since) { return; }
-        (c.add || []).forEach(function (x) { late[x[1]] = true; });
-        (c.ch || []).forEach(function (x) { if (late[x[1]]) { late[x[2]] = true; } });
-        (c.rm || []).forEach(function (x) {
-          if (now[x[1]] || gone[x[1]] || late[x[1]]) { return; }
-          gone[x[1]] = true;
-          d.ghosts.push({ a: page.id + '~' + x[0] + '~' + hash(x[1]), ptr: x[0], t: x[1], at: placeGhost(page, x[0]) });
-        });
-      });
-      var item = function (b) {
-        if (!(b.p in before)) { return; }
-        var isNew = before[b.p] === null;
-        d.items.push({ a: page.id + b.p, page: page, ptr: b.p, k: isNew ? 'new' : 'chg', t: b.s });
-        if (isNew) { d.add++; } else { d.chg++; }
-      };
-      (page.props || []).forEach(item);
-      var gh = function (i) {
-        d.ghosts.forEach(function (g) { if (g.at === i) { d.items.push({ a: g.a, page: page, ptr: g.ptr, k: 'rm', t: g.t }); d.rm++; } });
-      };
-      (page.blocks || []).forEach(function (b, i) { gh(i); if (b.p) { item(b); } });
-      gh((page.blocks || []).length);
-    }
+    });
+    var item = function (b) {
+      if (!(b.p in before)) { return; }
+      var isNew = before[b.p] === null;
+      d.items.push({ a: page.id + b.p, page: page, ptr: b.p, k: isNew ? 'new' : 'chg', t: textAt(page, b, t) });
+      if (isNew) { d.add++; } else { d.chg++; }
+    };
+    (page.props || []).forEach(item);
+    var gh = function (i) {
+      d.ghosts.forEach(function (g) { if (g.at === i) { d.items.push({ a: g.a, page: page, ptr: g.ptr, k: 'rm', t: g.t }); d.rm++; } });
+      d.olds.forEach(function (g) { if (g.at === i && g.isNew) { d.items.push({ a: g.a, page: page, ptr: g.ptr, k: 'new', t: g.t }); d.add++; } });
+    };
+    (page.blocks || []).forEach(function (b, i) { gh(i); if (b.p) { item(b); } });
+    gh((page.blocks || []).length);
     deltaCache[key] = d;
     return d;
   }
-  // every change after `since` in the order of the pages
-  function allChanges(since) {
-    var list = [], n = { chg: 0, add: 0, rm: 0, pages: 0 };
-    pages.forEach(function (p) {
-      var d = pageDelta(p, since);
-      if (d.items.length) { n.pages++; }
-      n.chg += d.chg; n.add += d.add; n.rm += d.rm;
-      list = list.concat(d.items);
-    });
-    n.list = list;
-    return n;
+  // every edit between S and T in the order of the pages
+  function allChanges(s, t) {
+    var list = [];
+    pages.forEach(function (p) { list = list.concat(pageDelta(p, s, t).items); });
+    return { list: list };
   }
+  // a moment of the timeline for the reader: «3 days ago», the exact date in the title
+  function ago(k) {
+    var cm = commits[k];
+    if (!cm) { return ''; }
+    if (!cm.h) { return 'now, not saved yet'; }
+    var sec = (new Date(cm.d) - Date.now()) / 1000, a = Math.abs(sec);
+    var u = a < 60 ? ['second', 1] : a < 3600 ? ['minute', 60] : a < 86400 ? ['hour', 3600] : a < 2592000 ? ['day', 86400] : a < 31536000 ? ['month', 2592000] : ['year', 31536000];
+    try { return new Intl.RelativeTimeFormat(D.lang || 'en', { numeric: 'auto' }).format(Math.round(sec / u[1]), u[0]); } catch (e) { return when(k); }
+  }
+  function sinceLabel(s) { return s >= last ? 'now, edits are not shown' : ago(s); }
+  function atLabel(t) { return t >= last ? 'now' : ago(t); }
   // where a pointer is, for the reader: the start of its text
   function placeOf(page, ptr, fallback) {
     var b = page && blocksOf(page).filter(function (x) { return x.p === ptr; })[0];
     return '«' + snip(b ? b.s : fallback || '', 70) + '»';
   }
 
-  // ---- viewed edits: kept with the hash of the text they had ----
-  var viewed = store('viewed') || {}, viewFns = [];
-  function viewState(it) {
-    var v = viewed[it.a];
-    return v == null ? '' : v === hash(it.t) ? 'yes' : 'again';
-  }
-  function setViewed(it, on) {
-    viewed = Object.assign({}, viewed);
-    if (on) { viewed[it.a] = hash(it.t); } else { delete viewed[it.a]; }
-    store('viewed', viewed);
-    viewFns.forEach(function (f) { f(viewed); });
-  }
-  function useViewed() {
-    var s = useState(viewed);
-    useEffect(function () {
-      var f = function (v) { s[1](v); };
-      viewFns.push(f);
-      return function () { viewFns.splice(viewFns.indexOf(f), 1); };
-    }, []);
-    return s[0];
-  }
-
-  // ---- comments: kept in localStorage until they are sent ----
+  // ---- comments: kept in localStorage until they are imported into the project ----
   var listeners = [];
   var imported = D.comments || [], inRepo = {};
   imported.forEach(function (c) { inRepo[c.id] = true; });
   // comments already imported into the repository leave the browser
-  var local = (store('comments') || []).filter(function (c) { return !inRepo[c.id]; });
-  store('comments', local);
+  var kept = store('comments') || [], local = kept.filter(function (c) { return !inRepo[c.id]; });
+  if (local.length !== kept.length) { store('comments', local); }
   function setLocal(list) {
     local = list; store('comments', list);
     listeners.forEach(function (f) { f(list); });
@@ -831,8 +758,6 @@ a{color:inherit;text-decoration:none}
     }, []);
     return s[0];
   }
-  function unsent(list) { return list.filter(function (c) { return !c.sent; }).length; }
-  function markSent() { setLocal(local.map(function (c) { return Object.assign({}, c, { sent: true }); })); }
   function exportJSON() {
     return JSON.stringify({ docc: 'comments', version: 1, comments: local.map(function (c) {
       var o = Object.assign({}, c); delete o.sent; return o;
@@ -847,22 +772,17 @@ a{color:inherit;text-decoration:none}
       if (c.author) { lines.push('— ' + c.author); }
       lines.push('');
     });
-    lines.push('For the team, do not edit:');
+    lines.push('For the import, do not edit:');
     lines.push('docc-comments:' + b64(exportJSON()));
     return lines.join('\n') + '\n';
   }
   function sendCopy() {
-    copy(exportText()).then(function () {
-      var was = local;
-      markSent(); toast('Copied. Paste it into a message to the team.', 'Not sent yet', function () { setLocal(was); });
-    }, function () { toast('Could not copy: download the file instead.'); });
+    copy(exportText()).then(function () { toast('Copied. Paste it into a message.'); },
+      function () { toast('Could not copy: download the file instead.'); });
   }
   function sendFile() {
-    save('comments-' + new Date().toISOString().slice(0, 10) + '.json', 'application/json', exportJSON()); markSent();
+    save('comments-' + new Date().toISOString().slice(0, 10) + '.json', 'application/json', exportJSON());
   }
-  window.addEventListener('beforeunload', function (e) {
-    if (unsent(local)) { e.preventDefault(); e.returnValue = ''; }
-  });
   function removeComment(c) {
     var at = local.indexOf(c);
     setLocal(local.filter(function (x) { return x.id !== c.id; }));
@@ -876,10 +796,16 @@ a{color:inherit;text-decoration:none}
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
 
-  // press to dictate, press again to stop; the words go into the text box as they come
+  // press to dictate, press again to stop; the words go into the text box as
+  // they come. The browser ends the recognition after a pause, so it is
+  // started again until the second press.
   function Mic(props) {
-    var rec = useRef(null), st = useState(''), on = useState(false);
+    var rec = useRef(null), want = useRef(false), st = useState(''), on = useState(false);
     if (!Rec) { return null; }
+    function stop(msg) {
+      want.current = false; on[1](false); props.listen(false);
+      if (msg) { st[1](msg); }
+    }
     function start() {
       var base = props.get(), r = new Rec();
       r.lang = speechLang; r.interimResults = true; r.continuous = true;
@@ -889,18 +815,20 @@ a{color:inherit;text-decoration:none}
         props.set((base ? base.replace(/\s*$/, ' ') : '') + s.trim());
       };
       r.onerror = function (ev) {
-        st[1](ev.error === 'not-allowed' ? 'No access to the microphone' :
-          ev.error === 'network' ? 'Speech service unreachable' :
-          ev.error === 'no-speech' ? 'No speech heard' : 'Dictation failed, type the text instead');
+        if (ev.error === 'no-speech' || ev.error === 'aborted') { return; } // a pause: onend starts it again
+        stop(ev.error === 'not-allowed' ? 'No access to the microphone' :
+          ev.error === 'network' ? 'Speech service unreachable' : 'Dictation failed, type the text instead');
       };
-      r.onend = function () { rec.current = null; on[1](false); props.listen(false); };
-      try { r.start(); rec.current = r; on[1](true); props.listen(true); st[1](''); } catch (err) { st[1]('Dictation failed, type the text instead'); }
+      r.onend = function () { rec.current = null; if (want.current) { start(); } else { stop(); } };
+      try { r.start(); rec.current = r; on[1](true); props.listen(true); st[1](''); } catch (err) { stop('Dictation failed, type the text instead'); }
     }
-    useEffect(function () { return function () { if (rec.current) { rec.current.abort(); } }; }, []);
-    function toggle() { if (rec.current) { rec.current.stop(); } else { start(); } }
+    useEffect(function () { return function () { want.current = false; if (rec.current) { rec.current.abort(); } }; }, []);
+    function toggle() {
+      if (want.current) { want.current = false; if (rec.current) { rec.current.stop(); } else { stop(); } } else { want.current = true; start(); }
+    }
     return html`<span class="mic-w">
       <button type="button" class=${'btn mic' + (on[0] ? ' on' : '')} aria-pressed=${on[0] ? 'true' : 'false'} onClick=${toggle}>
-        ${on[0] ? '■ Stop dictation' : '🎤 Dictate'}</button>
+        ${on[0] ? '● Recording, press to stop' : '🎤 Dictate'}</button>
       ${st[0] && html`<small class="err">${st[0]}</small>`}
     </span>`;
   }
@@ -921,14 +849,14 @@ a{color:inherit;text-decoration:none}
       if (!t) { return; }
       if (a) { store('author', a); }
       if (edit) {
-        setLocal(local.map(function (c) { return c.id === edit.id ? Object.assign({}, c, { text: t, author: a, sent: false }) : c; }));
+        setLocal(local.map(function (c) { return c.id === edit.id ? Object.assign({}, c, { text: t, author: a }) : c; }));
       } else {
-        var first = !unsent(local), c = { id: uuid(), doc: props.page.id, path: props.ptr, quote: props.quote, text: t,
+        var first = !local.length, c = { id: uuid(), doc: props.page.id, path: props.ptr, quote: props.quote, text: t,
           author: a, created: new Date().toISOString(), build: H.head || '' };
         if (props.frag) { c.fragment = props.frag.fragment; c.prefix = props.frag.prefix; c.suffix = props.frag.suffix; }
         setLocal(local.concat([c]));
         // nothing leaves the file by itself: say so once
-        if (first) { toast('Saved in this browser only. Send your comments to the team from the Comments tab.'); }
+        if (first) { toast('Saved in this browser only. Copy your comments in the Comments tab to pass them on.'); }
       }
       draft = false;
       props.close();
@@ -952,11 +880,6 @@ a{color:inherit;text-decoration:none}
     </div>`;
   }
 
-  function Status(props) {
-    var c = props.c;
-    if (!props.repo) { return c.sent ? html`<span class="chip">sent</span>` : html`<span class="chip warn">not sent</span>`; }
-    return c.status === 'done' ? html`<span class="chip ok">taken into account</span>` : html`<span class="chip">the team is working on it</span>`;
-  }
   // one comment as a card on the margin (or under the paragraph on a narrow screen)
   function Card(props) {
     var c = props.c, edit = useState(false);
@@ -966,73 +889,33 @@ a{color:inherit;text-decoration:none}
       <div class="nt">${c.text}</div>
       <div class="meta"><b>${c.author || 'Anonymous'}</b>
         <small>${c.created ? new Date(c.created).toLocaleDateString() : ''}</small>
-        <${Status} c=${c} repo=${props.repo} />
         ${!props.repo && html`<span class="acts">
-          ${c.sent && html`<button type="button" class="link" onClick=${function () {
-            setLocal(local.map(function (x) { return x.id === c.id ? Object.assign({}, x, { sent: false }) : x; }));
-          }}>Not sent yet</button>`}
           <button type="button" class="link" onClick=${function () { edit[1](true); }}>Edit</button>
           <button type="button" class="link" onClick=${function () { removeComment(c); }}>Delete</button></span>`}
       </div>
-      ${c.reply && html`<div class="reply"><small>Team\'s answer</small>${c.reply}</div>`}
+      ${c.reply && html`<div class="reply"><small>Answer</small>${c.reply}</div>`}
     </aside>`;
   }
 
-  // a dialog: native <dialog>, so focus stays inside and Esc closes it
-  function Modal(props) {
-    var d = useRef(null);
-    useEffect(function () { var el = d.current; if (el.showModal && !el.open) { el.showModal(); } }, []);
-    return html`<dialog ref=${d} class=${'dlg ' + (props.cls || '')} aria-label=${props.title} onClose=${props.close}
-      onClick=${function (e) { if (e.target === d.current) { d.current.close(); } }}>
-      <div class="dlg-h"><h2>${props.title}</h2><button type="button" class="btn" onClick=${function () { d.current.close(); }}>Close</button></div>
-      <div class="dlg-b">${props.children}</div>
-    </dialog>`;
-  }
-
-  function History(props) {
-    var vs = props.vs.slice().reverse();
-    return html`${vs.map(function (v, k) {
-      var prev = vs[k + 1];
-      return html`<div class="ver">
-        <div class="vh">${versionLine(v.c)}${!prev && html` · <i>first version</i>`}</div>
-        <${Diff} a=${prev ? prev.t : null} b=${v.t} />
-      </div>`;
-    })}`;
-  }
-  function PageHistory(props) {
-    var page = props.page, ch = pageChanges(page).slice().reverse();
-    function list(label, items, fn) {
-      return items && items.length ? html`<div class="pg-g"><small>${label}</small>${items.map(fn)}</div>` : null;
-    }
-    function place(ptr, text) {
-      var b = blocksOf(page).some(function (x) { return x.p === ptr; });
-      return b ? html`<a class="ptr" href=${blockHash(page.id, ptr)} onClick=${props.close}>${placeOf(page, ptr, text)}</a>` : html`<span class="ptr">${placeOf(page, ptr, text)}</span>`;
-    }
-    return html`${!ch.length && html`<p class="muted">No changes in this file\'s history.</p>`}
-      ${ch.map(function (c) {
-        return html`<div class="ver">
-          <div class="vh">${versionLine(c.c)}${c.new && html` · <i>page created</i>`}</div>
-          ${list('Changed', c.ch, function (x) { return html`<div class="pg-i">${place(x[0], x[2])}<${Diff} a=${x[1]} b=${x[2]} /></div>`; })}
-          ${list('Added', c.add, function (x) { return html`<div class="pg-i">${place(x[0], x[1])}<${Diff} a=${null} b=${x[1]} /></div>`; })}
-          ${list('Removed', c.rm, function (x) { return html`<div class="pg-i"><div class="dv"><del>${plain(x[1])}</del></div></div>`; })}
-        </div>`;
-      })}`;
-  }
-
-  // ---- one block: its HTML, the edits drawn into it, its comments and tools ----
+  // ---- one block: its HTML at T, the edits since S drawn into it, its comments ----
   function Block(props) {
-    var b = props.b, page = props.page, ptr = b.p, work = props.work, a = page.id + (ptr || '');
+    var b = props.b, page = props.page, ptr = b.p, s = props.s, t = props.t, past = t < last, a = page.id + (ptr || '');
     var body = useRef(null), whole = useState(null), lost = useState({}), more = useState(false);
-    var before = work && ptr ? changedSince(page, ptr, props.since) : undefined;
+    var at = past && ptr ? versionAt(versions(page, ptr), t) : null, h = b.h;
+    if (at && at.t !== b.s) {
+      // tables, lists and objects have no old HTML: their old text is shown plain
+      h = at.h || (props.label ? '' : '<p>') + esc(plain(at.t)).replace(/\n/g, '<br>') + (props.label ? '' : '</p>');
+    }
+    var before = ptr ? between(page, ptr, s, t) : undefined;
     var changed = before !== undefined, isNew = before === null;
-    var mine = work && ptr ? commentsOn(props.comments, page.id, ptr) : [];
-    var repo = work && ptr ? commentsOn(imported, page.id, ptr) : [];
+    var mine = ptr && !past ? commentsOn(props.comments, page.id, ptr) : [];
+    var repo = ptr && !past ? commentsOn(imported, page.id, ptr) : [];
     var frags = mine.concat(repo).filter(function (c) { return c.fragment; });
-    var key = (work ? 'w' : 'r') + props.since + frags.map(function (c) { return c.id; }).join();
+    var key = s + ':' + t + ':' + frags.map(function (c) { return c.id; }).join();
     useEffect(function () {
       var el = body.current, gone = {};
       whole[1](null);
-      if (!el || !work) { lost[1](gone); return; }
+      if (!el) { lost[1](gone); return; }
       if (changed && !isNew && !drawDiff(el, before)) { whole[1](el.querySelector('pre') ? 'code' : 'text'); }
       var text = readText(el).text;
       frags.forEach(function (c) {
@@ -1044,24 +927,17 @@ a{color:inherit;text-decoration:none}
       });
       lost[1](gone);
     }, [key]);
-    var inner = html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: b.h }}></div>`;
-    if (props.label) { inner = html`<div class="blk-body prop" key=${key} id=${props.id}><div class="pk">${props.label}</div><div ref=${body} dangerouslySetInnerHTML=${{ __html: b.h }}></div></div>`; }
-    if (!ptr || !work) { return html`<div class=${'blk' + (props.label ? ' is-prop' : '')} data-p=${ptr || undefined} data-a=${ptr ? a : undefined} tabindex=${ptr ? '-1' : undefined}>${inner}</div>`; }
+    var inner = html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: h }}></div>`;
+    if (props.label) { inner = html`<div class="blk-body prop" key=${key} id=${props.id}><div class="pk">${props.label}</div><div ref=${body} dangerouslySetInnerHTML=${{ __html: h }}></div></div>`; }
+    if (!ptr) { return html`<div class=${'blk' + (props.label ? ' is-prop' : '')}>${inner}</div>`; }
     var cards = repo.map(function (c) { return [c, true]; }).concat(mine.map(function (c) { return [c, false]; }));
     var shown = more[0] || cards.length <= 2 ? cards : cards.slice(0, 2);
-    var vs = versions(page, ptr), item = props.item, seen = item ? viewState(item) : '';
-    var cls = 'blk' + (props.label ? ' is-prop' : '') + (changed ? (isNew ? ' new' : ' chg') : '') + (seen === 'yes' ? ' seen' : '') +
-      (props.cur === a ? ' cur' : '') + (cards.length ? ' has-c' : '');
-    return html`<div class=${cls} data-p=${ptr} data-a=${a} tabindex="-1"
-      onClick=${function (e) { if (!e.target.closest('a,button,input,textarea,summary,.blk-side')) { props.setCur(a); } }}>
+    var cls = 'blk' + (props.label ? ' is-prop' : '') + (changed ? (isNew ? ' new' : ' chg') : '') + (props.cur === a ? ' cur' : '') + (cards.length ? ' has-c' : '');
+    return html`<div class=${cls} data-p=${ptr} data-a=${a} tabindex="-1">
       ${changed && html`<span class="sr">${isNew ? 'new paragraph' : 'changed paragraph'}</span>`}
       ${whole[0] && html`<details class="old" open=${whole[0] === 'code'}><summary>Previous text</summary><div class="dv"><del>${plain(before)}</del></div></details>`}
       ${inner}
       <div class="blk-side">
-        <div class="tools">
-          <button type="button" class="btn sm" onClick=${function () { props.setCur(a); props.openEditor({ page: page, ptr: ptr, quote: b.s }); }}>💬 Comment</button>
-          ${vs.length > 1 && html`<button type="button" class="btn sm" onClick=${function () { props.history(page, ptr); }}>🕘 History</button>`}
-        </div>
         ${shown.map(function (x) { return html`<${Card} key=${x[0].id} c=${x[0]} repo=${x[1]} lost=${lost[0][x[0].id]} active=${props.activeC === x[0].id} />`; })}
         ${cards.length > 2 && !more[0] && html`<button type="button" class="link" onClick=${function () { more[1](true); }}>More comments: ${cards.length - 2}</button>`}
         ${props.editor && props.editor.ptr === ptr && props.editor.page === page && html`<${Editor} page=${page} ptr=${ptr} quote=${b.s} frag=${props.editor.frag} close=${props.closeEditor} />`}
@@ -1069,13 +945,46 @@ a{color:inherit;text-decoration:none}
     </div>`;
   }
 
-  // a removed paragraph in its old place, folded
+  // a paragraph removed between S and T, in its old place, folded
   function Ghost(props) {
-    var g = props.g, it = { a: g.a, t: g.t };
-    return html`<details class=${'ghost' + (viewState(it) === 'yes' ? ' seen' : '') + (props.cur === g.a ? ' cur' : '')} data-a=${g.a} tabindex="-1">
+    var g = props.g;
+    return html`<details class=${'ghost' + (props.cur === g.a ? ' cur' : '')} data-a=${g.a} tabindex="-1">
       <summary><span class="sr">removed paragraph. </span>Removed paragraph: “${snip(g.t, 60)}”</summary>
       <div class="dv"><del>${plain(g.t)}</del></div>
     </details>`;
+  }
+  // a paragraph removed after T: at T it was still there
+  function Old(props) {
+    var g = props.g;
+    return html`<div class=${'blk' + (g.isNew ? ' new' : '') + (props.cur === g.a ? ' cur' : '')} data-a=${g.a} tabindex="-1">
+      ${g.isNew && html`<span class="sr">new paragraph</span>`}<div class="blk-body"><p class="dv">${plain(g.t)}</p></div></div>`;
+  }
+
+  // the timeline: two ends on one track, the edits are drawn between them
+  function Timeline(props) {
+    var s = props.s, t = props.t, touched = {};
+    pageChanges(props.page).forEach(function (c) { touched[c.c] = true; });
+    var pc = function (k) { return (k / last * 100).toFixed(2) + '%'; };
+    // a range input that was clamped keeps the clamped value on screen
+    function input(fn) { return function (e) { var v = fn(+e.target.value); if (v !== +e.target.value) { e.target.value = v; } }; }
+    return html`<div class="tl" role="group" aria-label="Timeline">
+      <div class="tl-h">
+        <span class="tl-s-l">Edits since: <b>${sinceLabel(s)}</b></span>
+        <span class="tl-t-l">Text as of: <b>${atLabel(t)}</b></span>
+      </div>
+      <div class=${'tl-r' + (s === t && t === last ? ' s-top' : '')}>
+        <div class="tl-in">
+          <div class="tl-line"></div>
+          <div class="tl-sel" style=${'left:' + pc(s) + ';width:' + pc(t - s)}></div>
+          ${commits.map(function (c, k) { return html`<span class=${'tl-k' + (touched[k] ? ' on' : '')} style=${'left:' + pc(k)} title=${ago(k) + ' · ' + versionLine(k)}></span>`; })}
+        </div>
+        <input type="range" class="tl-s" min="0" max=${last} step="1" value=${s} aria-label="Edits since:" aria-valuetext=${sinceLabel(s)}
+          onInput=${input(function (v) { v = Math.min(v, t); props.setS(v); return v; })} />
+        <input type="range" class="tl-t" min="0" max=${last} step="1" value=${t} aria-label="Text as of:" aria-valuetext=${atLabel(t)}
+          onInput=${input(function (v) { props.setT(v); return v; })} />
+      </div>
+      <div class="tl-f"><span>${ago(0)}</span><small>Darker marks: saves that changed this page</small><span>now</span></div>
+    </div>`;
   }
 
   // ---- page ----
@@ -1093,23 +1002,9 @@ a{color:inherit;text-decoration:none}
       low = top + shift + h;
     });
   }
-  function Chip(props) {
-    var p = byId[props.id];
-    return p ? html`<a class="pchip" href=${'#' + p.id}>${p.title}</a>` : null;
-  }
-  function Overview(props) {
-    var ch = props.changes, rows = pages.filter(function (p) { return pageDelta(p, props.since).items.length; });
-    return html`<section class="overview" aria-label="Overview of edits">
-      <h2>Edits since ${props.from}</h2>
-      <p>Changed: ${ch.chg} · Added: ${ch.add} · Removed: ${ch.rm}</p>
-      <ul>${rows.map(function (p) { return html`<li><a href=${'#' + p.id}>${p.title}</a> — ${pageDelta(p, props.since).items.length}</li>`; })}</ul>
-      <div class="row"><button type="button" class="btn pri" onClick=${props.start}>Start review</button>
-        <button type="button" class="btn" onClick=${props.hide}>Not now</button></div>
-    </section>`;
-  }
 
   function Page(props) {
-    var page = props.page, main = useRef(null), work = props.work;
+    var page = props.page, main = useRef(null), s = props.s, t = props.t, past = t < last;
     // heading anchors and copy buttons inside the rendered Markdown
     useEffect(function () {
       var el = main.current;
@@ -1155,53 +1050,38 @@ a{color:inherit;text-decoration:none}
         window.removeEventListener('resize', relayout); document.removeEventListener('toggle', relayout, true); document.removeEventListener('input', relayout, true);
       };
     });
-    var prev = pages[page.i - 1], next = pages[page.i + 1];
-    var shown = {}; shown[page.id] = true;
-    (page.kids || []).forEach(function (k) { shown[k] = true; });
-    if (page.parent) { shown[page.parent] = true; }
-    (page.crumbs || []).forEach(function (k) { shown[k] = true; });
-    var refs = (page.refs || []).filter(function (r) { return !shown[r]; });
-    var d = pageDelta(page, work ? props.since : null), items = {};
-    d.items.forEach(function (it) { items[it.a] = it; });
-    var bl = { comments: props.comments, since: props.since, page: page, work: work, cur: props.cur, setCur: props.setCur,
-      editor: props.editor, openEditor: props.openEditor, closeEditor: props.closeEditor, history: props.history, activeC: props.activeC };
-    function ghosts(i) {
-      return work ? d.ghosts.filter(function (g) { return g.at === i; }).map(function (g) { return html`<${Ghost} key=${g.a} g=${g} cur=${props.cur} />`; }) : null;
+    var prev = pages[page.i - 1], next = pages[page.i + 1], d = pageDelta(page, s, t);
+    var bl = { comments: props.comments, s: s, t: t, page: page, cur: props.cur, editor: props.editor, closeEditor: props.closeEditor, activeC: props.activeC };
+    function extra(i) {
+      return d.ghosts.filter(function (g) { return g.at === i; }).map(function (g) { return html`<${Ghost} key=${g.a} g=${g} cur=${props.cur} />`; })
+        .concat(d.olds.filter(function (g) { return g.at === i; }).map(function (g) { return html`<${Old} key=${g.a} g=${g} cur=${props.cur} />`; }));
     }
-    var badges = work && (page.kind || page.status || page.priority || page.hidden || page.tags);
-    return html`<article class=${'page' + (work ? ' work' : '')} ref=${main}>
+    var here = function (b) { return !b.p || !absent(page, b.p, t); };
+    var ps = (page.props || []).filter(here);
+    return html`<article class="page" ref=${main}>
       ${D.brand.print && html`<div dangerouslySetInnerHTML=${{ __html: D.brand.print }}></div>`}
       ${props.missing && html`<p class="notice" role="alert">Nothing is found at this link: «${props.missing}». The first page is shown; find the place in the tree or the search.</p>`}
-      ${props.overview}
       ${page.crumbs && html`<nav class="crumbs" aria-label="Breadcrumb">${page.crumbs.map(function (id, k) {
         return html`${k > 0 && html`<span aria-hidden="true">›</span>`}<a href=${'#' + id}>${byId[id] ? byId[id].title : id}</a>`;
       })}</nav>`}
+      ${last > 0 && html`<${Timeline} page=${page} s=${s} t=${t} setS=${props.setS} setT=${props.setT} />`}
+      ${past && html`<p class="notice past" role="status">You are looking at the page as it was ${ago(t)} (${when(t)}). Comments can be left on the current text only.
+        <button type="button" class="btn sm" onClick=${function () { props.setT(last); }}>Back to now</button></p>`}
       <h1>${page.title}</h1>
-      ${page.hidden && !work && html`<p class="badges"><span class="chip bad">hidden</span></p>`}
-      ${badges && html`<p class="badges">
-        ${page.kind && html`<span class="chip kind">${page.kind}</span>`}
-        ${page.status && html`<span class=${'chip ' + (page.sc || '')}>${page.status}</span>`}
-        ${page.priority && html`<span class="chip">priority ${page.priority}</span>`}
-        ${page.hidden && html`<span class="chip bad">hidden</span>`}
-        ${(page.tags || []).map(function (t) { return html`<span class="chip tag">#${t}</span>`; })}
-      </p>`}
+      ${page.hidden && html`<p class="badges"><span class="chip bad">hidden</span></p>`}
       <div class="doc">
-        ${page.props && html`<div class="props">${page.props.map(function (p) {
-          return html`<${Block} ...${bl} key=${p.p || p.k} b=${p} label=${p.k} id=${p.id} item=${items[page.id + p.p]} />`;
+        ${ps.length > 0 && html`<div class="props">${ps.map(function (p) {
+          return html`<${Block} ...${bl} key=${p.p || p.k} b=${p} label=${p.k} id=${p.id} />`;
         })}</div>`}
         ${(page.blocks || []).map(function (b, i) {
-          return html`${ghosts(i)}<${Block} ...${bl} key=${b.p || 'x' + i} b=${b} item=${items[page.id + b.p]} />`;
+          return html`${extra(i)}${here(b) && html`<${Block} ...${bl} key=${b.p || 'x' + i} b=${b} />`}`;
         })}
-        ${ghosts((page.blocks || []).length)}
+        ${extra((page.blocks || []).length)}
       </div>
       ${page.kids && html`<h2 class="rh">Pages in this section</h2><div class="rows">${page.kids.map(function (id) {
         var k = byId[id];
         return k && html`<a class="row" href=${'#' + id}><span class="ct">${k.title}</span>${k.summary && html`<span class="cs">${k.summary}</span>`}</a>`;
       })}</div>`}
-      ${work && (refs.length || page.covers) && html`<h2 class="rh">Related</h2><div class="related">
-        ${refs.length > 0 && html`<div class="rg"><span class="rl">Referenced by</span>${refs.map(function (id) { return html`<${Chip} id=${id} />`; })}</div>`}
-        ${page.covers && html`<div class="rg"><span class="rl">Covered by</span>${page.covers.map(function (c) { return html`<code>${c}</code>`; })}</div>`}
-      </div>`}
       ${(prev || next) && html`<nav class="pn" aria-label="Neighbouring pages">
         ${prev && html`<a class="prev" href=${'#' + prev.id}><small>Previous</small><span>${prev.title}</span></a>`}
         ${next && html`<a class="next" href=${'#' + next.id}><small>Next</small><span>${next.title}</span></a>`}
@@ -1221,14 +1101,10 @@ a{color:inherit;text-decoration:none}
     });
     return root.kids;
   }
-  var tree = nest(D.nav.tree), orphans = nest(D.nav.orphans);
+  // pages without a parent follow the tree at its top level
+  var tree = nest(D.nav.tree).concat(nest(D.nav.orphans));
   function contains(node, id) {
     return node.id === id || node.kids.some(function (k) { return contains(k, id); });
-  }
-  function subtreeEdits(node, since) {
-    var n = byId[node.id] ? pageDelta(byId[node.id], since).items.length : 0;
-    node.kids.forEach(function (k) { n += subtreeEdits(k, since); });
-    return n;
   }
   // long lists show a window of 30 items with buttons for the rest
   function Items(props) {
@@ -1244,35 +1120,27 @@ a{color:inherit;text-decoration:none}
       ${hi < n && html`<li><button type="button" class="more" onClick=${function () { win[1]([lo, Math.min(n, hi + 30)]); }}>${n - hi} more ↓</button></li>`}
     </ul>`;
   }
+  // the top level is always open: folding it would leave an empty tree
   function Node(props) {
-    var x = props.node, p = byId[x.id], inside = contains(x, props.cur);
+    var x = props.node, p = byId[x.id], inside = contains(x, props.cur), top = !props.depth;
     var open = useState(null);
-    var isOpen = open[0] == null ? inside : open[0];
+    var isOpen = top || (open[0] == null ? inside : open[0]);
     useEffect(function () { if (inside) { open[1](null); } }, [props.cur]);
     if (!p) { return null; }
-    var n = props.work ? subtreeEdits(x, props.since) : 0, here = p.id === props.cur;
+    var here = p.id === props.cur;
     return html`<li class=${x.kids.length ? 'parent' : ''}>
-      ${x.kids.length > 0 && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
+      ${x.kids.length > 0 && !top && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
         aria-label=${(isOpen ? 'Collapse' : 'Expand') + ': ' + p.title} onClick=${function () { open[1](!isOpen); }}></button>`}
-      <a href=${'#' + p.id} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><span>${p.title}</span>${p.hidden && html` <span class="chip bad">hidden</span>`}${n > 0 && html`<span class="cnt" title=${'Edits: ' + n}><span class="sr">Edits: </span>${n}</span>`}</a>
+      <a href=${'#' + p.id} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><span>${p.title}</span>${p.hidden && html` <span class="chip bad">hidden</span>`}</a>
       ${here && props.toc.length > 0 && html`<ul class="toc">${props.toc.map(function (h) {
         return html`<li><a href=${'#' + h.id} class=${'l' + h.level + (props.spy === h.id ? ' on' : '')} onClick=${props.picked}>${h.text}</a></li>`;
       })}</ul>`}
-      ${x.kids.length > 0 && isOpen && html`<${Items} ...${props} nodes=${x.kids} />`}
+      ${x.kids.length > 0 && isOpen && html`<${Items} ...${props} depth=${(props.depth || 0) + 1} nodes=${x.kids} />`}
     </li>`;
-  }
-  function Group(props) {
-    var open = useState(false);
-    return html`<h3 class="gh"><button class="gt" type="button" aria-expanded=${open[0] ? 'true' : 'false'}
-      onClick=${function () { open[1](!open[0]); }}>${props.label} <span>${props.n}</span></button></h3>
-      ${open[0] && html`<div class="gb">${props.children}</div>`}`;
   }
   function Tree(props) {
     return html`<nav id="tree" aria-label="Document tree">
-      ${tree.length > 0 && html`<${Items} ...${props} nodes=${tree} />`}
-      ${orphans.length > 0 && html`<${Group} label="Without parent" n=${D.nav.orphans.length}><${Items} ...${props} nodes=${orphans} /><//>`}
-      ${D.nav.uncovered && html`<${Group} label="Documents without code coverage" n=${D.nav.uncovered.length}>
-        <ul>${D.nav.uncovered.map(function (id) { return html`<li><a href=${'#' + id} onClick=${props.picked}>${byId[id] ? byId[id].title : id}</a></li>`; })}</ul><//>`}
+      ${tree.length > 0 && html`<${Items} ...${props} depth=${0} nodes=${tree} />`}
     </nav>`;
   }
 
@@ -1328,60 +1196,61 @@ a{color:inherit;text-decoration:none}
     </div>`;
   }
 
-  function glyph(k) { return k === 'new' ? '+' : k === 'rm' ? '−' : '~'; }
-  function left(list) { return list.filter(function (it) { return viewState(it) !== 'yes'; }).length; }
+  var kindWord = { chg: 'edited', 'new': 'new', rm: 'removed' };
   function EditsTab(props) {
-    var list = props.changes ? props.changes.list : [], groups = [];
+    var list = props.changes.list, groups = [];
     list.forEach(function (it, k) {
       var g = groups[groups.length - 1];
-      if (!g || g.page !== it.page) { g = { page: it.page, rows: [] }; groups.push(g); }
-      g.rows.push([it, k]);
+      if (!g || g.page !== it.page) { g = { page: it.page, rows: [], n: { chg: 0, 'new': 0, rm: 0 } }; groups.push(g); }
+      g.rows.push([it, k]); g.n[it.k]++;
     });
     // the list opens at the current edit, else at the current page
     useEffect(function () {
       var on = document.querySelector('.er.on') || document.querySelector('.eg[data-pg="' + CSS.escape(props.page.id) + '"]');
       if (on) { on.scrollIntoView({ block: 'center' }); }
     }, [props.cur, props.page]);
-    if (!list.length) { return html`<p class="muted pad">No changes</p>`; }
-    var rest = left(list);
+    if (last < 1) { return html`<p class="muted pad">The documentation has no saved history yet.</p>`; }
+    if (!list.length) { return html`<p class="muted pad">No edits in the chosen period. Move the left end of the timeline above the page to the past to see them.</p>`; }
     return html`<div class="pad">
-      <p class="left">${rest ? 'Left ' + rest + ' of ' + list.length : 'All changes viewed'}</p>
-      <progress max=${list.length} value=${list.length - rest} aria-label="Viewed"></progress>
+      <p class="left">Edits: ${list.length} · ${sinceLabel(props.s)} → ${atLabel(props.t)}</p>
       ${groups.map(function (g) {
-        return html`<h3 class="eg" data-pg=${g.page.id}>${g.page.title} <span>${g.rows.length}</span></h3><ul class="edits">${g.rows.map(function (x) {
-          var it = x[0], st = viewState(it);
+        var n = [['Changed:', g.n.chg], ['Added:', g.n['new']], ['Removed:', g.n.rm]].filter(function (x) { return x[1]; });
+        return html`<h3 class="eg" data-pg=${g.page.id}>${g.page.title}</h3>
+          <p class="es">${n.map(function (x) { return x[0] + ' ' + x[1]; }).join(' · ')}</p>
+          <ul class="edits">${g.rows.map(function (x) {
+          var it = x[0];
           return html`<li><button type="button" class=${'er ' + it.k + (x[1] === props.cur ? ' on' : '')} onClick=${function () { props.go(x[1]); }}>
-            <span class=${'g ' + it.k} aria-hidden="true">${st === 'yes' ? '✓' : glyph(it.k)}</span>
-            <span class="sr">${it.k === 'new' ? 'new paragraph' : it.k === 'rm' ? 'removed paragraph' : 'changed paragraph'}${st === 'yes' ? ', viewed' : ''}: </span>
-            <span class="et">${snip(it.t, 60)}${st === 'again' && html` <small class="again">Changed after you viewed it</small>`}</span></button></li>`;
+            <span class=${'g ' + it.k}>${kindWord[it.k]}</span><span class="et">${snip(it.t, 60)}</span></button></li>`;
         })}</ul>`;
       })}
     </div>`;
   }
   function CommentsTab(props) {
-    var list = props.comments, wait = unsent(list), rows = [];
+    var list = props.comments, rows = [];
     list.forEach(function (c) { rows.push([c, false]); });
     imported.forEach(function (c) { rows.push([c, true]); });
     return html`<div class="pad">
-      ${wait > 0 && html`<div class="send" id="send">
-        <p>Comments are kept only in this browser until you send them to the team.</p>
-        <div class="row"><button type="button" class="btn pri" onClick=${sendCopy}>📋 Copy for sending</button>
+      ${list.length > 0 && html`<div class="send" id="send">
+        <p>Your comments are kept only in this browser. Copy them or download a file and pass it to whoever keeps the documentation.</p>
+        <div class="row"><button type="button" class="btn pri" onClick=${sendCopy}>📋 Copy comments</button>
           <button type="button" class="btn" onClick=${sendFile}>Download as a file</button></div>
       </div>`}
-      ${!rows.length && html`<p class="muted">No comments yet. Select text or press «Comment» next to a paragraph.</p>`}
+      ${!rows.length && html`<p class="muted">No comments yet. Select text on the page to comment on it.</p>`}
       <ul class="clist">${rows.map(function (x) {
         var c = x[0], p = byId[c.doc];
         return html`<li><button type="button" class="cr" onClick=${function () { props.show(c); }}>
           <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : placeOf(p, c.path, c.quote)}</span>
-          <span class="ctx">${c.text}</span><${Status} c=${c} repo=${x[1]} /></button></li>`;
+          <span class="ctx">${c.text}</span>
+          ${c.author && html`<span class="cp">— ${c.author}</span>`}
+          ${c.reply && html`<span class="crep"><b>Answer:</b> ${c.reply}</span>`}</button></li>`;
       })}</ul>
     </div>`;
   }
   // tabs after the WAI-ARIA pattern: arrows move between them
   function Side(props) {
-    var tabs = props.work ? [['pages', 'Pages', 0], ['edits', 'Edits', props.changes ? props.changes.list.length : 0],
-      ['comments', 'Comments', props.comments.length + imported.length]] : null;
-    var tab = props.work ? props.tab : 'pages';
+    var tabs = [['pages', 'Pages', 0], ['edits', 'Edits', props.changes.list.length],
+      ['comments', 'Comments', props.comments.length + imported.length]];
+    var tab = props.tab;
     function key(e) {
       var k = tabs.map(function (t) { return t[0]; }).indexOf(tab), n = tabs.length;
       var to = e.key === 'ArrowRight' ? (k + 1) % n : e.key === 'ArrowLeft' ? (k + n - 1) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
@@ -1395,107 +1264,37 @@ a{color:inherit;text-decoration:none}
         <${Search} q=${props.q} picked=${props.picked} go=${props.goHash} />
         ${D.full && html`<p class="banner">Full build: includes hidden documents and notes. Do not publish.</p>`}
       </div>
-      ${tabs && html`<div class="tabs" role="tablist" aria-label="Navigation" onKeyDown=${key}>${tabs.map(function (t) {
+      <div class="tabs" role="tablist" aria-label="Navigation" onKeyDown=${key}>${tabs.map(function (t) {
         return html`<button type="button" role="tab" id=${'tab-' + t[0]} aria-selected=${t[0] === tab ? 'true' : 'false'} aria-controls="tabpanel"
           tabindex=${t[0] === tab ? '0' : '-1'} onClick=${function () { props.setTab(t[0]); }}>${t[1]}${t[2] > 0 && html` <span class="tc">${t[2]}</span>`}</button>`;
-      })}</div>`}
-      <div id="tabpanel" role=${tabs ? 'tabpanel' : undefined} aria-labelledby=${tabs ? 'tab-' + tab : undefined} class="panel">
-        ${tab === 'pages' && html`<${Tree} cur=${props.page.id} since=${props.since} work=${props.work} toc=${props.toc} spy=${props.spy} picked=${props.picked} />`}
-        ${tab === 'edits' && html`<${EditsTab} changes=${props.changes} cur=${props.cur} page=${props.page} go=${function (k) { props.picked(); props.goItem(k); }} />`}
+      })}</div>
+      <div id="tabpanel" role="tabpanel" aria-labelledby=${'tab-' + tab} class="panel">
+        ${tab === 'pages' && html`<${Tree} cur=${props.page.id} toc=${props.toc} spy=${props.spy} picked=${props.picked} />`}
+        ${tab === 'edits' && html`<${EditsTab} changes=${props.changes} s=${props.s} t=${props.t} cur=${props.cur} page=${props.page} go=${function (k) { props.picked(); props.goItem(k); }} />`}
         ${tab === 'comments' && html`<${CommentsTab} comments=${props.comments} show=${function (c) { props.picked(); props.showComment(c); }} />`}
       </div>
     </div>`;
   }
 
-  // the edits one by one, like F7 in an IDE
-  function Navigator(props) {
-    var list = props.changes.list, it = list[props.cur], rest = left(list);
-    var text = props.cur < 0 ? 'Edits: ' + list.length : 'Change ' + (props.cur + 1) + ' of ' + list.length;
-    if (props.frag) {
-      return html`<div class="nav" role="region" aria-label="Comment on the selection">
-        <button type="button" class="btn pri" onMouseDown=${function (e) { e.preventDefault(); }} onClick=${props.fragGo}>💬 Comment on the selection</button></div>`;
-    }
-    return html`<div class="nav" role="region" aria-label="Edit navigation">
-      <button type="button" class="btn ico" aria-label="Previous change" title="Previous change (K)" onClick=${function () { props.step(-1); }}>◀</button>
-      <span class="pos">${text}${rest ? html`<span class="rest"> · left ${rest}</span>` : html`<span class="rest"> · All changes viewed</span>`}
-        ${it && viewState(it) === 'again' && html`<small class="again"> · Changed after you viewed it</small>`}
-        ${it && html`<span class="npg">${it.page.title}</span>`}</span>
-      <button type="button" class="btn ico" aria-label="Next change" title="Next change (J)" onClick=${function () { props.step(1); }}>▶</button>
-      ${it && html`<label class="seen-l"><input type="checkbox" checked=${viewState(it) === 'yes'} onChange=${function (e) { setViewed(it, e.target.checked); }} /> Viewed</label>`}
-    </div>`;
-  }
-  // ticks of the page's edits along the window edge, like the scrollbar of an IDE
-  function ChangeMap(props) {
-    var ticks = useState([]);
-    useEffect(function () {
-      function measure() {
-        var h = document.documentElement.scrollHeight || 1;
-        ticks[1](props.items.map(function (it) {
-          var el = document.querySelector('[data-a="' + CSS.escape(it.a) + '"]');
-          return el ? { it: it, y: (el.getBoundingClientRect().top + window.scrollY) / h } : null;
-        }).filter(Boolean));
-      }
-      measure();
-      var t = setTimeout(measure, 300);
-      window.addEventListener('resize', measure);
-      document.addEventListener('toggle', measure, true);
-      return function () { clearTimeout(t); window.removeEventListener('resize', measure); document.removeEventListener('toggle', measure, true); };
-    }, [props.items, props.comments]);
-    return html`<div class="cmap" aria-hidden="true">${ticks[0].map(function (x) {
-      return html`<span class=${'tk ' + x.it.k + (viewState(x.it) === 'yes' ? ' seen' : '') + (props.curA === x.it.a ? ' on' : '')}
-        style=${'top:' + (x.y * 100).toFixed(2) + '%'} title=${snip(x.it.t, 40)} onClick=${function () { props.go(x.it); }}></span>`;
-    })}</div>`;
-  }
-
-  function Keys() {
-    var rows = [['F7 · J', 'next change'], ['Shift+F7 · K', 'previous change'], ['V', 'mark viewed and go to the next'],
-      ['C', 'comment on the selection or the paragraph'], ['/ · Ctrl+K', 'Search'], ['?', 'this help'], ['Esc', 'close'], ['Ctrl+Enter', 'save the comment']];
-    return html`<h3>Colours</h3>
-      <ul class="legend">
-        <li><ins>added text</ins></li><li><del>removed text</del></li>
-        <li><span class="lb chg"></span>changed paragraph</li><li><span class="lb new"></span>new paragraph</li>
-        <li><span class="lb rm"></span>removed paragraph</li><li><span class="lb chg seen"></span>viewed</li>
-        <li><mark class="frag">commented fragment</mark></li>
-      </ul>
-      <h3>Keys</h3>
-      <dl class="keys">${rows.map(function (r) { return html`<dt><kbd>${r[0]}</kbd></dt><dd>${r[1]}</dd>`; })}</dl>
-      <p class="muted">The letter keys work in the Work mode, outside text fields.</p>`;
-  }
-  function SinceDialog(props) {
-    var real = [];
-    commits.forEach(function (c, k) { if (c.h) { real.push(k); } });
-    function label(k) { return k === 0 && H.base ? 'the version sent on ' + date(0) : versionLine(k); }
-    return html`<label class="since-l">Show changes since
-      <select value=${props.since == null ? '' : String(props.since)} onChange=${function (e) { props.set(e.target.value === '' ? null : +e.target.value); }}>
-        <option value="">do not show</option>
-        ${real.slice().reverse().map(function (k) { return html`<option value=${String(k)}>${label(k)}</option>`; })}
-      </select></label>`;
-  }
-  // «⋯»: a native popover with plain buttons
+  // «⋯»: a native popover; it holds the reset
   function More(props) {
     var pop = useRef(null);
-    function item(label, fn, cls) {
-      return html`<button type="button" class=${'mi' + (cls ? ' ' + cls : '')} onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } fn(); }}>${label}</button>`;
-    }
-    var page = props.page, work = props.work, n = unsent(props.comments);
-    return html`<button type="button" class="btn ico more-b" popovertarget="more" aria-label="More actions" title="More actions">⋯${n > 0 && html`<span class="dot" aria-hidden="true"></span>`}</button>
+    return html`<button type="button" class="btn ico more-b" popovertarget="more" aria-label="More actions" title="More actions">⋯</button>
       <div id="more" popover="auto" ref=${pop} class="pop">
-        ${work && props.changes && props.changes.list.length > 0 && item('Overview of edits', props.overview)}
-        ${commits.some(function (c) { return c.h; }) && item('Starting point…', function () { props.dialog('since'); })}
-        ${work && commits.length > 0 && item('History of the page', function () { props.dialog('page'); })}
-        ${work && props.blockHist && item('History of the paragraph', props.blockHist)}
-        <hr />
-        ${item('Download this page (.md)', function () { save(page.id + '.md', 'text/markdown', page.md); })}
-        ${item('Download all in one file (.md)', function () { save('docs.md', 'text/markdown', D.single); })}
-        ${item('Download all as an archive (.zip)', function () { save('docs.zip', 'application/zip', unzip64(D.zip)); })}
-        ${item('Print', function () { window.print(); })}
-        <hr />
-        ${n > 0 && item('Send comments (' + n + ')', props.send, 'phone')}
-        ${item('Keys and colours', function () { props.dialog('keys'); })}
-        ${props.comments.length > 0 && item('Delete all my comments', function () {
-          if (confirm('Delete all comments of this browser?')) { setLocal([]); }
-        }, 'bad')}
+        <button type="button" class="mi bad" onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } props.reset(); }}>Reset everything…</button>
       </div>`;
+  }
+  // everything this file keeps in the browser: the name, the timeline, the tab, the comments
+  function resetAll() {
+    if (!confirm('Delete from this browser your name, the chosen point of the timeline, the open tab and your comments (' + local.length + ')?')) { return; }
+    draft = false;
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(D.key + ':') === 0) { localStorage.removeItem(k); }
+      }
+    } catch (e) { /* storage blocked: nothing kept */ }
+    location.reload();
   }
 
   // the selected text of one block, with what stands around it, for a comment on a fragment
@@ -1503,7 +1302,7 @@ a{color:inherit;text-decoration:none}
     var s = window.getSelection();
     if (!s || s.isCollapsed || !s.rangeCount) { return null; }
     var r = s.getRangeAt(0), start = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentNode;
-    var body = start.closest && start.closest('.blk-body'), blk = body && body.closest('.blk[data-a]');
+    var body = start.closest && start.closest('.blk-body'), blk = body && body.closest('.blk[data-p]');
     if (!blk) { return null; }
     if (!body.contains(r.endContainer)) { r = r.cloneRange(); r.setEnd(body, body.childNodes.length); }
     var frag = cleanText(r.cloneContents()).replace(/\s+/g, ' ').trim();
@@ -1518,72 +1317,43 @@ a{color:inherit;text-decoration:none}
 
   function App() {
     var r = useState(route(location.hash)), wide = useState(mq('(min-width: 1280px)')), drawer = useState(false);
-    var q = useState(''), tab = useState(store('tab') || 'pages'), mode = useState(store('mode') || 'read');
-    var sinceHash = useState(store('since')), cur = useState(-1), curA = useState(null), editor = useState(null);
-    var dlg = useState(null), toc = useState([]), spy = useState(null), frag = useState(null), activeC = useState(null);
-    var ovOff = useState(!!store('overview')), hint = useState(!!store('hint')), live = useState('');
-    var comments = useComments(), seen = useViewed(), pending = useRef(null), keep = useRef(null), dr = useRef(null);
-    var page = r[0].page, work = mode[0] === 'work';
-    // the chosen version is kept by hash: indexes change with every commit;
-    // the file's own starting point is the default, "off" turns it off
-    var since = null;
-    commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { since = k; } });
-    if (since == null && sinceHash[0] !== 'off' && H.base && commits.length) { since = 0; }
-    var all = since != null ? allChanges(since) : null, changes = work ? all : null;
-    var count = all ? all.list.length : 0, from = since != null ? date(since) : '';
-    void seen;
+    var q = useState(''), tab = useState(store('tab') || 'pages');
+    // S is kept by hash (indexes change with every commit), «now» as now;
+    // the starting point of docc.json is the default. T always opens at now.
+    var sinceHash = useState(store('since')), atK = useState(last), cur = useState(-1), editor = useState(null);
+    var toc = useState([]), spy = useState(null), frag = useState(null), activeC = useState(null);
+    var comments = useComments(), pending = useRef(null), dr = useRef(null);
+    var page = r[0].page, t = atK[0], s = -1, past = t < last;
+    if (sinceHash[0] === 'now') { s = last; } else { commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { s = k; } }); }
+    if (s < 0) { s = H.base ? 0 : last; }
+    s = Math.min(s, t);
+    var all = allChanges(s, t);
 
-    function setMode(m) {
-      // keep the paragraph at the top of the window where it is
-      var top = [].filter.call(document.querySelectorAll('.blk[data-a]'), function (b) { return b.getBoundingClientRect().bottom > 80; })[0];
-      keep.current = top && window.scrollY > 40 ? top.getAttribute('data-a') : null;
-      mode[1](m); store('mode', m);
-      if (m === 'work') { hint[1](true); store('hint', true); }
-    }
     function setTab(t) { tab[1](t); store('tab', t); }
-    function setSince(v) { var h = v == null ? 'off' : commits[v].h; sinceHash[1](h); store('since', h); cur[1](-1); }
+    function setS(v) { var h = v >= last ? 'now' : commits[v].h; sinceHash[1](h); store('since', h); cur[1](-1); }
+    function setT(v) {
+      if (v < last && editor[0]) { if (!leaveDraft()) { return; } draft = false; editor[1](null); }
+      atK[1](v); cur[1](-1); frag[1](null);
+      if (v < s) { setS(v); }
+    }
     function find(a) { return a && document.querySelector('[data-a="' + CSS.escape(a) + '"]'); }
-    function focusEl(el, say) {
+    function focusEl(el) {
       (el.tagName === 'DETAILS' ? el.querySelector('summary') : el).focus({ preventScroll: true });
       var tall = el.offsetHeight > window.innerHeight - 160;
       el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: reduced ? 'auto' : 'smooth' });
       if (!reduced) { el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 900); }
-      if (say) { live[1](say); }
     }
     function goItem(k) {
-      var list = all.list, it = list[k];
+      var it = all.list[k];
       if (!it) { return; }
-      cur[1](k); curA[1](it.a); pending.current = it.a;
-      if (!ovOff[0]) { ovOff[1](true); store('overview', true); }
-      var kind = it.k === 'new' ? 'new paragraph' : it.k === 'rm' ? 'removed paragraph' : 'changed paragraph';
-      pending.say = 'Change ' + (k + 1) + ' of ' + list.length + ': ' + kind + ', ' + it.page.title;
-      if (it.page !== page) { toast('Page: «' + it.page.title + '»'); }
-      var h = it.k === 'rm' ? '#' + it.page.id : blockHash(it.page.id, it.ptr);
-      if (it.page === page && (it.k === 'rm' || decode(location.hash) === decode(h))) { var el = find(it.a); pending.current = null; if (el) { focusEl(el, pending.say); } }
+      cur[1](k); pending.current = it.a;
+      // removed blocks have no address of their own: the page, then the block
+      var gone = it.a.indexOf('~') > 0, h = gone ? '#' + it.page.id : blockHash(it.page.id, it.ptr);
+      if (it.page === page && (gone || decode(location.hash) === decode(h))) { var el = find(it.a); pending.current = null; if (el) { focusEl(el); } }
       else { location.hash = h; }
     }
-    function step(d) {
-      var n = all.list.length;
-      if (!n) { return; }
-      goItem(cur[0] < 0 ? (d > 0 ? 0 : n - 1) : (cur[0] + d + n) % n);
-    }
-    function nextUnviewed() {
-      var list = all.list, n = list.length;
-      for (var i = 1; i <= n; i++) {
-        var k = ((cur[0] < 0 ? -1 : cur[0]) + i) % n;
-        if (viewState(list[k]) !== 'yes') { goItem(k); return; }
-      }
-      toast('All changes viewed');
-    }
-    function markViewed() {
-      var it = all.list[cur[0]];
-      if (!it) { nextUnviewed(); return; }
-      setViewed(it, true);
-      toast('Marked as viewed.', 'Undo', function () { setViewed(it, false); });
-      nextUnviewed();
-    }
     function openEditor(e) {
-      if (!work || (editor[0] && !leaveDraft())) { return; }
+      if (past || (editor[0] && !leaveDraft())) { return; }
       draft = false; editor[1](e); frag[1](null);
     }
     function blockOf(a) {
@@ -1591,29 +1361,15 @@ a{color:inherit;text-decoration:none}
       var ptr = a.slice(page.id.length);
       return blocksOf(page).filter(function (b) { return b.p === ptr; })[0] || null;
     }
-    function commentKey() {
+    function commentSel() {
       var f = frag[0] || selected();
-      if (f) { openEditor({ page: page, ptr: f.ptr, quote: (blockOf(f.a) || {}).s, frag: f.frag }); return; }
-      var b = blockOf(curA[0]) || blockOf((function () {
-        // only a paragraph in the window: an editor out of sight would take the typing
-        var seen = [].filter.call(document.querySelectorAll('.blk[data-a]'), function (x) {
-          var q = x.getBoundingClientRect(); return q.bottom > 80 && q.top < window.innerHeight * 0.6;
-        });
-        var mid = seen[seen.length - 1];
-        return mid && mid.getAttribute('data-a');
-      })());
-      if (b) { curA[1](page.id + b.p); openEditor({ page: page, ptr: b.p, quote: b.s }); } else { toast('No paragraph in the window to comment on.'); }
+      if (f) { openEditor({ page: page, ptr: f.ptr, quote: (blockOf(f.a) || {}).s, frag: f.frag }); }
     }
     function showComment(c) {
-      if (!work) { setMode('work'); }
+      if (past) { setT(last); }
       activeC[1](c.id); pending.current = 'c:' + c.id;
       var h = blockHash(c.doc, c.path);
       if (decode(location.hash) === decode(h)) { r[1](route(h)); } else { location.hash = h; }
-    }
-    function openSend() {
-      if (!work) { setMode('work'); }
-      setTab('comments'); if (!wide[0]) { drawer[1](true); }
-      setTimeout(function () { var s = document.querySelector('#send .btn'); if (s) { s.focus(); } }, 50);
     }
     function picked() { if (!wide[0]) { drawer[1](false); } }
 
@@ -1633,6 +1389,7 @@ a{color:inherit;text-decoration:none}
       function bp() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.dataset.was = d.open ? '1' : ''; d.open = true; }); }
       function ap() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.open = !!d.dataset.was; }); }
       window.addEventListener('beforeprint', bp); window.addEventListener('afterprint', ap);
+      document.documentElement.classList.toggle('has-tl', last > 0);
       return function () {
         window.removeEventListener('hashchange', on); window.removeEventListener('scroll', onScroll);
         if (m && m.removeEventListener) { m.removeEventListener('change', w); }
@@ -1642,28 +1399,22 @@ a{color:inherit;text-decoration:none}
     // after a new page or address: the place to show
     useEffect(function () {
       document.title = page === pages[0] ? D.title : page.title + ' · ' + D.title;
-      var st = history.state, t = r[0].target && document.getElementById(r[0].target);
+      var st = history.state, tg = r[0].target && document.getElementById(r[0].target);
       var b = r[0].block && document.querySelector('[data-p="' + CSS.escape(r[0].block) + '"]');
       var p = pending.current;
       pending.current = null;
       if (p && p.indexOf('c:') === 0) {
         var card = document.querySelector('.card[data-c="' + CSS.escape(p.slice(2)) + '"]');
         if (card) { focusEl(card); } else if (b) { focusEl(b); }
-      } else if (p && find(p)) { focusEl(find(p), pending.say); }
+      } else if (p && find(p)) { focusEl(find(p)); }
       else if (st && st.y != null && !r[0].block) { window.scrollTo({ top: st.y, behavior: 'instant' }); }
       else if (b) {
         focusEl(b);
-        if (all) { all.list.forEach(function (x, k) { if (x.page === page && x.ptr === r[0].block && x.k !== 'rm') { cur[1](k); curA[1](x.a); } }); }
-      } else if (t) { t.scrollIntoView({ behavior: 'instant' }); } else { window.scrollTo({ top: 0, behavior: 'instant' }); }
+        all.list.forEach(function (x, k) { if (x.page === page && x.ptr === r[0].block && x.k !== 'rm') { cur[1](k); } });
+      } else if (tg) { tg.scrollIntoView({ behavior: 'instant' }); } else { window.scrollTo({ top: 0, behavior: 'instant' }); }
       var here = document.querySelector('#tree [aria-current]');
       if (here) { here.scrollIntoView({ block: 'nearest' }); }
     }, [r[0]]);
-    useEffect(function () {
-      var el = keep.current && find(keep.current);
-      keep.current = null;
-      if (el) { el.scrollIntoView({ block: 'start', behavior: 'instant' }); }
-      document.documentElement.classList.toggle('w-mode', work && count > 0);
-    }, [mode[0]]);
     // the drawer is a modal <dialog> below 1280px
     useEffect(function () {
       var d = dr.current;
@@ -1681,35 +1432,28 @@ a{color:inherit;text-decoration:none}
       toc[0].forEach(function (x) { var el = document.getElementById(x.id); if (el) { o.observe(el); } });
       return function () { o.disconnect(); };
     }, [toc[0]]);
-    // a comment on the selected words: a button under the selection, or a pill in the bottom bar on touch
+    // a comment on the selected words: a button under the selection, or in the bottom bar on touch
     useEffect(function () {
-      if (!work) { frag[1](null); return; }
-      var t;
+      if (past) { frag[1](null); return; }
+      var tm;
       function up() { setTimeout(function () { frag[1](selected()); }, 0); }
       function change() {
         var s = window.getSelection();
         if (!s || s.isCollapsed) { frag[1](null); return; }
-        if (coarse) { clearTimeout(t); t = setTimeout(function () { frag[1](selected()); }, 300); }
+        if (coarse) { clearTimeout(tm); tm = setTimeout(function () { frag[1](selected()); }, 300); }
       }
       function scroll() { if (!coarse) { frag[1](null); } }
       document.addEventListener('mouseup', up); document.addEventListener('selectionchange', change);
       window.addEventListener('scroll', scroll, { passive: true });
       return function () { document.removeEventListener('mouseup', up); document.removeEventListener('selectionchange', change); window.removeEventListener('scroll', scroll); };
-    }, [work]);
-    // keys: search, help, and the edits in the Work mode
+    }, [past]);
+    // keys: the search
     useEffect(function () {
       function key(e) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); goSearch(); return; }
         if (e.key === 'Escape') { frag[1](null); return; }
         if (e.ctrlKey || e.metaKey || e.altKey || typing() || document.querySelector('dialog[open]')) { return; }
-        var k = e.key;
-        if (k === '/') { e.preventDefault(); goSearch(); }
-        else if (k === '?') { dlg[1]('keys'); }
-        else if (!work) { return; }
-        else if ((k === 'F7' && !e.shiftKey) || k === 'j' || k === 'о') { e.preventDefault(); step(1); }
-        else if ((k === 'F7' && e.shiftKey) || k === 'k' || k === 'л') { e.preventDefault(); step(-1); }
-        else if (k === 'v' || k === 'м') { markViewed(); }
-        else if (k === 'c' || k === 'с') { e.preventDefault(); commentKey(); }
+        if (e.key === '/') { e.preventDefault(); goSearch(); }
       }
       document.addEventListener('keydown', key);
       return function () { document.removeEventListener('keydown', key); };
@@ -1719,60 +1463,41 @@ a{color:inherit;text-decoration:none}
     }
     function setToc(items) { if (JSON.stringify(items) !== JSON.stringify(toc[0])) { toc[1](items); } }
 
-    var sideProps = { q: q, page: page, since: since, work: work, toc: toc[0], spy: spy[0], picked: picked, changes: changes, cur: cur[0],
+    var sideProps = { q: q, page: page, s: s, t: t, toc: toc[0], spy: spy[0], picked: picked, changes: all, cur: cur[0],
       goItem: goItem, comments: comments, tab: tab[0], setTab: setTab, showComment: showComment, goHash: function (h) { r[1](route(h)); } };
     var side = html`<${Side} ...${sideProps} />`;
-    var n = unsent(comments), pageItems = changes ? pageDelta(page, since).items : [];
-    var curBlock = blockOf(curA[0]), curHist = curBlock && versions(page, curBlock.p).length > 1;
-    var overview = work && changes && changes.list.length > 0 && !ovOff[0] && html`<${Overview} changes=${changes} since=${since} from=${from}
-      start=${function () { ovOff[1](true); store('overview', true); nextUnviewed(); }} hide=${function () { ovOff[1](true); store('overview', true); }} />`;
+    var curA = all.list[cur[0]] ? all.list[cur[0]].a : null;
+    // the margin for the cards opens only when the page has comments or an editor
+    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id; }));
     return html`
       <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>Skip to content</a>
       <header class="top" role="banner">
         ${!wide[0] && html`<button id="menu" type="button" class="btn ico" aria-label="Menu" aria-expanded=${drawer[0] ? 'true' : 'false'} onClick=${function () { drawer[1](true); }}>☰</button>`}
         <div class="proj">${D.brand.head && html`<span dangerouslySetInnerHTML=${{ __html: D.brand.head }}></span>`}<a href=${'#' + pages[0].id}>${D.title}</a></div>
-        <fieldset class="mode"><legend class="sr">Mode</legend>
-          <label class=${work ? '' : 'on'}><input type="radio" name="mode" checked=${!work} onChange=${function () { setMode('read'); }} />Reading</label>
-          <label class=${work ? 'on' : ''}><input type="radio" name="mode" checked=${work} onChange=${function () { setMode('work'); }} />Work${count > 0 && html`<span class="mc"> · <span class="sr">changes: </span>${count}</span>`}</label>
-        </fieldset>
         <span class="sp"></span>
         ${!wide[0] && html`<button type="button" class="btn mid" onClick=${goSearch}>🔍 Search</button>`}
-        ${n > 0 && html`<button type="button" class="chip warn unsent" onClick=${openSend}>Not sent: ${n}</button>`}
-        <button type="button" class="btn ico mid" aria-label="Keys and colours" title="Keys and colours (?)" onClick=${function () { dlg[1]('keys'); }}>?</button>
-        <${More} page=${page} work=${work} comments=${comments} changes=${changes} dialog=${dlg[1]} send=${openSend}
-          overview=${function () { ovOff[1](false); store('overview', false); window.scrollTo({ top: 0 }); }}
-          blockHist=${curHist ? function () { dlg[1]({ ptr: curBlock.p }); } : null} />
+        <${More} reset=${resetAll} />
       </header>
-      ${!work && !hint[0] && html`<p class="hint">${count ? (H.base ? 'There are changes since the version sent on ' : 'There are changes since ') + from + '. Turn on «Work» to see them and leave comments.' : 'Turn on «Work» to leave comments.'}
-        <button type="button" class="btn sm" onClick=${function () { hint[1](true); store('hint', true); }}>Got it</button></p>`}
-      <div class=${'shell' + (work ? ' work' : '')}>
+      <div class=${'shell' + (rail ? ' work' : '')}>
         ${wide[0] ? html`<aside id="side" aria-label="Navigation">${side}</aside>`
           : html`<dialog id="drawer" ref=${dr} class="drawer" aria-label="Navigation" onClose=${function () { drawer[1](false); var m = document.getElementById('menu'); if (m) { m.focus(); } }}
               onClick=${function (e) { if (e.target === dr.current) { dr.current.close(); } }}>
               <button type="button" class="btn side-x" onClick=${function () { dr.current.close(); }}>✕ Close</button>
               ${drawer[0] && side}</dialog>`}
         <main id="main" tabindex="-1">
-          <${Page} key=${page.id} page=${page} comments=${comments} since=${since} work=${work} onToc=${setToc} missing=${r[0].missing}
-            cur=${curA[0]} setCur=${curA[1]} editor=${editor[0]} openEditor=${openEditor} closeEditor=${function () { editor[1](null); }}
-            history=${function (pg, ptr) { dlg[1]({ ptr: ptr }); }} activeC=${activeC[0]} overview=${overview} />
+          <${Page} key=${page.id} page=${page} comments=${comments} s=${s} t=${t} setS=${setS} setT=${setT} onToc=${setToc} missing=${r[0].missing}
+            cur=${curA} editor=${editor[0]} closeEditor=${function () { editor[1](null); }} activeC=${activeC[0]} />
         </main>
       </div>
-      ${work && pageItems.length > 0 && !coarse && html`<${ChangeMap} items=${pageItems} curA=${curA[0]} comments=${comments}
-        go=${function (it) { goItem(all.list.indexOf(it)); }} />`}
-      ${work && ((changes && changes.list.length > 0) || (coarse && frag[0])) && html`<${Navigator} changes=${changes || { list: [] }} cur=${cur[0]} step=${step}
-        frag=${coarse ? frag[0] : null} fragGo=${commentKey} />`}
-      ${work && frag[0] && !coarse && html`<button type="button" class="btn pri fragb" style=${'left:' + Math.min(frag[0].x, window.innerWidth - 220) + 'px;top:' + (frag[0].y + 8) + 'px'}
-        onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentKey}>💬 Comment on the selection</button>`}
-      ${dlg[0] === 'keys' && html`<${Modal} title="Keys and colours" close=${function () { dlg[1](null); }}><${Keys} /><//>`}
-      ${dlg[0] === 'since' && html`<${Modal} title="Starting point" close=${function () { dlg[1](null); }}><${SinceDialog} since=${since} set=${setSince} /><//>`}
-      ${dlg[0] === 'page' && html`<${Modal} title=${'History of the page: ' + page.title} cls="wide" close=${function () { dlg[1](null); }}><${PageHistory} page=${page} close=${function () { dlg[1](null); }} /><//>`}
-      ${dlg[0] && dlg[0].ptr && html`<${Modal} title="History of the paragraph" cls="wide" close=${function () { dlg[1](null); }}><${History} vs=${versions(page, dlg[0].ptr)} /><//>`}
-      <div class="sr" aria-live="polite">${live[0]}</div>
+      ${frag[0] && coarse && html`<div class="nav" role="region" aria-label="Comment on the selection">
+        <button type="button" class="btn pri" onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 Comment on the selection</button></div>`}
+      ${frag[0] && !coarse && html`<button type="button" class="btn pri fragb" style=${'left:' + Math.min(frag[0].x, window.innerWidth - 220) + 'px;top:' + (frag[0].y + 8) + 'px'}
+        onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 Comment on the selection</button>`}
       <${Toast} />`;
   }
 
   // the pure parts, for app_test.js; nothing else sets this
-  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, hash: hash }); return; }
+  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();
 

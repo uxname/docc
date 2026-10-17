@@ -7,58 +7,10 @@ use crate::engine::Doc;
 use crate::loader::Kind;
 
 use super::page::{Entry, reserved};
-use super::render::{Renderer, one_line, root};
+use super::render::{Renderer, root};
 use super::text::Page;
 
-/// statusClass picks the badge colour for a status value by its common meaning.
-pub(super) fn status_class(s: &str) -> &'static str {
-    match go_lower(s).as_str() {
-        "accepted" | "approved" | "done" | "implemented" | "stable" | "active" | "resolved"
-        | "verified" => "ok",
-        "draft" | "proposed" | "open" | "planned" | "review" | "in-progress" | "wip"
-        | "pending" => "warn",
-        "rejected" | "deprecated" | "obsolete" | "superseded" | "blocked" | "wontfix" => "bad",
-        _ => "",
-    }
-}
-
-/// statusRu names the usual statuses in Russian on the badge of the HTML page;
-/// other values are shown as written.
-fn status_ru(s: &str) -> Option<&'static str> {
-    Some(match s {
-        "accepted" => "принято",
-        "approved" => "согласовано",
-        "done" => "готово",
-        "implemented" => "реализовано",
-        "stable" | "active" => "действует",
-        "resolved" => "решено",
-        "verified" => "проверено",
-        "draft" => "черновик",
-        "proposed" => "предложено",
-        "open" => "открыто",
-        "planned" => "запланировано",
-        "review" => "на согласовании",
-        "in-progress" | "wip" => "в работе",
-        "pending" => "ожидает",
-        "rejected" => "отклонено",
-        "deprecated" | "obsolete" => "устарело",
-        "superseded" => "заменено",
-        "blocked" => "заблокировано",
-        "wontfix" => "не будет сделано",
-        _ => return None,
-    })
-}
-
 impl<'a> Renderer<'a> {
-    pub(super) fn status_label(&self, s: &str) -> String {
-        if let Some(v) = status_ru(&go_lower(s))
-            && self.p.cfg.lang == "ru"
-        {
-            return v.to_string();
-        }
-        s.to_string()
-    }
-
     /// summary is the first body paragraph (or free text field) as plain text, cut to about 300 characters.
     pub(super) fn summary(&self, d: &'a Doc) -> String {
         let mut pg = Page::new(self, d);
@@ -95,18 +47,6 @@ impl<'a> Renderer<'a> {
     }
 }
 
-/// go_lower is strings.ToLower for the comparisons above: Go maps İ to a
-/// plain i, Rust adds a combining dot.
-fn go_lower(s: &str) -> String {
-    s.replace('İ', "i").to_lowercase()
-}
-
-pub(super) fn str_field(d: &Doc, key: &str) -> String {
-    match root(d).get(key) {
-        Some(v) if matches!(v.kind, Kind::String | Kind::Number) => one_line(&v.str),
-        _ => String::new(),
-    }
-}
 
 static MD_LINK: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\[([^\]]*)\]\([^)]*\)").unwrap());
 static HTML_NOISE: LazyLock<Regex> =

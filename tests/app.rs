@@ -182,3 +182,34 @@ fn html_page_without_blocks() {
     assert_eq!(code, 0, "{out} {errs}");
     assert!(!p.read("docs/out.html").contains(r#""blocks":null"#), "blocks of an empty page must be [], not null");
 }
+
+/// The old versions of a string block carry their HTML, so the timeline can
+/// show the page as it was; the current text needs none, it is the block's own.
+#[test]
+fn html_old_versions_rendered() {
+    let p = project([("docs/src/index.json", r#"{"title":"I","body":["Old **bold**.","Kept."]}"#)]);
+    let git = |args: &[&str]| {
+        std::process::Command::new("git")
+            .args(["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"])
+            .args(args)
+            .current_dir(p.join(""))
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    };
+    if !git(&["init", "-q"]) {
+        return; // no git here
+    }
+    assert!(git(&["add", "-A"]) && git(&["commit", "-qm", "one"]));
+    p.write("docs/src/index.json", r#"{"title":"I","body":["Other **bold** text.","Kept."],"kind":"page"}"#);
+    assert!(git(&["commit", "-qam", "two"]));
+    let (code, out, errs) = p.run(&["build", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let a = read_app(&p, "docs/out.html");
+    let b = &a.data["hist"]["docs"]["index.json"]["b"];
+    let vs = b["/body/0"].as_array().unwrap();
+    assert_eq!(vs.len(), 2, "{b}");
+    assert_eq!(s(&vs[0], "h"), "<p>Old <strong>bold</strong>.</p>", "the old version is rendered");
+    assert_eq!(s(&vs[1], "h"), "", "the current version is the block itself");
+    assert_eq!(s(&b["/body/1"][0], "h"), "", "an unchanged block needs no old HTML");
+}
