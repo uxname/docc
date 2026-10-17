@@ -154,8 +154,8 @@ pub(super) const RU: &[(&str, &str)] = &[
         "Комментариев пока нет. Выделите текст на странице, чтобы прокомментировать его.",
     ),
     (
-        "No edits in the chosen period. Move the left end of the timeline above the page to the past to see them.",
-        "За выбранный период правок нет. Сдвиньте левый конец шкалы над страницей в прошлое, чтобы их увидеть.",
+        "No edits in the chosen period. Open the timeline above the page and pick an earlier save or date to see them.",
+        "За выбранный период правок нет. Откройте шкалу над страницей и выберите более раннее сохранение или дату, чтобы их увидеть.",
     ),
     ("now, edits are not shown", "сейчас — правки не подсвечены"),
     ("now", "сейчас"),

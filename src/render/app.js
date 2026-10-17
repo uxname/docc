@@ -1066,7 +1066,7 @@
       if (on) { on.scrollIntoView({ block: 'center' }); }
     }, [props.cur]);
     if (last < 1) { return html`<p class="muted pad">{{t:The documentation has no saved history yet.}}</p>`; }
-    if (!list.length) { return html`<p class="muted pad">{{t:No edits in the chosen period. Move the left end of the timeline above the page to the past to see them.}}</p>`; }
+    if (!list.length) { return html`<p class="muted pad">{{t:No edits in the chosen period. Open the timeline above the page and pick an earlier save or date to see them.}}</p>`; }
     var kinds = [['all', '{{t:All}}', list.length], ['chg', '{{t:Changed}}', all.chg], ['new', '{{t:Added}}', all['new']], ['rm', '{{t:Removed}}', all.rm]];
     return html`<div class="pad">
       <p class="left">{{t:Edits}}: ${list.length} · ${sinceLabel(props.s)} → ${atLabel(props.t)}</p>
