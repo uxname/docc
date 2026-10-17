@@ -72,7 +72,7 @@ A problem is reported with the position, the rule and a hint:
 
 Two fields are for agents and auditors, not for readers: `notes` (doubts and open points, read before editing) and `"hidden": true` (checked, but no page). `docc build --full` writes an audit build with both into `docs/out-full` (not committed). A free field spelled almost like a reserved one (`parnet`) is warned about (DOC110).
 
-`docc validate --format json` prints `{"summary": {...}, "diagnostics": [...]}`; `docc explain DOC202` describes a rule; `docc <command> --help` lists the flags.
+`docc validate --format json` prints `{"summary": {...}, "diagnostics": [...]}`; `docc explain graph/broken-ref` (or its code DOC202) describes a rule; `docc <command> --help` lists the flags.
 
 The documentation of the project is in `docs/src` (JSON) and `docs/out` (generated Markdown, start at `docs/out/index.md`). The full description is in `docc_spec.md`.
 

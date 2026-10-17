@@ -129,8 +129,8 @@ Examples:
 Describes a rule: what it checks, bad and good examples, how to configure it.
 
 Examples:
-  docc explain DOC301
-  docc explain text/forbidden-words --format json
+  docc explain text/forbidden-words
+  docc explain DOC301 --format json   # a code works too
 "
         }
         "rules" => {
