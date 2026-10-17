@@ -1,7 +1,5 @@
-//! Helpers of the CLI tests (Go: cli_test.go, golden_test.go, pagekind_test.go,
-//! app_test.go). Go runs the CLI in-process after t.Chdir; here every call
-//! runs the real binary as a subprocess in the project directory, so the
-//! tests can run in parallel.
+//! Helpers of the CLI tests: every call runs the real binary as a subprocess
+//! in the project directory, so the tests can run in parallel.
 #![allow(dead_code)]
 
 use std::collections::BTreeMap;

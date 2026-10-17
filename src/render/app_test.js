@@ -1,6 +1,6 @@
 // Checks the pure parts of app.js in Node: the word marks of an edit, the
 // place of a commented fragment, the place of a removed paragraph and the
-// edits of a page. Run by TestAppLogic (app_test.go): node app_test.js app.js
+// edits of a page. Run by render::tests::app_logic: node app_test.js app.js
 'use strict';
 const fs = require('fs');
 const assert = require('assert');

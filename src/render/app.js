@@ -1,6 +1,6 @@
 // The documentation application: one page at a time drawn from the JSON
 // island #docc-data with Preact and htm (vendor/htm-preact-standalone.js).
-// Labels are marked as t:English in double braces and translated by the build (lang.go).
+// Labels are marked as t:English in double braces and translated by the build (lang.rs).
 // Two modes: Reading shows the final text only; Work adds the edits since the
 // starting point (word diff in the text, gutter bars, removed paragraphs in
 // place, a navigator), comments on the margin and the tools.

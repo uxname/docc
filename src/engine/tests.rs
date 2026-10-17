@@ -7,7 +7,7 @@ use crate::config;
 use crate::diag::Diagnostic;
 use crate::loader;
 
-// anchor_test.go
+// anchors
 
 #[test]
 fn test_split_anchor() {
@@ -29,7 +29,7 @@ fn test_split_anchor() {
     }
 }
 
-// fingerprint_test.go
+// fingerprints
 
 fn fp(s: &str) -> String {
     let r = loader::parse(s.as_bytes());
@@ -91,7 +91,7 @@ fn test_fingerprint_canonical_form() {
     );
 }
 
-// golden: testdata/<CODE>/{red,green} run as `docc validate` (cmd/docc golden_test.go)
+// golden: testdata/<CODE>/{red,green} run as `docc validate` (tests/golden.rs runs them through the CLI)
 
 static TMP: AtomicUsize = AtomicUsize::new(0);
 
@@ -274,7 +274,7 @@ fn src_symlink_root_is_not_walked() {
 }
 
 /// gen_scale writes n documents of 5-20 KB of Russian text into dir/docs/src,
-/// as genScale in cmd/docc/scale_test.go.
+/// as gen_scale in tests/scale.rs.
 fn gen_scale(dir: &Path, n: usize) {
     let para = "Система должна обеспечивать устойчивую работу при изменении нагрузки на сервис. Администратор получает уведомление о каждом сбое и может открыть журнал событий за выбранный период. ";
     let write = |rel: &str, content: &str| {

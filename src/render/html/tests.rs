@@ -263,7 +263,7 @@ fn compare_html(got: &str, want: &str) -> Vec<String> {
             .take_while(|(a, b)| a == b)
             .count();
         out.push(format!(
-            "page differs at {n}: rust {:?} go {:?}",
+            "page differs at {n}: got {:?} want {:?}",
             &gp[n.saturating_sub(40)..(n + 80).min(gp.len())],
             &wp[n.saturating_sub(40)..(n + 80).min(wp.len())]
         ));
@@ -287,7 +287,7 @@ fn compare_html(got: &str, want: &str) -> Vec<String> {
         if g != w {
             let n = g.bytes().zip(w.bytes()).take_while(|(a, b)| a == b).count();
             out.push(format!(
-                "data encoded differently at {n}: rust {:?} go {:?}",
+                "data encoded differently at {n}: got {:?} want {:?}",
                 &g[n.saturating_sub(20)..(n + 40).min(g.len())],
                 &w[n.saturating_sub(20)..(n + 40).min(w.len())]
             ));
@@ -296,7 +296,7 @@ fn compare_html(got: &str, want: &str) -> Vec<String> {
     out
 }
 
-/// TestRenderGolden (cmd/docc), the HTML files: testdata/render/basic built
+/// The HTML files of the render golden: testdata/render/basic built
 /// in a folder named 001 (the page keys its comments by it) gives
 /// expect/out.html and expect/out-full.html, the zip compared by its files.
 #[test]
@@ -585,7 +585,7 @@ fn dump_ast() {
 /// and readApp).
 fn build_html(files: &[(&str, &str)]) -> (String, Value, PathBuf) {
     let dir = temp_dir().join("proj");
-    // pageKind (cmd/docc): a document without a kind becomes a page
+    // a document without a kind becomes a page
     let mut files: Vec<(String, String)> = files
         .iter()
         .map(|(p, c)| (p.to_string(), c.to_string()))
@@ -638,7 +638,7 @@ fn blocks_html(data: &Value) -> String {
     b
 }
 
-/// TestHTMLBlocksHavePointers (cmd/docc): blocks carry the JSON Pointer and
+/// Blocks carry the JSON Pointer and
 /// source text of their element; headings have none; a block marker written
 /// by an agent is dropped like other raw HTML.
 #[test]
@@ -670,7 +670,7 @@ fn html_blocks_have_pointers() {
     );
 }
 
-/// TestHTMLPageWithoutBlocks (cmd/docc): a page without body blocks has an
+/// A page without body blocks has an
 /// empty list in the data island, not null.
 #[test]
 fn html_page_without_blocks() {
@@ -687,7 +687,7 @@ fn html_page_without_blocks() {
     );
 }
 
-/// TestFootnotesInHTML (cmd/docc): footnote ids are prefixed by the page id.
+/// Footnote ids are prefixed by the page id.
 #[test]
 fn footnotes_in_html() {
     let (_, data, _) = build_html(&[
@@ -712,7 +712,7 @@ fn footnotes_in_html() {
     }
 }
 
-/// TestHTMLBuild (cmd/docc): pages in tree order with their parts as data,
+/// Pages in tree order with their parts as data,
 /// field anchors and links, no raw HTML of the agents, no hidden pages.
 #[test]
 fn html_build() {
@@ -842,7 +842,7 @@ fn brand_html(html: &str, data: &Value) -> String {
     format!("{html}{}{}{}", s("head"), s("print"), s("foot"))
 }
 
-/// TestBrandingInHTMLOnly (cmd/docc): the branding reaches the HTML file only.
+/// The branding reaches the HTML file only.
 #[test]
 fn branding_in_html_only() {
     let (html, data, dir) = build_html(&[
@@ -877,7 +877,7 @@ fn branding_in_html_only() {
     assert!(!md.contains("A & B"), "Markdown is branded:\n{md}");
 }
 
-/// TestBrandingNameOnly (cmd/docc): a name alone, no logo and no colours.
+/// A name alone, no logo and no colours.
 #[test]
 fn branding_name_only() {
     let (html, data, _) = build_html(&[

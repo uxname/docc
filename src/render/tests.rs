@@ -475,7 +475,7 @@ fn compare_build(dir: &Path) -> Result<Vec<String>, String> {
         let rel = if full { &p.cfg.out_full } else { &p.cfg.out };
         if !dir.join(format!("{rel}.md")).exists() {
             diffs.push(format!(
-                "{}: go build (full {full}) wrote nothing: {}{}",
+                "{}: the oracle build (full {full}) wrote nothing: {}{}",
                 dir.display(),
                 String::from_utf8_lossy(&st.stdout),
                 String::from_utf8_lossy(&st.stderr)
