@@ -74,6 +74,15 @@ assert.strictEqual(T.atDate('2026-10-06'), 0);
 assert.strictEqual(T.atDate('2026-10-07'), 1, 'the last save of that day');
 assert.strictEqual(T.atDate('2020-01-01'), 0, 'a date before the history shows its start');
 
+// a press on the timeline takes the nearer thumb; two thumbs closer than a thumb (28 px) part by the first move
+assert.strictEqual(T.thumbFor(10, 0, 100, 28, 0), 's');
+assert.strictEqual(T.thumbFor(90, 0, 100, 28, 0), 't');
+assert.strictEqual(T.thumbFor(50, 0, 100, 28, 0), 't', 'halfway takes the end');
+assert.strictEqual(T.thumbFor(52, 50, 60, 28, 0), null, 'on two thumbs the press waits for its move');
+assert.strictEqual(T.thumbFor(52, 50, 60, 28, -5), 's', 'a move to the left takes the start');
+assert.strictEqual(T.thumbFor(52, 50, 50, 28, 5), 't', 'a move to the right takes the end');
+assert.strictEqual(T.thumbFor(5, 100, 100, 28, 0), 's', 'far left of two thumbs on one place takes the start');
+
 // a browser comment from an older build follows its words to the paragraph that has them now
 const c = (path, fragment) => ({ id: path + fragment, doc: 'p', path, fragment, build: 'old' });
 assert.strictEqual(T.pathOf(c('/body/1', 'Gamma')), '/body/2', 'a paragraph was inserted above');

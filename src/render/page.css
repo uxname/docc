@@ -261,7 +261,7 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px dotted var(-
 .tl-h small{color:var(--muted)}
 .tl-t-l{text-align:right}
 .tl-s-l b{color:var(--chg)}
-.tl-r{position:relative;height:max(28px,var(--tgt));margin:.3rem 0}
+.tl-r{position:relative;height:max(28px,var(--tgt));margin:.3rem 0;cursor:pointer;touch-action:none}
 .tl-in{position:absolute;left:calc(var(--th) / 2);right:calc(var(--th) / 2);top:0;bottom:0;pointer-events:none}
 .tl-line{position:absolute;left:0;right:0;top:calc(50% - 1px);height:2px;background:var(--line)}
 .tl-sel{position:absolute;top:calc(50% - 2px);height:4px;background:var(--chg);border-radius:2px}
@@ -270,12 +270,11 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px dotted var(-
 .tl-r input{position:absolute;inset:0;width:100%;height:100%;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
 .tl-r input::-webkit-slider-runnable-track{background:none}
 .tl-r input::-moz-range-track{background:none}
-.tl-r input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:var(--th);height:var(--th);border-radius:50%;background:var(--bg);border:3px solid var(--fg);cursor:grab}
-.tl-r input::-moz-range-thumb{pointer-events:auto;box-sizing:border-box;width:var(--th);height:var(--th);border-radius:50%;background:var(--bg);border:3px solid var(--fg);cursor:grab}
+.tl-r input::-webkit-slider-thumb{-webkit-appearance:none;width:var(--th);height:var(--th);border-radius:50%;background:var(--bg);border:3px solid var(--fg)}
+.tl-r input::-moz-range-thumb{box-sizing:border-box;width:var(--th);height:var(--th);border-radius:50%;background:var(--bg);border:3px solid var(--fg)}
 .tl-r .tl-s::-webkit-slider-thumb{border-color:var(--chg)}
 .tl-r .tl-s::-moz-range-thumb{border-color:var(--chg)}
 .tl-r .tl-t{z-index:1}
-.tl-r.s-top .tl-s{z-index:2}
 .tl-hint{margin:.2rem 0 .4rem;color:var(--muted);font-size:.75rem}
 .tl-days{margin:0;padding:0;list-style:none}
 .tl-days>li{border-bottom:1px solid var(--line)}

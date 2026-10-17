@@ -443,6 +443,14 @@
     var cm = commits[k], d = cm && cm.h && new Date(cm.d), p = function (n) { return (n < 10 ? '0' : '') + n; };
     return d ? d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) : '';
   }
+  // the end of the timeline a press at x takes, the thumbs of S and T being at
+  // xs and xt: the nearer one; of two closer than a thumb, a press between them
+  // waits for its first move (dir < 0 is left: S, dir > 0 right: T) and is null until then
+  function thumbFor(x, xs, xt, th, dir) {
+    if (xt - xs < th && Math.abs(x - (xs + xt) / 2) < th) { return dir ? (dir < 0 ? 's' : 't') : null; }
+    var ds = Math.abs(x - xs), dt = Math.abs(x - xt);
+    return ds < dt || (ds === dt && x < xs) ? 's' : 't';
+  }
   function sinceLabel(s) { return s >= last ? '{{t:now, edits are not shown}}' : ago(s); }
   function atLabel(t) { return t >= last ? '{{t:now}}' : ago(t); }
   // where a pointer is, for the reader: the start of its text
@@ -711,16 +719,40 @@
   function Timeline(props) {
     var s = props.s, t = props.t, touched = {}, mine = 0;
     pageChanges(props.page).forEach(function (c) { if (!touched[c.c]) { touched[c.c] = true; mine++; } });
-    var only = useState(last > LONG && mine > 0), open = useState({}), more = useState({}), nDays = useState(ROWS), sTop = useState(null);
+    var only = useState(last > LONG && mine > 0), open = useState({}), more = useState({}), nDays = useState(ROWS), drag = useRef(null);
     var pc = function (k) { return (k / last * 100).toFixed(2) + '%'; };
     // a range input that was clamped keeps the clamped value on screen
     function input(fn) { return function (e) { var v = fn(+e.target.value); if (v !== +e.target.value) { e.target.value = v; } }; }
-    // the thumb nearer to the mouse is on top, so two thumbs on one place can both be taken
-    // ponytail: mouse only, a touch picks its thumb before any move; on touch a long history has no track
-    function hover(e) {
-      var r = e.currentTarget.getBoundingClientRect(), k = (e.clientX - r.left) / r.width * last, ds = Math.abs(k - s), dt = Math.abs(k - t);
-      sTop[1](ds < dt || (ds === dt && k < s));
+    // The thumbs are dragged here, not by the range inputs (they stay for the
+    // keyboard): a press takes the nearer thumb, also on the bare track, and
+    // two thumbs on one place come apart by the first move, by mouse or finger.
+    function geo(el) {
+      var r = el.getBoundingClientRect(), th = parseFloat(getComputedStyle(el).getPropertyValue('--th')) || 18;
+      return { x: function (v) { return r.left + th / 2 + (last ? v / last : 0) * (r.width - th); }, th: th,
+        k: function (x) { return Math.round(Math.min(1, Math.max(0, (x - r.left - th / 2) / (r.width - th))) * last); } };
     }
+    function move(end, k) {
+      if (end === 's') { k = Math.min(k, t); if (k !== s) { props.setRange(k, t); } }
+      else if (k !== t) { props.setRange(Math.min(s, k), k); }
+    }
+    function down(e) {
+      if (e.button) { return; }
+      var g = geo(e.currentTarget), end = thumbFor(e.clientX, g.x(s), g.x(t), g.th, 0);
+      e.preventDefault();
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* a pointer the browser does not know: no capture */ }
+      drag.current = { end: end, x0: e.clientX, g: g };
+      if (end) { e.currentTarget.querySelector(end === 's' ? '.tl-s' : '.tl-t').focus({ preventScroll: true }); move(end, g.k(e.clientX)); }
+    }
+    function drift(e) {
+      var d = drag.current;
+      if (!d) { return; }
+      if (!d.end) {
+        if (Math.abs(e.clientX - d.x0) < 3) { return; }
+        d.end = thumbFor(e.clientX, d.g.x(s), d.g.x(t), d.g.th, e.clientX - d.x0);
+      }
+      move(d.end, d.g.k(e.clientX));
+    }
+    function up() { drag.current = null; }
     function pick(a, b) { props.setRange(a, b); props.done(); }
     var ks = [];
     for (var k = last; k >= 0; k--) { if (!only[0] || touched[k] || k === t || k === last) { ks.push(k); } }
@@ -737,7 +769,7 @@
           <span class="tl-t-l">{{t:Text as of:}} <b>${atLabel(t)}</b><small>${exact(t)}</small></span>
           <button type="button" class="btn sm tl-x" popovertarget="when" popovertargetaction="hide">✕ {{t:Close}}</button>
         </div>
-        ${track && html`<div class=${'tl-r' + ((sTop[0] == null ? s === t && t === last : sTop[0]) ? ' s-top' : '')} onPointerMove=${hover}>
+        ${track && html`<div class="tl-r" onPointerDown=${down} onPointerMove=${drift} onPointerUp=${up} onPointerCancel=${up}>
           <div class="tl-in">
             <div class="tl-line"></div>
             <div class="tl-sel" style=${'left:' + pc(s) + ';width:' + pc(t - s)}></div>
@@ -1394,6 +1426,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, thumbFor: thumbFor }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();
