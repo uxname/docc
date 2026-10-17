@@ -270,7 +270,7 @@ fn nfc(s: &[u8]) -> Vec<u8> {
 /// first_rune decodes the rune at the start of s; None for an invalid byte or
 /// an empty s. It returns the rune and its width.
 fn first_rune(s: &[u8]) -> Option<(char, usize)> {
-    let c = s.utf8_chunks().next()?;
+    let c = s[..s.len().min(4)].utf8_chunks().next()?;
     c.valid().chars().next().map(|r| (r, r.len_utf8()))
 }
 

@@ -112,7 +112,8 @@ fn rune_count(b: &[u8]) -> usize {
 
 /// decode_rune_len is the width utf8.DecodeRune reports: 1 for an invalid byte.
 fn decode_rune_len(b: &[u8]) -> usize {
-    match b.utf8_chunks().next() {
+    // a rune is at most 4 bytes: looking further would make callers quadratic
+    match b[..b.len().min(4)].utf8_chunks().next() {
         Some(c) => c.valid().chars().next().map_or(1, char::len_utf8),
         None => 0,
     }
