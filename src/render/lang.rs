@@ -142,10 +142,6 @@ pub(super) const RU: &[(&str, &str)] = &[
     ),
     ("Copy comments", "Скопировать комментарии"),
     (
-        "Darker marks: saves that changed this page",
-        "Тёмные отметки — сохранения, которые меняли эту страницу",
-    ),
-    (
         "Delete from this browser your name, the chosen point of the timeline, the open tab and your comments",
         "Удалить из этого браузера ваше имя, выбранное положение шкалы, открытую вкладку и ваши комментарии",
     ),
@@ -180,6 +176,15 @@ pub(super) const RU: &[(&str, &str)] = &[
         "У документации ещё нет сохранённой истории.",
     ),
     ("Timeline", "Шкала времени"),
+    ("Edits:", "Правки:"),
+    (
+        "Pick a save to see what it changed. Marked saves changed this page; the shaded ones are drawn in the text.",
+        "Нажмите на сохранение, чтобы увидеть, что в нём изменилось. «Эта страница» — сохранения, менявшие эту страницу; подсвеченные показаны в тексте.",
+    ),
+    ("from here", "отсюда"),
+    ("Edits since", "Правки с"),
+    ("edits are not shown", "правки не подсвечены"),
+    ("this page", "эта страница"),
     (
         "You are looking at the page as it was",
         "Вы смотрите страницу такой, какой она была",

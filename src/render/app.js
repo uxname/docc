@@ -45,24 +45,18 @@
     return { page: pages[0], missing: id && id !== 'main' ? id : null };
   }
   function blockHash(doc, ptr) { return '#' + doc + (ptr || ''); }
-  function pad(n) { return (n < 10 ? '0' : '') + n; }
-  function date(c) {
+  // dates in the language of the file; '' for the working tree, which has none
+  function fmt(c, o) {
     var cm = commits[c];
-    if (!cm || !cm.d) { return ''; }
-    var d = new Date(cm.d);
-    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+    if (!cm || !cm.h) { return ''; }
+    try { return new Intl.DateTimeFormat(D.lang || 'en', o).format(new Date(cm.d)); } catch (e) { return cm.d.slice(0, 16).replace('T', ' '); }
   }
-  function when(c) {
-    var cm = commits[c];
-    if (!cm || !cm.h) { return '{{t:not saved yet}}'; }
-    var d = new Date(cm.d);
-    return date(c) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-  }
-  // a version for the reader is its date; the full build adds the author and message
+  // the exact moment of a version, «14 Oct 2026, 21:40»
+  function exact(c) { return fmt(c, { dateStyle: 'medium', timeStyle: 'short' }) || '{{t:not saved yet}}'; }
+  // the full build adds the author and message
   function versionLine(c) {
     var cm = commits[c] || {};
-    if (!cm.h) { return '{{t:not saved yet}}'; }
-    return when(c) + (cm.a ? ' · ' + cm.a : '') + (cm.m ? ' · ' + cm.m : '');
+    return exact(c) + (cm.a ? ' · ' + cm.a : '') + (cm.m ? ' · ' + cm.m : '');
   }
   function save(name, type, data) {
     var a = document.createElement('a');
@@ -413,13 +407,13 @@
     return { list: list };
   }
   // a moment of the timeline for the reader: «3 days ago», the exact date in the title
-  function ago(k) {
+  function ago(k, narrow) {
     var cm = commits[k];
     if (!cm) { return ''; }
     if (!cm.h) { return '{{t:now, not saved yet}}'; }
     var sec = (new Date(cm.d) - Date.now()) / 1000, a = Math.abs(sec);
     var u = a < 60 ? ['second', 1] : a < 3600 ? ['minute', 60] : a < 86400 ? ['hour', 3600] : a < 2592000 ? ['day', 86400] : a < 31536000 ? ['month', 2592000] : ['year', 31536000];
-    try { return new Intl.RelativeTimeFormat(D.lang || 'en', { numeric: 'auto' }).format(Math.round(sec / u[1]), u[0]); } catch (e) { return when(k); }
+    try { return new Intl.RelativeTimeFormat(D.lang || 'en', { numeric: 'auto', style: narrow ? 'short' : 'long' }).format(Math.round(sec / u[1]), u[0]); } catch (e) { return exact(k); }
   }
   function sinceLabel(s) { return s >= last ? '{{t:now, edits are not shown}}' : ago(s); }
   function atLabel(t) { return t >= last ? '{{t:now}}' : ago(t); }
@@ -651,31 +645,69 @@
       ${g.isNew && html`<span class="sr">{{t:new paragraph}}</span>`}<div class="blk-body"><p class="dv">${plain(g.t)}</p></div></div>`;
   }
 
-  // the timeline: two ends on one track, the edits are drawn between them
+  // The timeline: the saved versions on one track with two ends, S where the
+  // edits start and T the moment the text is shown at, and below it the
+  // versions by day with their exact time, newest first. A version picked
+  // in the list shows what it changed (S just before it, T at it), as in the
+  // version history of Google Docs. The points are spaced evenly: saves come
+  // in bursts, so a track by time would pile them up.
   function Timeline(props) {
-    var s = props.s, t = props.t, touched = {};
+    var s = props.s, t = props.t, touched = {}, days = [];
     pageChanges(props.page).forEach(function (c) { touched[c.c] = true; });
     var pc = function (k) { return (k / last * 100).toFixed(2) + '%'; };
     // a range input that was clamped keeps the clamped value on screen
     function input(fn) { return function (e) { var v = fn(+e.target.value); if (v !== +e.target.value) { e.target.value = v; } }; }
+    for (var k = last; k >= 0; k--) {
+      var day = fmt(k, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) || '{{t:now}}';
+      if (!days.length || days[days.length - 1].day !== day) { days.push({ day: day, ks: [] }); }
+      days[days.length - 1].ks.push(k);
+    }
+    // ponytail: with very many saves only the ones of this page get a mark
+    var marks = commits.map(function (c, k) { return k; }).filter(function (k) { return last <= 120 || touched[k]; });
     return html`<div class="tl" role="group" aria-label="{{t:Timeline}}">
       <div class="tl-h">
-        <span class="tl-s-l">{{t:Edits since:}} <b>${sinceLabel(s)}</b></span>
-        <span class="tl-t-l">{{t:Text as of:}} <b>${atLabel(t)}</b></span>
+        <span class="tl-s-l">{{t:Edits since:}} <b>${sinceLabel(s)}</b><small>${s < last ? exact(s) : ''}</small></span>
+        <span class="tl-t-l">{{t:Text as of:}} <b>${atLabel(t)}</b><small>${exact(t)}</small></span>
       </div>
       <div class=${'tl-r' + (s === t && t === last ? ' s-top' : '')}>
         <div class="tl-in">
           <div class="tl-line"></div>
           <div class="tl-sel" style=${'left:' + pc(s) + ';width:' + pc(t - s)}></div>
-          ${commits.map(function (c, k) { return html`<span class=${'tl-k' + (touched[k] ? ' on' : '')} style=${'left:' + pc(k)} title=${ago(k) + ' · ' + versionLine(k)}></span>`; })}
+          ${marks.map(function (k) { return html`<span class=${'tl-k' + (touched[k] ? ' on' : '')} style=${'left:' + pc(k)} title=${versionLine(k)}></span>`; })}
         </div>
-        <input type="range" class="tl-s" min="0" max=${last} step="1" value=${s} aria-label="{{t:Edits since:}}" aria-valuetext=${sinceLabel(s)}
-          onInput=${input(function (v) { v = Math.min(v, t); props.setS(v); return v; })} />
-        <input type="range" class="tl-t" min="0" max=${last} step="1" value=${t} aria-label="{{t:Text as of:}}" aria-valuetext=${atLabel(t)}
-          onInput=${input(function (v) { props.setT(v); return v; })} />
+        <input type="range" class="tl-s" min="0" max=${last} step="1" value=${s} aria-label="{{t:Edits since:}}" aria-valuetext=${sinceLabel(s) + ', ' + exact(s)}
+          onInput=${input(function (v) { v = Math.min(v, t); props.setRange(v, t); return v; })} />
+        <input type="range" class="tl-t" min="0" max=${last} step="1" value=${t} aria-label="{{t:Text as of:}}" aria-valuetext=${atLabel(t) + ', ' + exact(t)}
+          onInput=${input(function (v) { props.setRange(Math.min(s, v), v); return v; })} />
       </div>
-      <div class="tl-f"><span>${ago(0)}</span><small>{{t:Darker marks: saves that changed this page}}</small><span>{{t:now}}</span></div>
+      <p class="tl-hint">{{t:Pick a save to see what it changed. Marked saves changed this page; the shaded ones are drawn in the text.}}</p>
+      <ol class="tl-days">${days.map(function (d) {
+        return html`<li><h3>${d.day}</h3><ul>${d.ks.map(function (k) {
+          var cm = commits[k];
+          return html`<li class=${'tl-v' + (k > s && k <= t ? ' in' : '') + (k === t ? ' at' : '')}>
+            <button type="button" class="tl-go" aria-current=${k === t ? 'true' : undefined} onClick=${function () { props.setRange(Math.max(0, k - 1), k); }}>
+              <b>${fmt(k, { timeStyle: 'short' }) || '{{t:not saved yet}}'}</b>
+              <span class="tl-ago">${ago(k)}</span>
+              ${touched[k] && html`<span class="tl-pg">{{t:this page}}</span>`}
+              ${(cm.a || cm.m) && html`<span class="tl-msg">${[cm.a, cm.m].filter(Boolean).join(' · ')}</span>`}
+            </button>
+            ${k < last && html`<button type="button" class="btn sm tl-from" aria-label=${'{{t:Edits since}} ' + exact(k)} onClick=${function () { props.setRange(k, Math.max(t, k)); }}>{{t:from here}}</button>`}
+          </li>`;
+        })}</ul></li>`;
+      })}</ol>
     </div>`;
+  }
+  // the timeline in the header: a short summary that opens it
+  function When(props) {
+    var s = props.s, t = props.t, past = t < last;
+    // a moment in the past reads by its exact time: «3 days ago → 3 days ago» says nothing
+    var short = function (k) { return fmt(k, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
+    var to = past ? short(t) : '{{t:now}}', from = past && ago(s, true) === ago(t, true) ? short(s) : ago(s, true);
+    // one save picked in the list reads as that save
+    var sum = s >= last ? '{{t:edits are not shown}}' : past && s === t - 1 ? to : from + ' → ' + to;
+    return html`<button type="button" class=${'btn when-b' + (past ? ' past' : '')} popovertarget="when" title=${'{{t:Timeline}}: ' + sinceLabel(s) + ' → ' + atLabel(t)}>
+        <span aria-hidden="true">🕘</span><span class="when-l">{{t:Edits:}}</span><span class="when-s">${sum}</span><span aria-hidden="true">▾</span></button>
+      <div id="when" popover="auto" class="pop when"><${Timeline} ...${props} /></div>`;
   }
 
   // ---- page ----
@@ -755,8 +787,7 @@
       ${page.crumbs && html`<nav class="crumbs" aria-label="{{t:Breadcrumb}}">${page.crumbs.map(function (id, k) {
         return html`${k > 0 && html`<span aria-hidden="true">›</span>`}<a href=${'#' + id}>${byId[id] ? byId[id].title : id}</a>`;
       })}</nav>`}
-      ${last > 0 && html`<${Timeline} page=${page} s=${s} t=${t} setS=${props.setS} setT=${props.setT} />`}
-      ${past && html`<p class="notice past" role="status">{{t:You are looking at the page as it was}} ${ago(t)} (${when(t)}). {{t:Comments can be left on the current text only.}}
+      ${past && html`<p class="notice past" role="status">{{t:You are looking at the page as it was}} ${ago(t)} (${exact(t)}). {{t:Comments can be left on the current text only.}}
         <button type="button" class="btn sm" onClick=${function () { props.setT(last); }}>{{t:Back to now}}</button></p>`}
       <h1>${page.title}</h1>
       ${page.hidden && html`<p class="badges"><span class="chip bad">{{t:hidden}}</span></p>`}
@@ -1022,11 +1053,11 @@
 
     function setTab(t) { tab[1](t); store('tab', t); }
     function setS(v) { var h = v >= last ? 'now' : commits[v].h; sinceHash[1](h); store('since', h); cur[1](-1); }
-    function setT(v) {
-      if (v < last && editor[0]) { if (!leaveDraft()) { return; } draft = false; editor[1](null); }
-      atK[1](v); cur[1](-1); frag[1](null);
-      if (v < s) { setS(v); }
+    function setRange(a, b) {
+      if (b < last && editor[0]) { if (!leaveDraft()) { return; } draft = false; editor[1](null); }
+      atK[1](b); setS(a); frag[1](null);
     }
+    function setT(v) { setRange(Math.min(s, v), v); }
     function find(a) { return a && document.querySelector('[data-a="' + CSS.escape(a) + '"]'); }
     function focusEl(el) {
       (el.tagName === 'DETAILS' ? el.querySelector('summary') : el).focus({ preventScroll: true });
@@ -1080,7 +1111,6 @@
       function bp() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.dataset.was = d.open ? '1' : ''; d.open = true; }); }
       function ap() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.open = !!d.dataset.was; }); }
       window.addEventListener('beforeprint', bp); window.addEventListener('afterprint', ap);
-      document.documentElement.classList.toggle('has-tl', last > 0);
       return function () {
         window.removeEventListener('hashchange', on); window.removeEventListener('scroll', onScroll);
         if (m && m.removeEventListener) { m.removeEventListener('change', w); }
@@ -1162,11 +1192,12 @@
     var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id; }));
     return html`
       <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>{{t:Skip to content}}</a>
-      <header class="top" role="banner">
+      <header class=${'top' + (last > 0 ? ' has-tl' : '')} role="banner">
         ${!wide[0] && html`<button id="menu" type="button" class="btn ico" aria-label="{{t:Menu}}" aria-expanded=${drawer[0] ? 'true' : 'false'} onClick=${function () { drawer[1](true); }}>☰</button>`}
         <div class="proj">${D.brand.head && html`<span dangerouslySetInnerHTML=${{ __html: D.brand.head }}></span>`}<a href=${'#' + pages[0].id}>${D.title}</a></div>
         <span class="sp"></span>
-        ${!wide[0] && html`<button type="button" class="btn mid" onClick=${goSearch}>🔍 {{t:Search}}</button>`}
+        ${last > 0 && html`<${When} page=${page} s=${s} t=${t} setRange=${setRange} />`}
+        ${!wide[0] && html`<button type="button" class="btn mid" aria-label="{{t:Search}}" onClick=${goSearch}>🔍<span class="mid-t"> {{t:Search}}</span></button>`}
         <${More} reset=${resetAll} />
       </header>
       <div class=${'shell' + (rail ? ' work' : '')}>
@@ -1176,7 +1207,7 @@
               <button type="button" class="btn side-x" onClick=${function () { dr.current.close(); }}>✕ {{t:Close}}</button>
               ${drawer[0] && side}</dialog>`}
         <main id="main" tabindex="-1">
-          <${Page} key=${page.id} page=${page} comments=${comments} s=${s} t=${t} setS=${setS} setT=${setT} onToc=${setToc} missing=${r[0].missing}
+          <${Page} key=${page.id} page=${page} comments=${comments} s=${s} t=${t} setT=${setT} onToc=${setToc} missing=${r[0].missing}
             cur=${curA} editor=${editor[0]} closeEditor=${function () { editor[1](null); }} activeC=${activeC[0]} />
         </main>
       </div>
