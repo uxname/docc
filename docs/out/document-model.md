@@ -56,7 +56,7 @@ The include `{{id#field}}`, `{{id#field/section}}` or `{{id#^name}}` is replaced
 
 ## Suppression
 
-`docIgnore` lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.
+`docIgnore` lists entries with a rule (its name, such as text/forbidden-words), a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.
 
 ## Sections
 

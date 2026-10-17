@@ -38,7 +38,7 @@ const fn rule(
     Rule { code, name, group, default, core, desc, bad, good }
 }
 
-static ALL: [Rule; 39] = [
+static ALL: [Rule; 40] = [
     rule(
         "DOC101",
         "syntax/invalid-json",
@@ -116,8 +116,8 @@ static ALL: [Rule; 39] = [
         E,
         true,
         "docIgnore has no reason, has a wrong shape, or targets a rule that cannot be suppressed.",
-        r#""docIgnore": [{ "rule": "DOC301" }]"#,
-        r#""docIgnore": [{ "rule": "DOC301", "reason": "term from the customer spec" }]"#,
+        r#""docIgnore": [{ "rule": "text/forbidden-words" }]"#,
+        r#""docIgnore": [{ "rule": "text/forbidden-words", "reason": "term from the customer spec" }]"#,
     ),
     rule(
         "DOC109",
@@ -426,8 +426,18 @@ static ALL: [Rule; 39] = [
         W,
         false,
         "A docIgnore entry suppresses nothing, or targets a disabled rule.",
-        r#""docIgnore": [{ "rule": "DOC301", "reason": "x" }]  (nothing to suppress)"#,
+        r#""docIgnore": [{ "rule": "text/forbidden-words", "reason": "x" }]  (nothing to suppress)"#,
         "remove the entry",
+    ),
+    rule(
+        "DOC902",
+        "meta/rule-code",
+        "meta",
+        W,
+        false,
+        "A rule is named by its code (DOC353) in the rules of docc.json or in docIgnore; its name (style/timeless-words) says what it checks. The code still works.",
+        r#""rules": { "DOC352": "off" }"#,
+        r#""rules": { "style/hedging": "off" }"#,
     ),
 ];
 
@@ -449,7 +459,8 @@ pub fn by_name(name: &str) -> Option<&'static Rule> {
     BY_NAME.get(name).copied()
 }
 
-/// Lookup resolves a code (DOC301) or a name (text/forbidden-words).
+/// Lookup resolves a name (text/forbidden-words) or a code (DOC301), which
+/// stays an alias: the names are what people and agents write.
 pub fn lookup(key: &str) -> Option<&'static Rule> {
     by_code(key).or_else(|| by_name(key))
 }
@@ -475,7 +486,7 @@ mod tests {
     #[test]
     fn registry() {
         let n = all().len();
-        assert_eq!(n, 39, "want 39 rules, got {n}");
+        assert_eq!(n, 40, "want 40 rules, got {n}");
         let mut core = 0;
         for r in all() {
             assert!(

@@ -4,7 +4,7 @@
 
 spec
 
-Rules are grouped like in Biome: syntax, schema, graph, text, markdown, style, trace, build, meta and custom. A code such as DOC301 is a public contract and never changes; retired codes are not reused. Messages are in English and every message has a hint. docc reports problems and changes nothing in the sources: there are no automatic fixes.
+Rules are grouped like in Biome: syntax, schema, graph, text, markdown, style, trace, build, meta and custom. A rule is written by its name, like in ESLint and Biome (style/hedging), in the rules of docc.json and in docIgnore; its code such as DOC301 is a public contract that never changes and still works there, with a DOC902 warning that names the rule. Retired codes are not reused. A diagnostic, docc rules and docc explain show the name first, then the code. Messages are in English and every message has a hint. docc reports problems and changes nothing in the sources: there are no automatic fixes.
 
 The preset recommended gives every rule a default level, and every rule is on by default. The rules style/hedging (DOC352) and style/timeless-words (DOC353) warn about vague and time-bound words. Word rules, the repeated-word rule and custom rules match text in Unicode NFC and skip text in backticks, so an identifier such as `new` is written in backticks.
 

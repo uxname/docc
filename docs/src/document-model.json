@@ -34,7 +34,7 @@
     "A document with `hidden` set to `true` is checked like any other, gets no page and cannot be linked from a visible document.",
     "The include `{{id#field}}`, `{{id#field/section}}` or `{{id#^name}}` is replaced at build time by the text it names, so a fact is stored once."
   ],
-  "suppression": "`docIgnore` lists entries with a rule, a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.",
+  "suppression": "`docIgnore` lists entries with a rule (its name, such as text/forbidden-words), a mandatory reason and an optional JSON pointer path. Core rules cannot be suppressed or switched off. An entry that suppresses nothing is reported as DOC901.",
   "sections": [
     "A free field can hold named sections: an object with the member `\"$sections\": true`, whose other keys are section titles. A value is text, an array of paragraphs, a list object or another set of sections. It is rendered as a second level heading for the field, third level for a section, and so on up to the sixth, in file order. A section without text keeps its heading, so a link to it has a target.",
     "An object without the marker is rendered as a bullet list. The marker means nothing outside the value of a field or a section.",

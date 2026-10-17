@@ -7,7 +7,7 @@
     "line": 4,
     "column": 5,
     "endLine": 4,
-    "endColumn": 25,
+    "endColumn": 39,
     "message": "a docIgnore entry needs a reason",
     "hint": "Add \"reason\": explain why the rule does not apply here."
   },
@@ -19,8 +19,8 @@
     "line": 5,
     "column": 15,
     "endLine": 5,
-    "endColumn": 23,
-    "message": "DOC202 is a core rule and cannot be suppressed",
+    "endColumn": 33,
+    "message": "graph/broken-ref is a core rule and cannot be suppressed",
     "hint": "Fix the problem instead of suppressing it."
   },
   {
@@ -33,7 +33,7 @@
     "endLine": 6,
     "endColumn": 23,
     "message": "unknown rule \"DOC999\"",
-    "hint": "Use a rule code (DOC301) or name (text/forbidden-words); see docc rules."
+    "hint": "Use a rule name such as text/forbidden-words; see docc rules."
   },
   {
     "code": "DOC108",
@@ -53,9 +53,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 8,
-    "column": 49,
+    "column": 59,
     "endLine": 8,
-    "endColumn": 55,
+    "endColumn": 65,
     "message": "path must be a JSON pointer string",
     "hint": "Write a pointer such as \"/statement\" or \"/body/1\"."
   },
@@ -65,9 +65,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 9,
-    "column": 41,
+    "column": 51,
     "endLine": 9,
-    "endColumn": 48,
+    "endColumn": 58,
     "message": "unknown key \"extra\" in a docIgnore entry",
     "hint": "Use only rule, reason and path."
   },
@@ -81,6 +81,6 @@
     "endLine": 10,
     "endColumn": 13,
     "message": "a docIgnore entry must be an object",
-    "hint": "Write { \"rule\": \"DOC301\", \"reason\": \"why\" }."
+    "hint": "Write { \"rule\": \"text/forbidden-words\", \"reason\": \"why\" }."
   }
 ]

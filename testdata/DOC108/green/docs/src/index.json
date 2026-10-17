@@ -1,6 +1,6 @@
 {
   "title": "Index",
   "body": "It is fast.",
-  "docIgnore": [{ "rule": "DOC301", "reason": "term from the customer spec", "path": "/body" }],
+  "docIgnore": [{ "rule": "text/forbidden-words", "reason": "term from the customer spec", "path": "/body" }],
   "kind": "page"
 }

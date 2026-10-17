@@ -8,6 +8,7 @@ impl Project {
         self.analyze();
         self.check_graph();
         self.parse_ignores();
+        self.check_rule_codes();
         self.check_kinds();
         self.check_text();
         self.check_markdown();

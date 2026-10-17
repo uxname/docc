@@ -107,8 +107,8 @@ fn write_table(w: &mut dyn Write, rows: &[RuleRow]) -> Result<(), Error> {
     for r in all {
         b.push_str(&format!(
             "{}  {}  {}  {}  {}\n",
-            pad(&r.code, wd[0]),
             pad(&r.rule, wd[1]),
+            pad(&r.code, wd[0]),
             pad(&r.group, wd[2]),
             pad(&r.level, wd[3]),
             first_sentence(&r.description)
@@ -162,9 +162,9 @@ pub(super) fn cmd_explain(c: &mut Common, args: &[String], stdout: &mut dyn Writ
         level += &format!(" (default: {})", e.def);
     }
     let text = format!(
-        "{} {}\nGroup: {}\nLevel: {level}\n\n{}\n\nViolation:\n  {}\n\nFixed:\n  {}\n\n{}\n",
-        e.code,
+        "{} ({})\nGroup: {}\nLevel: {level}\n\n{}\n\nViolation:\n  {}\n\nFixed:\n  {}\n\n{}\n",
         e.rule,
+        e.code,
         e.group,
         e.description,
         indent(&e.bad),
@@ -184,7 +184,7 @@ fn configure(e: &Explanation) -> String {
     if e.core {
         return "Configure: this rule cannot be disabled, re-levelled or suppressed.".into();
     }
-    let key = if e.code == "DOC800" { &e.rule } else { &e.code };
+    let key = &e.rule;
     format!(
         "Configure (docc.json):\n  \"rules\": {{ \"{key}\": \"off\" }}   (or \"warn\", \"error\")\n\
          Suppress one finding (in the document):\n  \"docIgnore\": [{{ \"rule\": \"{key}\", \"reason\": \"why this is fine\" }}]"

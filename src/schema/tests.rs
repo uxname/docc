@@ -411,7 +411,8 @@ fn test_format_is_an_assertion() {
     assert!(vs.is_empty(), "good date: {vs:?}");
 }
 
-/// The printed docc.json schema is the Go output byte for byte.
+/// The printed docc.json schema: first the Go output byte for byte, since
+/// DOC902 and the name-first description its own.
 #[test]
 fn config_matches_go() {
     let want = include_str!("go_config.json");

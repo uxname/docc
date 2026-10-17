@@ -18,7 +18,7 @@
     "changesSince": { "type": "string", "minLength": 1, "description": "Git revision (tag, branch or commit) of the version the reader last received: the HTML file shows the changes since it by default and keeps no history before it." },
     "rules": {
       "type": "object",
-      "description": "Rule code, rule name or group name to a level or an object with parameters.",
+      "description": "Rule name (its code works too, with a DOC902 warning) or group name to a level or an object with parameters.",
       "propertyNames": { "enum": [] },
       "additionalProperties": { "$ref": "#/$defs/ruleSetting" }
     },

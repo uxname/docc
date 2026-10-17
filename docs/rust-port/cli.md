@@ -19,3 +19,8 @@
 Было: `docc: error: cannot read the release list: Get "http://127.0.0.1:1/latest/download/checksums.txt": dial tcp 127.0.0.1:1: connect: connection refused`
 Стало: `docc: error: cannot read the release list: io: Connection refused (os error 111)`
 Почему: эту часть сообщения пишет сетевая библиотека (в Go — встроенная, в Rust — ureq). Начало сообщения и код выхода 2 те же. Ответ сервера с ошибкой выглядит одинаково: `<адрес>: 404 Not Found`.
+
+### 5. Название правила стоит перед кодом (17 октября 2026, намеренно)
+Было: строка диагностики «docs/src/a.json:2:3: warn DOC352 (style/hedging) …», таблица `docc rules` начиналась с кода, `docc explain` писал «DOC352 style/hedging» и предлагал `"rules": { "DOC352": "off" }`.
+Стало: «warn style/hedging (DOC352) …», первый столбец `docc rules` — название, `docc explain` пишет «style/hedging (DOC352)» и предлагает `"rules": { "style/hedging": "off" }`. Код в `rules` и `docIgnore` по-прежнему работает, но даёт новое предупреждение DOC902 (`meta/rule-code`) с названием в подсказке. В `--format json` ничего не изменилось: там и `code`, и `rule`.
+Почему: так решил владелец: в ESLint и Biome правила называют именами, а коды в конфиге o2 появились потому, что docc сам показывал их первыми.

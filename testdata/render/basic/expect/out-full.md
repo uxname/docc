@@ -191,7 +191,7 @@ Hidden text about [Index](#index) with <!-- include req#statement -->First fact.
 
 > Service information.
 
-1. - **rule:** DOC303
+1. - **rule:** text/placeholder
    - **reason:** demo
    - **path:** /body
 

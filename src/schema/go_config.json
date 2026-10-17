@@ -189,7 +189,7 @@
       "additionalProperties": {
         "$ref": "#/$defs/ruleSetting"
       },
-      "description": "Rule code, rule name or group name to a level or an object with parameters.",
+      "description": "Rule name (its code works too, with a DOC902 warning) or group name to a level or an object with parameters.",
       "propertyNames": {
         "anyOf": [
           {
@@ -271,6 +271,8 @@
               "DOC800",
               "DOC901",
               "meta/unused-ignore",
+              "DOC902",
+              "meta/rule-code",
               "syntax",
               "schema",
               "graph",

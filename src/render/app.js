@@ -522,13 +522,17 @@
   function leaveDraft() { return !draft || confirm('{{t:Discard the unsaved comment?}}'); }
   function Editor(props) {
     var edit = props.edit, frag = edit || props.frag || {};
-    var text = useState(edit ? edit.text : ''), author = useState(edit ? edit.author || '' : store('author') || ''), ta = useRef(null);
+    var text = useState(edit ? edit.text : ''), author = useState(edit ? edit.author || '' : store('author') || ''), ta = useRef(null), who = useRef(null);
     var cur = useRef(''); cur.current = text[0];
     var listening = useState(false); // dictation rewrites the text, so typing waits
     draft = text[0].trim() !== (edit ? edit.text : '');
     useEffect(function () { return function () { draft = false; }; }, []);
     function cancel() { if (leaveDraft()) { props.close(); } }
-    useEffect(function () { if (ta.current) { ta.current.focus({ preventScroll: true }); ta.current.closest('.editor').scrollIntoView({ block: 'nearest' }); } }, []);
+    // a reader who skipped the name gives it here first
+    useEffect(function () {
+      var f = author[0] ? ta.current : who.current;
+      if (f) { f.focus({ preventScroll: true }); f.closest('.editor').scrollIntoView({ block: 'nearest' }); }
+    }, []);
     function ok() {
       var t = text[0].trim(), a = author[0].trim();
       if (!t) { return; }
@@ -548,7 +552,7 @@
     }
     return html`<div class="editor">
       ${frag.fragment && html`<blockquote class="fq">${frag.fragment}</blockquote>`}
-      <label class="who-l">{{t:From}} <input class="who" autocomplete="name" enterkeyhint="next" placeholder="{{t:Your name}}" value=${author[0]}
+      <label class="who-l">{{t:From}} <input ref=${who} class="who" autocomplete="name" enterkeyhint="next" placeholder="{{t:Your name}}" value=${author[0]}
         onInput=${function (e) { author[1](e.target.value); }} /></label>
       <textarea ref=${ta} rows="3" aria-label="{{t:Comment}}" placeholder="{{t:Your comment}}" value=${text[0]} readOnly=${listening[0]}
         onInput=${function (e) { text[1](e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 2 + 'px'; }}
@@ -919,31 +923,90 @@
   }
 
   var kindWord = { chg: '{{t:edited}}', 'new': '{{t:new}}', rm: '{{t:removed}}' };
-  function EditsTab(props) {
-    var list = props.changes.list, groups = [];
-    list.forEach(function (it, k) {
-      var g = groups[groups.length - 1];
-      if (!g || g.page !== it.page) { g = { page: it.page, rows: [], n: { chg: 0, 'new': 0, rm: 0 } }; groups.push(g); }
-      g.rows.push([it, k]); g.n[it.k]++;
+  // the section of the tree a page belongs to: its ancestor on the first
+  // level under a root (a root and a page without parent are their own)
+  var sectionOf = {};
+  (function () {
+    var at = [];
+    D.nav.tree.concat(D.nav.orphans).forEach(function (e) {
+      at.length = e[1]; at.push(e[0]);
+      sectionOf[e[0]] = at[Math.min(1, e[1])];
     });
-    // the list opens at the current edit, else at the current page
+  })();
+  // the heading above every block of a page, for the edits of a long page
+  var headCache = {};
+  function headingAt(page, i) {
+    if (!headCache[page.id]) {
+      var h = '', out = [];
+      (page.blocks || []).forEach(function (b) {
+        var m = !b.p && /<h[234][^>]*>([\s\S]*?)<\/h[234]>/.exec(b.h);
+        if (m) { h = textOf(m[1]); }
+        out.push(h);
+      });
+      headCache[page.id] = out;
+    }
+    return headCache[page.id][i] || '';
+  }
+  function itemHeading(it) {
+    var bs = it.page.blocks || [], i = -1;
+    if (it.a.indexOf('~') > 0) { i = placeGhost(it.page, it.ptr); } else { bs.forEach(function (b, k) { if (b.p === it.ptr) { i = k; } }); }
+    return i < 0 ? '' : headingAt(it.page, Math.min(i, bs.length - 1));
+  }
+  function counts(rows) {
+    var n = { chg: 0, 'new': 0, rm: 0 };
+    rows.forEach(function (x) { n[x[0].k]++; });
+    return [['{{t:Changed:}}', n.chg], ['{{t:Added:}}', n['new']], ['{{t:Removed:}}', n.rm]].filter(function (x) { return x[1]; })
+      .map(function (x) { return x[0] + ' ' + x[1]; }).join(' · ');
+  }
+  // the edits by section of the tree, folded but for the current one, like
+  // the files of a pull request; a long page is cut by its headings and
+  // a long section shows 15 rows at a time. The choices outlive the tab.
+  var editsKind = 'all', editsOpen = {}, EDIT_ROWS = 15;
+  function EditsTab(props) {
+    var list = props.changes.list, kind = useState(editsKind), open = useState(editsOpen), more = useState({});
+    var here = sectionOf[props.page.id] || props.page.id, groups = [], byKey = {};
+    var all = { chg: 0, 'new': 0, rm: 0 };
+    list.forEach(function (it, k) {
+      all[it.k]++;
+      if (kind[0] !== 'all' && it.k !== kind[0]) { return; }
+      var key = sectionOf[it.page.id] || it.page.id, g = byKey[key];
+      if (!g) { g = byKey[key] = { key: key, rows: [] }; groups.push(g); }
+      g.rows.push([it, k]);
+    });
+    function setKind(v) { editsKind = v; kind[1](v); }
+    function toggle(key, on) { editsOpen = Object.assign({}, open[0]); editsOpen[key] = on; open[1](editsOpen); }
+    // the list opens at the current edit
     useEffect(function () {
-      var on = document.querySelector('.er.on') || document.querySelector('.eg[data-pg="' + CSS.escape(props.page.id) + '"]');
+      var on = document.querySelector('.er.on');
       if (on) { on.scrollIntoView({ block: 'center' }); }
-    }, [props.cur, props.page]);
+    }, [props.cur]);
     if (last < 1) { return html`<p class="muted pad">{{t:The documentation has no saved history yet.}}</p>`; }
     if (!list.length) { return html`<p class="muted pad">{{t:No edits in the chosen period. Move the left end of the timeline above the page to the past to see them.}}</p>`; }
+    var kinds = [['all', '{{t:All}}', list.length], ['chg', '{{t:Changed}}', all.chg], ['new', '{{t:Added}}', all['new']], ['rm', '{{t:Removed}}', all.rm]];
     return html`<div class="pad">
       <p class="left">{{t:Edits}}: ${list.length} · ${sinceLabel(props.s)} → ${atLabel(props.t)}</p>
+      <div class="ek" role="radiogroup" aria-label="{{t:Show}}">${kinds.filter(function (x) { return x[2] || x[0] === 'all'; }).map(function (x) {
+        return html`<label class=${'ek-o ' + x[0] + (kind[0] === x[0] ? ' on' : '')}><input type="radio" name="ek" checked=${kind[0] === x[0]}
+          onChange=${function () { setKind(x[0]); }} />${x[1]} <span>${x[2]}</span></label>`;
+      })}</div>
       ${groups.map(function (g) {
-        var n = [['{{t:Changed:}}', g.n.chg], ['{{t:Added:}}', g.n['new']], ['{{t:Removed:}}', g.n.rm]].filter(function (x) { return x[1]; });
-        return html`<h3 class="eg" data-pg=${g.page.id}>${g.page.title}</h3>
-          <p class="es">${n.map(function (x) { return x[0] + ' ' + x[1]; }).join(' · ')}</p>
-          <ul class="edits">${g.rows.map(function (x) {
-          var it = x[0];
-          return html`<li><button type="button" class=${'er ' + it.k + (x[1] === props.cur ? ' on' : '')} onClick=${function () { props.go(x[1]); }}>
-            <span class=${'g ' + it.k}>${kindWord[it.k]}</span><span class="et">${snip(it.t, 60)}</span></button></li>`;
-        })}</ul>`;
+        var p = byId[g.key], isOpen = open[0][g.key] != null ? open[0][g.key] : g.key === here;
+        var n = more[0][g.key] || EDIT_ROWS, rows = g.rows.slice(0, n), lastPage = null, lastHead = null;
+        return html`<details class="eg" data-pg=${g.key} open=${isOpen} onToggle=${function (e) { if (e.target.open !== isOpen) { toggle(g.key, e.target.open); } }}>
+          <summary><span class="eg-t">${p ? p.title : g.key}</span><span class="eg-n">${g.rows.length}</span>
+            <span class="es">${counts(g.rows)}</span></summary>
+          ${isOpen && html`<ul class="edits">${rows.map(function (x) {
+            var it = x[0], pg = it.page !== lastPage && it.page.id !== g.key ? it.page.title : null, hd = itemHeading(it);
+            if (it.page !== lastPage) { lastHead = null; }
+            var head = hd && hd !== lastHead ? hd : null;
+            lastPage = it.page; lastHead = hd;
+            return html`${pg && html`<li class="ep">${pg}</li>`}${head && html`<li class="eh">${head}</li>`}
+              <li><button type="button" class=${'er ' + it.k + (x[1] === props.cur ? ' on' : '')} onClick=${function () { props.go(x[1]); }}>
+              <span class=${'g ' + it.k}>${kindWord[it.k]}</span><span class="et" title=${snip(it.t, 300)}>${snip(it.t, 120)}</span></button></li>`;
+          })}</ul>
+          ${g.rows.length > n && html`<button type="button" class="more" onClick=${function () { var m = Object.assign({}, more[0]); m[g.key] = n + EDIT_ROWS; more[1](m); }}>
+            {{t:Show more:}} ${Math.min(EDIT_ROWS, g.rows.length - n)} {{t:of}} ${g.rows.length - n}</button>`}`}
+        </details>`;
       })}
     </div>`;
   }
@@ -998,11 +1061,36 @@
     </div>`;
   }
 
+  // The name of the reader, asked once on the first visit: it fills the
+  // field From of every comment. Skipping is remembered; the editor then
+  // asks for it, and ⋯ changes it.
+  function NameDialog(props) {
+    var d = useRef(null), v = useState(store('author') || '');
+    useEffect(function () { var el = d.current; if (el.showModal && !el.open) { el.showModal(); } }, []);
+    function done(keep) {
+      var n = v[0].trim();
+      if (keep && n) { store('author', n); }
+      store('asked', true); d.current.close();
+    }
+    return html`<dialog ref=${d} class="name-d" aria-labelledby="name-h" onClose=${props.close}>
+      <form onSubmit=${function (e) { e.preventDefault(); done(true); }}>
+        <h2 id="name-h">{{t:What is your name?}}</h2>
+        <p class="muted">{{t:It is put into your comments, so whoever keeps the documentation knows who wrote them. You can change it in ⋯.}}</p>
+        <input class="who" autocomplete="name" autofocus placeholder="{{t:Your name}}" value=${v[0]} onInput=${function (e) { v[1](e.target.value); }} />
+        <div class="row"><span class="sp"></span>
+          <button type="button" class="btn" onClick=${function () { done(false); }}>{{t:Skip}}</button>
+          <button type="submit" class="btn pri" disabled=${!v[0].trim()}>{{t:Save}}</button></div>
+      </form>
+    </dialog>`;
+  }
+
   // «⋯»: a native popover; it holds the reset
   function More(props) {
     var pop = useRef(null);
     return html`<button type="button" class="btn ico more-b" popovertarget="more" aria-label="{{t:More actions}}" title="{{t:More actions}}">⋯</button>
       <div id="more" popover="auto" ref=${pop} class="pop">
+        <button type="button" class="mi" onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } props.name(); }}>
+          {{t:Your name:}} <b>${store('author') || '{{t:not given}}'}</b> · {{t:change}}</button>
         <button type="button" class="mi bad" onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } props.reset(); }}>{{t:Reset everything…}}</button>
       </div>`;
   }
@@ -1044,7 +1132,7 @@
     // the starting point of docc.json is the default. T always opens at now.
     var sinceHash = useState(store('since')), atK = useState(last), cur = useState(-1), editor = useState(null);
     var toc = useState([]), spy = useState(null), frag = useState(null), activeC = useState(null);
-    var comments = useComments(), pending = useRef(null), dr = useRef(null);
+    var comments = useComments(), pending = useRef(null), dr = useRef(null), askName = useState(store('author') == null && !store('asked'));
     var page = r[0].page, t = atK[0], s = -1, past = t < last;
     if (sinceHash[0] === 'now') { s = last; } else { commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { s = k; } }); }
     if (s < 0) { s = H.base ? 0 : last; }
@@ -1198,7 +1286,7 @@
         <span class="sp"></span>
         ${last > 0 && html`<${When} page=${page} s=${s} t=${t} setRange=${setRange} />`}
         ${!wide[0] && html`<button type="button" class="btn mid" aria-label="{{t:Search}}" onClick=${goSearch}>🔍<span class="mid-t"> {{t:Search}}</span></button>`}
-        <${More} reset=${resetAll} />
+        <${More} reset=${resetAll} name=${function () { askName[1](true); }} />
       </header>
       <div class=${'shell' + (rail ? ' work' : '')}>
         ${wide[0] ? html`<aside id="side" aria-label="{{t:Navigation}}">${side}</aside>`
@@ -1215,6 +1303,7 @@
         <button type="button" class="btn pri" onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 {{t:Comment on the selection}}</button></div>`}
       ${frag[0] && !coarse && html`<button type="button" class="btn pri fragb" style=${'left:' + Math.min(frag[0].x, window.innerWidth - 220) + 'px;top:' + (frag[0].y + 8) + 'px'}
         onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 {{t:Comment on the selection}}</button>`}
+      ${askName[0] && html`<${NameDialog} close=${function () { askName[1](false); }} />`}
       <${Toast} />`;
   }
 

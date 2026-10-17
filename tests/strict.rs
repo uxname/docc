@@ -15,7 +15,7 @@ fn kind_schema_required() {
     ]);
     let p = raw_project(fs.clone());
     let (code, out, _) = p.run(&["validate"]);
-    assert!(code == 1 && out.matches("error DOC109").count() == 2, "default: want two DOC109 errors: {code} {out}");
+    assert!(code == 1 && out.matches("(DOC109)").count() == 2, "default: want two DOC109 errors: {code} {out}");
     fs.insert("docc.json", r#"{"rules":{"DOC109":"off"}}"#);
     let p = raw_project(fs.clone());
     let (code, _, errs) = p.run(&["validate"]);

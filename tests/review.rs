@@ -21,7 +21,7 @@ fn trace_ignores_bom_and_config_positions() {
         ("tests/a.txt", "\u{feff}// docc: nope\r\n"),
     ]);
     let (_, out, _) = p.run(&["validate"]);
-    assert!(out.contains("tests/a.txt:1:4: error DOC401"), "{out}");
+    assert!(out.contains("tests/a.txt:1:4: error trace/unknown-id (DOC401)"), "{out}");
     for (input, want) in [
         (r#"{"customRules":[{"id":"custom/x","level":"warn","given":"a","forbid":"x","message":"m"}]}"#, "docc.json:1:"),
         (r#"{"rules":{"DOC301":{"words":["бы*стро"]}}}"#, "docc.json:1:"),

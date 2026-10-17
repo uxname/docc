@@ -31,7 +31,7 @@
     "line": 7,
     "column": 5,
     "endLine": 7,
-    "endColumn": 66,
+    "endColumn": 80,
     "message": "the path \"/nope\" does not exist in this document",
     "hint": "Fix the path or remove the docIgnore entry."
   },
@@ -43,7 +43,7 @@
     "line": 8,
     "column": 5,
     "endLine": 8,
-    "endColumn": 60,
+    "endColumn": 67,
     "message": "this docIgnore entry suppresses nothing",
     "hint": "Remove the entry: the rule is off here, or nothing triggers it."
   }

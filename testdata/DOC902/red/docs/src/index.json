@@ -1,0 +1,6 @@
+{
+  "title": "Index",
+  "body": ["It is fast."],
+  "docIgnore": [{ "rule": "DOC301", "reason": "the customer's word" }],
+  "kind": "page"
+}

@@ -345,3 +345,41 @@ fn path_helpers() {
     assert_eq!(path_ext("a/x.PNG"), ".PNG");
     assert_eq!(clean_os(Path::new("/a/../../b/./c")), PathBuf::from("/b/c"));
 }
+
+/// A rule named by its code and by its name is the same rule: the same
+/// settings for every rule that can be configured, and the code keys are
+/// remembered for DOC902.
+#[test]
+fn codes_and_names_alike() {
+    let (mut by_code, mut by_name) = (Vec::new(), Vec::new());
+    for (k, r) in crate::rules::all()
+        .iter()
+        .filter(|r| !r.core && r.code != "DOC800")
+        .enumerate()
+    {
+        let l = ["off", "warn", "error"][k % 3];
+        let v = if r.code == "DOC301" {
+            format!(r#"{{"level":"{l}","words":["x"]}}"#)
+        } else {
+            format!(r#""{l}""#)
+        };
+        by_code.push(format!(r#""{}":{v}"#, r.code));
+        by_name.push(format!(r#""{}":{v}"#, r.name));
+    }
+    let a = must_parse(&format!(r#"{{"rules":{{{}}}}}"#, by_code.join(",")));
+    let b = must_parse(&format!(r#"{{"rules":{{{}}}}}"#, by_name.join(",")));
+    for r in crate::rules::all() {
+        assert_eq!(
+            a.resolve().rule(r.code),
+            b.resolve().rule(r.code),
+            "{}",
+            r.name
+        );
+    }
+    assert_eq!(
+        a.rule_codes.len(),
+        by_code.len(),
+        "every code key is remembered"
+    );
+    assert!(b.rule_codes.is_empty(), "names are not codes");
+}

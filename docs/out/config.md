@@ -10,7 +10,7 @@ Paths: `src`, `out`, `schemas` and `outFull`. The folder `out` is owned by docc:
 
 `roots` lists the ids from which reachability is counted, default `index`. `tags` is an optional registry of allowed tags, checked by DOC107. Kinds have no registry: a kind exists when its schema file exists in the schemas folder.
 
-`rules` maps a code, a rule name or a group name to a level or to an object with a level and the parameters `words` and `allow` of the word rules. A rule is more specific than its group, and a group is more specific than the preset. `recommended` set to `false` turns the preset off; core rules stay on. `maxWarnings` sets the warning limit of every command. `changesSince` names the Git revision (a tag, branch or commit) the HTML file shows the edits from by default, such as the version a reader last saw; the file keeps no history before it.
+`rules` maps a rule name (such as style/hedging), a group name or a code (DOC352, which gives DOC902) to a level or to an object with a level and the parameters `words` and `allow` of the word rules. A rule is more specific than its group, and a group is more specific than the preset. `recommended` set to `false` turns the preset off; core rules stay on. `maxWarnings` sets the warning limit of every command. `changesSince` names the Git revision (a tag, branch or commit) the HTML file shows the edits from by default, such as the version a reader last saw; the file keeps no history before it.
 
 `customRules` define rules as a regular expression over a JSON pointer: forbid a match or require one.
 

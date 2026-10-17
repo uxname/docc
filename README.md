@@ -66,7 +66,7 @@ With `"trace": {"scan": ["src/**"]}` in `docc.json`, a comment `// docc: sign-in
 
 A problem is reported with the position, the rule and a hint:
 
-    docs/src/sign-in.json:4:13: error DOC202 (graph/broken-ref) parent points to a document that does not exist: "login"
+    docs/src/sign-in.json:4:13: error graph/broken-ref (DOC202) parent points to a document that does not exist: "login"
       hint: Fix the id, or create docs/src/login.json only if the document is really needed.
     checked 2 files: 2 errors, 0 warnings
 

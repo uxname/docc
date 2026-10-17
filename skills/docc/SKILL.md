@@ -99,9 +99,10 @@ With `"trace": {"scan": ["code/**"]}` in `docc.json`, a comment `// docc: req-lo
 `docc validate --format json` prints `{"summary": {checked, errors, warnings, shown, truncated}, "diagnostics": [{code, rule, level, file, line, column, endLine, endColumn, message, hint}]}`; positions point into the JSON source and each `hint` says how to fix the problem.
 
 - Only 20 diagnostics are shown by default; if `summary.truncated` is true, fix those and rerun, or use `--max-diagnostics 0`.
-- `docc explain DOC301`, `docc explain style/hedging` or `docc explain style` (a group) describes rules; `docc rules` lists all with their levels; `docc <command> --help` prints flags.
+- `docc explain style/hedging` (or its code `DOC352`) or `docc explain style` (a group) describes rules; `docc rules` lists all with their levels; `docc <command> --help` prints flags.
 - Warnings fail the run when `maxWarnings` or `--max-warnings` is set (`docc init` sets 0). Vague words (DOC352), time-bound words (DOC353) and placeholders such as TODO or "see above" (DOC303) are fixed, not silenced. Word rules skip text in backticks.
 - DOC901: a `docIgnore` entry suppresses nothing; delete it.
+- In the `rules` of `docc.json` and in `docIgnore`, name a rule by its name (`style/hedging`), never by its code: a code gives DOC902, whose hint names the rule.
 
 ## Starting a project
 
@@ -113,7 +114,7 @@ Do not rewrite history by editing the old text: write a new document, set the re
 
 ## Rules for you
 
-1. Fix the cause. Add `docIgnore` only for a real exception, with a `reason` a reviewer accepts: `"docIgnore": [{ "rule": "DOC301", "reason": "term from the customer's spec", "path": "/statement" }]`. Core rules cannot be suppressed (DOC108).
+1. Fix the cause. Add `docIgnore` only for a real exception, with a `reason` a reviewer accepts: `"docIgnore": [{ "rule": "text/forbidden-words", "reason": "term from the customer's spec", "path": "/statement" }]`. Core rules cannot be suppressed (DOC108).
 2. Link only to ids that exist. For DOC202 first take the id from the hint's suggestion, a near spelling in `docs/src` or the old target in `docc.lock`; create a document only when it is really needed.
 3. Edit only `docs/src` and `docs/schemas`; never `docs/out`, `docs/out-full` or `docc.lock`.
 4. Do not rename a document without updating every `parent`, `[[id]]` and `docc:` tag that points to it.

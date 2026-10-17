@@ -145,6 +145,8 @@ pub struct Config {
     pub changes_since: String,
 
     pub rules: RuleSet,
+    /// keys of the rules section written as a code: line, column, code (DOC902)
+    pub rule_codes: Vec<(usize, usize, String)>,
     pub custom: Vec<Custom>,
     pub trace_scan: Vec<Glob>,
     pub brand: Option<Branding>,
@@ -567,7 +569,15 @@ pub fn parse(data: &[u8], root: &Path, file: &str) -> Result<Config, Errors> {
                         return Err(w.err_at(v.start, "changesSince must name a Git revision"));
                     }
                 }
-                "rules" => c.rules = w.rule_set(&c, v)?,
+                "rules" => {
+                    c.rules = w.rule_set(&c, v)?;
+                    for m in &v.members {
+                        if m.key != "DOC800" && crate::rules::by_code(&m.key).is_some() {
+                            let (l, col) = r.src.position(m.key_start);
+                            c.rule_codes.push((l, col, m.key.clone()));
+                        }
+                    }
+                }
                 "trace" => w.trace(&mut c, v)?,
                 "branding" => c.brand = Some(w.branding(v, root)?),
                 _ => return Err(w.err_at(m.key_start, format!("unknown key {}", go_quote(&m.key)))),

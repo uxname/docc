@@ -15,8 +15,8 @@ fn rules_list() {
     let (code, out, _) = p.run(&["rules", "--format", "json"]);
     assert_eq!(code, 0);
     let rows = rows(&out);
-    // 39 codes minus the generic DOC800 row
-    assert_eq!(rows.len(), 38, "{} rules", rows.len());
+    // 40 codes minus the generic DOC800 row
+    assert_eq!(rows.len(), 39, "{} rules", rows.len());
     let got: HashMap<&str, &HashMap<String, String>> = rows.iter().map(|r| (r["code"].as_str(), r)).collect();
     let r = got["DOC301"];
     assert!(
@@ -32,7 +32,7 @@ fn rules_list() {
     );
     let (_, text, _) = p.run(&["rules"]);
     let lines: Vec<&str> = text.trim().split('\n').collect();
-    assert!(lines[0].starts_with("CODE") && lines.len() == 39 && !lines[0].contains("FIXABLE"), "table:\n{text}");
+    assert!(lines[0].starts_with("RULE") && lines.len() == 40 && !lines[0].contains("FIXABLE"), "table:\n{text}");
     for ln in lines {
         assert_eq!(ln, ln.trim_end_matches(' '), "trailing spaces");
     }
@@ -75,7 +75,7 @@ fn explain() {
     let (code, out, _) = p.run(&["explain", "DOC301"]);
     assert!(
         code == 0
-            && out.starts_with("DOC301 text/forbidden-words\nGroup: text\nLevel: warn\n")
+            && out.starts_with("text/forbidden-words (DOC301)\nGroup: text\nLevel: warn\n")
             && out.contains("Violation:")
             && out.contains("Fixed:")
             && !out.contains("Automatic fix"),
@@ -87,7 +87,7 @@ fn explain() {
     let e: Value = serde_json::from_str(&out).unwrap();
     assert!(code == 0 && e["code"] == "DOC214" && !out.contains("fix"), "{e}");
     let (code, out, _) = p.run(&["explain", "custom/x"]);
-    assert!(code == 0 && out.contains("DOC800 custom/x") && out.contains("x+"), "custom: {code} {out}");
+    assert!(code == 0 && out.contains("custom/x (DOC800)") && out.contains("x+"), "custom: {code} {out}");
     for bad in [&["explain", "DOC999"][..], &["explain"], &["explain", "DOC301", "DOC302"], &["explain", "custom/none"]] {
         let (code, _, errs) = p.run(bad);
         assert!(code == 2 && !errs.is_empty(), "{bad:?}: {code} {errs:?}");
@@ -105,7 +105,7 @@ fn trace_needs_scan() {
         ("docc.json", r#"{"trace":{"scan":["tests/**"]}}"#),
     ]);
     let (code, out, _) = p.run(&["validate"]);
-    assert!(code == 1 && out.contains("tests/a_test.txt:1:4: error DOC401"), "{code} {out}");
+    assert!(code == 1 && out.contains("tests/a_test.txt:1:4: error trace/unknown-id (DOC401)"), "{code} {out}");
 }
 
 #[test]
@@ -127,7 +127,7 @@ fn explain_shows_effective_level_and_configure() {
     let (_, out, _) = p.run(&["explain", "DOC313"]);
     assert!(
         out.contains("Level: error (default: warn)")
-            && out.contains(r#""rules": { "DOC313": "off" }"#)
+            && out.contains(r#""rules": { "text/repeated-word": "off" }"#)
             && out.contains(r#""docIgnore""#),
         "{out}"
     );

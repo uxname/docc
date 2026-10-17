@@ -45,7 +45,7 @@ pub fn text(w: &mut dyn Write, ds: &[Diagnostic], max: usize, checked: usize) ->
         let _ = writeln!(
             b,
             "{}:{}:{}: {} {} ({}) {}",
-            d.file, d.line, d.column, d.level, d.code, d.rule, d.message
+            d.file, d.line, d.column, d.level, d.rule, d.code, d.message
         );
         if !d.hint.is_empty() {
             let _ = writeln!(b, "  hint: {}", d.hint);
@@ -144,7 +144,7 @@ mod tests {
         text(&mut out, &ds, 1, 1).unwrap();
         assert_eq!(
             String::from_utf8(out).unwrap(),
-            "docs/src/a.json:2:3: warn DOC301 (text/forbidden-words) a <b> & c\u{2028}\n\
+            "docs/src/a.json:2:3: warn text/forbidden-words (DOC301) a <b> & c\u{2028}\n\
              showing 1 of 2\n\
              checked 1 file: 1 error, 1 warning\n\
              Run docc explain <rule> for details\n"

@@ -1,12 +1,12 @@
 {
   "title": "Index",
   "docIgnore": [
-    { "rule": "DOC301" },
-    { "rule": "DOC202", "reason": "core rules cannot be suppressed" },
+    { "rule": "text/forbidden-words" },
+    { "rule": "graph/broken-ref", "reason": "core rules cannot be suppressed" },
     { "rule": "DOC999", "reason": "unknown" },
     { "rule": "text/placeholder", "reason": "  " },
-    { "rule": "DOC303", "reason": "ok", "path": "body" },
-    { "rule": "DOC303", "reason": "ok", "extra": 1 },
+    { "rule": "text/placeholder", "reason": "ok", "path": "body" },
+    { "rule": "text/placeholder", "reason": "ok", "extra": 1 },
     "DOC301"
   ],
   "kind": "page"

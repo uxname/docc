@@ -1,0 +1,26 @@
+[
+  {
+    "code": "DOC902",
+    "rule": "meta/rule-code",
+    "level": "warn",
+    "file": "docc.json",
+    "line": 1,
+    "column": 14,
+    "endLine": 1,
+    "endColumn": 14,
+    "message": "the rule is named by its code DOC352",
+    "hint": "Write \"style/hedging\" instead: the name says what the rule checks, and the code still works."
+  },
+  {
+    "code": "DOC902",
+    "rule": "meta/rule-code",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 4,
+    "column": 27,
+    "endLine": 4,
+    "endColumn": 35,
+    "message": "the rule is named by its code DOC301",
+    "hint": "Write \"text/forbidden-words\" instead: the name says what the rule checks, and the code still works."
+  }
+]

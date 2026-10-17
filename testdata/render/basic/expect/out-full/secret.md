@@ -18,6 +18,6 @@ Hidden text about [Index](index.md) with <!-- include req#statement -->First fac
 
 > Service information.
 
-1. - **rule:** DOC303
+1. - **rule:** text/placeholder
    - **reason:** demo
    - **path:** /body

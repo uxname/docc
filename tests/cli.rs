@@ -64,9 +64,9 @@ fn text_format_and_limit() {
     let (code, out, _) = p.run(&["validate", "--max-diagnostics", "2"]);
     assert_eq!(code, 1);
     let want = [
-        r#"docs/src/o0.json:1:1: error DOC203 (graph/orphan) document "o0" is not reachable from the roots [index]"#,
+        r#"docs/src/o0.json:1:1: error graph/orphan (DOC203) document "o0" is not reachable from the roots [index]"#,
         "  hint: Link it from a reachable document ([[id]] in the text) or set its parent.",
-        r#"docs/src/o1.json:1:1: error DOC203 (graph/orphan) document "o1" is not reachable from the roots [index]"#,
+        r#"docs/src/o1.json:1:1: error graph/orphan (DOC203) document "o1" is not reachable from the roots [index]"#,
         "  hint: Link it from a reachable document ([[id]] in the text) or set its parent.",
         "showing 2 of 5",
         "checked 6 files: 5 errors, 0 warnings",
@@ -536,7 +536,7 @@ fn small_cli_polish() {
     let (code, _, errs) = p.run(&["validate", "--max-warnings", "-2"]);
     assert!(code == 2 && errs.contains("--max-warnings"), "negative limit: {code} {errs:?}");
     let (code, out, _) = p.run(&["explain", "doc209"]);
-    assert!(code == 0 && out.starts_with("DOC209 graph/suspect-link"), "lower-case code: {code} {out:?}");
+    assert!(code == 0 && out.starts_with("graph/suspect-link (DOC209)"), "lower-case code: {code} {out:?}");
     let (code, out, _) = p.run(&["explain", "graph"]);
     assert!(code == 0 && out.contains("DOC209") && !out.contains("DOC301"), "a group lists its rules: {code} {out:?}");
     assert_eq!(p.run(&["explain", "nonsense"]).0, 2, "an unknown name is still an error");
