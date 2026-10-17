@@ -96,6 +96,9 @@ pub struct Custom {
     pub level: diag::Level,
     pub forbid: Option<Regex>,
     pub require: Option<Regex>,
+    /// the NFC source of forbid or require, as Go's Regexp.String() gives it
+    /// (the compiled expression is rewritten for the regex crate)
+    pub pattern: String,
 }
 
 /// Branding is the branding section: the name, site, logo and colours of the

@@ -199,6 +199,7 @@ impl Walker<'_> {
                         let re = compile_go_regexp(&text::nfc(&s)).map_err(|err| {
                             self.err_at(v.start, format!("bad regular expression: {err}"))
                         })?;
+                        cr.pattern = text::nfc(&s);
                         if m.key == "forbid" {
                             cr.forbid = Some(re);
                             have_forbid = true;
