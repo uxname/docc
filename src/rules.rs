@@ -101,7 +101,7 @@ static ALL: [Rule; 40] = [
     ),
     rule(
         "DOC107",
-        "schema/unregistered",
+        "schema/unregistered-tag",
         "schema",
         E,
         false,
@@ -351,7 +351,7 @@ static ALL: [Rule; 40] = [
     ),
     rule(
         "DOC353",
-        "style/timeless-words",
+        "style/time-bound-words",
         "style",
         W,
         false,
@@ -361,7 +361,7 @@ static ALL: [Rule; 40] = [
     ),
     rule(
         "DOC401",
-        "trace/unknown-id",
+        "trace/bad-code-tag",
         "trace",
         E,
         true,
@@ -435,7 +435,7 @@ static ALL: [Rule; 40] = [
         "meta",
         W,
         false,
-        "A rule is named by its code (DOC353) in the rules of docc.json or in docIgnore; its name (style/timeless-words) says what it checks. The code still works.",
+        "A rule is named by its code (DOC353) or by an old name (style/timeless-words) in the rules of docc.json or in docIgnore; its name (style/time-bound-words) says what it checks. The code and the old name still work.",
         r#""rules": { "DOC352": "off" }"#,
         r#""rules": { "style/hedging": "off" }"#,
     ),
@@ -459,10 +459,26 @@ pub fn by_name(name: &str) -> Option<&'static Rule> {
     BY_NAME.get(name).copied()
 }
 
-/// Lookup resolves a name (text/forbidden-words) or a code (DOC301), which
-/// stays an alias: the names are what people and agents write.
+/// OLD_NAMES are names a rule had before it was renamed: they keep working.
+const OLD_NAMES: [(&str, &str); 3] = [
+    ("schema/unregistered", "DOC107"),
+    ("style/timeless-words", "DOC353"),
+    ("trace/unknown-id", "DOC401"),
+];
+
+/// Lookup resolves a name (text/forbidden-words), a code (DOC301) or an old
+/// name; the code and the old names stay aliases: the names are what people
+/// and agents write.
 pub fn lookup(key: &str) -> Option<&'static Rule> {
-    by_code(key).or_else(|| by_name(key))
+    by_code(key).or_else(|| by_name(key)).or_else(|| {
+        OLD_NAMES.iter().find(|(n, _)| *n == key).and_then(|(_, c)| by_code(c))
+    })
+}
+
+/// alias reports whether key names a rule by its code or an old name (DOC902);
+/// DOC800, the code of every custom rule, has no name to write instead.
+pub fn alias(key: &str) -> Option<&'static Rule> {
+    lookup(key).filter(|r| key != r.name && r.code != "DOC800")
 }
 
 /// IsCustomName reports whether name looks like a custom rule name.

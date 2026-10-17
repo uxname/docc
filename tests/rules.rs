@@ -105,7 +105,7 @@ fn trace_needs_scan() {
         ("docc.json", r#"{"trace":{"scan":["tests/**"]}}"#),
     ]);
     let (code, out, _) = p.run(&["validate"]);
-    assert!(code == 1 && out.contains("tests/a_test.txt:1:4: error trace/unknown-id (DOC401)"), "{code} {out}");
+    assert!(code == 1 && out.contains("tests/a_test.txt:1:4: error trace/bad-code-tag (DOC401)"), "{code} {out}");
 }
 
 #[test]

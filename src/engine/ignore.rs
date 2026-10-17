@@ -27,29 +27,32 @@ pub struct Ignore {
 }
 
 /// rule_code_msg and rule_code_hint word DOC902 for docc.json and docIgnore.
-fn rule_code_msg(r: &Rule) -> String {
-    format!("the rule is named by its code {}", r.code)
+fn rule_code_msg(key: &str, r: &Rule) -> String {
+    if key == r.code {
+        return format!("the rule is named by its code {}", r.code);
+    }
+    format!("the rule {} has a new name", go_quote(key))
 }
 
 fn rule_code_hint(r: &Rule) -> String {
     format!(
-        "Write {} instead: the name says what the rule checks, and the code still works.",
+        "Write {} instead: the name says what the rule checks, and the old key still works.",
         go_quote(r.name)
     )
 }
 
 impl Project {
     /// rule_codes warns about the keys of the rules section of docc.json
-    /// written as codes (DOC902).
+    /// written as codes or old names (DOC902).
     pub(super) fn check_rule_codes(&self) {
-        for (line, col, code) in &self.cfg.rule_codes {
-            if let Some(r) = rules::by_code(code) {
+        for (line, col, key) in &self.cfg.rule_codes {
+            if let Some(r) = rules::alias(key) {
                 self.emit_file(
                     &self.cfg.file,
                     "DOC902",
                     *line,
                     *col,
-                    rule_code_msg(r),
+                    rule_code_msg(key, r),
                     rule_code_hint(r),
                 );
             }
@@ -175,13 +178,13 @@ impl Project {
                 );
                 return None;
             }
-            if key == r.code && r.code != "DOC800" {
+            if rules::alias(key).is_some() {
                 self.emit(
                     d,
                     "DOC902",
                     rule_node.start,
                     rule_node.end,
-                    rule_code_msg(r),
+                    rule_code_msg(key, r),
                     rule_code_hint(r),
                 );
             }

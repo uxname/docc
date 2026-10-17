@@ -9,7 +9,19 @@
     "endLine": 1,
     "endColumn": 14,
     "message": "the rule is named by its code DOC352",
-    "hint": "Write \"style/hedging\" instead: the name says what the rule checks, and the code still works."
+    "hint": "Write \"style/hedging\" instead: the name says what the rule checks, and the old key still works."
+  },
+  {
+    "code": "DOC902",
+    "rule": "meta/rule-code",
+    "level": "warn",
+    "file": "docc.json",
+    "line": 1,
+    "column": 31,
+    "endLine": 1,
+    "endColumn": 31,
+    "message": "the rule \"style/timeless-words\" has a new name",
+    "hint": "Write \"style/time-bound-words\" instead: the name says what the rule checks, and the old key still works."
   },
   {
     "code": "DOC902",
@@ -21,6 +33,6 @@
     "endLine": 4,
     "endColumn": 35,
     "message": "the rule is named by its code DOC301",
-    "hint": "Write \"text/forbidden-words\" instead: the name says what the rule checks, and the code still works."
+    "hint": "Write \"text/forbidden-words\" instead: the name says what the rule checks, and the old key still works."
   }
 ]

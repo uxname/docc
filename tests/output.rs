@@ -129,7 +129,7 @@ fn custom_rules_and_repeats_in_nfc() {
         at.entry(s(x, "rule").to_string()).or_default().push(x["column"].as_u64().unwrap());
     }
     // the custom rule hits the same three places as the built-in DOC353 word list
-    let (got, want) = (at.get("custom/no-new"), at.get("style/timeless-words"));
+    let (got, want) = (at.get("custom/no-new"), at.get("style/time-bound-words"));
     assert!(got == want && got.map_or(0, Vec::len) == 3, "custom/no-new at {got:?}, DOC353 at {want:?}");
     assert!(
         !at.contains_key("custom/needs-key") && at.get("text/repeated-word").map_or(0, Vec::len) == 1,

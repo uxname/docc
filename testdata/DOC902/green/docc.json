@@ -1,1 +1,1 @@
-{ "rules": { "style/hedging": "off", "style/timeless-words": "warn", "DOC800": "warn" } }
+{ "rules": { "style/hedging": "off", "style/time-bound-words": "warn", "DOC800": "warn" } }

@@ -145,7 +145,7 @@ pub struct Config {
     pub changes_since: String,
 
     pub rules: RuleSet,
-    /// keys of the rules section written as a code: line, column, code (DOC902)
+    /// keys of the rules section written as a code or an old name: line, column, key (DOC902)
     pub rule_codes: Vec<(usize, usize, String)>,
     pub custom: Vec<Custom>,
     pub trace_scan: Vec<Glob>,
@@ -572,7 +572,7 @@ pub fn parse(data: &[u8], root: &Path, file: &str) -> Result<Config, Errors> {
                 "rules" => {
                     c.rules = w.rule_set(&c, v)?;
                     for m in &v.members {
-                        if m.key != "DOC800" && crate::rules::by_code(&m.key).is_some() {
+                        if crate::rules::alias(&m.key).is_some() {
                             let (l, col) = r.src.position(m.key_start);
                             c.rule_codes.push((l, col, m.key.clone()));
                         }

@@ -1,7 +1,7 @@
 [
   {
     "code": "DOC107",
-    "rule": "schema/unregistered",
+    "rule": "schema/unregistered-tag",
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,

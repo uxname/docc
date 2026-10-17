@@ -382,4 +382,13 @@ fn codes_and_names_alike() {
         "every code key is remembered"
     );
     assert!(b.rule_codes.is_empty(), "names are not codes");
+    // a renamed rule keeps its old name as an alias, like its code; the
+    // other two renamed rules are core, so only explain takes their old names
+    let old = must_parse(r#"{"rules":{"style/timeless-words":"off"}}"#);
+    let new = must_parse(r#"{"rules":{"style/time-bound-words":"off"}}"#);
+    assert_eq!(old.resolve().rule("DOC353"), new.resolve().rule("DOC353"));
+    assert_eq!(old.rule_codes.len(), 1, "an old name is remembered for DOC902");
+    for (old, code) in [("schema/unregistered", "DOC107"), ("trace/unknown-id", "DOC401")] {
+        assert_eq!(crate::rules::lookup(old).map(|r| r.code), Some(code), "{old}");
+    }
 }
