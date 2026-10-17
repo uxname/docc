@@ -68,6 +68,18 @@ assert.strictEqual(T.between(page, '/body/2', 0, 1), null, 'a block that came la
 assert.strictEqual(T.between(page, '/body/0', 0, 1), undefined, 'an unchanged block');
 assert.strictEqual(T.between(page, '/body/1', 0, 0), undefined, 'nothing changes between a moment and itself');
 
+// saves by day for the timeline, and the save to show for a date
+assert.deepStrictEqual(T.saveDays([1, 0]).map((x) => x.ks), [[1], [0]]);
+assert.strictEqual(T.atDate('2026-10-06'), 0);
+assert.strictEqual(T.atDate('2026-10-07'), 1, 'the last save of that day');
+assert.strictEqual(T.atDate('2020-01-01'), 0, 'a date before the history shows its start');
+
+// a browser comment from an older build follows its words to the paragraph that has them now
+const c = (path, fragment) => ({ id: path + fragment, doc: 'p', path, fragment, build: 'old' });
+assert.strictEqual(T.pathOf(c('/body/1', 'Gamma')), '/body/2', 'a paragraph was inserted above');
+assert.strictEqual(T.pathOf(c('/body/1', 'now')), '/body/1', 'its words are still there');
+assert.strictEqual(T.pathOf(c('/body/1', 'missing')), '/body/1', 'words found nowhere stay where they were');
+
 // a table row reads as its cells in the lists
 assert.strictEqual(T.snip('| Module | Owner |\n|---|---|', 60), 'Module Owner');
 console.log('ok');

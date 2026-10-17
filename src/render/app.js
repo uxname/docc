@@ -45,11 +45,18 @@
     return { page: pages[0], missing: id && id !== 'main' ? id : null };
   }
   function blockHash(doc, ptr) { return '#' + doc + (ptr || ''); }
-  // dates in the language of the file; '' for the working tree, which has none
+  // dates in the language of the file; '' for the working tree, which has none.
+  // A formatter is made once per options: making one costs more than the
+  // whole list of saves, which used to make thousands of them on every step.
+  var fmts = {};
+  function intl(Kind, o) {
+    var k = Kind.name + JSON.stringify(o);
+    return fmts[k] || (fmts[k] = new Kind(D.lang || 'en', o));
+  }
   function fmt(c, o) {
     var cm = commits[c];
     if (!cm || !cm.h) { return ''; }
-    try { return new Intl.DateTimeFormat(D.lang || 'en', o).format(new Date(cm.d)); } catch (e) { return cm.d.slice(0, 16).replace('T', ' '); }
+    try { return intl(Intl.DateTimeFormat, o).format(new Date(cm.d)); } catch (e) { return cm.d.slice(0, 16).replace('T', ' '); }
   }
   // the exact moment of a version, «14 Oct 2026, 21:40»
   function exact(c) { return fmt(c, { dateStyle: 'medium', timeStyle: 'short' }) || '{{t:not saved yet}}'; }
@@ -413,7 +420,28 @@
     if (!cm.h) { return '{{t:now, not saved yet}}'; }
     var sec = (new Date(cm.d) - Date.now()) / 1000, a = Math.abs(sec);
     var u = a < 60 ? ['second', 1] : a < 3600 ? ['minute', 60] : a < 86400 ? ['hour', 3600] : a < 2592000 ? ['day', 86400] : a < 31536000 ? ['month', 2592000] : ['year', 31536000];
-    try { return new Intl.RelativeTimeFormat(D.lang || 'en', { numeric: 'auto', style: narrow ? 'short' : 'long' }).format(Math.round(sec / u[1]), u[0]); } catch (e) { return exact(k); }
+    try { return intl(Intl.RelativeTimeFormat, { numeric: 'auto', style: narrow ? 'short' : 'long' }).format(Math.round(sec / u[1]), u[0]); } catch (e) { return exact(k); }
+  }
+  // saves (newest first) by the day they were made: [{ day, ks }]
+  function saveDays(ks) {
+    var days = [];
+    ks.forEach(function (k) {
+      var day = fmt(k, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) || '{{t:now}}';
+      if (!days.length || days[days.length - 1].day !== day) { days.push({ day: day, ks: [] }); }
+      days[days.length - 1].ks.push(k);
+    });
+    return days;
+  }
+  // the last save made on or before a day (yyyy-mm-dd, local time); 0 when none was
+  function atDate(v) {
+    var end = new Date(v + 'T23:59:59.999'), at = 0;
+    commits.forEach(function (c, k) { if (c.h && new Date(c.d) <= end) { at = k; } });
+    return at;
+  }
+  // the day of a save as <input type=date> reads it
+  function dayOf(k) {
+    var cm = commits[k], d = cm && cm.h && new Date(cm.d), p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d ? d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) : '';
   }
   function sinceLabel(s) { return s >= last ? '{{t:now, edits are not shown}}' : ago(s); }
   function atLabel(t) { return t >= last ? '{{t:now}}' : ago(t); }
@@ -476,7 +504,25 @@
       var rest = local.slice(); rest.splice(Math.max(0, Math.min(at, rest.length)), 0, c); setLocal(rest);
     });
   }
-  function commentsOn(list, doc, ptr) { return list.filter(function (c) { return c.doc === doc && c.path === ptr; }); }
+  // The paragraph of a comment. A pointer is a place in an array: a paragraph
+  // inserted above moves the words commented in an older build down by one,
+  // so such a comment goes to the nearest paragraph that has its words.
+  // Imported comments are moved by the build itself.
+  var pathCache = {};
+  function pathOf(c) {
+    if (!c.fragment || inRepo[c.id] || !c.build || c.build === H.head) { return c.path; }
+    var k = c.id + ':' + c.path;
+    if (k in pathCache) { return pathCache[k]; }
+    var bs = byId[c.doc] ? blocksOf(byId[c.doc]) : [], has = function (b) { return findFragment(plain(b.s).replace(/\s+/g, ' '), c) >= 0; };
+    var at = -1, best = c.path;
+    bs.forEach(function (b, i) { if (b.p === c.path) { at = i; } });
+    if (at < 0 || !has(bs[at])) {
+      var d = Infinity;
+      bs.forEach(function (b, i) { if (Math.abs(i - at) < d && has(b)) { d = Math.abs(i - at); best = b.p; } });
+    }
+    return (pathCache[k] = best);
+  }
+  function commentsOn(list, doc, ptr) { return list.filter(function (c) { return c.doc === doc && pathOf(c) === ptr; }); }
 
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
@@ -555,7 +601,11 @@
       <label class="who-l">{{t:From}} <input ref=${who} class="who" autocomplete="name" enterkeyhint="next" placeholder="{{t:Your name}}" value=${author[0]}
         onInput=${function (e) { author[1](e.target.value); }} /></label>
       <textarea ref=${ta} rows="3" aria-label="{{t:Comment}}" placeholder="{{t:Your comment}}" value=${text[0]} readOnly=${listening[0]}
-        onInput=${function (e) { text[1](e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 2 + 'px'; }}
+        onInput=${function (e) {
+          text[1](e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 2 + 'px';
+          // the box grows up to its limit: Save stays in sight under it
+          e.target.nextElementSibling.scrollIntoView({ block: 'nearest' });
+        }}
         onKeyDown=${function (e) {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { ok(); }
           if (e.key === 'Escape') { e.stopPropagation(); cancel(); }
@@ -651,67 +701,102 @@
 
   // The timeline: the saved versions on one track with two ends, S where the
   // edits start and T the moment the text is shown at, and below it the
-  // versions by day with their exact time, newest first. A version picked
+  // versions by day, newest first, a day folded to one line. A version picked
   // in the list shows what it changed (S just before it, T at it), as in the
   // version history of Google Docs. The points are spaced evenly: saves come
-  // in bursts, so a track by time would pile them up.
+  // in bursts, so a track by time would pile them up. A long history on touch
+  // has no track: a finger cannot pick one of thousands of saves on it, the
+  // days and the date can.
+  var ROWS = 15, LONG = 120;
   function Timeline(props) {
-    var s = props.s, t = props.t, touched = {}, days = [];
-    pageChanges(props.page).forEach(function (c) { touched[c.c] = true; });
+    var s = props.s, t = props.t, touched = {}, mine = 0;
+    pageChanges(props.page).forEach(function (c) { if (!touched[c.c]) { touched[c.c] = true; mine++; } });
+    var only = useState(last > LONG && mine > 0), open = useState({}), more = useState({}), nDays = useState(ROWS), sTop = useState(null);
     var pc = function (k) { return (k / last * 100).toFixed(2) + '%'; };
     // a range input that was clamped keeps the clamped value on screen
     function input(fn) { return function (e) { var v = fn(+e.target.value); if (v !== +e.target.value) { e.target.value = v; } }; }
-    for (var k = last; k >= 0; k--) {
-      var day = fmt(k, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) || '{{t:now}}';
-      if (!days.length || days[days.length - 1].day !== day) { days.push({ day: day, ks: [] }); }
-      days[days.length - 1].ks.push(k);
+    // the thumb nearer to the mouse is on top, so two thumbs on one place can both be taken
+    // ponytail: mouse only, a touch picks its thumb before any move; on touch a long history has no track
+    function hover(e) {
+      var r = e.currentTarget.getBoundingClientRect(), k = (e.clientX - r.left) / r.width * last, ds = Math.abs(k - s), dt = Math.abs(k - t);
+      sTop[1](ds < dt || (ds === dt && k < s));
     }
+    function pick(a, b) { props.setRange(a, b); props.done(); }
+    var ks = [];
+    for (var k = last; k >= 0; k--) { if (!only[0] || touched[k] || k === t || k === last) { ks.push(k); } }
+    var days = saveDays(ks), atDay = 0;
+    days.forEach(function (d, i) { if (d.ks.indexOf(t) >= 0) { atDay = i; } });
+    var shown = days.slice(0, Math.max(nDays[0], atDay + 1));
     // ponytail: with very many saves only the ones of this page get a mark
-    var marks = commits.map(function (c, k) { return k; }).filter(function (k) { return last <= 120 || touched[k]; });
+    var marks = ks.filter(function (k) { return last <= LONG || touched[k]; });
+    var track = !(coarse && last > LONG);
     return html`<div class="tl" role="group" aria-label="{{t:Timeline}}">
-      <div class="tl-h">
-        <span class="tl-s-l">{{t:Edits since:}} <b>${sinceLabel(s)}</b><small>${s < last ? exact(s) : ''}</small></span>
-        <span class="tl-t-l">{{t:Text as of:}} <b>${atLabel(t)}</b><small>${exact(t)}</small></span>
-      </div>
-      <div class=${'tl-r' + (s === t && t === last ? ' s-top' : '')}>
-        <div class="tl-in">
-          <div class="tl-line"></div>
-          <div class="tl-sel" style=${'left:' + pc(s) + ';width:' + pc(t - s)}></div>
-          ${marks.map(function (k) { return html`<span class=${'tl-k' + (touched[k] ? ' on' : '')} style=${'left:' + pc(k)} title=${versionLine(k)}></span>`; })}
+      <div class="tl-top">
+        <div class="tl-h">
+          <span class="tl-s-l">{{t:Edits since:}} <b>${sinceLabel(s)}</b><small>${s < last ? exact(s) : ''}</small></span>
+          <span class="tl-t-l">{{t:Text as of:}} <b>${atLabel(t)}</b><small>${exact(t)}</small></span>
+          <button type="button" class="btn sm tl-x" popovertarget="when" popovertargetaction="hide">✕ {{t:Close}}</button>
         </div>
-        <input type="range" class="tl-s" min="0" max=${last} step="1" value=${s} aria-label="{{t:Edits since:}}" aria-valuetext=${sinceLabel(s) + ', ' + exact(s)}
-          onInput=${input(function (v) { v = Math.min(v, t); props.setRange(v, t); return v; })} />
-        <input type="range" class="tl-t" min="0" max=${last} step="1" value=${t} aria-label="{{t:Text as of:}}" aria-valuetext=${atLabel(t) + ', ' + exact(t)}
-          onInput=${input(function (v) { props.setRange(Math.min(s, v), v); return v; })} />
+        ${track && html`<div class=${'tl-r' + ((sTop[0] == null ? s === t && t === last : sTop[0]) ? ' s-top' : '')} onPointerMove=${hover}>
+          <div class="tl-in">
+            <div class="tl-line"></div>
+            <div class="tl-sel" style=${'left:' + pc(s) + ';width:' + pc(t - s)}></div>
+            ${marks.map(function (k) { return html`<span class=${'tl-k' + (touched[k] ? ' on' : '')} style=${'left:' + pc(k)} title=${versionLine(k)}></span>`; })}
+          </div>
+          <input type="range" class="tl-s" min="0" max=${last} step="1" value=${s} aria-label="{{t:Edits since:}}" aria-valuetext=${sinceLabel(s) + ', ' + exact(s)}
+            onInput=${input(function (v) { v = Math.min(v, t); props.setRange(v, t); return v; })} />
+          <input type="range" class="tl-t" min="0" max=${last} step="1" value=${t} aria-label="{{t:Text as of:}}" aria-valuetext=${atLabel(t) + ', ' + exact(t)}
+            onInput=${input(function (v) { props.setRange(Math.min(s, v), v); return v; })} />
+        </div>`}
+        <div class="tl-f">
+          <label class="tl-d">{{t:Text as of the date}} <input type="date" min=${dayOf(0)} max=${dayOf(last) || dayOf(last - 1)} value=${t < last ? dayOf(t) : ''}
+            onChange=${function (e) { if (e.target.value) { var k = atDate(e.target.value); pick(Math.min(s, k), k); } }} /></label>
+          ${mine > 0 && html`<label class="tl-o"><input type="checkbox" checked=${only[0]} onChange=${function (e) { only[1](e.target.checked); }} />
+            {{t:Only saves that changed this page}} (${mine})</label>`}
+        </div>
       </div>
       <p class="tl-hint">{{t:Pick a save to see what it changed. Marked saves changed this page; the shaded ones are drawn in the text.}}</p>
-      <ol class="tl-days">${days.map(function (d) {
-        return html`<li><h3>${d.day}</h3><ul>${d.ks.map(function (k) {
-          var cm = commits[k];
-          return html`<li class=${'tl-v' + (k > s && k <= t ? ' in' : '') + (k === t ? ' at' : '')}>
-            <button type="button" class="tl-go" aria-current=${k === t ? 'true' : undefined} onClick=${function () { props.setRange(Math.max(0, k - 1), k); }}>
-              <b>${fmt(k, { timeStyle: 'short' }) || '{{t:not saved yet}}'}</b>
-              <span class="tl-ago">${ago(k)}</span>
-              ${touched[k] && html`<span class="tl-pg">{{t:this page}}</span>`}
-              ${(cm.a || cm.m) && html`<span class="tl-msg">${[cm.a, cm.m].filter(Boolean).join(' · ')}</span>`}
-            </button>
-            ${k < last && html`<button type="button" class="btn sm tl-from" aria-label=${'{{t:Edits since}} ' + exact(k)} onClick=${function () { props.setRange(k, Math.max(t, k)); }}>{{t:from here}}</button>`}
-          </li>`;
-        })}</ul></li>`;
+      <ol class="tl-days">${shown.map(function (d, i) {
+        var isOpen = open[0][d.day] != null ? open[0][d.day] : i === atDay || i === 0, n = Math.max(more[0][d.day] || ROWS, d.ks.indexOf(t) + 1);
+        var here = d.ks.filter(function (k) { return touched[k]; }).length;
+        return html`<li><details open=${isOpen} onToggle=${function (e) { if (e.target.open !== isOpen) { var o = Object.assign({}, open[0]); o[d.day] = e.target.open; open[1](o); } }}>
+          <summary><b>${d.day}</b><span class="tl-n">{{t:Saves:}} ${d.ks.length}${here > 0 && !only[0] ? ' · {{t:this page}}: ' + here : ''}</span></summary>
+          ${isOpen && html`<ul>${d.ks.slice(0, n).map(function (k) {
+            var cm = commits[k];
+            return html`<li class=${'tl-v' + (k > s && k <= t ? ' in' : '') + (k === t ? ' at' : '')}>
+              <button type="button" class="tl-go" aria-current=${k === t ? 'true' : undefined} onClick=${function () { pick(Math.max(0, k - 1), k); }}>
+                <b>${fmt(k, { timeStyle: 'short' }) || '{{t:not saved yet}}'}</b>
+                <span class="tl-ago">${ago(k)}</span>
+                ${touched[k] && html`<span class="tl-pg">{{t:this page}}</span>`}
+                ${(cm.a || cm.m) && html`<span class="tl-msg">${[cm.a, cm.m].filter(Boolean).join(' · ')}</span>`}
+              </button>
+              ${k === t && k < last && html`<button type="button" class="btn sm tl-from" onClick=${function () { pick(k, last); }}>{{t:Edits after this save}}</button>`}
+            </li>`;
+          })}</ul>
+          ${d.ks.length > n && html`<button type="button" class="more" onClick=${function () { var m = Object.assign({}, more[0]); m[d.day] = n + ROWS; more[1](m); }}>
+            {{t:Show more:}} ${Math.min(ROWS, d.ks.length - n)} {{t:of}} ${d.ks.length - n}</button>`}`}
+        </details></li>`;
       })}</ol>
+      ${days.length > shown.length && html`<button type="button" class="more" onClick=${function () { nDays[1](shown.length + ROWS); }}>
+        {{t:Show more:}} ${Math.min(ROWS, days.length - shown.length)} {{t:of}} ${days.length - shown.length}</button>`}
     </div>`;
   }
   // the timeline in the header: a short summary that opens it
   function When(props) {
-    var s = props.s, t = props.t, past = t < last;
+    var s = props.s, t = props.t, past = t < last, pop = useRef(null);
+    // a long list is drawn only while it is open: drawing it on every step of the page is slow
+    var open = useState(last <= LONG || !('popover' in HTMLElement.prototype));
+    // on a narrow screen the sheet covers the text: it goes away after a pick
+    function done() { if (mq('(max-width: 820px)') && pop.current.hidePopover) { pop.current.hidePopover(); } }
     // a moment in the past reads by its exact time: «3 days ago → 3 days ago» says nothing
     var short = function (k) { return fmt(k, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
     var to = past ? short(t) : '{{t:now}}', from = past && ago(s, true) === ago(t, true) ? short(s) : ago(s, true);
-    // one save picked in the list reads as that save
-    var sum = s >= last ? '{{t:edits are not shown}}' : past && s === t - 1 ? to : from + ' → ' + to;
+    // one save picked in the list, or a date, reads as that moment
+    var sum = s >= last ? '{{t:edits are not shown}}' : past && s >= t - 1 ? to : from + ' → ' + to;
     return html`<button type="button" class=${'btn when-b' + (past ? ' past' : '')} popovertarget="when" title=${'{{t:Timeline}}: ' + sinceLabel(s) + ' → ' + atLabel(t)}>
         <span aria-hidden="true">🕘</span><span class="when-l">{{t:Edits:}}</span><span class="when-s">${sum}</span><span aria-hidden="true">▾</span></button>
-      <div id="when" popover="auto" class="pop when"><${Timeline} ...${props} /></div>`;
+      <div id="when" popover="auto" class="pop when" ref=${pop} onToggle=${function (e) { if (last > LONG) { open[1](e.newState === 'open'); } }}>
+        ${open[0] && html`<${Timeline} ...${props} done=${done} />`}</div>`;
   }
 
   // ---- page ----
@@ -1178,7 +1263,7 @@
     function showComment(c) {
       if (past) { setT(last); }
       activeC[1](c.id); pending.current = 'c:' + c.id;
-      var h = blockHash(c.doc, c.path);
+      var h = blockHash(c.doc, pathOf(c));
       if (decode(location.hash) === decode(h)) { r[1](route(h)); } else { location.hash = h; }
     }
     function picked() { if (!wide[0]) { drawer[1](false); } }
@@ -1308,6 +1393,7 @@
   }
 
   // the pure parts, for app_test.js; nothing else sets this
-  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between }); return; }
+  if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

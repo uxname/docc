@@ -197,8 +197,10 @@ pub(super) const RU: &[(&str, &str)] = &[
         "Pick a save to see what it changed. Marked saves changed this page; the shaded ones are drawn in the text.",
         "Нажмите на сохранение, чтобы увидеть, что в нём изменилось. «Эта страница» — сохранения, менявшие эту страницу; подсвеченные показаны в тексте.",
     ),
-    ("from here", "отсюда"),
-    ("Edits since", "Правки с"),
+    ("Edits after this save", "Правки после этого сохранения"),
+    ("Text as of the date", "Текст на дату"),
+    ("Only saves that changed this page", "Только сохранения, менявшие эту страницу"),
+    ("Saves:", "Сохранений:"),
     ("edits are not shown", "правки не подсвечены"),
     ("this page", "эта страница"),
     (

@@ -243,6 +243,11 @@ fn golden_render_basic() {
     let mut fails = Vec::new();
     for (full, name) in [(false, "out.html"), (true, "out-full.html")] {
         let got = Renderer::new(&p, full).html().unwrap();
+        // DOCC_UPDATE=1 rewrites the expected files, as in tests/golden.rs
+        if std::env::var_os("DOCC_UPDATE").is_some_and(|v| !v.is_empty()) {
+            std::fs::write(src.join("expect").join(name), &got).unwrap();
+            continue;
+        }
         let want = std::fs::read_to_string(src.join("expect").join(name)).unwrap();
         fails.extend(
             compare_html(&got, &want)
