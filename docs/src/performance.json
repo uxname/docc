@@ -3,9 +3,9 @@
   "kind": "spec",
   "parent": "index",
   "body": [
-    "The target is a docc check on 1000 documents in under one second. It is measured with a generated project of 1000 files with 5 to 20 KB of Russian text each (about 7 MB), with links, a parent tree and a kind schema.",
-    "On Linux (Intel Core i7-1165G7) the whole check takes about 0.67 seconds: loading 35 ms, rules and the link hashes of `docc.lock` 530 ms, rendering 50 ms and comparing the output folder 10 ms.",
-    "The measurement is repeatable with DOCC_SCALE set to 1 and the command go test ./cmd/docc -run Scale -v. Windows with a virus scanner and macOS have not been measured."
+    "The target is a docc check and a docc build on 1000 documents in under 300 ms each. It is measured with a generated project of 1000 files with 5 to 20 KB of Russian text each (about 7 MB), with links, a parent tree and a kind schema.",
+    "On Linux (Intel Core i7-1165G7) the whole check takes about 0.25 seconds: loading 20 ms, rules and the link hashes of `docc.lock` 140 ms, rendering 45 ms and comparing the output folder 10 ms; a build takes the same.",
+    "The measurement is repeatable with DOCC_SCALE set to 1 and the command cargo test --release --test scale -- --nocapture. Windows with a virus scanner and macOS have not been measured."
   ],
-  "history": "The first measurement was 1.66 seconds. The word lists were matched with case-insensitive regular expressions, which took most of the time; a lower-cased search with word boundary checks brought it to 0.31 seconds. Matching in NFC and the hashes of `docc.lock` raised it to 1.58 seconds; an NFC test that skips the norm tables for Cyrillic and Latin text, one lower-cased copy shared by the word lists and one hash per link target brought it to the current value."
+  "history": "The first measurement was 1.66 seconds. The word lists were matched with case-insensitive regular expressions, which took most of the time; a lower-cased search with word boundary checks brought it to 0.31 seconds. Matching in NFC and the hashes of `docc.lock` raised it to 1.58 seconds; an NFC test that skips the norm tables for Cyrillic and Latin text, one lower-cased copy shared by the word lists and one hash per link target brought it to 0.67 seconds. The rewrite in Rust brought check and build to 0.25 seconds."
 }

@@ -6,7 +6,7 @@ spec
 
 The pipeline is: load the JSON files, check the built-in and kind schemas, build the reference graph, run the rules, render, and compare the output folder and `docc.lock`.
 
-The code is a Go module with a single binary and a small set of packages under internal.
+The code is one Rust crate with a single binary and a small set of modules under `src`.
 
 The speed targets are in [Performance](performance.md).
 
@@ -16,25 +16,25 @@ loader: a strict JSON parser that keeps offsets, positions and duplicate keys.
 
 config: reads `docc.json` and resolves effective levels.
 
-schema: compiles JSON Schema (draft 2020-12), restricts references to the schemas folder and maps errors to source positions. `kind.go` reads a kind schema: whether it is strict, the allowed top-level names, `x-docc-target` and `x-docc-covered`.
+schema: compiles JSON Schema (draft 2020-12), restricts references to the schemas folder and maps errors to source positions. `kind.rs` reads a kind schema: whether it is strict, the allowed top-level names, `x-docc-target` and `x-docc-covered`.
 
 mdscan and text: scanners for code blocks, references, includes, block anchors, words and sentences.
 
-engine: loads a project and runs all checks, including the graph and the suppressions. `lock.go` computes the links with their hashes, reads and writes `docc.lock` and reports DOC209, DOC402 and DOC503.
+engine: loads a project and runs all checks, including the graph and the suppressions. `lock.rs` computes the links with their hashes, reads and writes `docc.lock` and reports DOC209, DOC402 and DOC503.
 
 rules: the registry of all rules; explain, rules and the skill are built from it.
 
-render: Markdown pages, the tree, the single Markdown file, the HTML application (`app.js` with Preact and htm from `vendor`, fed with a JSON island), numbering and images. `lang.go` holds the Russian labels for `"lang": "ru"`.
+render: Markdown pages, the tree, the single Markdown file, the HTML application (`app.js` with Preact and htm from `vendor`, fed with a JSON island), numbering and images. `lang.rs` holds the Russian labels for `"lang": "ru"`.
 
 history: reads the Git history of the documents and follows every block through it; comments: the review comments of the HTML file and `docc.comments.json`.
 
 trace and report: `docc:` tags in code files, and the text and JSON reports.
 
-cmd/docc: the command line.
+cli: the command line; its flags behave as those of the Go version, which docc was first written in. The changes of the move to Rust are listed in `docs/rust-port`.
 
 ## Principles
 
-Golden tests, a pure core with input and output at the edges, and stable codes. The dependencies besides the standard library are the JSON Schema library, goldmark for the single HTML file and golang.org/x/text.
+Golden tests, a pure core with input and output at the edges, and stable codes. The main dependencies are jsonschema, regex, comrak (it parses the Markdown of the single HTML file; docc writes the HTML itself), icu_collator for sorting titles and unicode-normalization.
 
 ## Parent
 

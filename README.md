@@ -22,13 +22,13 @@ Windows (PowerShell):
 
 This downloads the release binary for your system, checks its SHA-256 and puts `docc` into `~/.local/bin` (Windows: `%LOCALAPPDATA%\docc\bin`). Set `DOCC_INSTALL_DIR` to change the folder and `DOCC_VERSION=v0.1.0` to pin a version.
 
-With Go 1.27.1 or newer you can build it yourself: `go install github.com/uxname/docc/cmd/docc@latest`, or clone the repository and run `go build -o docc ./cmd/docc`.
+With stable Rust you can build it yourself: `cargo install --git https://github.com/uxname/docc`, or clone the repository and run `cargo build --release` (the binary is `target/release/docc`). Such a build reports version `dev`.
 
 ## Update
 
     docc update            # latest release; docc update --check only looks, --version v0.1.0 pins
 
-Running the install command again does the same. A `go install` build is updated with `go install ...@latest`.
+Running the install command again does the same. A build from source reports `dev`, so `docc update` refuses it: rebuild it with `cargo install --git https://github.com/uxname/docc --force` or switch to the install command.
 
 ## Agent skill
 

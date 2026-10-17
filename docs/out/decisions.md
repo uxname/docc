@@ -12,7 +12,7 @@ Custom rules keep their own level when the recommended preset is switched off, b
 
 The single files `docs/out.md` and `docs/out.html` take their names from the output folder (`out` and `outFull` plus an extension), so no settings exist for them. They are not checked by `docc check` and are meant to stay out of git.
 
-The single HTML file is built from the same Markdown as the single Markdown file, converted by the library goldmark with the GitHub extensions, and cut into blocks at markers that docc puts before every element; the marker name is chosen so that no text of the page contains it. Page anchors are the document id and field anchors are the document id, two hyphens and the field anchor.
+The single HTML file is built from the same Markdown as the single Markdown file, parsed by the library comrak with the GitHub extensions and written as HTML by docc in the form the Go version made with goldmark, and cut into blocks at markers that docc puts before every element; the marker name is chosen so that no text of the page contains it. Page anchors are the document id and field anchors are the document id, two hyphens and the field anchor.
 
 Every document has a kind schema (DOC109 is core) and the check is flat: a document is checked by the schema of its own kind only, schemas do not inherit from each other.
 
@@ -40,11 +40,13 @@ A launch or config error in JSON is the usual report with a diagnostic of code `
 
 The history of a block comes from Git, not from a journal of docc: it covers the whole past of a project at once and adds no file. A block is one element of the JSON (a paragraph of an array, a field value), not one line of text: the elements keep their pointers when a list item is inserted inside a paragraph. Only committed states and the working tree are seen; a renamed field or section starts its history again.
 
-The HTML application uses Preact with htm in one embedded file instead of a framework with a build step, so `go build` stays the only build and the project needs no Node.
+The HTML application uses Preact with htm in one embedded file instead of a framework with a build step, so `cargo build` stays the only build and the project needs no Node.
 
 Comments are kept in the browser and leave it as a file, because the HTML file has no server. `docc.comments.json` stores them one per line with the status `open` or `done`, so a change of status is a one-line diff. docc does not change the text by a comment: an agent reads `docc comments`, agrees the change with a person and marks the comment.
 
 Dictation uses the speech recognition of the browser: Chrome and Edge send the sound to their speech service. A Chromium without the keys of that service and Firefox show no microphone button; the comment is typed.
+
+docc was rewritten from Go in Rust in October 2026 for speed and type safety. The output stayed the same; every behaviour that changed is listed, with an example, in `docs/rust-port`, and the speed is in [Performance](performance.md).
 
 The rules are listed in [Rules and diagnostics](rules.md) and the settings in [Configuration](config.md).
 
