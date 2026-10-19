@@ -6,12 +6,17 @@ const fs = require('fs');
 const assert = require('assert');
 
 const data = {
-  key: 'test', title: 'T', nav: { tree: [], orphans: [] }, brand: {}, comments: [],
+  key: 'test', title: 'T', nav: { tree: [], orphans: [] }, brand: {},
+  // accepted comments: on a paragraph, on a paragraph rewritten away, on a deleted question
+  comments: [{ id: 'ok', doc: 'p', path: '/body/1', quote: 'Beta' }, { id: 'rm', doc: 'p', path: '/body/7', quote: 'Old' },
+    { id: 'q', doc: 'q48', path: '/options/0', quote: 'A) yes' }],
   pages: [{ id: 'p', title: 'P', file: 'p.json', blocks: [
-    { p: '/body/0', s: 'Alpha' }, { p: '/body/1', s: 'Beta now' }, { p: '/body/2', s: 'Gamma' }] }],
+    { p: '/body/0', s: 'Alpha' }, { p: '/body/1', s: 'Beta now' }, { p: '/body/2', s: 'Gamma' }] },
+  { id: 'n', title: 'N', file: 'n.json', blocks: [{ s: '', h: '<h2>Only a heading</h2>' }] }],
   hist: { base: true, commits: [{ h: 'a', d: '2026-10-06T09:00:00Z' }, { h: 'b', d: '2026-10-07T09:00:00Z' }], docs: { 'p.json': {
     b: { '/body/0': [{ c: 0, t: 'Alpha' }], '/body/1': [{ c: 0, t: 'Beta' }, { c: 1, t: 'Beta now' }], '/body/2': [{ c: 1, t: 'Gamma' }] },
-    ch: [{ c: 1, ch: [['/body/1', 'Beta', 'Beta now']], add: [['/body/2', 'Gamma']], rm: [['/body/3', 'Gone at the end'], ['/body/1', 'Gone in the middle']] }] } } },
+    ch: [{ c: 1, ch: [['/body/1', 'Beta', 'Beta now']], add: [['/body/2', 'Gamma']], rm: [['/body/3', 'Gone at the end'], ['/body/1', 'Gone in the middle']] }] },
+  'n.json': { b: {}, ch: [{ c: 1, new: true }] } } },
 };
 const noop = () => {};
 global.window = global;
@@ -88,6 +93,17 @@ const c = (path, fragment) => ({ id: path + fragment, doc: 'p', path, fragment, 
 assert.strictEqual(T.pathOf(c('/body/1', 'Gamma')), '/body/2', 'a paragraph was inserted above');
 assert.strictEqual(T.pathOf(c('/body/1', 'now')), '/body/1', 'its words are still there');
 assert.strictEqual(T.pathOf(c('/body/1', 'missing')), '/body/1', 'words found nowhere stay where they were');
+
+// the tree marks a page with edits by their number, and a page created in the period as new even with no edits
+const marks = (s, t) => T.pageMarks(T.allChanges(s, t).list, s, t);
+assert.deepStrictEqual(marks(0, 1), { p: { k: 'chg', n: 4 }, n: { k: 'new', n: 0 } });
+assert.deepStrictEqual(marks(1, 1), {}, 'no marks when no edits are shown');
+
+// an accepted comment opens its paragraph; one whose paragraph or page is gone says so instead of opening the first page
+const at = (id) => T.commentPlace(data.comments.find((x) => x.id === id));
+assert.deepStrictEqual([at('ok').page.id, at('ok').ptr, at('ok').gone], ['p', '/body/1', undefined]);
+assert.deepStrictEqual([at('rm').page.id, at('rm').gone], ['p', 'block']);
+assert.deepStrictEqual(at('q'), { gone: 'page' });
 
 // a table row reads as its cells in the lists
 assert.strictEqual(T.snip('| Module | Owner |\n|---|---|', 60), 'Module Owner');

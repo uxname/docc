@@ -413,6 +413,22 @@
     pages.forEach(function (p) { list = list.concat(pageDelta(p, s, t).items); });
     return { list: list };
   }
+  // the marks of the tree, as the file status of an IDE: per page with edits
+  // between S and T its number of edits, and new when the document was
+  // created then (a new page may have only headings, so no edits)
+  var marksCache = {};
+  function pageMarks(list, s, t) {
+    var key = s + ':' + t;
+    if (marksCache[key]) { return marksCache[key]; }
+    var m = {};
+    list.forEach(function (it) { (m[it.page.id] = m[it.page.id] || { k: 'chg', n: 0 }).n++; });
+    if (s < t) {
+      pages.forEach(function (p) {
+        if (pageChanges(p).some(function (c) { return c['new'] && c.c > s && c.c <= t; })) { (m[p.id] = m[p.id] || { n: 0 }).k = 'new'; }
+      });
+    }
+    return (marksCache[key] = m);
+  }
   // a moment of the timeline for the reader: «3 days ago», the exact date in the title
   function ago(k, narrow) {
     var cm = commits[k];
@@ -531,6 +547,15 @@
     return (pathCache[k] = best);
   }
   function commentsOn(list, doc, ptr) { return list.filter(function (c) { return c.doc === doc && pathOf(c) === ptr; }); }
+  // Where a comment stands now: its page and paragraph, or which of them is
+  // gone. An accepted comment often outlives its place: the answered question
+  // is deleted, or its paragraph rewritten into another document.
+  function commentPlace(c) {
+    var p = byId[c.doc], ptr = pathOf(c);
+    if (!p) { return { gone: 'page' }; }
+    if (ptr && !blocksOf(p).some(function (b) { return b.p === ptr; })) { return { page: p, gone: 'block' }; }
+    return { page: p, ptr: ptr };
+  }
 
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
@@ -678,7 +703,9 @@
     if (props.label) { inner = html`<div class="blk-body prop" key=${key} id=${props.id}><div class="pk">${props.label}</div><div ref=${body} dangerouslySetInnerHTML=${{ __html: h }}></div></div>`; }
     if (!ptr) { return html`<div class=${'blk' + (props.label ? ' is-prop' : '')}>${inner}</div>`; }
     var cards = repo.map(function (c) { return [c, true]; }).concat(mine.map(function (c) { return [c, false]; }));
-    var shown = more[0] || cards.length <= 2 ? cards : cards.slice(0, 2);
+    // a comment opened from the list is never folded away
+    var unfold = more[0] || cards.length <= 2 || cards.slice(2).some(function (x) { return x[0].id === props.activeC; });
+    var shown = unfold ? cards : cards.slice(0, 2);
     var cls = 'blk' + (props.label ? ' is-prop' : '') + (changed ? (isNew ? ' new' : ' chg') : '') + (props.cur === a ? ' cur' : '') + (cards.length ? ' has-c' : '');
     return html`<div class=${cls} data-p=${ptr} data-a=${a} tabindex="-1">
       ${changed && html`<span class="sr">${isNew ? '{{t:new paragraph}}' : '{{t:changed paragraph}}'}</span>`}
@@ -686,7 +713,7 @@
       ${inner}
       <div class="blk-side">
         ${shown.map(function (x) { return html`<${Card} key=${x[0].id} c=${x[0]} repo=${x[1]} lost=${lost[0][x[0].id]} active=${props.activeC === x[0].id} />`; })}
-        ${cards.length > 2 && !more[0] && html`<button type="button" class="link" onClick=${function () { more[1](true); }}>{{t:More comments:}} ${cards.length - 2}</button>`}
+        ${!unfold && html`<button type="button" class="link" onClick=${function () { more[1](true); }}>{{t:More comments:}} ${cards.length - 2}</button>`}
         ${props.editor && props.editor.ptr === ptr && props.editor.page === page && html`<${Editor} page=${page} ptr=${ptr} quote=${b.s} frag=${props.editor.frag} close=${props.closeEditor} />`}
       </div>
     </div>`;
@@ -991,9 +1018,12 @@
     var isOpen = top || (open[0] == null ? inside : open[0]);
     useEffect(function () { if (inside) { open[1](null); } }, [props.cur]);
     if (!p) { return null; }
-    var here = p.id === props.cur;
+    var here = p.id === props.cur, m = props.marks[p.id], inner = !isOpen && props.inner[x.id];
+    // the colour of the title says the kind, the mark beside it says it without colour
     return html`<li class=${x.kids.length ? 'parent' : ''}>
-      <a href=${'#' + p.id} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><${Icon} name=${p.kind} /><span class="tt">${p.title}</span>${p.hidden && html` <span class="chip bad">{{t:hidden}}</span>`}</a>
+      <a href=${'#' + p.id} class=${m ? 'm-' + m.k : undefined} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><${Icon} name=${p.kind} /><span class="tt">${p.title}</span>${p.hidden && html` <span class="chip bad">{{t:hidden}}</span>`}
+        ${m && html`<span class=${'tm ' + m.k} title=${m.k === 'new' ? '{{t:New page}}' : '{{t:Edits:}} ' + m.n}>${m.k === 'new' ? html`+<span class="sr">{{t:New page}}</span>` : html`<span class="sr">{{t:Edits:}} </span>${m.n}`}</span>`}
+        ${inner && html`<span class="td" title="{{t:Edits inside}}"><span class="sr">{{t:Edits inside}}</span></span>`}</a>
       ${x.kids.length > 0 && !top && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
         aria-label=${(isOpen ? '{{t:Collapse}}' : '{{t:Expand}}') + ': ' + p.title} onClick=${function () { open[1](!isOpen); }}></button>`}
       ${here && props.toc.length > 0 && html`<ul class="toc" aria-label="{{t:Sections of the page}}">${props.toc.map(function (h) {
@@ -1002,9 +1032,20 @@
       ${x.kids.length > 0 && isOpen && html`<${Items} ...${props} depth=${(props.depth || 0) + 1} nodes=${x.kids} />`}
     </li>`;
   }
+  // the pages that have marked pages below them, for a folded parent
+  function marked(nodes, m, out) {
+    var any = false;
+    nodes.forEach(function (x) {
+      if (marked(x.kids, m, out)) { out[x.id] = true; any = true; }
+      if (m[x.id]) { any = true; }
+    });
+    return any;
+  }
   function Tree(props) {
+    var inner = {};
+    marked(tree, props.marks, inner);
     return html`<nav id="tree" aria-label="{{t:Document tree}}">
-      ${tree.length > 0 && html`<${Items} ...${props} depth=${0} nodes=${tree} />`}
+      ${tree.length > 0 && html`<${Items} ...${props} inner=${inner} depth=${0} nodes=${tree} />`}
     </nav>`;
   }
 
@@ -1160,20 +1201,53 @@
       </div>`}
       ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text on the page to comment on it.}}</p>`}
       <ul class="clist">${rows.map(function (x) {
-        var c = x[0], p = byId[c.doc];
-        return html`<li><button type="button" class="cr" onClick=${function () { props.show(c); }}>
-          <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : placeOf(p, c.path, c.quote)}</span>
+        var c = x[0], at = commentPlace(c), p = at.page;
+        var body = html`
+          <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : placeOf(p, c.path, c.quote)}
+            ${at.gone && html` <span class="chip">${at.gone === 'page' ? '{{t:page removed}}' : '{{t:paragraph removed}}'}</span>`}</span>
           <span class="ctx">${c.text}</span>
           ${c.author && html`<span class="cp">— ${c.author}</span>`}
-          ${c.reply && html`<span class="crep"><b>{{t:Answer}}:</b> ${c.reply}</span>`}</button></li>`;
+          ${c.reply && html`<span class="crep"><b>{{t:Answer}}:</b> ${c.reply}</span>`}`;
+        if (!at.gone) { return html`<li><button type="button" class="cr" onClick=${function () { props.show(c); }}>${body}</button></li>`; }
+        // its place is not in the text any more: the comment opens here, with the words it was left on
+        return html`<li><details class="cg"><summary class="cr">${body}</summary>
+          <p class="cp">{{t:It was left on:}}</p><blockquote class="fq">${c.fragment || plain(c.quote)}</blockquote>
+          ${p && html`<a href=${'#' + p.id} onClick=${props.picked}>{{t:Open the page}}</a>`}</details></li>`;
       })}</ul>
     </div>`;
   }
-  // tabs after the WAI-ARIA pattern: arrows move between them
+  // the edits listed beside the tree (in its place in the drawer of a narrow screen)
+  function EditsPanel(props) {
+    return html`<div class="eds-in">
+      <div class="eds-h"><h2 id="eds-h">{{t:Edits}}</h2>
+        <button type="button" class="btn sm" onClick=${props.close}>${props.wide ? '✕ {{t:Close}}' : '← {{t:Pages}}'}</button></div>
+      <div class="panel"><${EditsTab} changes=${props.changes} s=${props.s} t=${props.t} cur=${props.cur} page=${props.page} go=${props.goEdit} /></div>
+    </div>`;
+  }
+  // over the tree: the button of the list of edits, when there are edits to list
+  function EditsBar(props) {
+    var n = props.changes.list.length;
+    if (!n) { return null; }
+    return html`<button type="button" class="btn sm ebar" aria-expanded=${props.open ? 'true' : 'false'} aria-controls="edits" onClick=${props.toggle}>
+      {{t:List of edits}} <span class="tc">${n}</span><span class="sp"></span>${props.wide && props.open ? '◂' : '▸'}</button>`;
+  }
+  // tabs after the WAI-ARIA pattern: arrows move between them. In the drawer
+  // the list of edits takes the place of the tabs until it is closed, also
+  // across the drawer opening again after a pick.
+  var drawerEdits = false;
+  // the focus goes with the list: into it when it opens, back to its button when it closes
+  function focusEdits(opened) {
+    setTimeout(function () { var b = document.querySelector(opened ? '#edits .eds-h button' : '.ebar'); if (b) { b.focus(); } }, 0);
+  }
   function Side(props) {
-    var tabs = [['pages', '{{t:Pages}}', 0], ['edits', '{{t:Edits}}', props.changes.list.length],
-      ['comments', '{{t:Comments}}', props.comments.length + imported.length]];
-    var tab = props.tab;
+    var de = useState(drawerEdits);
+    var open = props.wide ? props.editsOpen : de[0];
+    function toggle() { if (props.wide) { props.toggleEdits(); } else { drawerEdits = !de[0]; de[1](drawerEdits); focusEdits(drawerEdits); } }
+    if (open && !props.wide) {
+      return html`<div class="side-in" id="edits" role="region" aria-labelledby="eds-h"><${EditsPanel} ...${props} close=${toggle} /></div>`;
+    }
+    var tabs = [['pages', '{{t:Pages}}', 0], ['comments', '{{t:Comments}}', props.comments.length + imported.length]];
+    var tab = props.tab === 'comments' ? 'comments' : 'pages';
     function key(e) {
       var k = tabs.map(function (t) { return t[0]; }).indexOf(tab), n = tabs.length;
       var to = e.key === 'ArrowRight' ? (k + 1) % n : e.key === 'ArrowLeft' ? (k + n - 1) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
@@ -1192,9 +1266,9 @@
           tabindex=${t[0] === tab ? '0' : '-1'} onClick=${function () { props.setTab(t[0]); }}>${t[1]}${t[2] > 0 && html` <span class="tc">${t[2]}</span>`}</button>`;
       })}</div>
       <div id="tabpanel" role="tabpanel" aria-labelledby=${'tab-' + tab} class="panel">
-        ${tab === 'pages' && html`<${Tree} cur=${props.page.id} toc=${props.toc} spy=${props.spy} picked=${props.picked} />`}
-        ${tab === 'edits' && html`<${EditsTab} changes=${props.changes} s=${props.s} t=${props.t} cur=${props.cur} page=${props.page} go=${function (k) { props.picked(); props.goItem(k); }} />`}
-        ${tab === 'comments' && html`<${CommentsTab} comments=${props.comments} show=${function (c) { props.picked(); props.showComment(c); }} />`}
+        ${tab === 'pages' && html`<${EditsBar} changes=${props.changes} open=${open} wide=${props.wide} toggle=${toggle} />
+          <${Tree} cur=${props.page.id} toc=${props.toc} spy=${props.spy} picked=${props.picked} marks=${pageMarks(props.changes.list, props.s, props.t)} />`}
+        ${tab === 'comments' && html`<${CommentsTab} comments=${props.comments} picked=${props.picked} show=${function (c) { props.picked(); props.showComment(c); }} />`}
       </div>
     </div>`;
   }
@@ -1265,7 +1339,7 @@
 
   function App() {
     var r = useState(route(location.hash)), wide = useState(mq('(min-width: 1280px)')), drawer = useState(false);
-    var q = useState(''), tab = useState(store('tab') || 'pages');
+    var q = useState(''), tab = useState(store('tab') || 'pages'), edits = useState(!!store('edits'));
     // S is kept by hash (indexes change with every commit), «now» as now;
     // the starting point of docc.json is the default. T always opens at now.
     var sinceHash = useState(store('since')), atK = useState(last), cur = useState(-1), editor = useState(null);
@@ -1314,9 +1388,11 @@
       if (f) { openEditor({ page: page, ptr: f.ptr, quote: (blockOf(f.a) || {}).s, frag: f.frag }); }
     }
     function showComment(c) {
+      var at = commentPlace(c);
+      if (at.gone) { return; } // the list shows it in place
       if (past) { setT(last); }
       activeC[1](c.id); pending.current = 'c:' + c.id;
-      var h = blockHash(c.doc, pathOf(c));
+      var h = blockHash(c.doc, at.ptr);
       if (decode(location.hash) === decode(h)) { r[1](route(h)); } else { location.hash = h; }
     }
     function picked() { if (!wide[0]) { drawer[1](false); } }
@@ -1410,9 +1486,13 @@
     }
     function setToc(items) { if (JSON.stringify(items) !== JSON.stringify(toc[0])) { toc[1](items); } }
 
+    function toggleEdits() { var v = !edits[0]; edits[1](v); store('edits', v); focusEdits(v); }
+    function goEdit(k) { picked(); goItem(k); }
     var sideProps = { q: q, page: page, s: s, t: t, toc: toc[0], spy: spy[0], picked: picked, changes: all, cur: cur[0],
-      goItem: goItem, comments: comments, tab: tab[0], setTab: setTab, showComment: showComment, goHash: function (h) { r[1](route(h)); } };
+      goEdit: goEdit, comments: comments, tab: tab[0], setTab: setTab, showComment: showComment, goHash: function (h) { r[1](route(h)); },
+      wide: wide[0], editsOpen: edits[0], toggleEdits: toggleEdits };
     var side = html`<${Side} ...${sideProps} />`;
+    var eds = wide[0] && edits[0];
     var curA = all.list[cur[0]] ? all.list[cur[0]].a : null;
     // the margin for the cards opens only when the page has comments or an editor
     var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id; }));
@@ -1426,8 +1506,9 @@
         ${!wide[0] && html`<button type="button" class="btn mid" aria-label="{{t:Search}}" onClick=${goSearch}>🔍<span class="mid-t"> {{t:Search}}</span></button>`}
         <${More} reset=${resetAll} name=${function () { askName[1](true); }} />
       </header>
-      <div class=${'shell' + (rail ? ' work' : '')}>
-        ${wide[0] ? html`<aside id="side" aria-label="{{t:Navigation}}">${side}</aside>`
+      <div class=${'shell' + (rail ? ' work' : '') + (eds ? ' eds' : '')}>
+        ${wide[0] ? html`<aside id="side" aria-label="{{t:Navigation}}">${side}</aside>
+          ${eds && html`<aside id="edits" aria-labelledby="eds-h"><${EditsPanel} ...${sideProps} wide=${true} close=${toggleEdits} /></aside>`}`
           : html`<dialog id="drawer" ref=${dr} class="drawer" aria-label="{{t:Navigation}}" onClose=${function () { drawer[1](false); var m = document.getElementById('menu'); if (m) { m.focus(); } }}
               onClick=${function (e) { if (e.target === dr.current) { dr.current.close(); } }}>
               <button type="button" class="btn side-x" onClick=${function () { dr.current.close(); }}>✕ {{t:Close}}</button>
@@ -1447,6 +1528,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, thumbFor: thumbFor }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

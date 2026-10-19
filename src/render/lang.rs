@@ -212,6 +212,13 @@ pub(super) const RU: &[(&str, &str)] = &[
         "Your comments are kept only in this browser. Copy them or download a file and pass it to whoever keeps the documentation.",
         "Ваши комментарии хранятся только в этом браузере. Скопируйте их или скачайте файлом и передайте тому, кто ведёт документацию.",
     ),
+    ("New page", "Новая страница"),
+    ("List of edits", "Список правок"),
+    ("Edits inside", "Внутри есть правки"),
+    ("page removed", "страница удалена"),
+    ("paragraph removed", "абзац удалён"),
+    ("It was left on:", "Оставлен к тексту:"),
+    ("Open the page", "Открыть страницу"),
 ];
 
 static RU_MAP: LazyLock<HashMap<&str, &str>> = LazyLock::new(|| RU.iter().copied().collect());
