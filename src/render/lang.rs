@@ -220,6 +220,7 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("paragraph removed", "абзац удалён"),
     ("It was left on:", "Оставлен к тексту:"),
     ("Open the page", "Открыть страницу"),
+    ("Archive: answered, place removed", "Архив: отвечено, места в тексте нет"),
 ];
 
 static RU_MAP: LazyLock<HashMap<&str, &str>> = LazyLock::new(|| RU.iter().copied().collect());

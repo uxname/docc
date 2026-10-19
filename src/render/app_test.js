@@ -8,8 +8,9 @@ const assert = require('assert');
 const data = {
   key: 'test', title: 'T', nav: { tree: [], orphans: [] }, brand: {},
   // accepted comments: on a paragraph, on a paragraph rewritten away, on a deleted question
-  comments: [{ id: 'ok', doc: 'p', path: '/body/1', quote: 'Beta' }, { id: 'rm', doc: 'p', path: '/body/7', quote: 'Old' },
-    { id: 'q', doc: 'q48', path: '/options/0', quote: 'A) yes' }],
+  comments: [{ id: 'ok', doc: 'p', path: '/body/1', quote: 'Beta', status: 'done' }, { id: 'rm', doc: 'p', path: '/body/7', quote: 'Old', status: 'open' },
+    { id: 'q', doc: 'q48', path: '/options/0', quote: 'A) yes', status: 'done' }, { id: 'q2', doc: 'q49', path: '/options/0', quote: 'B) no', status: 'open' },
+    { id: 'rm2', doc: 'p', path: '/body/8', quote: 'Older', status: 'done' }, { id: 'mine', doc: 'q48', path: '/options/0', quote: 'A) yes' }],
   pages: [{ id: 'p', title: 'P', file: 'p.json', blocks: [
     { p: '/body/0', s: 'Alpha' }, { p: '/body/1', s: 'Beta now' }, { p: '/body/2', s: 'Gamma' }] },
   { id: 'n', title: 'N', file: 'n.json', blocks: [{ s: '', h: '<h2>Only a heading</h2>' }] },
@@ -114,6 +115,9 @@ const at = (id) => T.commentPlace(data.comments.find((x) => x.id === id));
 assert.deepStrictEqual([at('ok').page.id, at('ok').ptr, at('ok').gone], ['p', '/body/1', undefined]);
 assert.deepStrictEqual([at('rm').page.id, at('rm').gone], ['p', 'block']);
 assert.deepStrictEqual(at('q'), { gone: 'page' });
+// a settled comment (done) whose place is gone is archived out of the list; an open one stays, as does one still in place and the reader's own unsent one
+const settled = (id) => T.settled(data.comments.find((x) => x.id === id));
+assert.deepStrictEqual(['ok', 'rm', 'q', 'q2', 'rm2', 'mine'].map(settled), [false, false, true, false, true, false]);
 
 // a form field reads as its question and choices; an answer stands at its field and the latest answer of each author counts
 assert.strictEqual(T.fieldWords(data.pages[2].blocks[1].s), 'Export; to Excel? — Yes / No');

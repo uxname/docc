@@ -573,6 +573,10 @@
     if (ptr && !blocksOf(p).some(function (b) { return b.p === ptr; })) { return { page: p, gone: 'block' }; }
     return { page: p, ptr: ptr };
   }
+  // An imported comment that was answered (done) and has lost its place is
+  // history: the list keeps it in the archive, out of the count. An open one,
+  // or one still in place, stays where it is, and so does the reader's own.
+  function settled(c) { return c.status === 'done' && !!commentPlace(c).gone; }
 
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
@@ -1256,14 +1260,8 @@
     var list = props.comments, rows = [];
     list.forEach(function (c) { rows.push([c, false]); });
     imported.forEach(function (c) { rows.push([c, true]); });
-    return html`<div class="pad">
-      ${list.length > 0 && html`<div class="send" id="send">
-        <p>{{t:Your comments are kept only in this browser. Copy them or download a file and pass it to whoever keeps the documentation.}}</p>
-        <div class="row"><button type="button" class="btn pri" onClick=${sendCopy}>📋 {{t:Copy comments}}</button>
-          <button type="button" class="btn" onClick=${sendFile}>{{t:Download as a file}}</button></div>
-      </div>`}
-      ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text on the page to comment on it.}}</p>`}
-      <ul class="clist">${rows.map(function (x) {
+    var live = rows.filter(function (x) { return !settled(x[0]); }), old = rows.filter(function (x) { return settled(x[0]); });
+    function row(x) {
         var c = x[0], at = commentPlace(c), p = at.page;
         var body = html`
           <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : c.input ? '«' + snip(c.quote, 70) + '»' : placeOf(p, c.path, c.quote)}
@@ -1276,7 +1274,17 @@
         return html`<li><details class="cg"><summary class="cr">${body}</summary>
           <p class="cp">{{t:It was left on:}}</p><blockquote class="fq">${c.fragment || plain(c.quote)}</blockquote>
           ${p && html`<a href=${'#' + p.id} onClick=${props.picked}>{{t:Open the page}}</a>`}</details></li>`;
-      })}</ul>
+    }
+    return html`<div class="pad">
+      ${list.length > 0 && html`<div class="send" id="send">
+        <p>{{t:Your comments are kept only in this browser. Copy them or download a file and pass it to whoever keeps the documentation.}}</p>
+        <div class="row"><button type="button" class="btn pri" onClick=${sendCopy}>📋 {{t:Copy comments}}</button>
+          <button type="button" class="btn" onClick=${sendFile}>{{t:Download as a file}}</button></div>
+      </div>`}
+      ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text on the page to comment on it.}}</p>`}
+      <ul class="clist">${live.map(row)}</ul>
+      ${old.length > 0 && html`<details class="arch"><summary>{{t:Archive: answered, place removed}} <span class="tc">${old.length}</span></summary>
+        <ul class="clist">${old.map(row)}</ul></details>`}
     </div>`;
   }
   // the edits listed beside the tree (in its place in the drawer of a narrow screen)
@@ -1310,7 +1318,7 @@
     if (open && !props.wide) {
       return html`<div class="side-in" id="edits" role="region" aria-labelledby="eds-h"><${EditsPanel} ...${props} close=${toggle} /></div>`;
     }
-    var tabs = [['pages', '{{t:Pages}}', 0], ['comments', '{{t:Comments}}', props.comments.length + imported.length]];
+    var tabs = [['pages', '{{t:Pages}}', 0], ['comments', '{{t:Comments}}', props.comments.length + imported.filter(function (c) { return !settled(c); }).length]];
     var tab = props.tab === 'comments' ? 'comments' : 'pages';
     function key(e) {
       var k = tabs.map(function (t) { return t[0]; }).indexOf(tab), n = tabs.length;
@@ -1606,6 +1614,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, settled: settled, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

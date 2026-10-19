@@ -145,6 +145,8 @@ main{min-width:0;padding:2rem 1.5rem 6rem;outline:0;container:main/inline-size}
 .cg[open]>summary .ctx{display:block}
 .cg[open]{padding:0 .5rem .6rem;background:var(--bg);border-bottom:1px solid var(--line)}
 .cg[open]>summary{margin:0 -.5rem;border-bottom:0}
+.arch{margin-top:1rem;border-top:1px solid var(--line);padding-top:.5rem}
+.arch>summary{cursor:pointer;color:var(--muted);font-size:.85rem;min-height:44px;display:flex;align-items:center;gap:.4rem}
 .cg .fq{white-space:pre-line;margin:.2rem 0 .5rem}
 .cg>.cp{margin:.4rem 0 0}
 .send{margin:.2rem 0 .8rem;padding:.7rem;background:var(--warn-bg);border-radius:8px}
