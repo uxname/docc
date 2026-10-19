@@ -99,6 +99,13 @@ const marks = (s, t) => T.pageMarks(T.allChanges(s, t).list, s, t);
 assert.deepStrictEqual(marks(0, 1), { p: { k: 'chg', n: 4 }, n: { k: 'new', n: 0 } });
 assert.deepStrictEqual(marks(1, 1), {}, 'no marks when no edits are shown');
 
+// the list of edits holds the open page only; its button goes on to the next page with marks, from the start again after the last
+assert.deepStrictEqual(T.pageEdits(T.allChanges(0, 1).list, 'p').map((x) => x[0].k + ' ' + x[1]), ['rm 0', 'chg 1', 'new 2', 'rm 3']);
+assert.strictEqual(T.pageEdits(T.allChanges(0, 1).list, 'n').length, 0, 'a new page with only headings has no edits');
+assert.strictEqual(T.nextEdited(marks(0, 1), 'p'), 'n');
+assert.strictEqual(T.nextEdited(marks(0, 1), 'n'), 'p', 'after the last page comes the first');
+assert.strictEqual(T.nextEdited({ p: { k: 'chg', n: 1 } }, 'p'), null, 'no other page has edits');
+
 // an accepted comment opens its paragraph; one whose paragraph or page is gone says so instead of opening the first page
 const at = (id) => T.commentPlace(data.comments.find((x) => x.id === id));
 assert.deepStrictEqual([at('ok').page.id, at('ok').ptr, at('ok').gone], ['p', '/body/1', undefined]);

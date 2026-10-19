@@ -1102,16 +1102,6 @@
   }
 
   var kindWord = { chg: '{{t:edited}}', 'new': '{{t:new}}', rm: '{{t:removed}}' };
-  // the section of the tree a page belongs to: its ancestor on the first
-  // level under a root (a root and a page without parent are their own)
-  var sectionOf = {};
-  (function () {
-    var at = [];
-    D.nav.tree.concat(D.nav.orphans).forEach(function (e) {
-      at.length = e[1]; at.push(e[0]);
-      sectionOf[e[0]] = at[Math.min(1, e[1])];
-    });
-  })();
   // the heading above every block of a page, for the edits of a long page
   var headCache = {};
   function headingAt(page, i) {
@@ -1137,23 +1127,27 @@
     return [['{{t:Changed:}}', n.chg], ['{{t:Added:}}', n['new']], ['{{t:Removed:}}', n.rm]].filter(function (x) { return x[1]; })
       .map(function (x) { return x[0] + ' ' + x[1]; }).join(' · ');
   }
-  // the edits by section of the tree, folded but for the current one, like
-  // the files of a pull request; a long page is cut by its headings and
-  // a long section shows 15 rows at a time. The choices outlive the tab.
-  var editsKind = 'all', editsOpen = {}, EDIT_ROWS = 15;
+  // the edits of one page: [edit, its index in the list]
+  function pageEdits(list, id) {
+    var rows = [];
+    list.forEach(function (it, k) { if (it.page.id === id) { rows.push([it, k]); } });
+    return rows;
+  }
+  // the next page with marks in the order of the pages, from the start again after the last; null when no other has any
+  function nextEdited(marks, id) {
+    var at = byId[id] ? byId[id].i : -1;
+    for (var k = 1; k <= pages.length; k++) {
+      var p = pages[(at + k) % pages.length];
+      if (p.id !== id && marks[p.id]) { return p.id; }
+    }
+    return null;
+  }
+  // The edits of the open page under the headings they stand under, 15 rows
+  // at a time: the tree shows where else the text changed, and the button
+  // below goes on to the next page with edits.
+  var EDIT_ROWS = 15;
   function EditsTab(props) {
-    var list = props.changes.list, kind = useState(editsKind), open = useState(editsOpen), more = useState({});
-    var here = sectionOf[props.page.id] || props.page.id, groups = [], byKey = {};
-    var all = { chg: 0, 'new': 0, rm: 0 };
-    list.forEach(function (it, k) {
-      all[it.k]++;
-      if (kind[0] !== 'all' && it.k !== kind[0]) { return; }
-      var key = sectionOf[it.page.id] || it.page.id, g = byKey[key];
-      if (!g) { g = byKey[key] = { key: key, rows: [] }; groups.push(g); }
-      g.rows.push([it, k]);
-    });
-    function setKind(v) { editsKind = v; kind[1](v); }
-    function toggle(key, on) { editsOpen = Object.assign({}, open[0]); editsOpen[key] = on; open[1](editsOpen); }
+    var list = props.changes.list, page = props.page, more = useState(EDIT_ROWS);
     // the list opens at the current edit
     useEffect(function () {
       var on = document.querySelector('.er.on');
@@ -1161,32 +1155,23 @@
     }, [props.cur]);
     if (last < 1) { return html`<p class="muted pad">{{t:The documentation has no saved history yet.}}</p>`; }
     if (!list.length) { return html`<p class="muted pad">{{t:No edits in the chosen period. Open the timeline above the page and pick an earlier save or date to see them.}}</p>`; }
-    var kinds = [['all', '{{t:All}}', list.length], ['chg', '{{t:Changed}}', all.chg], ['new', '{{t:Added}}', all['new']], ['rm', '{{t:Removed}}', all.rm]];
+    var rows = pageEdits(list, page.id), nx = nextEdited(pageMarks(list, props.s, props.t), page.id), lastHead = null;
+    var n = more[0];
+    rows.forEach(function (x, i) { if (x[1] === props.cur) { n = Math.max(n, i + 1); } });
     return html`<div class="pad">
-      <p class="left">{{t:Edits}}: ${list.length} · ${sinceLabel(props.s)} → ${atLabel(props.t)}</p>
-      <div class="ek" role="radiogroup" aria-label="{{t:Show}}">${kinds.filter(function (x) { return x[2] || x[0] === 'all'; }).map(function (x) {
-        return html`<label class=${'ek-o ' + x[0] + (kind[0] === x[0] ? ' on' : '')}><input type="radio" name="ek" checked=${kind[0] === x[0]}
-          onChange=${function () { setKind(x[0]); }} />${x[1]} <span>${x[2]}</span></label>`;
-      })}</div>
-      ${groups.map(function (g) {
-        var p = byId[g.key], isOpen = open[0][g.key] != null ? open[0][g.key] : g.key === here;
-        var n = more[0][g.key] || EDIT_ROWS, rows = g.rows.slice(0, n), lastPage = null, lastHead = null;
-        return html`<details class="eg" data-pg=${g.key} open=${isOpen} onToggle=${function (e) { if (e.target.open !== isOpen) { toggle(g.key, e.target.open); } }}>
-          <summary><span class="eg-t">${p ? p.title : g.key}</span><span class="eg-n">${g.rows.length}</span>
-            <span class="es">${counts(g.rows)}</span></summary>
-          ${isOpen && html`<ul class="edits">${rows.map(function (x) {
-            var it = x[0], pg = it.page !== lastPage && it.page.id !== g.key ? it.page.title : null, hd = itemHeading(it);
-            if (it.page !== lastPage) { lastHead = null; }
-            var head = hd && hd !== lastHead ? hd : null;
-            lastPage = it.page; lastHead = hd;
-            return html`${pg && html`<li class="ep">${pg}</li>`}${head && html`<li class="eh">${head}</li>`}
-              <li><button type="button" class=${'er ' + it.k + (x[1] === props.cur ? ' on' : '')} onClick=${function () { props.go(x[1]); }}>
-              <span class=${'g ' + it.k}>${kindWord[it.k]}</span><span class="et" title=${snip(it.t, 300)}>${snip(it.t, 120)}</span></button></li>`;
-          })}</ul>
-          ${g.rows.length > n && html`<button type="button" class="more" onClick=${function () { var m = Object.assign({}, more[0]); m[g.key] = n + EDIT_ROWS; more[1](m); }}>
-            {{t:Show more:}} ${Math.min(EDIT_ROWS, g.rows.length - n)} {{t:of}} ${g.rows.length - n}</button>`}`}
-        </details>`;
-      })}
+      <p class="left">${page.title}</p>
+      <p class="es">${rows.length ? counts(rows) : '{{t:No edits on this page}}'} · ${sinceLabel(props.s)} → ${atLabel(props.t)}</p>
+      <ul class="edits">${rows.slice(0, n).map(function (x) {
+        var it = x[0], hd = itemHeading(it), head = hd && hd !== lastHead ? hd : null;
+        lastHead = hd;
+        return html`${head && html`<li class="eh">${head}</li>`}
+          <li><button type="button" class=${'er ' + it.k + (x[1] === props.cur ? ' on' : '')} onClick=${function () { props.go(x[1]); }}>
+          <span class=${'g ' + it.k}>${kindWord[it.k]}</span><span class="et" title=${snip(it.t, 300)}>${snip(it.t, 120)}</span></button></li>`;
+      })}</ul>
+      ${rows.length > n && html`<button type="button" class="more" onClick=${function () { more[1](n + EDIT_ROWS); }}>
+        {{t:Show more:}} ${Math.min(EDIT_ROWS, rows.length - n)} {{t:of}} ${rows.length - n}</button>`}
+      ${nx && html`<button type="button" class="btn nx" onClick=${function () { props.next(nx); }}>
+        <span><small>{{t:Next page with edits:}}</small>${byId[nx].title}</span><span aria-hidden="true">→</span></button>`}
     </div>`;
   }
   function CommentsTab(props) {
@@ -1219,17 +1204,18 @@
   // the edits listed beside the tree (in its place in the drawer of a narrow screen)
   function EditsPanel(props) {
     return html`<div class="eds-in">
-      <div class="eds-h"><h2 id="eds-h">{{t:Edits}}</h2>
+      <div class="eds-h"><h2 id="eds-h">{{t:Edits on the page}}</h2>
         <button type="button" class="btn sm" onClick=${props.close}>${props.wide ? '✕ {{t:Close}}' : '← {{t:Pages}}'}</button></div>
-      <div class="panel"><${EditsTab} changes=${props.changes} s=${props.s} t=${props.t} cur=${props.cur} page=${props.page} go=${props.goEdit} /></div>
+      <div class="panel"><${EditsTab} key=${props.page.id} changes=${props.changes} s=${props.s} t=${props.t} cur=${props.cur} page=${props.page} go=${props.goEdit} next=${props.nextPage} /></div>
     </div>`;
   }
-  // over the tree: the button of the list of edits, when there are edits to list
+  // over the tree: the button of the edits of the open page, while edits are shown;
+  // a page without edits says so, and the open list still leads to the next one
   function EditsBar(props) {
-    var n = props.changes.list.length;
-    if (!n) { return null; }
-    return html`<button type="button" class="btn sm ebar" aria-expanded=${props.open ? 'true' : 'false'} aria-controls="edits" onClick=${props.toggle}>
-      {{t:List of edits}} <span class="tc">${n}</span><span class="sp"></span>${props.wide && props.open ? '◂' : '▸'}</button>`;
+    if (!props.changes.list.length) { return null; }
+    var n = pageEdits(props.changes.list, props.page.id).length;
+    return html`<button type="button" class="btn sm ebar" aria-expanded=${props.open ? 'true' : 'false'} aria-controls="edits" onClick=${props.toggle} disabled=${!n && !props.open}>
+      ${n ? html`{{t:Edits on the page:}} <span class="tc">${n}</span>` : '{{t:No edits on this page}}'}<span class="sp"></span>${props.wide && props.open ? '◂' : '▸'}</button>`;
   }
   // tabs after the WAI-ARIA pattern: arrows move between them. In the drawer
   // the list of edits takes the place of the tabs until it is closed, also
@@ -1266,7 +1252,7 @@
           tabindex=${t[0] === tab ? '0' : '-1'} onClick=${function () { props.setTab(t[0]); }}>${t[1]}${t[2] > 0 && html` <span class="tc">${t[2]}</span>`}</button>`;
       })}</div>
       <div id="tabpanel" role="tabpanel" aria-labelledby=${'tab-' + tab} class="panel">
-        ${tab === 'pages' && html`<${EditsBar} changes=${props.changes} open=${open} wide=${props.wide} toggle=${toggle} />
+        ${tab === 'pages' && html`<${EditsBar} changes=${props.changes} page=${props.page} open=${open} wide=${props.wide} toggle=${toggle} />
           <${Tree} cur=${props.page.id} toc=${props.toc} spy=${props.spy} picked=${props.picked} marks=${pageMarks(props.changes.list, props.s, props.t)} />`}
         ${tab === 'comments' && html`<${CommentsTab} comments=${props.comments} picked=${props.picked} show=${function (c) { props.picked(); props.showComment(c); }} />`}
       </div>
@@ -1396,6 +1382,13 @@
       if (decode(location.hash) === decode(h)) { r[1](route(h)); } else { location.hash = h; }
     }
     function picked() { if (!wide[0]) { drawer[1](false); } }
+    // the focus goes back to the menu, unless a pick has put it on the place it opened:
+    // taking it from there would also stop the scroll to that place halfway
+    function closeDrawer() {
+      drawer[1](false);
+      var a = document.activeElement, m = document.getElementById('menu');
+      if (m && (!a || a === document.body || dr.current.contains(a))) { m.focus({ preventScroll: true }); }
+    }
 
     useEffect(function () {
       function on() { r[1](route(location.hash)); }
@@ -1488,8 +1481,14 @@
 
     function toggleEdits() { var v = !edits[0]; edits[1](v); store('edits', v); focusEdits(v); }
     function goEdit(k) { picked(); goItem(k); }
+    // the next page with edits opens at its first edit
+    function nextPage(id) {
+      var k = -1;
+      all.list.forEach(function (it, i) { if (k < 0 && it.page.id === id) { k = i; } });
+      if (k >= 0) { goEdit(k); } else { picked(); location.hash = '#' + id; }
+    }
     var sideProps = { q: q, page: page, s: s, t: t, toc: toc[0], spy: spy[0], picked: picked, changes: all, cur: cur[0],
-      goEdit: goEdit, comments: comments, tab: tab[0], setTab: setTab, showComment: showComment, goHash: function (h) { r[1](route(h)); },
+      goEdit: goEdit, nextPage: nextPage, comments: comments, tab: tab[0], setTab: setTab, showComment: showComment, goHash: function (h) { r[1](route(h)); },
       wide: wide[0], editsOpen: edits[0], toggleEdits: toggleEdits };
     var side = html`<${Side} ...${sideProps} />`;
     var eds = wide[0] && edits[0];
@@ -1509,7 +1508,7 @@
       <div class=${'shell' + (rail ? ' work' : '') + (eds ? ' eds' : '')}>
         ${wide[0] ? html`<aside id="side" aria-label="{{t:Navigation}}">${side}</aside>
           ${eds && html`<aside id="edits" aria-labelledby="eds-h"><${EditsPanel} ...${sideProps} wide=${true} close=${toggleEdits} /></aside>`}`
-          : html`<dialog id="drawer" ref=${dr} class="drawer" aria-label="{{t:Navigation}}" onClose=${function () { drawer[1](false); var m = document.getElementById('menu'); if (m) { m.focus(); } }}
+          : html`<dialog id="drawer" ref=${dr} class="drawer" aria-label="{{t:Navigation}}" onClose=${closeDrawer}
               onClick=${function (e) { if (e.target === dr.current) { dr.current.close(); } }}>
               <button type="button" class="btn side-x" onClick=${function () { dr.current.close(); }}>✕ {{t:Close}}</button>
               ${drawer[0] && side}</dialog>`}
@@ -1528,6 +1527,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();
