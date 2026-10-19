@@ -66,6 +66,12 @@ An object without the marker is rendered as a bullet list. The marker means noth
 
 A section is linked with `[[id#field/section]]`; the link text is the section title, not the title of the document. A section is included with `{{id#field/section}}`; the path is matched against the keys, so a key may contain a slash. The anchor comes from the heading like the anchor of a field; equal anchors on one page are numbered -1, -2 in page order. Text rules and `docIgnore` paths treat sections like fields. A kind schema describes the marker as `"properties": {"$sections": {"const": true}}`.
 
+## Form fields
+
+An item of an array of paragraphs (`body`, a free field or a section) can be a form field: `{"$input": "radio", "id": "export", "label": "Export to Excel?", "options": ["Yes", "No"]}`. `$input` is `text` (a text box), `radio` (one choice of two or more options) or `checkbox` (any choices of one or more options); the id is unique in the document and the answers are kept by it; `label` is the question; a text box has no options; no other keys are allowed. DOC111 reports a malformed field and a field outside an array of paragraphs.
+
+The author writes the fields in the sources, by hand or through an agent; readers answer them in the HTML file ([Rendering](rendering.md)). The Markdown output leaves them out. In the history a field is a block of its own, so the paragraphs around it keep theirs. Text rules read only the question and the options. The built-in schema allows a field in `body`; a free field holding one needs a kind schema that allows the object.
+
 ## Parent
 
 [docc](index.md)

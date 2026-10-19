@@ -11,6 +11,7 @@ use base64::engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig};
 use regex::bytes::Regex;
 use serde::{Deserialize, Serialize};
 
+use crate::engine;
 use crate::history;
 use crate::loader::Node;
 use crate::schema;
@@ -41,6 +42,14 @@ pub struct Item {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub suffix: String,
     pub text: String,
+    /// Input is the id of the form field this comment answers; Answer is the
+    /// value given (one text, the picked option, or the ticked options), and
+    /// Text the same in words. Quote is the field as it read then, so an
+    /// answer to a question rewritten since reads as changed.
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub input: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub answer: Vec<String>,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub author: String,
     #[serde(skip_serializing_if = "String::is_empty")]
@@ -252,7 +261,8 @@ pub fn parse_export(name: &str, b: &[u8]) -> Result<Vec<Item>, Error> {
             "{path}: not a comments file of docc (no \"docc\": \"comments\")"
         )));
     }
-    if e.version != 1 {
+    // version 2 has answers to form fields; a file without them stays version 1
+    if e.version != 1 && e.version != 2 {
         return Err(Error(format!("{path}: unsupported version {}", e.version)));
     }
     for (i, it) in e.comments.iter().enumerate() {
@@ -284,6 +294,22 @@ pub fn locate(root: Option<&Node>, it: &Item) -> (String, String, &'static str) 
     let Some(root) = root else {
         return (it.path.clone(), String::new(), MISSING);
     };
+    if !it.input.is_empty() {
+        // an answer belongs to its form field wherever it stands; the question
+        // may have been rewritten since
+        let Some((ptr, n)) = find_input(root, "", &it.input) else {
+            return (it.path.clone(), String::new(), REMOVED);
+        };
+        let text = history::text(n);
+        let state = if text != it.quote {
+            CHANGED
+        } else if ptr != it.path {
+            MOVED
+        } else {
+            UNCHANGED
+        };
+        return (ptr, text, state);
+    }
     let mut text = String::new();
     if let Some(n) = schema::resolve_pointer(root, &it.path)
         && !it.path.is_empty()
@@ -314,6 +340,16 @@ pub fn locate(root: Option<&Node>, it: &Item) -> (String, String, &'static str) 
         return (bp.to_string(), bt.to_string(), CHANGED);
     }
     (it.path.clone(), String::new(), REMOVED)
+}
+
+/// find_input is the pointer and node of the form field with the given id.
+fn find_input<'a>(n: &'a Node, ptr: &str, id: &str) -> Option<(String, &'a Node)> {
+    if engine::is_input(n) {
+        return n.get("id").is_some_and(|v| v.str == id).then(|| (ptr.to_string(), n));
+    }
+    let items = n.items.iter().enumerate().map(|(i, it)| (i.to_string(), it));
+    let members = n.members.iter().map(|m| (history::escape(&m.key), &m.value));
+    items.chain(members).find_map(|(k, v)| find_input(v, &format!("{ptr}/{k}"), id))
 }
 
 #[cfg(test)]
@@ -378,8 +414,10 @@ mod tests {
                 .unwrap();
             let shown = String::from_utf8_lossy(&input);
             // what Go accepts and docc does not (docs/rust-port/comments.md): a repeated
-            // key, a key in another case, a null in place of an object
+            // key, a key in another case, a null in place of an object; and version 2
+            // (answers to form fields), which Go refuses
             if !crate::loader::parse(shown.as_bytes()).dups.is_empty()
+                || shown.contains("\"version\":2")
                 || ODD_KEY.is_match(&shown)
                 || shown.contains("[null]")
                 || &*input == b"docc-comments:bnVsbA=="

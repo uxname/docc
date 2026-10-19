@@ -15,7 +15,8 @@ use crate::loader::{self, Node};
 
 pub(super) const COMMENTS_USAGE: &str = "Usage: docc comments [--all] | import [--internal] <file|->... | done [--reply TEXT] <id>... | rm <id>...
 
-Review comments left on blocks of the HTML file (docc build --html) leave the page as text
+Review comments left on blocks of the HTML file (docc build --html), and answers given in
+its form fields ({\"$input\": ...} in the sources), leave the page as text
 copied for a messenger or as a downloaded JSON file. import adds them to docc.comments.json
 in the project root, which belongs in git, as not processed; - reads the copied text from
 standard input. A comment already there (same id) is skipped, and a comment whose block
@@ -262,6 +263,13 @@ fn list_comments(c: &Common, p: &Project, items: &[Item], all: bool, stdout: &mu
         if !it.fragment.is_empty() {
             b.extend_from_slice(format!("  about: «{}»\n", indent(&it.fragment)).as_bytes());
         }
+        // an answer to a form field: the field stands where a block does
+        let what = if it.input.is_empty() {
+            "block"
+        } else {
+            b.extend_from_slice(format!("  answers form field {}\n", it.input).as_bytes());
+            "field"
+        };
         b.extend_from_slice(b"  ");
         b.extend_from_slice(&who(&it.author, &it.created));
         b.extend_from_slice(format!("{}\n", indent(&it.text)).as_bytes());
@@ -269,12 +277,12 @@ fn list_comments(c: &Common, p: &Project, items: &[Item], all: bool, stdout: &mu
             b.extend_from_slice(format!("  reply: {}\n", indent(&it.reply)).as_bytes());
         }
         let s = match l.state {
-            comments::UNCHANGED | comments::MOVED => format!("  block: {}\n", indent(&it.quote)),
+            comments::UNCHANGED | comments::MOVED => format!("  {what}: {}\n", indent(&it.quote)),
             comments::CHANGED => {
-                format!("  block when commented: {}\n  block now: {}\n", indent(&it.quote), indent(&l.current))
+                format!("  {what} when commented: {}\n  {what} now: {}\n", indent(&it.quote), indent(&l.current))
             }
-            comments::REMOVED => format!("  block is gone; it read: {}\n", indent(&it.quote)),
-            comments::MISSING => format!("  document {} is gone; the block read: {}\n", it.doc, indent(&it.quote)),
+            comments::REMOVED => format!("  {what} is gone; it read: {}\n", indent(&it.quote)),
+            comments::MISSING => format!("  document {} is gone; the {what} read: {}\n", it.doc, indent(&it.quote)),
             _ => String::new(),
         };
         b.extend_from_slice(s.as_bytes());

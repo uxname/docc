@@ -108,6 +108,8 @@
   // the source text of a block as a reader sees it: links by their names, no marks
   // ponytail: a few regexes for the usual marks, not a Markdown parser
   function plain(s) {
+    // a form field reads as its question and choices
+    if (/^\$input: /.test(s || '')) { s = fieldWords(s); }
     // code (fenced or in backticks) is kept as written: marks inside it are not marks
     return (s || '').split(/(```[\s\S]*?```|`[^`\n]+`)/).map(function (t, i) {
       return i % 2 ? t.replace(/^`{3}[^\n]*\n?|\n?`{3}$/g, '').replace(/^`|`$/g, '') : marks(t);
@@ -126,6 +128,13 @@
       .replace(/^#{1,6}\s+/gm, '')
       .replace(/^>\s?/gm, '')
       .replace(/\s\^[a-z0-9-]+$/gm, '');
+  }
+  // the text of a form field as the build writes it («$input: radio; id: x;
+  // label: Q; options: A\nB»): «Q — A / B»
+  function fieldWords(s) {
+    var o = {};
+    s.split(/; (?=(?:\$input|id|label|options): )/).forEach(function (p) { var k = p.indexOf(': '); o[p.slice(0, k)] = p.slice(k + 2); });
+    return (o.label || '') + (o.options ? ' — ' + o.options.split('\n').join(' / ') : '');
   }
   function snip(s, n) {
     // table rows read as their cells
@@ -496,7 +505,9 @@
     return s[0];
   }
   function exportJSON() {
-    return JSON.stringify({ docc: 'comments', version: 1, comments: local.map(function (c) {
+    // version 2 has answers to form fields: an older docc refuses it rather than lose them
+    var v = local.some(function (c) { return c.input; }) ? 2 : 1;
+    return JSON.stringify({ docc: 'comments', version: v, comments: local.map(function (c) {
       var o = Object.assign({}, c); delete o.sent; return o;
     }) }, null, 2) + '\n';
   }
@@ -504,7 +515,7 @@
     var lines = ['{{t:Comments on}} «' + D.title + '» — ' + local.length, ''];
     local.forEach(function (c, k) {
       var p = byId[c.doc];
-      lines.push((k + 1) + '. ' + (p ? p.title : c.doc) + ' — «' + snip(c.fragment || c.quote, 80) + '»');
+      lines.push((k + 1) + '. ' + (p ? p.title : c.doc) + ' — «' + snip(c.fragment || (c.input ? fieldWords(c.quote) : c.quote), 80) + '»');
       lines.push(c.text);
       if (c.author) { lines.push('— ' + c.author); }
       lines.push('');
@@ -534,6 +545,11 @@
   // Imported comments are moved by the build itself.
   var pathCache = {};
   function pathOf(c) {
+    // an answer stands at its form field, wherever the field went
+    if (c.input) {
+      var f = byId[c.doc] && blocksOf(byId[c.doc]).filter(function (b) { return b.i && b.i.id === c.input; })[0];
+      return f ? f.p : c.path;
+    }
     if (!c.fragment || inRepo[c.id] || !c.build || c.build === H.head) { return c.path; }
     var k = c.id + ':' + c.path;
     if (k in pathCache) { return pathCache[k]; }
@@ -546,7 +562,8 @@
     }
     return (pathCache[k] = best);
   }
-  function commentsOn(list, doc, ptr) { return list.filter(function (c) { return c.doc === doc && pathOf(c) === ptr; }); }
+  // the comments of a block as cards; answers are shown by their field
+  function commentsOn(list, doc, ptr) { return list.filter(function (c) { return c.doc === doc && !c.input && pathOf(c) === ptr; }); }
   // Where a comment stands now: its page and paragraph, or which of them is
   // gone. An accepted comment often outlives its place: the answered question
   // is deleted, or its paragraph rewritten into another document.
@@ -669,6 +686,64 @@
     </aside>`;
   }
 
+  // ---- form fields: an answer is a comment with the id of its field ----
+  // the answers to a field, the latest of each author (one without a name
+  // stands by itself), oldest first
+  function answersFor(list, doc, id) {
+    var by = {};
+    list.forEach(function (c) {
+      if (c.doc !== doc || c.input !== id) { return; }
+      var k = c.author ? 'a:' + c.author : 'c:' + c.id;
+      if (!by[k] || (c.created || '') >= (by[k].created || '')) { by[k] = c; }
+    });
+    return Object.keys(by).map(function (k) { return by[k]; })
+      .sort(function (a, b) { return (a.created || '') < (b.created || '') ? -1 : 1; });
+  }
+  // a text box, radio buttons or check boxes in the text; the answers given
+  // so far below it, with their authors
+  function Field(props) {
+    var f = props.f, doc = props.page.id, me = store('author') || '';
+    var given = answersFor(imported.concat(props.comments), doc, f.id);
+    // what this reader answered: in this browser, else imported under their name
+    var own = props.comments.filter(function (c) { return c.doc === doc && c.input === f.id; })[0] ||
+      (me && given.filter(function (c) { return c.author === me; })[0]);
+    var start = (own && own.answer || []).filter(function (a) { return f.t === 'text' || f.options.indexOf(a) >= 0; });
+    var val = useState(start), who = useState(me), v = val[0];
+    useEffect(function () { val[1](start); }, [own ? own.id : '']);
+    var dirty = JSON.stringify(v) !== JSON.stringify(start), ok = f.t === 'text' ? !!(v[0] || '').trim() : v.length > 0;
+    var label = plain(f.label), name = 'f-' + doc + '-' + f.id;
+    function pick(o, on) {
+      val[1](f.t === 'radio' ? [o] : f.options.filter(function (x) { return x === o ? on : v.indexOf(x) >= 0; }));
+    }
+    function save() {
+      var a = f.t === 'text' ? [v[0].trim()] : v, w = who[0].trim(), first = !local.length;
+      if (w) { store('author', w); }
+      var c = { id: uuid(), doc: doc, path: props.ptr, quote: props.quote, text: a.join(', '), input: f.id, answer: a,
+        author: w, created: new Date().toISOString(), build: H.head || '' };
+      // one answer of this browser per field: a new one takes its place
+      setLocal(local.filter(function (x) { return !(x.doc === doc && x.input === f.id); }).concat([c]));
+      toast(first ? '{{t:Saved in this browser only. Copy your comments in the Comments tab to pass them on.}}' : '{{t:Answer saved.}}');
+    }
+    return html`<fieldset class="fld" disabled=${props.past}>
+      <legend>${label}</legend>
+      ${f.t === 'text' ? html`<textarea rows="3" aria-label=${label} value=${v[0] || ''} onInput=${function (e) { val[1]([e.target.value]); }}></textarea>`
+        : f.options.map(function (o) {
+          return html`<label class="opt"><input type=${f.t} name=${name} checked=${v.indexOf(o) >= 0}
+            onChange=${function (e) { pick(o, e.target.checked); }} /> ${plain(o)}</label>`;
+        })}
+      ${!me && html`<label class="who-l">{{t:From}} <input class="who" autocomplete="name" placeholder="{{t:Your name}}" value=${who[0]}
+        onInput=${function (e) { who[1](e.target.value); }} /></label>`}
+      ${!props.past && html`<div class="row"><span class="sp"></span>
+        ${dirty && own && html`<button type="button" class="btn" onClick=${function () { val[1](start); }}>{{t:Cancel}}</button>`}
+        <button type="button" class="btn pri" disabled=${!dirty || !ok} onClick=${save}>{{t:Save}}</button></div>`}
+      ${given.length > 0 && html`<ul class="fans" aria-label="{{t:Answers}}">${given.map(function (c) {
+        return html`<li><b>${c.author || '{{t:Anonymous}}'}</b> — ${c.text}
+          ${c.quote !== props.quote && html` <span class="chip">{{t:to an earlier question}}</span>`}
+          ${!inRepo[c.id] && html` <span class="muted">· {{t:in this browser}} · </span><button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button>`}</li>`;
+      })}</ul>`}
+    </fieldset>`;
+  }
+
   // ---- one block: its HTML at T, the edits since S drawn into it, its comments ----
   function Block(props) {
     var b = props.b, page = props.page, ptr = b.p, s = props.s, t = props.t, past = t < last, a = page.id + (ptr || '');
@@ -684,10 +759,12 @@
     var repo = ptr && !past ? commentsOn(imported, page.id, ptr) : [];
     var frags = mine.concat(repo).filter(function (c) { return c.fragment; });
     var key = s + ':' + t + ':' + frags.map(function (c) { return c.id; }).join();
+    // a form field is drawn as a field at its current text; an old text of it reads as text
+    var field = b.i && !(at && at.t !== b.s);
     useEffect(function () {
       var el = body.current, gone = {};
-      whole[1](null);
-      if (!el) { lost[1](gone); return; }
+      whole[1](field && changed && !isNew ? 'text' : null);
+      if (!el || field) { lost[1](gone); return; }
       if (changed && !isNew && !drawDiff(el, before)) { whole[1](el.querySelector('pre') ? 'code' : 'text'); }
       var text = readText(el).text;
       frags.forEach(function (c) {
@@ -699,7 +776,8 @@
       });
       lost[1](gone);
     }, [key]);
-    var inner = html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: h }}></div>`;
+    var inner = field ? html`<div class="blk-body" key=${key} id=${props.id}><${Field} f=${b.i} page=${page} ptr=${ptr} quote=${b.s} comments=${props.comments} past=${past} /></div>`
+      : html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: h }}></div>`;
     if (props.label) { inner = html`<div class="blk-body prop" key=${key} id=${props.id}><div class="pk">${props.label}</div><div ref=${body} dangerouslySetInnerHTML=${{ __html: h }}></div></div>`; }
     if (!ptr) { return html`<div class=${'blk' + (props.label ? ' is-prop' : '')}>${inner}</div>`; }
     var cards = repo.map(function (c) { return [c, true]; }).concat(mine.map(function (c) { return [c, false]; }));
@@ -1056,7 +1134,7 @@
     var v = q[0].trim(), hits = [], total = 0;
     if (v) {
       index = index || [].concat.apply([], pages.map(function (p) {
-        return [{ p: p, ptr: '', text: '' }].concat(blocksOf(p).map(function (b) { return { p: p, ptr: b.p, text: textOf(b.h) }; }));
+        return [{ p: p, ptr: '', text: '' }].concat(blocksOf(p).map(function (b) { return { p: p, ptr: b.p, text: b.i ? plain(b.s) : textOf(b.h) }; }));
       }));
       var esc = function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
       var words = v.split(/\s+/).map(function (w) { return new RegExp(esc(w), 'i'); });
@@ -1188,7 +1266,7 @@
       <ul class="clist">${rows.map(function (x) {
         var c = x[0], at = commentPlace(c), p = at.page;
         var body = html`
-          <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : placeOf(p, c.path, c.quote)}
+          <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : c.input ? '«' + snip(c.quote, 70) + '»' : placeOf(p, c.path, c.quote)}
             ${at.gone && html` <span class="chip">${at.gone === 'page' ? '{{t:page removed}}' : '{{t:paragraph removed}}'}</span>`}</span>
           <span class="ctx">${c.text}</span>
           ${c.author && html`<span class="cp">— ${c.author}</span>`}
@@ -1311,7 +1389,8 @@
     if (!s || s.isCollapsed || !s.rangeCount) { return null; }
     var r = s.getRangeAt(0), start = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentNode;
     var body = start.closest && start.closest('.blk-body'), blk = body && body.closest('.blk[data-p]');
-    if (!blk) { return null; }
+    // a form field is answered, not commented on
+    if (!blk || start.closest('.fld')) { return null; }
     if (!body.contains(r.endContainer)) { r = r.cloneRange(); r.setEnd(body, body.childNodes.length); }
     var frag = cleanText(r.cloneContents()).replace(/\s+/g, ' ').trim();
     if (frag.length < 2) { return null; }
@@ -1494,7 +1573,7 @@
     var eds = wide[0] && edits[0];
     var curA = all.list[cur[0]] ? all.list[cur[0]].a : null;
     // the margin for the cards opens only when the page has comments or an editor
-    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id; }));
+    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id && !c.input; }));
     return html`
       <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>{{t:Skip to content}}</a>
       <header class=${'top' + (last > 0 ? ' has-tl' : '')} role="banner">
@@ -1527,6 +1606,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

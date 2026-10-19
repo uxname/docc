@@ -1,0 +1,122 @@
+[
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 6,
+    "column": 5,
+    "endLine": 6,
+    "endColumn": 70,
+    "message": "form field needs an id of a-z, 0-9 and '-'",
+    "hint": "Give it an id such as \"export-format\": the answers are kept by it."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 7,
+    "column": 5,
+    "endLine": 7,
+    "endColumn": 66,
+    "message": "form field kind must be \"text\", \"radio\" or \"checkbox\"",
+    "hint": "A form field is {\"$input\": \"radio\", \"id\": \"export\", \"label\": \"Export?\", \"options\": [\"Yes\", \"No\"]}; $input is text, radio or checkbox."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 8,
+    "column": 5,
+    "endLine": 8,
+    "endColumn": 82,
+    "message": "form field radio needs at least 2 options",
+    "hint": "List the choices as \"options\": [\"Yes\", \"No\"]."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 9,
+    "column": 5,
+    "endLine": 9,
+    "endColumn": 91,
+    "message": "form field options must be distinct non-empty strings",
+    "hint": "Every option is a string of its own."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 10,
+    "column": 5,
+    "endLine": 10,
+    "endColumn": 59,
+    "message": "form field id \"same\" is used twice in the document",
+    "hint": "Give every form field of the document its own id."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 11,
+    "column": 5,
+    "endLine": 11,
+    "endColumn": 87,
+    "message": "a text field has no options",
+    "hint": "Remove \"options\", or make it \"radio\" or \"checkbox\"."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 12,
+    "column": 5,
+    "endLine": 12,
+    "endColumn": 52,
+    "message": "form field needs a label",
+    "hint": "Write the question as \"label\"."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 13,
+    "column": 5,
+    "endLine": 13,
+    "endColumn": 71,
+    "message": "form field has an unknown member \"hint\"",
+    "hint": "A form field is {\"$input\": \"radio\", \"id\": \"export\", \"label\": \"Export?\", \"options\": [\"Yes\", \"No\"]}; $input is text, radio or checkbox."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 15,
+    "column": 12,
+    "endLine": 15,
+    "endColumn": 75,
+    "message": "a form field stands only as an item of an array of paragraphs",
+    "hint": "Put it into the array of paragraphs of body, a free field or a section: \"body\": [\"Text.\", {\"$input\": ...}]."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 16,
+    "column": 29,
+    "endLine": 16,
+    "endColumn": 88,
+    "message": "a form field stands only as an item of an array of paragraphs",
+    "hint": "Put it into the array of paragraphs of body, a free field or a section: \"body\": [\"Text.\", {\"$input\": ...}]."
+  }
+]

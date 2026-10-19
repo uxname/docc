@@ -38,7 +38,7 @@ const fn rule(
     Rule { code, name, group, default, core, desc, bad, good }
 }
 
-static ALL: [Rule; 40] = [
+static ALL: [Rule; 41] = [
     rule(
         "DOC101",
         "syntax/invalid-json",
@@ -138,6 +138,16 @@ static ALL: [Rule; 40] = [
         "A field is named almost like a reserved key (parent, hidden, order, notes, tags, ...) and the kind schema does not declare it, so it is silently treated as prose.",
         r#"{ "title": "A", "parnet": "index" }"#,
         r#"{ "title": "A", "parent": "index" }"#,
+    ),
+    rule(
+        "DOC111",
+        "syntax/invalid-input",
+        "syntax",
+        E,
+        false,
+        "A form field ({\"$input\": ...}, drawn by the HTML file as a text box, radio buttons or check boxes) is malformed or out of place. It needs $input (text, radio or checkbox), an id (a-z, 0-9 and '-') unique in the document and a label; radio needs at least two distinct options, checkbox at least one, text none. It stands only as an item of an array of paragraphs: body, a free field or a section.",
+        r#"{ "title": "A", "body": [{ "$input": "radio", "label": "Export?" }] }"#,
+        r#"{ "title": "A", "body": ["Text.", { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] }] }"#,
     ),
     rule(
         "DOC201",
@@ -502,7 +512,7 @@ mod tests {
     #[test]
     fn registry() {
         let n = all().len();
-        assert_eq!(n, 40, "want 40 rules, got {n}");
+        assert_eq!(n, 41, "want 41 rules, got {n}");
         let mut core = 0;
         for r in all() {
             assert!(

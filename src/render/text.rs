@@ -235,7 +235,8 @@ impl<'a> Page<'_, 'a> {
             }
             Kind::Array => {
                 let mut out = Vec::new();
-                for it in &v.items {
+                // form fields stay on their own page
+                for it in v.items.iter().filter(|it| !engine::is_input(it)) {
                     if it.kind != Kind::String {
                         return None;
                     }
@@ -319,19 +320,25 @@ impl<'a> Page<'_, 'a> {
     }
 
     /// paragraphs renders the string values of a field as paragraphs; a block
-    /// anchor marker turns into an anchor tag before its paragraph.
+    /// anchor marker turns into an anchor tag before its paragraph. A form
+    /// field is only a marker in the HTML file (the page script draws it) and
+    /// is left out of the Markdown.
     pub fn paragraphs(&mut self, v: &'a Node, includes: bool) -> Vec<String> {
         let elems: Vec<&'a Node> = match v.kind {
             Kind::String => vec![v],
             Kind::Array => v
                 .items
                 .iter()
-                .filter(|it| it.kind == Kind::String)
+                .filter(|it| it.kind == Kind::String || (self.r.html && engine::is_input(it)))
                 .collect(),
             _ => Vec::new(),
         };
         let mut out = Vec::new();
         for n in elems {
+            if n.kind != Kind::String {
+                out.push(self.mark(Some(n)).trim_end().to_string());
+                continue;
+            }
             let (e, tag) = self.block(n);
             let xs = if includes {
                 self.expand(&e, 0)

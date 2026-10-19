@@ -11,7 +11,7 @@ use std::process::{Command, Stdio};
 use serde::{Serialize, Serializer};
 
 use crate::config::go_quote;
-use crate::engine::{SECTIONS_KEY, is_sections};
+use crate::engine::{SECTIONS_KEY, is_input, is_sections};
 use crate::loader::{self, Kind, Node};
 
 /// Commit is one commit that touched the documents. The working tree, when it
@@ -461,8 +461,8 @@ pub struct Leaf {
     pub text: String,
 }
 
-/// Flatten lists the blocks of a document in file order: every string of an
-/// array of strings, every other field or section value as a whole. Sections
+/// Flatten lists the blocks of a document in file order: every string (or
+/// form field) of an array of paragraphs, every other field or section value as a whole. Sections
 /// are entered. The pointers are those of Pointers.
 pub fn flatten(root: &Node) -> Vec<Leaf> {
     fn walk(n: &Node, ptr: &str, top: bool, out: &mut Vec<Leaf>) {
@@ -477,7 +477,7 @@ pub fn flatten(root: &Node) -> Vec<Leaf> {
                 out.push(Leaf {
                     ptr: format!("{ptr}/{i}"),
                     parent: ptr.to_string(),
-                    text: it.str.clone(),
+                    text: text(it),
                 });
             }
         } else {
@@ -494,7 +494,7 @@ pub fn flatten(root: &Node) -> Vec<Leaf> {
 }
 
 fn all_strings(n: &Node) -> bool {
-    !n.items.is_empty() && n.items.iter().all(|it| it.kind == Kind::String)
+    !n.items.is_empty() && n.items.iter().all(|it| it.kind == Kind::String || is_input(it))
 }
 
 /// Text is the plain text of a block: a string as it is, a list or table one
@@ -1075,6 +1075,23 @@ mod tests {
         assert!(
             get("/b/1") == "/b/1" && get("/b/3") == "/b/4" && get("/b/4").is_empty(),
             "pairs: {m:?}"
+        );
+    }
+
+    // A form field among the paragraphs is a block of its own: the paragraphs
+    // around it keep their history.
+    #[test]
+    fn flatten_form_field() {
+        let r = crate::loader::parse(
+            br#"{"body":["One.",{"$input":"text","id":"q","label":"Q?"},"Two."],"list":["x",{"a":1}]}"#,
+        );
+        let got: Vec<String> = flatten(r.root.as_ref().unwrap())
+            .iter()
+            .map(|l| format!("{}={}", l.ptr, l.text))
+            .collect();
+        assert_eq!(
+            got,
+            ["/body/0=One.", "/body/1=$input: text; id: q; label: Q?", "/body/2=Two.", "/list=x\na: 1"]
         );
     }
 }

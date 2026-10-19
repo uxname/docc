@@ -255,6 +255,18 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px dotted var(-
 .editor .who{flex:1;min-width:0;min-height:var(--tgt);padding:.2rem .5rem}
 .editor textarea{display:block;width:100%;min-height:5rem;max-height:40vh;max-height:40dvh;margin-bottom:.5rem;padding:.5rem .6rem;resize:vertical;overflow:auto}
 .editor textarea,.editor .who{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:6px}
+/* form fields: the question, its choices, the answers given */
+.fld{margin:0 0 1.2rem;padding:.6rem 1rem .8rem;background:var(--bg2);border:1px solid var(--line);border-radius:8px}
+.fld legend{padding:0 .3rem;font-weight:600}
+.fld .opt{display:flex;align-items:center;gap:.5rem;min-height:var(--tgt)}
+.fld .opt input{width:1.1rem;height:1.1rem;margin:0;accent-color:var(--accent)}
+.fld textarea{display:block;width:100%;min-height:4.5rem;max-height:40vh;max-height:40dvh;margin:.3rem 0 .5rem;padding:.5rem .6rem;resize:vertical}
+.fld textarea,.fld .who{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:6px}
+.fld .who{flex:1;min-width:0;min-height:var(--tgt);padding:.2rem .5rem}
+.fld .who-l{margin:.4rem 0 0}
+.fld .row{margin-top:.3rem}
+.fld .fans{margin:.6rem 0 0;padding:.5rem 0 0;list-style:none;border-top:1px solid var(--line);font-size:.875rem}
+.fld .fans li{margin:.15rem 0;padding:0}
 .mic-w{display:flex;align-items:center;gap:.5rem}
 .mic.on{background:var(--bad);border-color:var(--bad);color:#fff}
 .err{color:var(--bad)}
@@ -357,7 +369,7 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px dotted var(-
 .td{background:CanvasText}
 }
 @media print{
-.top,#side,#edits,.drawer,.nav,.fragb,.skip,.copy,.pn,.toast-w,.notice,.pop,.editor{display:none!important}
+.top,#side,#edits,.drawer,.nav,.fragb,.skip,.copy,.pn,.toast-w,.notice,.pop,.editor,.fld .row,.fld .who-l{display:none!important}
 .shell{display:block}
 main{padding:0}
 .page,.shell.work .page{max-width:none}

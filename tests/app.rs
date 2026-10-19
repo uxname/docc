@@ -86,6 +86,52 @@ fn comments() {
     assert_eq!(p.read("docc.comments.json"), "{\"comments\": []}\n", "after rm");
 }
 
+/// A form field is a block of the HTML file and nothing in the Markdown; an
+/// answer to it comes back as a comment (version 2) that follows the field by
+/// its id and reads as changed once the question is rewritten.
+#[test]
+fn form_field_answers() {
+    let field = r#"{"$input":"radio","id":"export","label":"Export?","options":["Yes","No"]}"#;
+    let p = project([("docs/src/index.json", format!(r#"{{"title":"I","body":["Intro.",{field},"End."]}}"#).as_str())]);
+    let (code, out, errs) = p.run(&["build", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    assert!(!p.read("docs/out/index.md").contains("Export"), "the Markdown must leave the field out");
+    let a = read_app(&p, "docs/out.html");
+    let b = &a.pages()[0]["blocks"][1];
+    assert!(s(b, "p") == "/body/1" && s(&b["i"], "t") == "radio" && b["i"]["options"][1] == "No", "field block: {b}");
+    // what the page exports: the field as it read, the id and the answer
+    let export = |version: u8| {
+        serde_json::json!({"docc": "comments", "version": version, "comments": [{"id": "ans00001", "doc": "index",
+            "path": "/body/1", "quote": s(b, "s"), "input": "export", "answer": ["Yes"], "text": "Yes", "author": "Ivan"}]})
+        .to_string()
+    };
+    p.write("v3.json", export(3));
+    let (code, _, errs) = p.run(&["comments", "import", "v3.json"]);
+    assert!(code == 2 && errs.contains("unsupported version 3"), "{code} {errs}");
+    p.write("export.json", export(2));
+    let (code, out, errs) = p.run(&["comments", "import", "export.json"]);
+    assert!(code == 0 && out == "imported 1 comments into docc.comments.json\n", "{code} {out} {errs}");
+    // a paragraph inserted above moves the field; the answer goes with it
+    p.write("docs/src/index.json", format!(r#"{{"title":"I","kind":"page","body":["Intro.","Inserted.",{field},"End."]}}"#));
+    let (_, out, _) = p.run(&["comments"]);
+    let want = "ans00001  open  index \"I\" /body/2\n  answers form field export\n  Ivan: Yes\n  field: $input: radio; id: export; label: Export?; options: Yes\nNo";
+    assert!(out.contains(&want.replace("\nNo", "\n  No")), "moved:\n{out}");
+    let (code, out, errs) = p.run(&["build", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let cs = read_app(&p, "docs/out.html").data["comments"].clone();
+    assert!(s(&cs[0], "path") == "/body/2" && s(&cs[0], "input") == "export" && cs[0]["answer"][0] == "Yes", "{cs}");
+    // the question is rewritten: the answer was given to the old one
+    p.write("docs/src/index.json", format!(r#"{{"title":"I","kind":"page","body":["Intro.",{}]}}"#, field.replace("Export?", "Export to Excel?")));
+    let (_, out, _) = p.run(&["comments", "--format", "json"]);
+    let list: serde_json::Value = serde_json::from_str(&out).unwrap_or_else(|e| panic!("{e} {out}"));
+    let c = &list["comments"][0];
+    assert!(s(c, "state") == "changed" && s(c, "path") == "/body/1" && s(c, "current").contains("Export to Excel?"), "{out}");
+    // accepted: the agent removes the field
+    p.write("docs/src/index.json", r#"{"title":"I","kind":"page","body":["Intro.","Export: yes."]}"#);
+    let (_, out, _) = p.run(&["comments"]);
+    assert!(out.contains("  field is gone; it read: $input: radio"), "removed:\n{out}");
+}
+
 /// Comments copied from the page as text come in through standard input; the
 /// team's own (--internal) stay out of the HTML file, a reply goes into it.
 #[test]

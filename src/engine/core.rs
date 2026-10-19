@@ -1,11 +1,13 @@
+use std::collections::HashSet;
+
 use super::project::{Doc, Project};
-use super::strings::{RESERVED_KEYS, reserved_key};
+use super::strings::{INPUT_KEY, RESERVED_KEYS, is_input, is_sections, reserved_key};
 use crate::config::go_quote;
-use crate::loader::Kind;
+use crate::loader::{Kind, Node};
 use crate::schema;
 
 impl Project {
-    /// checkSyntax runs the per-document structure checks: DOC103, DOC105 and DOC110.
+    /// checkSyntax runs the per-document structure checks: DOC103, DOC105, DOC110 and DOC111.
     /// (DOC101, DOC102 and DOC104 are emitted while loading.)
     pub(super) fn check_syntax(&self) {
         for d in &self.docs {
@@ -50,9 +52,49 @@ impl Project {
                 );
             }
             self.reserved_typos(d);
+            self.inputs(d);
         }
     }
 
+    /// inputs reports DOC111: a form field that is malformed, has an id used
+    /// before in the document, or stands where the Markdown would print it as a list.
+    fn inputs(&self, d: &Doc) {
+        fn visit<'n>(n: &'n Node, para: bool, item: bool, sec: bool, out: &mut Vec<(&'n Node, bool)>) {
+            if is_input(n) {
+                out.push((n, item));
+                return;
+            }
+            match n.kind {
+                Kind::Array => {
+                    // an array of paragraphs: the value of a field or section, strings and fields only
+                    let ok = para && n.items.iter().all(|it| it.kind == Kind::String || is_input(it));
+                    for it in &n.items {
+                        visit(it, false, ok, false, out);
+                    }
+                }
+                Kind::Object => {
+                    let s = sec && is_sections(n);
+                    for m in &n.members {
+                        visit(&m.value, s, false, s, out);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let mut found = Vec::new();
+        for m in &d.r().members {
+            if m.key == "body" || !reserved_key(&m.key) {
+                visit(&m.value, true, false, m.key != "body", &mut found);
+            }
+        }
+        let mut ids = HashSet::new();
+        for (n, item) in found {
+            let (msg, hint) = input_problem(n, item, &mut ids);
+            if !msg.is_empty() {
+                self.emit(d, "DOC111", n.start, n.end, msg, hint.into());
+            }
+        }
+    }
     /// reservedTypos reports DOC110: a free field whose name is one or two edits
     /// from a reserved key ("parnet", "hiden"), which would silently be prose.
     fn reserved_typos(&self, d: &Doc) {
@@ -88,6 +130,65 @@ impl Project {
             );
         }
     }
+}
+
+/// input_problem is the first thing wrong with a form field, ("", "") when
+/// nothing is; ids collects the ids of the document.
+fn input_problem(n: &Node, item: bool, ids: &mut HashSet<String>) -> (String, &'static str) {
+    const SHAPE: &str = r#"A form field is {"$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"]}; $input is text, radio or checkbox."#;
+    if !item {
+        return (
+            "a form field stands only as an item of an array of paragraphs".into(),
+            r#"Put it into the array of paragraphs of body, a free field or a section: "body": ["Text.", {"$input": ...}]."#,
+        );
+    }
+    if let Some(m) = n.members.iter().find(|m| !matches!(m.key.as_str(), INPUT_KEY | "id" | "label" | "options")) {
+        return (format!("form field has an unknown member {}", go_quote(&m.key)), SHAPE);
+    }
+    let kind = n.get(INPUT_KEY).filter(|k| k.kind == Kind::String).map_or("", |k| k.str.as_str());
+    if !matches!(kind, "text" | "radio" | "checkbox") {
+        return ("form field kind must be \"text\", \"radio\" or \"checkbox\"".into(), SHAPE);
+    }
+    let id = match n.get("id") {
+        Some(v) if v.kind == Kind::String && input_id(&v.str) => v.str.as_str(),
+        _ => return ("form field needs an id of a-z, 0-9 and '-'".into(), "Give it an id such as \"export-format\": the answers are kept by it."),
+    };
+    if !ids.insert(id.to_string()) {
+        return (
+            format!("form field id {} is used twice in the document", go_quote(id)),
+            "Give every form field of the document its own id.",
+        );
+    }
+    if !n.get("label").is_some_and(|l| l.kind == Kind::String && !l.str.trim().is_empty()) {
+        return ("form field needs a label".into(), "Write the question as \"label\".");
+    }
+    let opts = n.get("options");
+    if kind == "text" {
+        if opts.is_some() {
+            return ("a text field has no options".into(), "Remove \"options\", or make it \"radio\" or \"checkbox\".");
+        }
+        return (String::new(), "");
+    }
+    let min = if kind == "radio" { 2 } else { 1 };
+    let Some(opts) = opts.filter(|o| o.kind == Kind::Array && o.items.len() >= min) else {
+        return (
+            format!("form field {kind} needs at least {min} options"),
+            "List the choices as \"options\": [\"Yes\", \"No\"].",
+        );
+    };
+    let mut seen = HashSet::new();
+    for o in &opts.items {
+        if o.kind != Kind::String || o.str.trim().is_empty() || !seen.insert(o.str.as_str()) {
+            return ("form field options must be distinct non-empty strings".into(), "Every option is a string of its own.");
+        }
+    }
+    (String::new(), "")
+}
+
+/// input_id reports whether s is an id of a form field: a-z and 0-9 in runs joined by '-'.
+fn input_id(s: &str) -> bool {
+    !s.is_empty()
+        && s.split('-').all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit()))
 }
 
 /// sameLetters reports whether a and b have the same letters in another order.

@@ -12,7 +12,10 @@ const data = {
     { id: 'q', doc: 'q48', path: '/options/0', quote: 'A) yes' }],
   pages: [{ id: 'p', title: 'P', file: 'p.json', blocks: [
     { p: '/body/0', s: 'Alpha' }, { p: '/body/1', s: 'Beta now' }, { p: '/body/2', s: 'Gamma' }] },
-  { id: 'n', title: 'N', file: 'n.json', blocks: [{ s: '', h: '<h2>Only a heading</h2>' }] }],
+  { id: 'n', title: 'N', file: 'n.json', blocks: [{ s: '', h: '<h2>Only a heading</h2>' }] },
+  // a form field, moved down by a paragraph inserted above it
+  { id: 'f', title: 'F', file: 'f.json', blocks: [{ p: '/body/0', s: 'New.', h: '<p>New.</p>' },
+    { p: '/body/1', s: '$input: radio; id: export; label: Export; to Excel?; options: Yes\nNo', h: '', i: { t: 'radio', id: 'export', label: 'Export; to Excel?', options: ['Yes', 'No'] } }] }],
   hist: { base: true, commits: [{ h: 'a', d: '2026-10-06T09:00:00Z' }, { h: 'b', d: '2026-10-07T09:00:00Z' }], docs: { 'p.json': {
     b: { '/body/0': [{ c: 0, t: 'Alpha' }], '/body/1': [{ c: 0, t: 'Beta' }, { c: 1, t: 'Beta now' }], '/body/2': [{ c: 1, t: 'Gamma' }] },
     ch: [{ c: 1, ch: [['/body/1', 'Beta', 'Beta now']], add: [['/body/2', 'Gamma']], rm: [['/body/3', 'Gone at the end'], ['/body/1', 'Gone in the middle']] }] },
@@ -111,6 +114,16 @@ const at = (id) => T.commentPlace(data.comments.find((x) => x.id === id));
 assert.deepStrictEqual([at('ok').page.id, at('ok').ptr, at('ok').gone], ['p', '/body/1', undefined]);
 assert.deepStrictEqual([at('rm').page.id, at('rm').gone], ['p', 'block']);
 assert.deepStrictEqual(at('q'), { gone: 'page' });
+
+// a form field reads as its question and choices; an answer stands at its field and the latest answer of each author counts
+assert.strictEqual(T.fieldWords(data.pages[2].blocks[1].s), 'Export; to Excel? — Yes / No');
+assert.strictEqual(T.snip(data.pages[2].blocks[1].s, 60), 'Export; to Excel? — Yes / No');
+assert.strictEqual(T.pathOf({ id: 'a', doc: 'f', path: '/body/0', input: 'export', quote: 'x' }), '/body/1');
+assert.strictEqual(T.pathOf({ id: 'a', doc: 'f', path: '/body/5', input: 'gone' }), '/body/5', 'a removed field keeps its old place');
+const ans = (id, author, created, doc) => ({ id, doc: doc || 'f', input: 'export', author, created, text: id });
+const given = T.answersFor([ans('i1', 'Ivan', '2026-10-01'), ans('o1', 'Olga', '2026-10-02'), ans('i2', 'Ivan', '2026-10-03'),
+  ans('x1', '', '2026-10-04'), ans('x2', '', '2026-10-05'), ans('z', 'Zoe', '2026-10-06', 'p')], 'f', 'export');
+assert.deepStrictEqual(given.map((c) => c.id), ['o1', 'i2', 'x1', 'x2'], 'one per author, oldest first; nameless ones each');
 
 // a table row reads as its cells in the lists
 assert.strictEqual(T.snip('| Module | Owner |\n|---|---|', 60), 'Module Owner');

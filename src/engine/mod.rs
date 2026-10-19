@@ -24,8 +24,8 @@ pub use lock::{LOCK_FILE, Link};
 pub use project::{Doc, Project, UsageError, load, valid_id};
 pub use run::structural;
 pub use strings::{
-    SECTIONS_KEY, SERVICE_FIELDS, StrNode, anchor, anchor_name, heading_anchor, is_sections,
-    resolve, split_anchor,
+    INPUT_KEY, INPUT_PROSE, SECTIONS_KEY, SERVICE_FIELDS, StrNode, anchor, anchor_name, heading_anchor,
+    is_input, is_sections, resolve, split_anchor,
 };
 
 #[cfg(test)]

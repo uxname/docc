@@ -1,0 +1,17 @@
+{
+  "title": "Index",
+  "kind": "page",
+  "body": [
+    "Text.",
+    { "$input": "radio", "label": "No id", "options": ["Yes", "No"] },
+    { "$input": "select", "id": "kind", "label": "Unknown kind" },
+    { "$input": "radio", "id": "one", "label": "One option", "options": ["Yes"] },
+    { "$input": "checkbox", "id": "same", "label": "Same options", "options": ["A", "A"] },
+    { "$input": "text", "id": "same", "label": "Used id" },
+    { "$input": "text", "id": "opts", "label": "Text with options", "options": ["A"] },
+    { "$input": "text", "id": "empty", "label": 5 },
+    { "$input": "text", "id": "extra", "label": "Extra", "hint": "x" }
+  ],
+  "alone": { "$input": "text", "id": "alone", "label": "Not in an array" },
+  "list": [{ "name": "a" }, { "$input": "text", "id": "in-list", "label": "In a list" }]
+}

@@ -214,6 +214,8 @@
               "schema/missing-kind-schema",
               "DOC110",
               "syntax/reserved-field-typo",
+              "DOC111",
+              "syntax/invalid-input",
               "DOC201",
               "graph/duplicate-id",
               "DOC202",

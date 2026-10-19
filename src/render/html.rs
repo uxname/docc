@@ -125,11 +125,13 @@ impl<'a> Renderer<'a> {
             let mut strs: Vec<(String, String, bool)> = Vec::new();
             // cut the page at the block markers; footnotes become a block of their own
             let mut add = |n: Option<&Node>, h: &str| {
-                if h.trim().is_empty() {
+                let input = n.filter(|n| engine::is_input(n)).map(InputData::of);
+                if h.trim().is_empty() && input.is_none() {
                     return;
                 }
                 let mut b = BlockData {
                     h: h.to_string(),
+                    i: input,
                     ..Default::default()
                 };
                 if let Some(n) = n {
@@ -365,6 +367,32 @@ struct BlockData {
     #[serde(skip_serializing_if = "String::is_empty")]
     s: String,
     h: String,
+    /// a form field, drawn by the page script in place of h
+    #[serde(skip_serializing_if = "Option::is_none")]
+    i: Option<InputData>,
+}
+
+/// inputData is a form field: its kind (text, radio, checkbox), id, question
+/// and choices, as written (DOC111 checks them).
+#[derive(Serialize, Default)]
+struct InputData {
+    t: String,
+    id: String,
+    label: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    options: Vec<String>,
+}
+
+impl InputData {
+    fn of(n: &Node) -> InputData {
+        let s = |k: &str| n.get(k).filter(|v| v.kind == Kind::String).map(|v| v.str.clone()).unwrap_or_default();
+        InputData {
+            t: s(engine::INPUT_KEY),
+            id: s("id"),
+            label: s("label"),
+            options: engine::string_list(n.get("options")).into_iter().map(|o| o.str.clone()).collect(),
+        }
+    }
 }
 
 #[derive(Serialize, Default)]

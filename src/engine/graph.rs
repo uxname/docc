@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use super::analyze::IncUse;
 use super::project::{Doc, Project};
 use super::strings::{
-    SECTIONS_KEY, heading_anchor, is_sections, reserved_key, resolve, service_field,
+    SECTIONS_KEY, heading_anchor, is_input, is_sections, reserved_key, resolve, service_field,
 };
 use crate::config::go_quote;
 use crate::loader::{Kind, Node};
@@ -627,7 +627,10 @@ fn inc_node(u: &IncUse) -> IncNode {
 fn is_text(n: &Node) -> bool {
     match n.kind {
         Kind::String => true,
-        Kind::Array => !n.items.is_empty() && n.items.iter().all(|it| it.kind == Kind::String),
+        Kind::Array => {
+            n.items.iter().any(|it| it.kind == Kind::String)
+                && n.items.iter().all(|it| it.kind == Kind::String || is_input(it))
+        }
         _ => false,
     }
 }

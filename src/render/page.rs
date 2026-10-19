@@ -79,7 +79,8 @@ impl<'a> Page<'_, 'a> {
             if !reserved(&m.key) {
                 let c = self.field_content(&m.value, 3);
                 if !c.is_empty() {
-                    let sh = short_value(&self.mark_re().replace_all(&c, ""));
+                    // a form field is a block of its own, never a one-line property
+                    let sh = !has_input(&m.value) && short_value(&self.mark_re().replace_all(&c, ""));
                     fields.push(Field {
                         key: m.key.clone(),
                         content: c,
@@ -160,7 +161,7 @@ impl<'a> Page<'_, 'a> {
         match v.kind {
             Kind::String => return self.paragraphs(v, true).join("\n\n"),
             Kind::Number | Kind::Bool => return self.mark(Some(v)) + &v.str,
-            Kind::Array if v.items.iter().all(|it| it.kind == Kind::String) => {
+            Kind::Array if v.items.iter().all(|it| it.kind == Kind::String || engine::is_input(it)) => {
                 return self.paragraphs(v, true).join("\n\n");
             }
             _ => {}
@@ -229,7 +230,7 @@ impl<'a> Page<'_, 'a> {
         }
         let mut keys: Vec<&str> = Vec::new();
         for (i, it) in v.items.iter().enumerate() {
-            if it.kind != Kind::Object || it.members.is_empty() {
+            if it.kind != Kind::Object || it.members.is_empty() || engine::is_input(it) {
                 return String::new();
             }
             for (j, m) in it.members.iter().enumerate() {
@@ -299,6 +300,11 @@ impl<'a> Page<'_, 'a> {
             blocks.push(format!("{}: [_tree.md](_tree.md)", r.t("Document tree")));
         }
     }
+}
+
+/// has_input reports whether a field value holds a form field anywhere.
+fn has_input(n: &Node) -> bool {
+    engine::is_input(n) || n.items.iter().any(has_input) || n.members.iter().any(|m| has_input(&m.value))
 }
 
 static BLOCK_START: LazyLock<Regex> =

@@ -154,6 +154,19 @@ pub fn is_sections(n: &Node) -> bool {
         .is_some_and(|m| m.kind == Kind::Bool && m.str == "true")
 }
 
+/// InputKey marks an object that the HTML file draws as a form field: a
+/// text box, radio buttons or check boxes. It stands as an item of an array
+/// of paragraphs; the Markdown output leaves it out.
+pub const INPUT_KEY: &str = "$input";
+
+/// IsInput reports whether the object is a form field: it has a member "$input".
+pub fn is_input(n: &Node) -> bool {
+    n.kind == Kind::Object && n.get(INPUT_KEY).is_some()
+}
+
+/// INPUT_PROSE are the members of a form field read as prose; its kind and id are not.
+pub const INPUT_PROSE: [&str; 2] = ["label", "options"];
+
 /// Resolve finds a free field or a section by path: "field" or "field/section/...".
 /// A key may itself contain "/", so every split is tried. Only sections are entered.
 pub fn resolve<'a>(root: &'a Node, path: &str) -> Option<&'a Node> {
@@ -268,7 +281,11 @@ fn walk(
         }
         Kind::Object => {
             let is_sec = sec && is_sections(n);
+            let input = is_input(n);
             for m in &n.members {
+                if input && !INPUT_PROSE.contains(&m.key.as_str()) {
+                    continue;
+                }
                 let p = if is_sec {
                     format!("{path}/{}", m.key)
                 } else {

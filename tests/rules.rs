@@ -15,8 +15,8 @@ fn rules_list() {
     let (code, out, _) = p.run(&["rules", "--format", "json"]);
     assert_eq!(code, 0);
     let rows = rows(&out);
-    // 40 codes minus the generic DOC800 row
-    assert_eq!(rows.len(), 39, "{} rules", rows.len());
+    // 41 codes minus the generic DOC800 row
+    assert_eq!(rows.len(), 40, "{} rules", rows.len());
     let got: HashMap<&str, &HashMap<String, String>> = rows.iter().map(|r| (r["code"].as_str(), r)).collect();
     let r = got["DOC301"];
     assert!(
@@ -32,7 +32,7 @@ fn rules_list() {
     );
     let (_, text, _) = p.run(&["rules"]);
     let lines: Vec<&str> = text.trim().split('\n').collect();
-    assert!(lines[0].starts_with("RULE") && lines.len() == 40 && !lines[0].contains("FIXABLE"), "table:\n{text}");
+    assert!(lines[0].starts_with("RULE") && lines.len() == 41 && !lines[0].contains("FIXABLE"), "table:\n{text}");
     for ln in lines {
         assert_eq!(ln, ln.trim_end_matches(' '), "trailing spaces");
     }
