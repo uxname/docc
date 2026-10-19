@@ -15,6 +15,7 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("Referenced by", "Ссылаются"),
     ("Covered by", "Покрыто кодом"),
     ("Document tree", "Дерево документов"),
+    ("Sections of the page", "Разделы страницы"),
     ("Without parent", "Без родителя"),
     (
         "Documents without code coverage",

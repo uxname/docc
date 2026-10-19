@@ -99,6 +99,11 @@ impl<'a> Renderer<'a> {
                 title: s.title(d),
                 file: d.rel.clone(),
                 hidden: s.full && d.hidden,
+                kind: root(d)
+                    .get("kind")
+                    .filter(|n| n.kind == Kind::String)
+                    .map(|n| n.str.clone())
+                    .unwrap_or_default(),
                 summary: s.summary(d),
                 ..Default::default()
             };
@@ -335,6 +340,9 @@ struct PageData {
     file: String,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     hidden: bool,
+    /// picks the icon in the tree
+    #[serde(skip_serializing_if = "String::is_empty")]
+    kind: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     crumbs: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
