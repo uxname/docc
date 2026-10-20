@@ -30,6 +30,13 @@ impl<'a> Renderer<'a> {
     /// search, block history from Git and comments. Same call
     /// contract as Files; the error is a bad changesSince revision.
     pub fn html(&self) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(self.html_of(&self.app_data()?))
+    }
+
+    /// app_data is the data the HTML file draws its pages from (the JSON
+    /// island of html, written alone by docc build --data); the error is a bad
+    /// changesSince revision.
+    pub fn app_data(&self) -> Result<AppData, Box<dyn std::error::Error + Send + Sync>> {
         // in-file links; the headings get their ids from the converter
         let s = self.variant(true, false, true);
         // footnote ids are <page id>--fn:1, unique across the pages of the file
@@ -218,15 +225,22 @@ impl<'a> Renderer<'a> {
         if !pages.is_empty() {
             data.pages = Some(pages);
         }
-        let (brand_css, head, print, foot) = s.brand();
+        let (_, head, print, foot) = s.brand();
         data.brand = BrandData { head, print, foot };
+        Ok(data)
+    }
+
+    /// html_of is the HTML file around data.
+    pub fn html_of(&self, data: &AppData) -> String {
+        let s = self.variant(true, false, true);
+        let brand_css = s.brand().0;
         let title = if data.title.is_empty() {
             "docc".to_string()
         } else {
             data.title.clone()
         };
         let css = HTML_CSS.to_string() + &brand_css;
-        let json = script_json(&data);
+        let json = script_json(data);
         let js = s.labels(HTML_JS, true);
         let out = replace_once(
             &s.labels(HTML_TEMPLATE, false),
@@ -238,7 +252,7 @@ impl<'a> Renderer<'a> {
                 ("{{JS}}", &js),
             ],
         );
-        Ok(lf(&out))
+        lf(&out)
     }
 
     /// crumbIDs is the chain of parents above the title, outermost first.
@@ -303,7 +317,7 @@ fn base_name(p: &str) -> String {
 }
 
 #[derive(Serialize, Default)]
-struct AppData {
+pub struct AppData {
     title: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     lang: String,

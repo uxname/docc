@@ -42,7 +42,7 @@ Update it with `npx skills update`. The skill needs the `docc` binary from above
 
     docc init        # docc.json (maxWarnings 0), docs/schemas/page.json, docs/src/index.json, .gitignore lines, docs/out, a git pre-commit hook
     docc validate    # check the sources (--format json for agents and CI)
-    docc build       # write docs/out and docc.lock (--single, --html: also one .md file and one HTML app, kept up to date once made)
+    docc build       # write docs/out and docc.lock (--single, --html, --data: also one .md file, one HTML app and its data as JSON, kept up to date once made)
     docc comments    # comments from the HTML file: import <file|->, list, done <id> --reply, rm <id>
     docc check       # for CI: validate + docs/out and docc.lock are up to date
     docc ack <id>    # after a review: confirm the changed links around a document or code file (prints each one)

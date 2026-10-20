@@ -39,7 +39,7 @@ Usage: docc [flags] <command> [flags]
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources
-  build              build Markdown into docs/out (--full: audit, --single/--html: one file)
+  build              build Markdown into docs/out (--full: audit, --single/--html/--data: one file)
   check              read-only check for CI: validate + freshness of out/ and docc.lock
   ack <id|file>...   confirm the changed links around a document, target or code file in docc.lock (--all: every changed link)
   explain <code>     describe a rule
@@ -85,7 +85,11 @@ confirmed, vanished ones dropped). With errors in groups 1xx-2xx nothing is writ
 --single also writes every page into one Markdown file next to the directory (docs/out.md), --html
 into one self-contained HTML application (docs/out.html), no network needed: a document tree,
 search, dark theme, a timeline of the Git history with the edits drawn in the text, and comments
-on selected words (typed or dictated) copied or downloaded for docc comments import. With --full the files are docs/out-full.md and docs/out-full.html. They
+on selected words (typed or dictated) copied or downloaded for docc comments import. --data
+writes the data that application draws from (pages, tree, history, comments) as JSON
+(docs/out.json), for a program that shows the pages itself. With --full the files are
+docs/out-full.md, docs/out-full.html and docs/out-full.json. Once written, such a file is
+rebuilt by every later docc build. They
 are for reading, are not checked by docc check and are usually kept out of git.
 
 Examples:
@@ -93,6 +97,7 @@ Examples:
   docc build --full
   docc build --single
   docc build --html
+  docc build --data
   docc build --full --single --html
 "
         }
@@ -444,7 +449,7 @@ fn no_args(pos: &[String]) -> Result<(), Error> {
 }
 
 /// Built is what build made: the number of files, the one-file builds written
-/// and the error of the HTML file, which stops only that file.
+/// and the error of the HTML and data files, which stops only those files.
 struct Built {
     n: usize,
     extra: Vec<String>,
@@ -452,10 +457,11 @@ struct Built {
 }
 
 /// build validates, and when there are no errors of groups 1xx-2xx writes the
-/// Markdown into out (or outFull) and returns the number of files. With single
-/// and html, or when that file is already there, it also writes the one-file
-/// Markdown and HTML next to the directory and returns their paths in extra.
-fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool) -> Result<Built, Error> {
+/// Markdown into out (or outFull) and returns the number of files. With single,
+/// html and data, or when that file is already there, it also writes the
+/// one-file Markdown, HTML and JSON data next to the directory and returns their
+/// paths in extra.
+fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool, mut data: bool) -> Result<Built, Error> {
     let mut b = Built { n: 0, extra: Vec::new(), html_err: None };
     if engine::structural(&p.diags()) {
         return Ok(b);
@@ -463,7 +469,7 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     let dir = if full { &p.cfg.out_full } else { &p.cfg.out };
     render::check_dir(p, dir)?;
     // a one-file build made once is kept up to date by every later build, if docc wrote it
-    for (ext, on) in [(".md", &mut single), (".html", &mut html)] {
+    for (ext, flag, on) in [(".md", "single", &mut single), (".html", "html", &mut html), (".json", "data", &mut data)] {
         if let Ok(f) = render::single_file(p, dir, ext) {
             if *on || std::fs::metadata(&f).is_err() {
                 continue;
@@ -474,9 +480,8 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
                 say(
                     warn,
                     &format!(
-                        "docc: {} is not a file docc wrote: left alone (build with --{} to replace it)\n",
+                        "docc: {} is not a file docc wrote: left alone (build with --{flag} to replace it)\n",
                         f.display(),
-                        &ext[1..]
                     ),
                 );
             }
@@ -488,10 +493,17 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     if single {
         one.push((".md", r.single()));
     }
-    // a bad changesSince stops only the HTML file, not the pages and the lock
-    if html {
-        match r.html() {
-            Ok(h) => one.push((".html", h)),
+    // a bad changesSince stops only the HTML and data files, not the pages and the lock
+    if html || data {
+        match r.app_data() {
+            Ok(d) => {
+                if html {
+                    one.push((".html", r.html_of(&d)));
+                }
+                if data {
+                    one.push((".json", serde_json::to_string(&d).unwrap_or_default() + "\n")); // plain data, cannot fail
+                }
+            }
             Err(e) => b.html_err = Some(e),
         }
     }
@@ -510,19 +522,20 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
 }
 
 fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
-    let (mut full, mut single, mut html) = (false, false, false);
+    let (mut full, mut single, mut html, mut data) = (false, false, false, false);
     let pos = {
         let mut fs = new_flags("build", c);
         fs.bool_var(&mut full, "full", "audit build into outFull");
         fs.bool_var(&mut single, "single", "also write all pages as one Markdown file next to the output directory");
         fs.bool_var(&mut html, "html", "also write all pages as one self-contained HTML file next to the output directory");
+        fs.bool_var(&mut data, "data", "also write the data of the HTML file (pages, tree, history, comments) as one JSON file next to the output directory");
         parse(&mut fs, args)
     };
     let pos = pos?;
     no_args(&pos)?;
     c.check()?;
     let mut p = load_project(c)?;
-    let b = build(&p, stderr, full, single, html)?;
+    let b = build(&p, stderr, full, single, html, data)?;
     let ds = p.sorted();
     let res = emit(stdout, stderr, c, &p, &ds);
     let mut code = *res.as_ref().unwrap_or(&2);
@@ -613,7 +626,15 @@ const INIT_SCHEMA: &str = r#"{
 const INIT_HOOK: &str = "#!/bin/sh\n# docc: refuse a commit with invalid documentation\nexec docc check\n";
 
 /// BUILT_IGNORE are the single-file and audit builds that are not committed.
-const BUILT_IGNORE: [&str; 5] = ["docs/out.md", "docs/out.html", "docs/out-full/", "docs/out-full.md", "docs/out-full.html"];
+const BUILT_IGNORE: [&str; 7] = [
+    "docs/out.md",
+    "docs/out.html",
+    "docs/out.json",
+    "docs/out-full/",
+    "docs/out-full.md",
+    "docs/out-full.html",
+    "docs/out-full.json",
+];
 
 /// ignore_built adds the lines of BUILT_IGNORE that .gitignore lacks, creating the file.
 fn ignore_built(stdout: &mut dyn Write) -> Result<(), Error> {
@@ -712,7 +733,7 @@ fn cmd_init(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         create(stdout, name, INIT_HOOK, 0o755)?;
     }
     let mut p = load_project(c)?;
-    let b = build(&p, stderr, false, false, false)?;
+    let b = build(&p, stderr, false, false, false, false)?;
     if b.n > 0 {
         say(stdout, &format!("built {} files in {}\n", b.n, p.cfg.out));
     }

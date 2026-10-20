@@ -141,8 +141,9 @@ fn go_path_error(op: &str, path: &Path, err: &std::io::Error) -> String {
     format!("{op} {}: {text}", path.display())
 }
 
-/// GeneratedFile reports whether the single-file build f (ext ".md" or ".html")
-/// was written by docc: the Markdown starts with the mark, the HTML holds the data island.
+/// GeneratedFile reports whether the single-file build f (ext ".md", ".html" or
+/// ".json") was written by docc: the Markdown starts with the mark, the HTML
+/// holds the data island, the data holds its comments key.
 pub fn generated_file(f: &Path, ext: &str) -> bool {
     let Ok(b) = std::fs::read(f) else {
         return false;
@@ -150,7 +151,8 @@ pub fn generated_file(f: &Path, ext: &str) -> bool {
     if ext == ".md" {
         return b.starts_with(GENERATED_MARK.as_bytes());
     }
-    let pat = br#"id="docc-data""#;
+    // the JSON data has no mark of its own: its comments key is docc:<folder>
+    let pat: &[u8] = if ext == ".json" { br#""key":"docc:"# } else { br#"id="docc-data""# };
     b.windows(pat.len()).any(|w| w == pat)
 }
 

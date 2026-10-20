@@ -6,3 +6,5 @@ docs/out-full.md
 docs/out-full.html
 .claude/worktrees/
 /target/
+docs/out.json
+docs/out-full.json
