@@ -412,8 +412,8 @@ struct BlockData {
 
 /// inputData is a form field: its kind (text, radio, checkbox), id, question
 /// and choices, as written (DOC111 checks them).
-#[derive(Serialize, Default)]
-struct InputData {
+#[derive(Serialize, Default, Clone)]
+pub struct InputData {
     t: String,
     id: String,
     label: String,

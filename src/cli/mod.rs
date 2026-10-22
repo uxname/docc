@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use crate::changes;
 use crate::config::{self, Config};
 use crate::diag::Diagnostic;
 use crate::engine::{self, Project};
@@ -43,11 +44,13 @@ Commands:
   validate           check sources
   build              build Markdown into docs/out (--full: audit, --single/--html: one file)
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision)
+  log                print the commits that changed the documents, with the files and block counts of each
+  diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
   check              read-only check for CI: validate + freshness of out/ and docc.lock
   ack <id|file>...   confirm the changed links around a document, target or code file in docc.lock (--all: every changed link)
   explain <code>     describe a rule
   rules              list rules with effective levels
-  schema document|config|compile   print a JSON Schema
+  schema document|config|compile|log|diff   print a JSON Schema
   update             replace docc with the latest release (--check: only look, --version vX.Y.Z)
   comments           review comments from the HTML file: import <file>, list (--all), done <id>, rm <id>
 
@@ -119,6 +122,39 @@ Examples:
   docc compile --rev HEAD~3 --format json
 "
         }
+        "log" => {
+            "Usage: docc log [--rev <revision>] [--since <commit>] [flags]
+
+Prints the commits of the first-parent chain of --rev (default HEAD), newest first, that
+changed anything in the source folder, down to --since (not included). Each commit has its
+full hash, parents, author, committer, date, subject and body, and the files it changed:
+status A, M, D or R, path relative to src (oldPath for a rename), id and title of a document,
+how many blocks it added, changed and removed (the alignment of docc diff), and commentsOnly
+when only its \"$comments\" changed. A deleted document keeps its last title. With --format
+json (the format for programs) it is one JSON object on one line; docc schema log prints its
+JSON Schema. Works in a bare mirror with --config naming the project's docc.json in it.
+
+Examples:
+  docc log --format json
+  docc log --since 1a2b3c4 --format json
+"
+        }
+        "diff" => {
+            "Usage: docc diff <base> <head> [--path <file>] [flags]
+
+Lines up the blocks of the documents of two revisions (any commit, branch, tag or tree, the
+empty tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904 for a root commit). Each side is compiled
+from its own revision, as docc compile --rev does: blocks are those of compile, links and
+includes resolved in that revision. Without --path: the changed documents, each with the blocks
+it added, removed or changed. With --path (a path relative to src, of either side): that
+document with every block, the unchanged ones as \"same\", in an order for two columns. With
+--format json it is one JSON object on one line; docc schema diff prints its JSON Schema.
+
+Examples:
+  docc diff HEAD~1 HEAD --format json
+  docc diff HEAD~5 HEAD --path decisions/monolith.json --format json
+"
+        }
         "check" => {
             "Usage: docc check [flags]
 
@@ -166,9 +202,9 @@ Examples:
 "
         }
         "schema" => {
-            "Usage: docc schema document|config|compile
+            "Usage: docc schema document|config|compile|log|diff
 
-Prints a JSON Schema for documents, for docc.json or for the output of docc compile.
+Prints a JSON Schema for documents, for docc.json or for the output of docc compile, log or diff.
 
 Example:
   docc schema document
@@ -311,6 +347,8 @@ fn dispatch(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         "explain" => cmd_explain(c, rest, stdout),
         "schema" => cmd_schema(rest, stdout).map(|_| 0),
         "compile" => cmd_compile(c, rest, stdout, stderr),
+        "log" => cmd_log(c, rest, stdout),
+        "diff" => cmd_diff(c, rest, stdout),
         "update" => cmd_update(rest, stdout),
         "comments" => cmd_comments(c, rest, stdout),
         other => Err(usage_err(format!("unknown command {} (try docc --help)", config::go_quote(other)))),
@@ -544,18 +582,91 @@ fn write_compiled(
     Ok(())
 }
 
+/// write_line writes v as JSON on one line.
+fn write_line(w: &mut dyn Write, v: &impl serde::Serialize) -> Result<(), Error> {
+    let s = serde_json::to_string(v)?.replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029");
+    w.write_all(s.as_bytes())?;
+    w.write_all(b"\n")?;
+    Ok(())
+}
+
+/// blocks_text is the block counts of a file for the text output.
+fn blocks_text(n: changes::Counts) -> String {
+    format!("+{} ~{} -{}", n.add, n.ch, n.rm)
+}
+
+/// cmd_log prints the commits that changed the source folder (changes::log).
+fn cmd_log(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
+    let (mut rev, mut since) = ("HEAD".to_string(), String::new());
+    let pos = {
+        let mut fs = new_flags("log", c);
+        fs.string_var(&mut rev, "rev", "the last commit (commit, branch, tag)");
+        fs.string_var(&mut since, "since", "stop before this commit of the first-parent chain");
+        parse(&mut fs, args)
+    }?;
+    no_args(&pos)?;
+    c.check()?;
+    let cfg = load_config_at(c, &rev)?;
+    let out = changes::log(&cfg, &rev, &since).map_err(usage_err)?;
+    if c.format == "json" {
+        write_line(stdout, &out)?;
+        return Ok(0);
+    }
+    for cm in &out.commits {
+        say(stdout, &format!("{} {} {}\n", &cm.sha[..cm.sha.len().min(8)], cm.date, cm.subject));
+        for f in &cm.files {
+            say(stdout, &format!("  {} {} {}\n", f.status, f.path, blocks_text(f.blocks)));
+        }
+    }
+    Ok(0)
+}
+
+/// cmd_diff prints the blocks of two revisions lined up (changes::diff).
+fn cmd_diff(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
+    let mut path = String::new();
+    let pos = {
+        let mut fs = new_flags("diff", c);
+        fs.string_var(&mut path, "path", "one document (path relative to src) with all its blocks");
+        parse(&mut fs, args)
+    }?;
+    if pos.len() != 2 {
+        return Err(usage_err("usage: docc diff <base> <head> [--path <file>]"));
+    }
+    c.check()?;
+    let out = changes::diff(|rev| load_config_at(c, rev), |e| e.is::<UsageError>(), &pos[0], &pos[1], &path)?;
+    if c.format == "json" {
+        write_line(stdout, &out)?;
+        return Ok(0);
+    }
+    for f in &out.files {
+        let mut n = changes::Counts::default();
+        for b in &f.blocks {
+            match b.op {
+                "add" => n.add += 1,
+                "ch" => n.ch += 1,
+                "rm" => n.rm += 1,
+                _ => {}
+            }
+        }
+        say(stdout, &format!("{} {} {}\n", f.status, f.path, blocks_text(n)));
+    }
+    Ok(0)
+}
+
 fn cmd_schema(args: &[String], stdout: &mut dyn Write) -> Result<(), Error> {
     let pos = parse(&mut FlagSet::new("schema"), args)?;
     if pos.len() != 1 {
-        return Err(usage_err("usage: docc schema document|config|compile"));
+        return Err(usage_err("usage: docc schema document|config|compile|log|diff"));
     }
     match pos[0].as_str() {
         "document" => stdout.write_all(schema::document())?,
         "config" => stdout.write_all(&schema::config())?,
         "compile" => stdout.write_all(schema::compile_output())?,
+        "log" => stdout.write_all(schema::log_output())?,
+        "diff" => stdout.write_all(schema::diff_output())?,
         other => {
             return Err(usage_err(format!(
-                "unknown schema {}: use document, config or compile",
+                "unknown schema {}: use document, config, compile, log or diff",
                 config::go_quote(other)
             )));
         }

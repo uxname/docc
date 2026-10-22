@@ -118,30 +118,131 @@ pub struct Options {
 const HIDDEN_FIELDS: [&str; 3] = ["/notes", "/docIgnore", "/hidden"];
 
 impl Options {
-    /// visible lists the blocks of a document that may go into the file.
+    /// visible lists the blocks of a document that may go into the file;
+    /// "$comments" holds the comments of the document, which are not blocks.
     fn visible(&self, root: &Node) -> Vec<Leaf> {
-        let all = flatten(root);
-        if self.full {
-            return all;
-        }
-        all.into_iter()
-            .filter(|l| {
-                !HIDDEN_FIELDS.iter().any(|f| {
-                    l.ptr == *f || l.ptr.strip_prefix(f).is_some_and(|r| r.starts_with('/'))
-                })
-            })
+        let under = |ptr: &str, f: &str| ptr == f || ptr.strip_prefix(f).is_some_and(|r| r.starts_with('/'));
+        flatten(root)
+            .into_iter()
+            .filter(|l| !under(&l.ptr, "/$comments") && (self.full || !HIDDEN_FIELDS.iter().any(|f| under(&l.ptr, f))))
             .collect()
     }
 }
 
-/// One line of `git log --name-status`, paths relative to srcDir.
-struct Entry {
-    c: usize,
-    status: u8,
-    old: String,
-    path: String,
-    /// prefix+path as Git printed it, for cat-file
-    git_path: Vec<u8>,
+/// Meta is one commit of the log, oldest first.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct Meta {
+    pub hash: String,
+    pub parents: Vec<String>,
+    pub author: (String, String),
+    pub committer: (String, String),
+    /// author date, strict ISO 8601
+    pub date: String,
+    pub subject: String,
+    pub body: String,
+}
+
+/// One line of `git log --name-status`, paths relative to the folder.
+pub(crate) struct Entry {
+    pub c: usize,
+    pub status: u8,
+    pub old: String,
+    pub path: String,
+    /// path and old path as Git printed them, for cat-file
+    pub git_path: Vec<u8>,
+    pub git_old: Vec<u8>,
+}
+
+/// read_log reads `git log --first-parent` of revs (oldest first) for the
+/// files below prefix (the folder's path from the top of the repository, ""
+/// or ending with '/'): the commits and every file each one changed, merges
+/// against their first parent, renames followed inside the folder. dir is
+/// where git runs.
+/// ponytail: a subject or body holding the bytes 0x01, 0x1e or 0x1f breaks
+/// its record; Git messages do not hold control bytes in practice.
+pub(crate) fn read_log(dir: &Path, revs: &[&str], prefix: &[u8]) -> std::io::Result<(Vec<Meta>, Vec<Entry>)> {
+    let spec = format!(":(top,literal){}", String::from_utf8_lossy(prefix));
+    let mut args = vec![
+        "-c",
+        "core.quotePath=false",
+        "log",
+        "--reverse",
+        "--first-parent",
+        "-m",
+        "-M",
+        "--name-status",
+        "--format=%x01%H%x1f%P%x1f%an%x1f%ae%x1f%cn%x1f%ce%x1f%aI%x1f%s%x1f%b%x1e",
+    ];
+    args.extend(revs);
+    args.extend(["--", if prefix.is_empty() { ":(top)" } else { &spec }]);
+    let log = git(dir, &args)?;
+    // The log is read as bytes: a path that is not UTF-8 still names its blob.
+    let (mut commits, mut entries) = (Vec::new(), Vec::new());
+    for rec in log.split(|&b| b == 0x01).skip(1) {
+        let Some(end) = rec.iter().position(|&b| b == 0x1e) else {
+            continue;
+        };
+        let f: Vec<String> = rec[..end].split(|&b| b == 0x1f).map(lossy).collect();
+        if f.len() < 9 {
+            continue;
+        }
+        let c = commits.len();
+        commits.push(Meta {
+            hash: f[0].clone(),
+            parents: f[1].split_whitespace().map(str::to_string).collect(),
+            author: (f[2].clone(), f[3].clone()),
+            committer: (f[4].clone(), f[5].clone()),
+            date: f[6].clone(),
+            subject: f[7].clone(),
+            body: f[8].trim_end().to_string(),
+        });
+        for l in rec[end + 1..].split(|&b| b == b'\n') {
+            let p: Vec<&[u8]> = l.split(|&b| b == b'\t').collect();
+            if p.len() < 2 {
+                continue;
+            }
+            let status = p[0].first().copied().unwrap_or(0);
+            let last = p[p.len() - 1];
+            let Some(path) = last.strip_prefix(prefix) else {
+                continue;
+            };
+            let (old, git_old) = match (status, p[1].strip_prefix(prefix)) {
+                (b'R' | b'C', Some(o)) => (lossy(o), p[1].to_vec()),
+                _ => (String::new(), Vec::new()),
+            };
+            entries.push(Entry { c, status, old, path: lossy(path), git_path: last.to_vec(), git_old });
+        }
+    }
+    Ok((commits, entries))
+}
+
+/// Applied is what one entry of the log did to the state of its file.
+pub(crate) enum Applied {
+    /// the file was deleted: its last state, if it had one
+    Gone(Option<Replay>),
+    /// the new version is not a JSON object: the state keeps the last good one
+    Broken,
+    /// the state stepped to the new version
+    Done,
+}
+
+/// apply replays one entry: a deletion drops the state of the file, a rename
+/// moves it, and the new content (data, None for a deletion) steps it.
+pub(crate) fn apply(state: &mut HashMap<String, Replay>, e: &Entry, data: Option<&[u8]>, o: &Options) -> Applied {
+    match e.status {
+        b'D' => return Applied::Gone(state.remove(&e.path)),
+        b'R' => {
+            if let Some(st) = state.remove(&e.old) {
+                state.insert(e.path.clone(), st);
+            }
+        }
+        _ => {}
+    }
+    let Some(root) = parse(data.unwrap_or_default()) else {
+        return Applied::Broken; // a commit with broken JSON: keep the last good version
+    };
+    state.entry(e.path.clone()).or_default().step(&root, e.c, o);
+    Applied::Done
 }
 
 /// Load reads the history of the JSON files in srcDir. current maps the path
@@ -202,80 +303,21 @@ pub fn load(
     if let Ok(head) = git(src_dir, &["rev-parse", "--short=8", "HEAD"]) {
         h.head = lossy(&head).trim().to_string();
     }
-    let Ok(log) = git(
-        src_dir,
-        &[
-            "-c",
-            "core.quotePath=false",
-            "log",
-            "--reverse",
-            "--first-parent",
-            "-m",
-            "-M",
-            "--name-status",
-            "--format=%x01%H%x1f%an%x1f%aI%x1f%s",
-            "--",
-            ".",
-        ],
-    ) else {
+    let Ok((log, mut entries)) = read_log(src_dir, &[], prefix) else {
         return Ok(Some(h));
     };
-    // The log is read as bytes: a path that is not UTF-8 still names its blob.
-    let mut entries: Vec<Entry> = Vec::new();
-    let mut full: Vec<String> = Vec::new(); // full hashes by commit index
-    for rec in log.split(|&b| b == 0x01).skip(1) {
-        let mut lines = rec.split(|&b| b == b'\n');
-        let f: Vec<&[u8]> = lines
-            .next()
-            .unwrap_or_default()
-            .split(|&b| b == 0x1f)
-            .collect();
-        if f.len() < 4 {
-            continue;
-        }
-        let c = h.commits.len();
-        let hash = lossy(f[0]);
+    entries.retain(|e| e.path.ends_with(".json"));
+    let full: Vec<String> = log.iter().map(|m| m.hash.clone()).collect(); // full hashes by commit index
+    for m in log {
         let mut cm = Commit {
-            hash: hash.get(..8).unwrap_or(&hash).to_string(),
-            date: lossy(f[2]),
+            hash: m.hash.get(..8).unwrap_or(&m.hash).to_string(),
+            date: m.date,
             ..Default::default()
         };
         if o.full {
-            (cm.author, cm.subject) = (lossy(f[1]), lossy(f[3]));
+            (cm.author, cm.subject) = (m.author.0, m.subject);
         }
         h.commits.push(cm);
-        full.push(hash);
-        for l in lines {
-            let p: Vec<&[u8]> = l.split(|&b| b == b'\t').collect();
-            if p.len() < 2 {
-                continue;
-            }
-            let status = p[0].first().copied().unwrap_or(0);
-            let last = p[p.len() - 1];
-            // relative to srcDir, and whether it is a JSON file there
-            let rel = |s: &[u8]| -> (String, bool) {
-                match s.strip_prefix(prefix) {
-                    Some(r) => (lossy(r), r.ends_with(b".json")),
-                    None => (lossy(s), false),
-                }
-            };
-            let (path, ok) = rel(last);
-            if !ok {
-                continue;
-            }
-            let old = if status == b'R' || status == b'C' {
-                rel(p[1]).0
-            } else {
-                String::new()
-            };
-            entries.push(Entry {
-                c,
-                status,
-                old,
-                path,
-                git_path: last.to_vec(),
-            });
-        }
     }
     // read every blob the replay needs through one cat-file process
     let mut req: Vec<u8> = Vec::new();
@@ -293,24 +335,9 @@ pub fn load(
     let mut blobs = blobs.into_iter();
     let mut state: HashMap<String, Replay> = HashMap::new();
     for e in &entries {
-        match e.status {
-            b'D' => {
-                state.remove(&e.path);
-                continue;
-            }
-            b'R' => {
-                if let Some(st) = state.remove(&e.old) {
-                    state.insert(e.path.clone(), st);
-                }
-            }
-            _ => {}
-        }
         // Go would panic on a missing blob; cat-file answers every line, so it does not happen
-        let data = blobs.next().flatten().unwrap_or_default();
-        let Some(root) = parse(&data) else {
-            continue; // a commit with broken JSON: keep the last good version
-        };
-        state.entry(e.path.clone()).or_default().step(&root, e.c, o);
+        let data = if e.status == b'D' { None } else { blobs.next().flatten() };
+        apply(&mut state, e, data.as_deref(), o);
     }
     let mut work: Option<usize> = None;
     for (rel, root) in current {
@@ -389,13 +416,15 @@ fn parse(data: &[u8]) -> Option<Node> {
 
 /// replay is the state of one file while the commits are replayed.
 #[derive(Default)]
-struct Replay {
+pub(crate) struct Replay {
     /// whether a version was replayed (Go keeps the root; only its visible
     /// blocks, leaves, are ever compared)
     root: bool,
-    leaves: Vec<Leaf>,
+    pub leaves: Vec<Leaf>,
     blocks: HashMap<String, Vec<Version>>,
-    doc: Doc,
+    pub doc: Doc,
+    /// the last version says "hidden": true
+    pub hidden: bool,
 }
 
 impl Replay {
@@ -449,6 +478,7 @@ impl Replay {
             self.doc.changes.push(ch);
         }
         (self.root, self.leaves, self.blocks) = (true, leaves, blocks);
+        self.hidden = root.get("hidden").is_some_and(|n| n.kind == Kind::Bool && n.str == "true");
     }
 }
 
@@ -681,6 +711,73 @@ pub fn align(old: &[Leaf], cur: &[Leaf]) -> HashMap<String, String> {
         pair(&ga, &gb, &mut matched);
     }
     matched
+}
+
+/// Ops lines two versions of the blocks of a document up for showing them
+/// side by side: (old index, new index) pairs as align matches them, a
+/// block of one side only with None on the other. New blocks keep their
+/// order; a removed block stands before the next block of the new side that
+/// comes after it in the old one. This is the one alignment of docc: the HTML
+/// history, docc log and docc diff all follow blocks through it, and a
+/// comment can follow its block by the pair its old pointer is in.
+pub fn ops(old: &[Leaf], new: &[Leaf]) -> Vec<(Option<usize>, Option<usize>)> {
+    let m = align(old, new);
+    let at: HashMap<&str, usize> = old.iter().enumerate().map(|(i, l)| (l.ptr.as_str(), i)).collect();
+    let pair: Vec<Option<usize>> = new.iter().map(|l| m.get(&l.ptr).and_then(|p| at.get(p.as_str())).copied()).collect();
+    let mut matched = vec![false; old.len()];
+    for i in pair.iter().flatten() {
+        matched[*i] = true;
+    }
+    // next[j]: the old index of the first matched block at or after j
+    let mut next = vec![old.len(); new.len() + 1];
+    for j in (0..new.len()).rev() {
+        next[j] = pair[j].unwrap_or(next[j + 1]);
+    }
+    let (mut out, mut k) = (Vec::new(), 0);
+    let flush = |upto: usize, k: &mut usize, out: &mut Vec<(Option<usize>, Option<usize>)>| {
+        while *k < upto {
+            if !matched[*k] {
+                out.push((Some(*k), None));
+            }
+            *k += 1;
+        }
+    };
+    for j in 0..new.len() {
+        flush(next[j], &mut k, &mut out);
+        out.push((pair[j], Some(j)));
+        if let Some(i) = pair[j] {
+            k = k.max(i + 1);
+        }
+    }
+    flush(old.len(), &mut k, &mut out);
+    out
+}
+
+/// locate_git finds where to run git for a folder that need not exist on
+/// the disk (a project inside a bare mirror): the nearest existing folder
+/// above it, and the folder's path from the top of the repository ("" or
+/// ending with '/').
+pub(crate) fn locate_git(folder: &Path) -> Result<(std::path::PathBuf, String), String> {
+    let mut dir = folder.to_path_buf();
+    while !dir.is_dir() {
+        if !dir.pop() {
+            return Err(format!("{} does not exist", folder.display()));
+        }
+    }
+    let rest: Vec<String> = folder
+        .strip_prefix(&dir)
+        .unwrap_or(Path::new(""))
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().into_owned())
+        .collect();
+    let top = git(&dir, &["rev-parse", "--show-prefix"])
+        .map_err(|_| format!("{} is not in a Git repository", folder.display()))?;
+    let mut prefix = lossy(top.trim_ascii());
+    for r in rest {
+        prefix += &r;
+        prefix.push('/');
+    }
+    Ok((dir, prefix))
 }
 
 /// git runs git in dir and returns its standard output; an error when git is
@@ -1075,6 +1172,41 @@ mod tests {
         assert!(
             get("/b/1") == "/b/1" && get("/b/3") == "/b/4" && get("/b/4").is_empty(),
             "pairs: {m:?}"
+        );
+    }
+
+    // ops: removed blocks stand before the additions of their gap, a field
+    // that moved up is paired where it stands now, nothing is lost.
+    #[test]
+    fn ops_order() {
+        let leaf = |ptr: &str, parent: &str, text: &str| Leaf { ptr: ptr.into(), parent: parent.into(), text: text.into() };
+        let old = [
+            leaf("/f", "", "F"),
+            leaf("/b/0", "/b", "Alpha paragraph."),
+            leaf("/b/1", "/b", "Beta paragraph."),
+            leaf("/b/2", "/b", "Gamma paragraph."),
+            leaf("/g", "", "G"),
+        ];
+        let new = [
+            leaf("/g", "", "G2"),
+            leaf("/f", "", "F"),
+            leaf("/b/0", "/b", "Alpha paragraph."),
+            leaf("/b/1", "/b", "Something else entirely, longer."),
+            leaf("/b/2", "/b", "Gamma paragraph."),
+            leaf("/b/3", "/b", "Zeta."),
+        ];
+        // Beta and the new paragraph do not look alike, but the gap is one to one: a rewrite
+        let s = |a: Option<usize>, b: Option<usize>| (a, b);
+        assert_eq!(
+            ops(&old, &new),
+            [s(Some(4), Some(0)), s(Some(0), Some(1)), s(Some(1), Some(2)), s(Some(2), Some(3)), s(Some(3), Some(4)), s(None, Some(5))]
+        );
+        // one paragraph for two unlike ones: the removal stands first
+        let old = [leaf("/b/0", "/b", "Alpha."), leaf("/b/1", "/b", "Beta."), leaf("/b/2", "/b", "Gamma.")];
+        let new = [leaf("/b/0", "/b", "Alpha."), leaf("/b/1", "/b", "Xyz."), leaf("/b/2", "/b", "Qrs."), leaf("/b/3", "/b", "Gamma.")];
+        assert_eq!(
+            ops(&old, &new),
+            [s(Some(0), Some(0)), s(Some(1), None), s(None, Some(1)), s(None, Some(2)), s(Some(2), Some(3))]
         );
     }
 

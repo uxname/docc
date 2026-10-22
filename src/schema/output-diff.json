@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:docc:schema:diff:1",
+  "title": "docc diff output",
+  "description": "What docc diff <base> <head> --format json prints: one object on one line. Each side is compiled from its own revision as docc compile --rev does (the reader's pages: hidden documents are left out), and the blocks of a document are lined up across the two.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "base", "head", "files"],
+  "properties": {
+    "$schema": { "const": "urn:docc:schema:diff:1", "description": "The version of this shape." },
+    "base": { "$ref": "#/$defs/sha", "description": "The commit of base (its tree when base is a tree, such as the empty tree)." },
+    "head": { "$ref": "#/$defs/sha" },
+    "files": {
+      "type": "array",
+      "description": "Without --path: every document Git reports changed between the two, in Git's order. With --path: that document only (empty when neither side has it).",
+      "items": { "$ref": "#/$defs/file" }
+    }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path", "id", "title", "sections", "blocks"],
+      "properties": {
+        "status": { "enum": ["A", "M", "D", "R", "="], "description": "Added, modified, deleted, renamed; = only with --path, for a document that did not change." },
+        "path": { "type": "string", "description": "Relative to src, in head (for D in base)." },
+        "oldPath": { "type": "string", "description": "R only: the path in base." },
+        "id": { "type": "string" },
+        "title": { "type": "string", "description": "The title of the page in head, else in base; empty when neither side compiles." },
+        "sections": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["old", "new"],
+          "properties": {
+            "old": { "type": "array", "items": { "$ref": "#/$defs/section" } },
+            "new": { "type": "array", "items": { "$ref": "#/$defs/section" } }
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "description": "The properties, then the blocks of the page, lined up. Without --path only add, rm and ch in document order; with --path every block, same included: new blocks keep their order and a removed block stands before the next block that followed it, so the ops read as two aligned columns. op compares the source text s (the HTML of the footnotes block, which has none); h may differ in a same block when a link or include target changed.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["op", "old", "new"],
+            "properties": {
+              "op": { "enum": ["same", "add", "rm", "ch"] },
+              "old": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/block" }] },
+              "new": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/block" }] }
+            }
+          }
+        },
+        "broken": { "const": true, "description": "A side of the file is in a revision that does not compile (errors of groups 1xx-2xx or a broken docc.json): blocks is empty." }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "level"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "level": { "type": "integer", "minimum": 2, "maximum": 6 }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p", "s", "h", "sec"],
+      "description": "A block as docc compile prints it; a property (a one-line field of the list) has k and sec null.",
+      "properties": {
+        "p": { "type": "string", "description": "JSON Pointer of the value in the source of that side; empty for the footnotes." },
+        "s": { "type": "string" },
+        "h": { "type": "string" },
+        "sec": { "type": ["string", "null"] },
+        "k": { "type": "string", "description": "A property: the field name as a heading." },
+        "i": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["t", "id", "label"],
+          "properties": {
+            "t": { "enum": ["text", "radio", "checkbox"] },
+            "id": { "type": "string" },
+            "label": { "type": "string" },
+            "options": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  }
+}

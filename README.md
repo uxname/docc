@@ -44,6 +44,8 @@ Update it with `npx skills update`. The skill needs the `docc` binary from above
     docc validate    # check the sources (--format json for agents and CI)
     docc build       # write docs/out and docc.lock (--single, --html: also one .md file and one HTML app, kept up to date once made)
     docc compile     # print pages, tree and diagnostics as one JSON object, write nothing (--rev: a Git revision)
+    docc log         # the commits that changed the documents, with the files and block counts of each (JSON for programs)
+    docc diff A B    # the blocks of the documents of two revisions lined up (--path: one document, every block)
     docc comments    # comments from the HTML file: import <file|->, list, done <id> --reply, rm <id>
     docc check       # for CI: validate + docs/out and docc.lock are up to date
     docc ack <id>    # after a review: confirm the changed links around a document or code file (prints each one)

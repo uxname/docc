@@ -28,7 +28,15 @@ pub(super) fn reserved(k: &str) -> bool {
             | "hidden"
             | "docIgnore"
             | "order"
+            | "$comments"
     )
+}
+
+/// block_field reports whether a top-level field of a document is drawn as
+/// blocks of its page (the body and the free fields), not as its title,
+/// metadata or hidden service fields.
+pub fn block_field(k: &str) -> bool {
+    k == "body" || !reserved(k)
 }
 
 impl<'a> Renderer<'a> {

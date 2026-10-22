@@ -1,6 +1,7 @@
 //! docc lints documentation written as JSON in docs/src and builds Markdown/HTML from it.
 //! Pipeline: loader → schema → engine → render; cli is flag parsing and dispatch only.
 
+pub mod changes;
 pub mod cli;
 pub mod comments;
 pub mod config;

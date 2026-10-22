@@ -5,6 +5,18 @@ use crate::rules;
 
 const CONFIG_SCHEMA: &str = include_str!("config.json");
 const COMPILE_SCHEMA: &str = include_str!("output-compile.json");
+const LOG_SCHEMA: &str = include_str!("output-log.json");
+const DIFF_SCHEMA: &str = include_str!("output-diff.json");
+
+/// log_output and diff_output are the schemas of the outputs of docc log
+/// and docc diff (`docc schema log|diff`).
+pub fn log_output() -> &'static [u8] {
+    LOG_SCHEMA.as_bytes()
+}
+
+pub fn diff_output() -> &'static [u8] {
+    DIFF_SCHEMA.as_bytes()
+}
 
 /// Compile returns the schema of the output of docc compile, printed by
 /// `docc schema compile`; its $id is the "$schema" of that output.

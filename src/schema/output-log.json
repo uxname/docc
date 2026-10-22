@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:docc:schema:log:1",
+  "title": "docc log output",
+  "description": "What docc log --format json prints: one object on one line. The commits of the first-parent chain of --rev that changed anything in the source folder, newest first, down to --since (not included). Merges count as their change against the first parent.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "commits"],
+  "properties": {
+    "$schema": { "const": "urn:docc:schema:log:1", "description": "The version of this shape." },
+    "commits": { "type": "array", "items": { "$ref": "#/$defs/commit" } }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "email"],
+      "properties": { "name": { "type": "string" }, "email": { "type": "string" } }
+    },
+    "commit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha", "parents", "author", "committer", "date", "subject", "body", "commentsOnly", "files"],
+      "properties": {
+        "sha": { "$ref": "#/$defs/sha" },
+        "parents": { "type": "array", "items": { "$ref": "#/$defs/sha" }, "description": "First parent first; empty for a root commit." },
+        "author": { "$ref": "#/$defs/person" },
+        "committer": { "$ref": "#/$defs/person" },
+        "date": { "type": "string", "format": "date-time", "description": "Author date, RFC 3339." },
+        "subject": { "type": "string" },
+        "body": { "type": "string", "description": "The message after the subject, trailing newlines cut." },
+        "commentsOnly": { "type": "boolean", "description": "Every file of the commit is commentsOnly." },
+        "files": { "type": "array", "items": { "$ref": "#/$defs/file" }, "description": "Every file below the source folder the commit changed, in Git's order." }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path", "blocks", "commentsOnly"],
+      "properties": {
+        "status": { "enum": ["A", "M", "D", "R"], "description": "Added, modified, deleted, renamed (a copy is A, a type change M). A file moved into or out of the source folder is A or D." },
+        "path": { "type": "string", "description": "Relative to src, as the path of a page of docc compile; for D the last path." },
+        "oldPath": { "type": "string", "description": "R only: the path before the rename." },
+        "id": { "type": "string", "description": "A JSON file (a document): its id, the file name without .json." },
+        "title": { "type": "string", "description": "A document: its title in this version (for D its last one, for a broken version its last good one)." },
+        "blocks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["add", "ch", "rm"],
+          "description": "How many blocks of the page (the body and free fields; not the title, metadata, notes or $comments; empty ones not counted) were added, changed and removed, lined up as docc diff lines them up. A new document counts all its blocks as add, a deleted one as rm; 0 for a file that is not a document or not valid JSON.",
+          "properties": {
+            "add": { "type": "integer", "minimum": 0 },
+            "ch": { "type": "integer", "minimum": 0 },
+            "rm": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "commentsOnly": { "type": "boolean", "description": "M of a JSON file whose only change is inside its top-level \"$comments\" (both versions parsed, $comments dropped, compared as JSON)." },
+        "broken": { "const": true, "description": "This version is not a valid JSON object; blocks are 0 and the next good version counts against the last good one." },
+        "hidden": { "const": true, "description": "The document says \"hidden\": true (for D: its last version): readers do not see it." }
+      }
+    }
+  }
+}

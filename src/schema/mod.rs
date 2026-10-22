@@ -24,7 +24,7 @@ use crate::loader::{self, Node};
 use crate::source::{self, Source};
 
 pub use kind::closest;
-pub use public::{compile_output, config, document};
+pub use public::{compile_output, config, diff_output, document, log_output};
 
 use texts::{display, go_quote, join_quoted, printer_float, printer_int, quote, type_of};
 

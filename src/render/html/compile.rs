@@ -79,33 +79,33 @@ pub enum TreeEntry {
 
 #[derive(Serialize)]
 pub struct CPage {
-    id: String,
+    pub(crate) id: String,
     /// path of the source relative to src
-    path: String,
-    title: String,
+    pub(crate) path: String,
+    pub(crate) title: String,
     kind: String,
     status: Option<String>,
     tags: Vec<String>,
     parent: Option<String>,
     crumbs: Vec<String>,
-    props: Vec<CProp>,
-    sections: Vec<Section>,
-    blocks: Vec<CBlock>,
+    pub(crate) props: Vec<CProp>,
+    pub(crate) sections: Vec<Section>,
+    pub(crate) blocks: Vec<CBlock>,
     // the comments of the page will stand here, next to the blocks they point at
 }
 
 /// CProp is a one-line field shown in the property list instead of a section.
 #[derive(Serialize)]
 pub struct CProp {
-    k: String,
+    pub(crate) k: String,
     id: String,
-    p: String,
-    s: String,
-    h: String,
+    pub(crate) p: String,
+    pub(crate) s: String,
+    pub(crate) h: String,
 }
 
 /// Section is a field or $sections heading of a page.
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Section {
     /// the anchor of the heading, as [[id#field]] links and the HTML file use it
     id: String,
@@ -113,16 +113,19 @@ pub struct Section {
     level: usize,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct CBlock {
     /// JSON Pointer of the value in the source; "" for the footnotes of the page
-    p: String,
-    s: String,
-    h: String,
+    pub(crate) p: String,
+    pub(crate) s: String,
+    pub(crate) h: String,
     /// the section the block stands under; None above the first heading
-    sec: Option<String>,
+    pub(crate) sec: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    i: Option<InputData>,
+    pub(crate) i: Option<InputData>,
+    /// diff only: the label of a property (a one-line field of the list)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) k: Option<String>,
 }
 
 static HEAD_ID: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"^<h[1-6] id="([^"]*)">"#).unwrap());
@@ -163,7 +166,7 @@ impl<'a> Renderer<'a> {
                     pg.sections.push(Section { id, title, level });
                     continue;
                 }
-                pg.blocks.push(CBlock { p: b.p, s: b.s, h: b.h, sec: sec.clone(), i: b.i });
+                pg.blocks.push(CBlock { p: b.p, s: b.s, h: b.h, sec: sec.clone(), i: b.i, k: None });
             }
             out.pages.push(pg);
         }
