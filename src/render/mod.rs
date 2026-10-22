@@ -13,7 +13,7 @@ mod text;
 mod write;
 
 pub use lang::labels;
-pub use html::compile::{CBlock, CPage, Compiled, ProjectInfo, SCHEMA_ID as COMPILE_SCHEMA_ID, Section};
+pub use html::compile::{CBlock, CPage, Compiled, ProjectInfo, SCHEMA_ID as COMPILE_SCHEMA_ID, Section, Seen};
 pub use page::block_field;
 pub use render::{HEADER, Renderer, page_path};
 pub use write::{check_dir, check_fresh, generated_file, single_file, write, write_file};

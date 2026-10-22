@@ -10,7 +10,8 @@ use super::rulescmd::{indent, write_json};
 use super::{Common, Error, go_path_error, load_project, new_flags, parse, say, usage_err, write_line};
 use crate::comments::{self, Comment, Edit, KEY, Place};
 use crate::config::go_quote;
-use crate::engine::{Doc, Project};
+use crate::engine::{self, Doc, Project};
+use crate::render::{Renderer, Seen};
 use crate::history;
 use crate::loader::{self, Kind, Node};
 
@@ -31,17 +32,25 @@ same, changed (the block was edited) or lost (no block at at, or the selected wo
 apply reads a JSON array of operations from standard input and edits the files in place:
 only \"$comments\" changes, every other byte of a file stays; a new \"$comments\" is the
 last member of the document. The operations:
-  {\"op\": \"add\", \"doc\": <id or path>, \"comment\": {...}}   id, quote and created are filled in when left out
+  {\"op\": \"add\", \"doc\": <id or path>, \"comment\": {...}}   id and created are filled in when left out
   {\"op\": \"rm\", \"id\": <id>}
   {\"op\": \"edit\", \"id\": <id>, \"text\": <new text>}
-One bad operation (an unknown document or id, a malformed comment) fails the whole batch:
-nothing is written and the exit code is 2. With --format json apply prints
+A comment stands only where a reader looks: at must be the pointer of a block, a property
+or (for an answer) the form field that docc compile shows on the page of the document;
+notes, docIgnore, hidden, the title and \"$comments\" are refused. quote is always the
+source text of that block: a quote given is replaced. A hidden document takes no comment,
+and rm and edit do not touch its comments, unless --hidden is given (an agent working by
+hand). rm and edit refuse an id that more than one comment has (DOC112).
+One bad operation (an unknown document or id, a malformed comment, a place readers do not
+see) fails the whole batch: nothing is written and the exit code is 2. With --format json apply prints
 {\"$schema\", added: [{id, doc, path}], removed, edited, files}; docc schema comments-apply
 prints its JSON Schema.
 import adds the comments of the HTML file (docc build --html), copied as text for a
 messenger or downloaded as a JSON file (- reads the copied text from standard input), to
 their documents through apply. A comment already there (same id) is skipped; a comment left
-on an older build is moved to its block in the current text. rm deletes comments; an id may
+on an older build is moved to its block in the current text; a comment that would not
+stand where a reader looks (a hidden document or block, a block that is gone) is skipped
+and listed. rm deletes comments; an id may
 be shortened to any unique prefix.
 
 Examples:
@@ -54,7 +63,12 @@ Examples:
 ";
 
 pub(super) fn cmd_comments(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
-    let mut pos = parse(&mut new_flags("comments", c), args)?;
+    let mut hidden = false;
+    let mut pos = {
+        let mut fs = new_flags("comments", c);
+        fs.bool_var(&mut hidden, "hidden", "apply, rm, import: allow comments on hidden documents (for an agent working by hand; Docspace never gives it)");
+        parse(&mut fs, args)?
+    };
     c.check()?;
     let sub = if pos.is_empty() { String::new() } else { pos.remove(0) };
     match sub.as_str() {
@@ -82,14 +96,14 @@ pub(super) fn cmd_comments(c: &mut Common, args: &[String], stdout: &mut dyn Wri
                 .enumerate()
                 .map(|(i, o)| serde_json::from_value(o.clone()).map_err(|e| usage_err(format!("operation {}: {e}", i + 1))))
                 .collect::<Result<Vec<Op>, Error>>()?;
-            let a = apply(&p, &ops)?;
+            let a = apply(&p, &ops, hidden)?;
             print_applied(c, &a, stdout)
         }
-        "import" => import(c, &p, &pos, stdout),
+        "import" => import(c, &p, &pos, hidden, stdout),
         "rm" => {
             let all: Vec<String> = all_comments(&p).into_iter().map(|(_, c)| c.id).collect();
             let ops = pos.iter().map(|id| find(&all, id).map(|id| Op::Rm { id })).collect::<Result<Vec<Op>, Error>>()?;
-            let a = apply(&p, &ops)?;
+            let a = apply(&p, &ops, hidden)?;
             print_applied(c, &a, stdout)
         }
         _ => list(c, &p, stdout),
@@ -148,15 +162,72 @@ fn find_doc<'a>(p: &'a Project, name: &str) -> Option<(usize, &'a Doc)> {
     })
 }
 
+/// Seer is the one rule for every comment docc writes (apply, rm, import;
+/// Docspace calls apply): a comment stands only where a reader looks. Its
+/// document is a page of the reader (hidden documents only with --hidden, for
+/// an agent working by hand), its "at" is a block, a property or a form field
+/// that docc compile outputs for that page, and its quote is the source text
+/// of that place, so nothing a reader does not see (notes, docIgnore, the
+/// title, "$comments") ever reaches a reader as a quote.
+struct Seer<'a> {
+    p: &'a Project,
+    r: Renderer<'a>,
+    hidden: bool,
+    /// the project has errors of groups 1xx-2xx: compile shows no page
+    broken: bool,
+    cache: HashMap<usize, Vec<Seen>>,
+}
+
+impl<'a> Seer<'a> {
+    fn new(p: &'a Project, hidden: bool) -> Seer<'a> {
+        Seer { p, r: Renderer::new(p, false), hidden, broken: engine::structural(&p.diags()), cache: HashMap::new() }
+    }
+
+    /// doc fails for a hidden document unless --hidden was given.
+    fn doc(&self, i: usize) -> Result<(), String> {
+        if self.p.docs[i].hidden && !self.hidden {
+            return Err(format!(
+                "{} is a hidden document: readers do not see it, so it takes no comments (--hidden allows it, for an agent working by hand)",
+                self.p.docs[i].rel
+            ));
+        }
+        Ok(())
+    }
+
+    /// quote is the source text of the place at of document i that a reader
+    /// sees; an answer (input) needs the form field with that id there.
+    fn quote(&mut self, i: usize, at: &str, input: Option<&str>) -> Result<String, String> {
+        self.doc(i)?;
+        if self.broken {
+            return Err("the project has errors of groups 1xx-2xx, so readers see no page: fix them first (docc check)".into());
+        }
+        let d = &self.p.docs[i];
+        let seen = self.cache.entry(i).or_insert_with(|| self.r.seen(d));
+        let rel = &d.rel;
+        let Some(v) = seen.iter().find(|v| v.p == at) else {
+            return Err(format!(
+                "{rel} shows a reader no block at {}: a comment stands on a block or a form field of the page, never on what readers do not see (notes, docIgnore, hidden, the title, \"$comments\")",
+                go_quote(at)
+            ));
+        };
+        match input {
+            Some(f) if v.input.as_deref() != Some(f) => Err(format!("{rel} has no form field {} at {}", go_quote(f), go_quote(at))),
+            _ => Ok(v.s.clone()),
+        }
+    }
+}
+
 /// apply runs the operations on the files of the project, all or none: the
 /// files are written only when every operation succeeded and every changed
-/// "$comments" is well formed.
-pub(super) fn apply(p: &Project, ops: &[Op]) -> Result<Applied, Error> {
-    // comment id -> index of its document
-    let mut owner: HashMap<String, usize> = HashMap::new();
+/// "$comments" is well formed. Every operation obeys Seer; rm and edit refuse
+/// an id that more than one comment of the project has (DOC112).
+pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Error> {
+    let mut seer = Seer::new(p, hidden);
+    // comment id -> the index of its document, once per comment
+    let mut owner: HashMap<String, Vec<usize>> = HashMap::new();
     for (i, d) in p.docs.iter().enumerate() {
         for id in d.root().map(ids_in).unwrap_or_default() {
-            owner.entry(id).or_insert(i);
+            owner.entry(id).or_default().push(i);
         }
     }
     let mut files: BTreeMap<usize, Vec<u8>> = BTreeMap::new();
@@ -182,34 +253,41 @@ pub(super) fn apply(p: &Project, ops: &[Op]) -> Result<Applied, Error> {
                         id = comments::new_id();
                     }
                     id
-                } else if let Some(&j) = owner.get(&given) {
-                    return Err(fail(format!("comment id {} is taken (in {})", go_quote(&given), p.docs[j].rel)));
+                } else if let Some(j) = owner.get(&given) {
+                    return Err(fail(format!("comment id {} is taken (in {})", go_quote(&given), p.docs[j[0]].rel)));
                 } else {
                     given
                 };
                 obj.insert("id".into(), id.clone().into());
-                if !obj.contains_key("quote")
-                    && let Some(at) = obj.get("at").and_then(|v| v.as_str())
-                {
-                    let r = loader::parse(files[&i].strip_prefix(&[0xEF, 0xBB, 0xBF][..]).unwrap_or(&files[&i]));
-                    if let Some(n) = r.root.as_ref().and_then(|root| crate::schema::resolve_pointer(root, at)) {
-                        obj.insert("quote".into(), history::text(n).into());
-                    }
-                }
+                obj.entry("quote").or_insert_with(|| "".into());
                 obj.entry("created").or_insert_with(|| comments::now().into());
                 if !obj.contains_key("author") {
                     return Err(fail("comment: a comment lacks \"author\" (the name of the reader; may be \"\")".into()));
                 }
-                let c: Comment =
+                let mut c: Comment =
                     serde_json::from_value(serde_json::Value::Object(obj)).map_err(|e| fail(format!("comment: {e}")))?;
                 comments::check(&c).map_err(|m| fail(format!("comment: {m}")))?;
-                owner.insert(id.clone(), i);
+                // the quote is always the text the reader sees there; a quote given that differs is replaced
+                c.quote = seer.quote(i, &c.at, c.input.as_deref()).map_err(fail)?;
+                owner.insert(id.clone(), vec![i]);
                 out.added.push(Added { id: id.clone(), doc: d.id.clone(), path: d.rel.clone() });
                 let b = comments::edit(&files[&i], &Edit::Add(&c)).map_err(|m| fail(format!("{}: {m}", d.rel)))?;
                 (i, b)
             }
             Op::Rm { id } | Op::Edit { id, .. } => {
-                let i = *owner.get(id).ok_or_else(|| fail(format!("no comment {}", go_quote(id))))?;
+                let is = owner.get(id).ok_or_else(|| fail(format!("no comment {}", go_quote(id))))?;
+                if is.len() > 1 {
+                    let mut at: Vec<&str> = is.iter().map(|&j| p.docs[j].rel.as_str()).collect();
+                    at.dedup();
+                    return Err(fail(format!(
+                        "comment id {} is used by {} comments (in {}): it names none of them; give each its own id first (DOC112)",
+                        go_quote(id),
+                        is.len(),
+                        at.join(", ")
+                    )));
+                }
+                let i = is[0];
+                seer.doc(i).map_err(fail)?;
                 read(i, &mut files)?;
                 let e = match op {
                     Op::Edit { text, .. } => Edit::Text(id, text),
@@ -281,7 +359,9 @@ fn find(all: &[String], id: &str) -> Result<String, Error> {
 /// import adds the comments exported by the HTML file to their documents.
 /// A comment left on an older build (its build commit) follows its block to
 /// where it stands now (comments::follow); an answer goes to its form field.
-fn import(c: &Common, p: &Project, files: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
+/// A comment that would not stand where a reader looks (Seer: a hidden
+/// document or block, or a block that is gone) is skipped and listed.
+fn import(c: &Common, p: &Project, files: &[String], hidden: bool, stdout: &mut dyn Write) -> Result<i32, Error> {
     let mut have: HashSet<String> = p.docs.iter().filter_map(|d| d.root()).flat_map(ids_in).collect();
     let mut items = Vec::new();
     let mut dups = 0;
@@ -303,9 +383,13 @@ fn import(c: &Common, p: &Project, files: &[String], stdout: &mut dyn Write) -> 
         }
     }
     let old = old_versions(p, &items);
-    let (mut ops, mut gone, mut moved) = (Vec::new(), Vec::new(), 0);
+    let mut seer = Seer::new(p, hidden);
+    if seer.broken && !items.is_empty() {
+        return Err(usage_err("the project has errors of groups 1xx-2xx, so readers see no page: fix them first (docc check)"));
+    }
+    let (mut ops, mut gone, mut unseen, mut moved) = (Vec::new(), Vec::new(), Vec::new(), 0);
     for it in items {
-        let Some((_, d)) = find_doc(p, &it.doc).filter(|(_, d)| d.root().is_some()) else {
+        let Some((i, d)) = find_doc(p, &it.doc).filter(|(_, d)| d.root().is_some()) else {
             gone.push(it.id);
             continue;
         };
@@ -316,6 +400,10 @@ fn import(c: &Common, p: &Project, files: &[String], stdout: &mut dyn Write) -> 
             old.get(&(it.build.clone(), d.rel.clone())).and_then(|o| comments::follow(o, root, &it.path))
         }
         .unwrap_or_else(|| it.path.clone());
+        if seer.quote(i, &at, Some(it.input.as_str()).filter(|f| !f.is_empty())).is_err() {
+            unseen.push(it.id);
+            continue;
+        }
         if at != it.path {
             moved += 1;
         }
@@ -336,7 +424,7 @@ fn import(c: &Common, p: &Project, files: &[String], stdout: &mut dyn Write) -> 
         };
         ops.push(Op::Add { doc: d.id.clone(), comment: serde_json::to_value(&cm)? });
     }
-    let a = apply(p, &ops)?;
+    let a = apply(p, &ops, hidden)?;
     if c.format == "json" {
         #[derive(Serialize)]
         struct Imported<'a> {
@@ -344,9 +432,14 @@ fn import(c: &Common, p: &Project, files: &[String], stdout: &mut dyn Write) -> 
             duplicates: usize,
             moved: usize,
             gone: &'a [String],
+            /// not on a place a reader sees: a hidden document or part, or a block that is gone
+            unseen: &'a [String],
             files: &'a [String],
         }
-        write_json(stdout, &Imported { imported: a.added.len(), duplicates: dups, moved, gone: &gone, files: &a.files })?;
+        write_json(
+            stdout,
+            &Imported { imported: a.added.len(), duplicates: dups, moved, gone: &gone, unseen: &unseen, files: &a.files },
+        )?;
         return Ok(0);
     }
     say(stdout, &format!("imported {} comments into {} documents", a.added.len(), a.files.len()));
@@ -359,6 +452,13 @@ fn import(c: &Common, p: &Project, files: &[String], stdout: &mut dyn Write) -> 
     }
     if !gone.is_empty() {
         notes.push(format!("{} on a page that is gone, not imported: {}", gone.len(), gone.join(", ")));
+    }
+    if !unseen.is_empty() {
+        notes.push(format!(
+            "{} not on a block a reader sees (hidden, or gone), not imported: {}",
+            unseen.len(),
+            unseen.join(", ")
+        ));
     }
     if !notes.is_empty() {
         say(stdout, &format!(" ({})", notes.join("; ")));

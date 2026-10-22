@@ -138,6 +138,16 @@ pub struct CBlock {
     pub(crate) k: Option<String>,
 }
 
+/// Seen is a place of a page that a reader sees (Renderer::seen).
+pub struct Seen {
+    /// JSON Pointer of the value in the source
+    pub p: String,
+    /// its source text, the "quote" of a comment on it
+    pub s: String,
+    /// the id of the form field, when it is one
+    pub input: Option<String>,
+}
+
 static HEAD_ID: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"^<h[1-6] id="([^"]*)">"#).unwrap());
 
 impl<'a> Renderer<'a> {
@@ -188,6 +198,19 @@ impl<'a> Renderer<'a> {
         out.tree = s.tree_entries(&s.tree_nodes());
         out.project = s.project_info(out.pages.first().map(|p| p.title.clone()).unwrap_or_default());
         out
+    }
+
+    /// seen are the places of the page of d that a reader sees: the blocks
+    /// and properties docc compile outputs for it (headings and footnotes
+    /// left out), with their source text and, for a form field, its id. They
+    /// are the only places a comment may stand (docc comments apply). It
+    /// renders d as a reader page whether or not d is hidden: the caller
+    /// decides whether a hidden document counts.
+    pub fn seen(&self, d: &'a engine::Doc) -> Vec<Seen> {
+        let pd = self.variant(true, false, true).build_page(d).pd;
+        let props = pd.props.into_iter().map(|p| Seen { p: p.p, s: p.s, input: None });
+        let blocks = pd.blocks.into_iter().filter(|b| b.head.is_none()).map(|b| Seen { p: b.p, s: b.s, input: b.i.map(|i| i.id) });
+        props.chain(blocks).filter(|v| !v.p.is_empty()).collect()
     }
 
     /// project_info is the project part of the output; title is the title of
