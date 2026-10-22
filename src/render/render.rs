@@ -35,6 +35,8 @@ pub struct Renderer<'a> {
     pub comments: bool,
     /// the Git revision the HTML file counts the edits from (build --since); "" for none
     pub since: String,
+    /// the id of the one page the build writes (build --page); "" for every page
+    pub only: String,
 }
 
 impl<'a> Renderer<'a> {
@@ -52,6 +54,7 @@ impl<'a> Renderer<'a> {
             imgs: RefCell::new(None),
             comments: true,
             since: String::new(),
+            only: String::new(),
         }
     }
 
@@ -64,6 +67,7 @@ impl<'a> Renderer<'a> {
             html,
             comments: self.comments,
             since: self.since.clone(),
+            only: self.only.clone(),
             ..Renderer::new(self.p, self.full)
         }
     }
@@ -75,10 +79,12 @@ impl<'a> Renderer<'a> {
     pub fn files(&self) -> HashMap<String, Vec<u8>> {
         let mut out = HashMap::new();
         *self.imgs.borrow_mut() = Some(HashSet::new());
-        for d in self.docs() {
+        for d in self.docs().into_iter().filter(|d| self.writes(d)) {
             out.insert(page_path(d), lf(&self.page(d)).into_bytes());
         }
-        out.insert("_tree.md".to_string(), lf(&self.tree()).into_bytes());
+        if self.only.is_empty() {
+            out.insert("_tree.md".to_string(), lf(&self.tree()).into_bytes());
+        }
         let imgs = self.imgs.borrow_mut().take().unwrap_or_default();
         for rel in imgs {
             if let Ok(b) = self.p.cfg.source.read(&self.src_file(&rel)) {
@@ -100,8 +106,10 @@ impl<'a> Renderer<'a> {
     pub fn single(&self) -> String {
         let s = self.variant(true, true, false);
         let mut blocks = vec![HEADER.to_string()];
-        blocks.extend(s.tree_blocks());
-        for d in s.ordered() {
+        if s.only.is_empty() {
+            blocks.extend(s.tree_blocks());
+        }
+        for d in s.pages() {
             blocks.push("---".into());
             blocks.push(s.page(d));
         }
@@ -135,6 +143,28 @@ impl<'a> Renderer<'a> {
             }
         }
         out
+    }
+
+    /// page_id is the id of the page build --page names: its path relative to
+    /// src as docc compile gives it, with or without ".json", or its id; None
+    /// when no page of this build has that name.
+    pub fn page_id(&self, name: &str) -> Option<String> {
+        let name = name.replace('\\', "/");
+        let docs = self.docs();
+        docs.iter()
+            .find(|d| d.rel == name || d.rel.strip_suffix(".json") == Some(name.as_str()))
+            .or_else(|| docs.iter().find(|d| d.id == name))
+            .map(|d| d.id.clone())
+    }
+
+    /// pages are the pages the build writes, in tree order: every page, or
+    /// the one of build --page.
+    pub(super) fn pages(&self) -> Vec<&'a Doc> {
+        self.ordered().into_iter().filter(|d| self.writes(d)).collect()
+    }
+
+    fn writes(&self, d: &Doc) -> bool {
+        self.only.is_empty() || d.id == self.only
     }
 
     /// docs returns the documents that get a page, ordered by path.

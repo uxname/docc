@@ -42,7 +42,7 @@ Usage: docc [flags] <command> [flags]
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources
-  build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --since)
+  build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --since, --page, --rev)
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision)
   log                print the commits that changed the documents, with the files and block counts of each
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
@@ -100,7 +100,16 @@ The readers' comments (\"$comments\" of the documents) stand under their blocks 
 Markdown and the HTML file, those that lost their place at the top of the page;
 --no-comments leaves them out. --since names the revision (tag, branch, commit) of the
 version the reader last received: the HTML file shows the edits since it and no history
-before it.
+before it. Fenced ```mermaid blocks are drawn as diagrams in the HTML file (the drawing
+library goes into the file only when a page has one); elsewhere they stay code.
+--page writes one page alone: its Markdown page in docs/out with the pictures it shows (no
+other page, no _tree.md; a later build without --page writes them back) and, with --single
+or --html, a one-file build of that page. It is named by its path relative to src as docc
+compile gives it (decisions/monolith.json, .json may be left out) or by its id.
+--rev builds the tree of a Git revision without a checkout, as docc compile --rev reads it
+(a bare mirror too, with --config naming the project's docc.json): it needs --html and writes
+only that file, into the current folder (out.html, out-full.html with --full), with the
+history up to that revision; docs/out and docc.lock are not written.
 
 Examples:
   docc build
@@ -109,6 +118,8 @@ Examples:
   docc build --html
   docc build --html --since sent-2026-10-06 --no-comments
   docc build --full --single --html
+  docc build --page decisions/monolith.json --html
+  docc build --rev 3f2a91bc --html --config docs/docc.json
 "
         }
         "compile" => {
@@ -705,6 +716,11 @@ struct BuildOpts {
     no_comments: bool,
     /// the revision the HTML file counts the edits from (--since)
     since: String,
+    /// the id of the one page to write (--page); "" for every page
+    page: String,
+    /// the sources come from a Git revision (--rev): only the HTML file is
+    /// written, into the current folder
+    rev: bool,
 }
 
 /// Built is what build made: the number of files, the one-file builds written
@@ -725,6 +741,20 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
         return Ok(b);
     }
     let dir = if full { &p.cfg.out_full } else { &p.cfg.out };
+    let mut r = render::Renderer::new(p, full);
+    (r.comments, r.since, r.only) = (!o.no_comments, o.since.clone(), o.page.clone());
+    if o.rev {
+        // docs/out and docc.lock belong to a checkout; the HTML file goes where docc runs
+        let f = PathBuf::from(render::single_file(p, dir, ".html")?.file_name().unwrap_or_default());
+        match r.html() {
+            Ok(h) => {
+                render::write_file(&f, h.as_bytes())?;
+                b.extra.push(f.display().to_string());
+            }
+            Err(e) => b.html_err = Some(e),
+        }
+        return Ok(b);
+    }
     render::check_dir(p, dir)?;
     // a one-file build made once is kept up to date by every later build, if docc wrote it
     for (ext, flag, on) in [(".md", "single", &mut single), (".html", "html", &mut html)] {
@@ -745,8 +775,6 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
             }
         }
     }
-    let mut r = render::Renderer::new(p, full);
-    (r.comments, r.since) = (!o.no_comments, o.since.clone());
     let files = r.files();
     let mut one: Vec<(&str, String)> = Vec::new(); // extension -> content of a single-file build
     if single {
@@ -775,6 +803,7 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
 
 fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
     let (mut full, mut single, mut html) = (false, false, false);
+    let (mut page, mut rev) = (String::new(), String::new());
     let mut o = BuildOpts::default();
     let pos = {
         let mut fs = new_flags("build", c);
@@ -783,6 +812,8 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
         fs.bool_var(&mut html, "html", "also write all pages as one self-contained HTML file next to the output directory");
         fs.bool_var(&mut o.no_comments, "no-comments", "leave the readers' comments ($comments) out of everything this build writes");
         fs.string_var(&mut o.since, "since", "HTML file: the Git revision (tag, branch, commit) of the version the reader last received; the edits since it are shown, the history before it is left out");
+        fs.string_var(&mut page, "page", "write only this page: its path relative to src as docc compile gives it (decisions/monolith.json, .json may be left out) or its id");
+        fs.string_var(&mut rev, "rev", "build the tree of this Git revision (commit, branch, tag) without a checkout; needs --html and writes only the HTML file, into the current folder");
         parse(&mut fs, args)
     };
     let pos = pos?;
@@ -791,7 +822,22 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
     if !o.since.is_empty() && o.since.trim().is_empty() {
         return Err(usage_err("--since must name a Git revision"));
     }
-    let mut p = load_project(c)?;
+    if !rev.is_empty() && (!html || single) {
+        return Err(usage_err("--rev writes only the HTML file: give --html, and no --single (its pages link the images of the output directory, which --rev does not write)"));
+    }
+    o.rev = !rev.is_empty();
+    let mut p = engine::load(load_config_at(c, &rev)?)?;
+    p.validate();
+    if !page.is_empty() {
+        o.page = render::Renderer::new(&p, full).page_id(&page).ok_or_else(|| {
+            usage_err(format!(
+                "--page {}: no such page; give its path relative to {} as docc compile shows it (decisions/monolith.json) or its id{}",
+                config::go_quote(&page),
+                p.cfg.src,
+                if full { "" } else { " (a hidden page needs --full)" }
+            ))
+        })?;
+    }
     let b = build(&p, stderr, full, single, html, &o)?;
     let ds = p.sorted();
     let res = emit(stdout, stderr, c, &p, &ds);
@@ -807,10 +853,11 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
     let dir = if full { &p.cfg.out_full } else { &p.cfg.out };
     if b.n > 0 {
         say(stdout, &format!("built {} files in {dir}\n", b.n));
-        for f in &b.extra {
-            say(stdout, &format!("built {f}\n"));
-        }
-    } else if engine::structural(&p.diags()) {
+    }
+    for f in &b.extra {
+        say(stdout, &format!("built {f}\n"));
+    }
+    if b.n == 0 && b.extra.is_empty() && engine::structural(&p.diags()) {
         let (errs, _) = report::counts(&p.diags());
         say(stdout, &format!("build skipped: {errs} errors, {dir} not changed\n"));
     }

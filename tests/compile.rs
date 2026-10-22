@@ -372,3 +372,69 @@ fn compile_fixtures_match_schema() {
         }
     });
 }
+
+/// build --rev builds the HTML file of a commit without a checkout, into the
+/// current folder: the pages of that commit and its history up to it, and
+/// nothing else written (no docs/out, no docc.lock). A bare mirror works with
+/// --config naming the project folder. Without Git the file has no history.
+#[test]
+fn build_rev_writes_only_the_html_file() {
+    let p = temp_dir();
+    if !git(&p.path, &["init", "-q"]) {
+        return; // no git here
+    }
+    let w = |rel: &str, s: &str| p.write(&format!("proj/{rel}"), s);
+    w("docc.json", r#"{"lang":"ru"}"#);
+    w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
+    w("docs/src/index.json", r#"{"title":"I","kind":"page","body":["One"]}"#);
+    assert!(git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "one"]));
+    w("docs/src/index.json", r#"{"title":"I","kind":"page","body":["Two"]}"#);
+    assert!(git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "two"]));
+    w("docs/src/index.json", r#"{"title":"I","kind":"page","body":["Working copy"]}"#);
+    let before = listing(&p.path);
+    let dir = p.join("proj");
+    let html = |dir: &Path| {
+        let s = std::fs::read_to_string(dir.join("out.html")).unwrap();
+        const OPEN: &str = r#"<script type="application/json" id="docc-data">"#;
+        let a = s.find(OPEN).unwrap() + OPEN.len();
+        let v: Value = serde_json::from_str(&s[a..a + s[a..].find("</script>").unwrap()]).unwrap();
+        std::fs::remove_file(dir.join("out.html")).unwrap();
+        v
+    };
+    let text = |v: &Value| v["pages"][0]["blocks"][0]["s"].as_str().unwrap().to_string();
+
+    let (code, out, errs) = do_in(&dir, &["build", "--rev", "HEAD~1", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    assert!(out.contains("built out.html"), "{out}");
+    let v = html(&dir);
+    assert_eq!(text(&v), "One", "the documents of the commit");
+    assert_eq!(v["hist"]["commits"].as_array().unwrap().len(), 1, "the history ends at the commit: {}", v["hist"]);
+    assert_eq!(listing(&p.path), before, "nothing else is written");
+
+    let bare = temp_dir();
+    let mirror = bare.join("mirror.git");
+    assert!(git(&p.path, &["clone", "-q", "--bare", ".", mirror.to_str().unwrap()]));
+    let (code, out, errs) = do_in(&mirror, &["build", "--rev", "main", "--html", "--config", "proj/docc.json", "--format", "json"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let v = html(&mirror);
+    assert_eq!((text(&v), v["hist"]["commits"].as_array().unwrap().len(), v["lang"].as_str()), ("Two".into(), 2, Some("ru")));
+    // run elsewhere, the mirror named by --config: the file lands where docc runs
+    let cwd = temp_dir();
+    let cfg = mirror.join("proj/docc.json");
+    let (code, out, errs) = do_in(&cwd.path, &["build", "--rev", "HEAD~1", "--html", "--config", cfg.to_str().unwrap()]);
+    assert_eq!(code, 0, "{out} {errs}");
+    assert_eq!(text(&html(&cwd.path)), "One");
+
+    for args in [&["build", "--rev", "HEAD"][..], &["build", "--rev", "HEAD", "--html", "--single"], &["build", "--rev", "nope", "--html"]] {
+        let (code, _, errs) = do_in(&dir, args);
+        assert_eq!(code, 2, "{args:?}: {errs}");
+    }
+
+    // no Git at all (a checkout without .git): the file is built without history
+    let plain = temp_dir();
+    copy_tree(&dir, &plain.path).unwrap();
+    let (code, out, errs) = do_in(&plain.path, &["build", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let s = plain.read("docs/out.html");
+    assert!(s.contains("Working copy") && s.contains(r#""hist":null"#), "no timeline without Git");
+}

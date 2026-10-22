@@ -23,7 +23,7 @@
       }
     },
     "removed": { "type": "array", "items": { "type": "string" }, "description": "Ids of the comments removed." },
-    "edited": { "type": "array", "items": { "type": "string" }, "description": "Ids of the comments whose text was replaced." },
+    "edited": { "type": "array", "items": { "type": "string" }, "description": "Ids of the comments whose text, or answer to a form field, was replaced." },
     "files": { "type": "array", "items": { "type": "string" }, "description": "The files written, relative to src, in path order." }
   }
 }

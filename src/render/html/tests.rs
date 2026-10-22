@@ -49,8 +49,10 @@ fn markdown_matches_goldmark() {
     let cases: Vec<Case> = serde_json::from_str(GOLDMARK_CASES).unwrap();
     assert!(cases.len() > 1000, "only {} cases", cases.len());
     let mut fails = Vec::new();
+    let svg = Regex::new(r#"<img src="data:image/svg\+xml[^"]*""#).unwrap();
     for c in &cases {
-        let got = convert_snippet(&c.md);
+        // goldmark empties the src of an SVG picture, docc keeps it (docs/rust-port/render.md, 21)
+        let got = svg.replace_all(&convert_snippet(&c.md), r#"<img src="""#).into_owned();
         if (got == c.html) == c.deviation {
             fails.push(format!(
                 "{:?} (deviation {})\n  rust {got:?}\n  go   {:?}",
@@ -611,6 +613,24 @@ fn html_page_without_blocks() {
     );
 }
 
+/// A ```mermaid block stays code in the data (docc compile gives the same
+/// HTML); the file carries the mermaid library only when a page has one.
+#[test]
+fn mermaid_only_when_used() {
+    let lib = MERMAID_JS.lines().next().unwrap();
+    let (html, data, _) = build_html(&[(
+        "docs/src/index.json",
+        r#"{"title":"I","body":["```mermaid\ngraph TD\n  A --> B\n```"]}"#,
+    )]);
+    assert!(blocks_html(&data).contains("<pre><code class=\"language-mermaid\">graph TD\n  A --&gt; B\n</code></pre>"));
+    assert!(html.contains(lib) && html.len() > MERMAID_JS.len(), "the file draws its diagrams");
+    let (html, _, _) = build_html(&[(
+        "docs/src/index.json",
+        r#"{"title":"I","body":["```js\nlet a = 1;\n```", "Words: mermaid, language-mermaid."]}"#,
+    )]);
+    assert!(!html.contains(lib) && html.len() < 1_000_000, "no diagram, no library: {} bytes", html.len());
+}
+
 /// Footnote ids are prefixed by the page id.
 #[test]
 fn footnotes_in_html() {
@@ -838,6 +858,22 @@ fn review_markdown_cases() {
             "Docs: https://example.com/~team/page~2\n",
             "<p>Docs: <a href=\"https://example.com/~team/page~2\">https://example.com/~team/page~2</a></p>\n",
         ),
+    ] {
+        assert_eq!(convert_snippet(md), want, "{md:?}");
+    }
+}
+
+/// An SVG data URL stays the src of a picture; a link to one, written or
+/// bare, is emptied as goldmark does, since the browser would open the SVG
+/// as a page and run its scripts.
+#[test]
+fn svg_data_url_only_in_pictures() {
+    for (md, want) in [
+        ("![s](data:image/svg+xml;base64,PHN2Zy8+)", "<p><img src=\"data:image/svg+xml;base64,PHN2Zy8+\" alt=\"s\"></p>\n"),
+        ("![s](DATA:image/SVG+xml,%3Csvg/%3E)", "<p><img src=\"DATA:image/SVG+xml,%3Csvg/%3E\" alt=\"s\"></p>\n"),
+        ("[s](data:image/svg+xml;base64,PHN2Zy8+)", "<p><a href=\"\">s</a></p>\n"),
+        ("<data:image/svg+xml;base64,PHN2Zy8+>", "<p><a href=\"\">data:image/svg+xml;base64,PHN2Zy8+</a></p>\n"),
+        ("![s](data:text/html;base64,PHN2Zy8+)", "<p><img src=\"\" alt=\"s\"></p>\n"),
     ] {
         assert_eq!(convert_snippet(md), want, "{md:?}");
     }

@@ -310,3 +310,115 @@ fn import_skips_what_readers_do_not_see() {
     let src = p.read("docs/src/index.json");
     assert!(src.contains(r#""quote": "Alpha text.""#) && !src.contains("forged") && !src.contains("Leak?"), "{src}");
 }
+
+/// Every radio and checkbox field takes an own answer, a text that is none of
+/// its options: nothing flags it. An answer given again (edit with answer)
+/// stays an answer to the same field, follows the field when it moved and
+/// quotes it as it is now.
+#[test]
+fn own_answers_and_answers_given_again() {
+    let page = r#"{"title": "Index", "kind": "page", "body": [
+  "Intro.",
+  {"$input": "radio", "id": "when", "label": "When?", "options": ["Now", "Later"]},
+  {"$input": "checkbox", "id": "what", "label": "What?", "options": ["Docs", "Code"]}
+]}"#;
+    let p = project([SCHEMA, ("docs/src/index.json", page)]);
+    let ops = json!([
+        {"op": "add", "doc": "index", "comment": {"id": "c-when", "at": "/body/1", "input": "when", "answer": ["In a year"], "author": "Ann", "created": "2026-10-22T09:00:00Z"}},
+        {"op": "add", "doc": "index", "comment": {"id": "c-what", "at": "/body/2", "input": "what", "answer": ["Docs", "Tests"], "author": "Ann", "created": "2026-10-22T09:00:00Z"}},
+        {"op": "add", "doc": "index", "comment": {"id": "c-text", "at": "/body/0", "text": "Why?", "author": "Bob"}}
+    ]);
+    let (code, _, errs) = apply(&p.path, &ops);
+    assert_eq!(code, 0, "{errs}");
+    let (code, out, errs) = p.run(&["validate", "--max-warnings", "0"]);
+    assert_eq!(code, 0, "an own answer is no problem: {out} {errs}");
+    let compiled = || -> Value { serde_json::from_str(&p.run(&["compile", "--format", "json"]).1).unwrap() };
+    let v = compiled();
+    let cs = v["pages"][0]["comments"].as_array().unwrap();
+    assert_eq!(cs.iter().map(|c| c["place"].as_str().unwrap()).collect::<Vec<_>>(), ["same", "same", "same"]);
+    assert_eq!(cs[0]["answer"], json!(["In a year"]));
+    p.must_build();
+    let md = p.read("docs/out/index.md");
+    assert!(md.contains("answer to «When?»: In a year") && md.contains("answer to «What?»: Docs, Tests"), "{md}");
+
+    // the field moves down and its question changes: the answer given again follows it
+    p.write("docs/src/index.json", p.read("docs/src/index.json").replacen("\"Intro.\",", "\"Intro.\", \"More.\",", 1).replacen("When?", "When exactly?", 1));
+    assert_eq!(compiled()["pages"][0]["comments"][0]["place"], "lost");
+    let (code, v, errs) = apply(&p.path, &json!([{"op": "edit", "id": "c-when", "answer": ["Now"]}]));
+    assert!(code == 0 && v["edited"] == json!(["c-when"]), "{errs}");
+    let c = &compiled()["pages"][0]["comments"][0];
+    assert_eq!((c["id"].as_str(), c["at"].as_str(), c["place"].as_str(), c["input"].as_str()), (Some("c-when"), Some("/body/2"), Some("same"), Some("when")), "{c}");
+    assert_eq!(c["answer"], json!(["Now"]));
+    assert_eq!(c["created"], "2026-10-22T09:00:00Z", "the time it was first given stays");
+
+    let before = p.read("docs/src/index.json");
+    for (ops, want) in [
+        (json!([{"op": "edit", "id": "c-text", "answer": ["Now"]}]), "is not an answer to a form field"),
+        (json!([{"op": "edit", "id": "c-when", "text": "Now"}]), "no text to edit"),
+        (json!([{"op": "edit", "id": "c-when", "text": "Now", "answer": ["Now"]}]), "either \"text\""),
+        (json!([{"op": "edit", "id": "c-when"}]), "either \"text\""),
+        (json!([{"op": "edit", "id": "c-when", "answer": "Now"}]), "operation 1:"),
+    ] {
+        let (code, _, errs) = apply(&p.path, &ops);
+        assert!(code == 2 && errs.contains(want), "{ops}: {code} {errs}");
+        assert_eq!(p.read("docs/src/index.json"), before, "{ops}: nothing written");
+    }
+}
+
+/// apply is where answers from any client come in: an answer must fit its
+/// field on add and on edit (text and radio one value, checkbox at most one
+/// own answer, no value blank or twice), trimmed as the HTML file trims what a
+/// reader types; one that does not fails the batch with nothing written.
+#[test]
+fn apply_checks_the_answer_against_its_field() {
+    let page = r#"{"title": "Index", "kind": "page", "body": [
+  {"$input": "text", "id": "t", "label": "T?"},
+  {"$input": "radio", "id": "r", "label": "R?", "options": ["A", " B "]},
+  {"$input": "checkbox", "id": "c", "label": "C?", "options": ["A", "B"]}
+]}"#;
+    let p = project([SCHEMA, ("docs/src/index.json", page)]);
+    let add = |at: &str, input: &str, answer: Value| json!([{"op": "add", "doc": "index", "comment": {"at": at, "input": input, "answer": answer, "author": "Ann"}}]);
+    let before = p.read("docs/src/index.json");
+    for (ops, want) in [
+        (add("/body/0", "t", json!(["One", "Two"])), "a text field takes exactly one answer, the answer gives 2"),
+        (add("/body/0", "t", json!(["  "])), "a value of \"answer\" is blank"),
+        (add("/body/1", "r", json!(["A", "Own"])), "a radio field takes exactly one answer"),
+        (add("/body/1", "r", json!([])), "\"answer\" of an answer is empty"),
+        (add("/body/2", "c", json!(["A", "One", "Two"])), "at most one own answer"),
+        (add("/body/2", "c", json!(["A", " A"])), "\"answer\" gives \"A\" twice"),
+        (add("/body/2", "c", json!(["A", ""])), "is blank"),
+    ] {
+        let (code, _, errs) = apply(&p.path, &ops);
+        assert!(code == 2 && errs.contains("operation 1: comment: ") && errs.contains(want), "{ops}: {code} {errs}");
+        assert_eq!(p.read("docs/src/index.json"), before, "{ops}: nothing written");
+    }
+    // what fits, typed text trimmed and an option kept exactly
+    let ops = json!([
+        {"op": "add", "doc": "index", "comment": {"id": "c-t", "at": "/body/0", "input": "t", "answer": ["  Free text "], "author": "Ann"}},
+        {"op": "add", "doc": "index", "comment": {"id": "c-r", "at": "/body/1", "input": "r", "answer": [" B "], "author": "Ann"}},
+        {"op": "add", "doc": "index", "comment": {"id": "c-c", "at": "/body/2", "input": "c", "answer": ["A", "B", " Mine "], "author": "Ann"}}
+    ]);
+    let (code, _, errs) = apply(&p.path, &ops);
+    assert_eq!(code, 0, "{errs}");
+    let src = p.read("docs/src/index.json");
+    for want in [r#""answer": ["Free text"]"#, r#""answer": [" B "]"#, r#""answer": ["A","B","Mine"]"#] {
+        assert!(src.contains(want), "{want}: {src}");
+    }
+    let (code, out, errs) = p.run(&["validate", "--max-warnings", "0"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    // the same rules on edit, and the batch is all or nothing
+    let before = p.read("docs/src/index.json");
+    for (ops, want) in [
+        (json!([{"op": "edit", "id": "c-r", "answer": ["A", "B"]}]), "a radio field takes exactly one answer"),
+        (json!([{"op": "edit", "id": "c-c", "answer": ["X", "Y"]}]), "at most one own answer"),
+        (json!([{"op": "edit", "id": "c-t", "answer": [" "]}]), "is blank"),
+        (json!([{"op": "edit", "id": "c-t", "answer": ["Fine"]}, {"op": "edit", "id": "c-c", "answer": ["A", "A"]}]), "operation 2: \"answer\" gives \"A\" twice"),
+    ] {
+        let (code, _, errs) = apply(&p.path, &ops);
+        assert!(code == 2 && errs.contains(want), "{ops}: {code} {errs}");
+        assert_eq!(p.read("docs/src/index.json"), before, "{ops}: nothing written");
+    }
+    let (code, _, errs) = apply(&p.path, &json!([{"op": "edit", "id": "c-r", "answer": ["  Own  "]}]));
+    assert_eq!(code, 0, "{errs}");
+    assert!(p.read("docs/src/index.json").contains(r#""answer": ["Own"]"#));
+}

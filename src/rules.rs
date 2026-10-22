@@ -155,7 +155,7 @@ static ALL: [Rule; 43] = [
         "syntax",
         E,
         false,
-        "An item of \"$comments\" (the readers' comments kept in the document) is malformed, or its id is used by another comment of the project. A comment is {id, at (the JSON Pointer of its block), quote (the text of the block when written), text, author, created (RFC 3339)} with optional fragment, prefix, suffix (the selected words and what stands around them) and email; an answer to a form field has input (the field id) and answer (an array of strings) instead of text. Edit the list with docc comments apply.",
+        "An item of \"$comments\" (the readers' comments kept in the document) is malformed, or its id is used by another comment of the project. A comment is {id, at (the JSON Pointer of its block), quote (the text of the block when written), text, author, created (RFC 3339)} with optional fragment, prefix, suffix (the selected words and what stands around them) and email; an answer to a form field has input (the field id) and answer (an array of strings) instead of text. An answer gives at least one value, none blank or twice, and fits its field as the field reads now: a text field and radio buttons one value (radio: an option or an own answer), check boxes at most one value that is none of the options. Edit the list with docc comments apply.",
         r#"{ "title": "A", "$comments": [{ "id": "c-1", "text": "Why?", "status": "done" }] }"#,
         r#"{ "title": "A", "$comments": [{ "id": "c-1", "at": "/body/0", "quote": "Alpha.", "text": "Why?", "author": "Ann", "created": "2026-10-22T09:00:00Z" }] }"#,
     ),

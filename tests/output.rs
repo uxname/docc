@@ -146,3 +146,61 @@ fn placeholders_and_nfc() {
         assert!(d.contains(want), "lacks {want}:\n{d}");
     }
 }
+
+/// build --page writes one page: its Markdown page with the images it shows
+/// (no other page, no _tree.md), and the one-file builds with that page alone.
+/// The page is named by its path as docc compile gives it, with or without
+/// .json, or by its id; an unknown or hidden one is an error.
+#[test]
+fn one_page() {
+    let p = project([
+        ("docs/src/index.json", r#"{"title":"Index","body":"See [[q50]]. ![a](img/a.png)"}"#),
+        ("docs/src/questions/q50.json", r#"{"title":"Q50","parent":"index","body":["Why? ![b](../img/b.svg)"],"$comments":[{"id":"c-1","at":"/body/0","quote":"Why? ![b](../img/b.svg)","text":"Hm","author":"A","created":"2026-10-22T09:00:00Z"}]}"#),
+        ("docs/src/other.json", r#"{"title":"Other","parent":"index","body":"Else.","$comments":[{"id":"c-2","at":"/body","quote":"Else.","text":"No","author":"B","created":"2026-10-22T09:00:00Z"}]}"#),
+        ("docs/src/secret.json", r#"{"title":"Secret","parent":"index","hidden":true}"#),
+        ("docs/src/img/a.png", "\u{89}PNG"),
+        ("docs/src/img/b.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>"),
+    ]);
+    for name in ["questions/q50.json", "questions/q50", "q50"] {
+        let (code, out, errs) = p.run(&["build", "--page", name, "--single", "--html"]);
+        assert_eq!(code, 0, "{name}: {out} {errs}");
+        let mut got = walk(&p.join("docs/out"));
+        got.sort();
+        assert_eq!(got, ["img/b.svg", "questions/q50.md"], "{name}: the page and its picture only");
+        let single = p.read("docs/out.md");
+        assert!(single.contains("# Q50") && !single.contains("# Index") && !single.contains("Document tree"), "{single}");
+        let a = read_app(&p, "docs/out.html");
+        let ids: Vec<&str> = a.pages().iter().map(|pg| s(pg, "id")).collect();
+        assert_eq!(ids, ["q50"], "{name}");
+        assert_eq!(a.data["nav"]["tree"], serde_json::json!([["q50", 0]]));
+        assert!(a.pages()[0].get("crumbs").is_none_or(|c| c.as_array().is_some_and(|c| c.is_empty())), "no crumbs to pages the file lacks");
+        let cs: Vec<&str> = a.data["comments"].as_array().unwrap().iter().map(|c| s(c, "id")).collect();
+        assert_eq!(cs, ["c-1"], "the comments of that page");
+        assert!(a.blocks.contains("data:image/svg+xml;base64,"), "the picture is in the file");
+    }
+    for (name, want) in [("nope", "--page \"nope\": no such page"), ("secret", "a hidden page needs --full"), ("q50.json", "no such page")] {
+        let (code, out, errs) = p.run(&["build", "--page", name]);
+        assert!(code == 2 && errs.contains(want), "{name}: {code} {out} {errs}");
+    }
+    let (code, out, errs) = p.run(&["build", "--page", "secret", "--full"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    assert!(p.exists("docs/out-full/secret.md") && !p.exists("docs/out-full/index.md"));
+    // a build without --page writes every page again
+    p.must_build();
+    assert!(p.exists("docs/out/index.md") && p.exists("docs/out/_tree.md") && p.exists("docs/out/img/a.png"));
+}
+
+/// walk lists the files below dir, relative, with '/'.
+fn walk(dir: &std::path::Path) -> Vec<String> {
+    let mut out = Vec::new();
+    for e in std::fs::read_dir(dir).unwrap() {
+        let path = e.unwrap().path();
+        let name = path.file_name().unwrap().to_string_lossy().into_owned();
+        if path.is_dir() {
+            out.extend(walk(&path).into_iter().map(|f| format!("{name}/{f}")));
+        } else {
+            out.push(name);
+        }
+    }
+    out
+}

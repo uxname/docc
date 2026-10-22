@@ -25,6 +25,10 @@ static HTML_JS: &str = include_str!("app.js");
 /// tagged templates the page script is written in. No build step.
 static VENDOR_JS: &str = include_str!("vendor/htm-preact-standalone.js");
 
+/// MERMAID_JS is mermaid 11.17.2 (dist/mermaid.min.js), which draws the
+/// ```mermaid blocks; a file gets it only when a page has one (3.5 MB).
+static MERMAID_JS: &str = include_str!("vendor/mermaid.min.js");
+
 impl<'a> Renderer<'a> {
     /// HTML returns the single-page application: one self-contained HTML file
     /// whose script (Preact, embedded) draws the pages from a JSON island. Go
@@ -77,8 +81,13 @@ impl<'a> Renderer<'a> {
             data.nav.tree = nav(&tree);
             data.nav.orphans = nav(&orphans);
         }
+        if !s.only.is_empty() {
+            // build --page: the file is that page alone
+            (data.nav.tree, data.nav.orphans) = (vec![NavEntry::Page(s.only.clone(), 0)], Vec::new());
+            kids.clear();
+        }
         let current: HashMap<String, &Node> = s
-            .ordered()
+            .pages()
             .iter()
             .map(|d| (d.rel.clone(), root(d)))
             .collect();
@@ -88,13 +97,20 @@ impl<'a> Renderer<'a> {
             &history::Options {
                 full: s.full,
                 since: s.since.clone(),
+                rev: match &s.p.cfg.source {
+                    crate::source::Source::Rev(r) => r.rev().to_string(),
+                    crate::source::Source::Disk => String::new(),
+                },
             },
         )?;
         let mut pages: Vec<PageData> = Vec::new();
-        for d in s.ordered() {
+        for d in s.pages() {
             let Built { mut pd, pg, marker, strs } = s.build_page(d);
             pd.summary = s.summary(d);
             pd.kids = kids.get(&d.id).cloned().unwrap_or_default();
+            if !s.only.is_empty() {
+                (pd.crumbs, pd.parent) = (Vec::new(), String::new()); // pages the file does not have
+            }
             // ponytail: old tables, lists and objects stay plain text in the
             // file (their text is flattened); includes and links in old text
             // resolve against the documents as they are now
@@ -122,7 +138,7 @@ impl<'a> Renderer<'a> {
         data.hist = hist;
         // the comments of the documents, at their blocks; the page script draws
         // those that lost their place at the top of the page
-        for d in s.ordered() {
+        for d in s.pages() {
             for (c, pl) in s.comments_of(d) {
                 data.comments.push(AppComment { doc: d.id.clone(), lost: pl == Place::Lost, text: c.words(), c });
             }
@@ -269,6 +285,12 @@ impl<'a> Renderer<'a> {
         let css = HTML_CSS.to_string() + &brand_css;
         let json = script_json(data);
         let js = s.labels(HTML_JS, true);
+        // the class markdown.rs gives a ```mermaid block, as the JSON island writes it
+        let mermaid = if json.contains(r#"\u003ccode class=\"language-mermaid\">"#) {
+            format!("<script>\n{MERMAID_JS}\n</script>\n")
+        } else {
+            String::new()
+        };
         let out = replace_once(
             &s.labels(HTML_TEMPLATE, false),
             &[
@@ -276,6 +298,7 @@ impl<'a> Renderer<'a> {
                 ("{{CSS}}", &css),
                 ("{{DATA}}", &json),
                 ("{{VENDOR}}", VENDOR_JS),
+                ("{{MERMAID}}", &mermaid),
                 ("{{JS}}", &js),
             ],
         );

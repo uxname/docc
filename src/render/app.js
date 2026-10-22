@@ -701,24 +701,48 @@
     return Object.keys(by).map(function (k) { return by[k]; })
       .sort(function (a, b) { return (a.created || '') < (b.created || '') ? -1 : 1; });
   }
+  // splitAnswer is an answer as its field shows it: the options ticked and
+  // the own answer, the first text that is none of the options ('' for none)
+  function splitAnswer(f, a) {
+    function isOpt(s) { return f.t === 'text' || f.options.indexOf(s) >= 0; }
+    return [a.filter(isOpt), a.filter(function (s) { return !isOpt(s); })[0] || ''];
+  }
+  // joinAnswer is the answer saved: a text field its text, radio one option
+  // or the own answer, checkbox the options ticked and then the own answer
+  function joinAnswer(f, v, own) {
+    own = own.trim();
+    if (f.t === 'text') { return [(v[0] || '').trim()]; }
+    return f.t === 'radio' && own ? [own] : v.concat(own ? [own] : []);
+  }
   // a text box, radio buttons or check boxes in the text; the answers given
-  // so far below it, with their authors
+  // so far below it, with their authors. Radio buttons and check boxes end
+  // with an own answer: a text that is none of the options (radio: instead
+  // of them, checkbox: besides them).
   function Field(props) {
     var f = props.f, doc = props.page.id, me = store('author') || '';
     var given = answersFor(imported.concat(props.comments), doc, f.id);
     // what this reader answered: in this browser, else imported under their name
     var own = props.comments.filter(function (c) { return c.doc === doc && c.input === f.id; })[0] ||
       (me && given.filter(function (c) { return c.author === me; })[0]);
-    var start = (own && own.answer || []).filter(function (a) { return f.t === 'text' || f.options.indexOf(a) >= 0; });
-    var val = useState(start), who = useState(me), v = val[0];
-    useEffect(function () { val[1](start); }, [own ? own.id : '']);
-    var dirty = JSON.stringify(v) !== JSON.stringify(start), ok = f.t === 'text' ? !!(v[0] || '').trim() : v.length > 0;
+    var parts = splitAnswer(f, own && own.answer || []), start = parts[0], startX = parts[1];
+    // x is the own answer: [ticked, its text]
+    var val = useState(start), x = useState([!!startX, startX]), who = useState(me), v = val[0];
+    function reset() { val[1](start); x[1]([!!startX, startX]); }
+    useEffect(reset, [own ? own.id : '']);
+    var a = joinAnswer(f, v, x[0][0] ? x[0][1] : '');
+    var dirty = f.t === 'text' ? JSON.stringify(v) !== JSON.stringify(start) : JSON.stringify(a) !== JSON.stringify(joinAnswer(f, start, startX));
+    var ok = f.t === 'text' ? !!a[0] : a.length > 0;
     var label = plain(f.label), name = 'f-' + doc + '-' + f.id;
     function pick(o, on) {
-      val[1](f.t === 'radio' ? [o] : f.options.filter(function (x) { return x === o ? on : v.indexOf(x) >= 0; }));
+      val[1](f.t === 'radio' ? [o] : f.options.filter(function (y) { return y === o ? on : v.indexOf(y) >= 0; }));
+      if (f.t === 'radio') { x[1]([false, x[0][1]]); }
+    }
+    function pickOwn(on, text) {
+      if (on && f.t === 'radio') { val[1]([]); }
+      x[1]([on, text]);
     }
     function save() {
-      var a = f.t === 'text' ? [v[0].trim()] : v, w = who[0].trim(), first = !local.length;
+      var w = who[0].trim(), first = !local.length;
       if (w) { store('author', w); }
       var c = { id: uuid(), doc: doc, path: props.ptr, quote: props.quote, text: a.join(', '), input: f.id, answer: a,
         author: w, created: new Date().toISOString(), build: H.head || '' };
@@ -732,11 +756,14 @@
         : f.options.map(function (o) {
           return html`<label class="opt"><input type=${f.t} name=${name} checked=${v.indexOf(o) >= 0}
             onChange=${function (e) { pick(o, e.target.checked); }} /> ${plain(o)}</label>`;
-        })}
+        }).concat([html`<div class="opt own"><input type=${f.t} name=${name} checked=${x[0][0]} aria-label="{{t:Own answer}}"
+            onChange=${function (e) { pickOwn(e.target.checked, x[0][1]); }} />
+          <input type="text" class="own-t" placeholder="{{t:Own answer}}" aria-label="{{t:Own answer}}" value=${x[0][1]}
+            onInput=${function (e) { pickOwn(true, e.target.value); }} /></div>`])}
       ${!me && html`<label class="who-l">{{t:From}} <input class="who" autocomplete="name" placeholder="{{t:Your name}}" value=${who[0]}
         onInput=${function (e) { who[1](e.target.value); }} /></label>`}
       ${!props.past && html`<div class="row"><span class="sp"></span>
-        ${dirty && own && html`<button type="button" class="btn" onClick=${function () { val[1](start); }}>{{t:Cancel}}</button>`}
+        ${dirty && own && html`<button type="button" class="btn" onClick=${reset}>{{t:Cancel}}</button>`}
         <button type="button" class="btn pri" disabled=${!dirty || !ok} onClick=${save}>{{t:Save}}</button></div>`}
       ${given.length > 0 && html`<ul class="fans" aria-label="{{t:Answers}}">${given.map(function (c) {
         return html`<li><b>${c.author || '{{t:Anonymous}}'}</b> — ${c.text}
@@ -744,6 +771,35 @@
           ${!inRepo[c.id] && html` <span class="muted">· {{t:in this browser}} · </span><button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button>`}</li>`;
       })}</ul>`}
     </fieldset>`;
+  }
+
+  // ---- diagrams: a ```mermaid block is drawn by mermaid, embedded only when a page has one ----
+  var diagrams = 0;
+  function drawDiagrams(el) {
+    var codes = el.querySelectorAll('pre > code.language-mermaid');
+    if (!codes.length || !window.mermaid) { return; }
+    if (!diagrams) {
+      // strict: no scripts or clicks in a diagram; the theme follows the page
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true,
+        theme: window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default' });
+    }
+    Array.prototype.forEach.call(codes, function (code) {
+      var pre = code.parentNode;
+      mermaid.render('docc-mmd-' + (++diagrams), code.textContent).then(function (r) {
+        if (!pre.parentNode) { return; }
+        var d = document.createElement('div');
+        d.className = 'mmd';
+        d.innerHTML = r.svg;
+        pre.parentNode.replaceChild(d, pre);
+      }, function (e) {
+        // a syntax error: the source stays, the error under it
+        if (!pre.parentNode) { return; }
+        var m = document.createElement('p');
+        m.className = 'mmd-err';
+        m.textContent = '{{t:The diagram has an error:}} ' + String(e && e.message || e);
+        pre.parentNode.insertBefore(m, pre.nextSibling);
+      });
+    });
   }
 
   // ---- one block: its HTML at T, the edits since S drawn into it, its comments ----
@@ -777,6 +833,8 @@
         });
       });
       lost[1](gone);
+      // a block that shows its edits keeps the source of its diagrams, marked
+      if (!(changed && !isNew)) { drawDiagrams(el); }
     }, [key]);
     var inner = field ? html`<div class="blk-body" key=${key} id=${props.id}><${Field} f=${b.i} page=${page} ptr=${ptr} quote=${b.s} comments=${props.comments} past=${past} /></div>`
       : html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: h }}></div>`;
@@ -1625,6 +1683,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

@@ -134,6 +134,15 @@ const ans = (id, author, created, doc) => ({ id, doc: doc || 'f', input: 'export
 const given = T.answersFor([ans('i1', 'Ivan', '2026-10-01'), ans('o1', 'Olga', '2026-10-02'), ans('i2', 'Ivan', '2026-10-03'),
   ans('x1', '', '2026-10-04'), ans('x2', '', '2026-10-05'), ans('z', 'Zoe', '2026-10-06', 'p')], 'f', 'export');
 assert.deepStrictEqual(given.map((c) => c.id), ['o1', 'i2', 'x1', 'x2'], 'one per author, oldest first; nameless ones each');
+// radio and checkbox fields take an own answer: a text that is none of the options
+const radio = { t: 'radio', options: ['Yes', 'No'] }, box = { t: 'checkbox', options: ['A', 'B', 'C'] };
+assert.deepStrictEqual(T.splitAnswer(radio, ['Maybe']), [[], 'Maybe']);
+assert.deepStrictEqual(T.splitAnswer(box, ['C', 'Mine', 'A', 'More']), [['C', 'A'], 'Mine'], 'one own answer is shown');
+assert.deepStrictEqual(T.splitAnswer({ t: 'text' }, ['Free']), [['Free'], '']);
+assert.deepStrictEqual(T.joinAnswer(radio, ['Yes'], '  '), ['Yes']);
+assert.deepStrictEqual(T.joinAnswer(radio, ['Yes'], ' Maybe '), ['Maybe'], 'radio: the own answer instead of an option');
+assert.deepStrictEqual(T.joinAnswer(box, ['A', 'C'], 'Mine'), ['A', 'C', 'Mine'], 'checkbox: the own answer besides the options');
+assert.deepStrictEqual(T.joinAnswer(box, [], ''), []);
 
 // a table row reads as its cells in the lists
 assert.strictEqual(T.snip('| Module | Owner |\n|---|---|', 60), 'Module Owner');

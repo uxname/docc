@@ -177,6 +177,11 @@ impl Rev {
         Ok(Rev { rev: rev.to_string(), root: root.to_path_buf(), dir, files, cache: Mutex::new(HashMap::new()) })
     }
 
+    /// rev is the revision as it was given.
+    pub fn rev(&self) -> &str {
+        &self.rev
+    }
+
     /// rel is the project-relative '/' path of an OS path below the root.
     fn rel(&self, p: &Path) -> Option<String> {
         slash(p.strip_prefix(&self.root).ok()?)

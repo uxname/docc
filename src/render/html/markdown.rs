@@ -251,14 +251,20 @@ fn url_escape(v: &str) -> String {
     out
 }
 
-/// is_dangerous_url is goldmark's html.IsDangerousURL.
-fn is_dangerous_url(url: &str) -> bool {
+/// is_dangerous_url is goldmark's html.IsDangerousURL; img also lets an SVG
+/// data URL through, as the src of an <img> only: a picture does not run the
+/// scripts of an SVG, a link to one opens it as a page that does.
+fn is_dangerous_url(url: &str, img: bool) -> bool {
     let has = |s: &str, p: &str| {
         s.len() >= p.len() && s.as_bytes()[..p.len()].eq_ignore_ascii_case(p.as_bytes())
     };
     if has(url, "data:image/") && url.len() >= 11 {
         let v = &url[11..];
-        return !(has(v, "png;") || has(v, "gif;") || has(v, "jpeg;") || has(v, "webp;"));
+        return !(has(v, "png;")
+            || has(v, "gif;")
+            || has(v, "jpeg;")
+            || has(v, "webp;")
+            || (img && (has(v, "svg+xml;") || has(v, "svg+xml,"))));
     }
     has(url, "javascript:") || has(url, "vbscript:") || has(url, "file:") || has(url, "data:")
 }
@@ -917,7 +923,7 @@ impl<'s> Conv<'s> {
                     if email && !url.to_ascii_lowercase().starts_with("mailto:") {
                         self.out.push_str("mailto:");
                     }
-                    if !is_dangerous_url(&url) {
+                    if !is_dangerous_url(&url, false) {
                         self.out.push_str(&escape_html(&url));
                     }
                     self.out.push_str("\">");
@@ -927,7 +933,7 @@ impl<'s> Conv<'s> {
                 }
                 self.out.push_str("<a href=\"");
                 let dest = url_escape(&l.url);
-                if !is_dangerous_url(&dest) {
+                if !is_dangerous_url(&dest, false) {
                     self.out.push_str(&escape_html(&dest));
                 }
                 self.out.push('"');
@@ -944,7 +950,7 @@ impl<'s> Conv<'s> {
             NodeValue::Image(l) => {
                 self.out.push_str("<img src=\"");
                 let dest = url_escape(&l.url);
-                if !is_dangerous_url(&dest) {
+                if !is_dangerous_url(&dest, true) {
                     self.out.push_str(&escape_html(&dest));
                 }
                 self.out.push_str("\" alt=\"");
@@ -1121,7 +1127,7 @@ impl<'s> Conv<'s> {
                         if m.email {
                             out.push_str("mailto:");
                         }
-                        if !is_dangerous_url(&u) {
+                        if !is_dangerous_url(&u, false) {
                             out.push_str(&escape_html(&u));
                         }
                         out.push_str("\">");

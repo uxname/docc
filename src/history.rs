@@ -108,10 +108,13 @@ impl std::error::Error for Error {}
 /// hidden fields of a document (notes, docIgnore, hidden) are left out, as in
 /// the pages, and so are the authors and messages of the commits. Since, a Git
 /// revision, cuts the history: what changed before it is not in the file.
+/// Rev is the revision the documents were read from (build --rev, no
+/// checkout): the history ends there instead of at HEAD and the working tree.
 #[derive(Debug, Clone, Default)]
 pub struct Options {
     pub full: bool,
     pub since: String,
+    pub rev: String,
 }
 
 /// hiddenFields are the top-level fields a reader never sees.
@@ -257,7 +260,8 @@ pub fn load(
     current: &HashMap<String, &Node>,
     o: &Options,
 ) -> Result<Option<History>, Error> {
-    let Ok(prefix) = git(src_dir, &["rev-parse", "--show-prefix"]) else {
+    // src_dir is not on the disk in a bare mirror: git runs in the nearest folder above it
+    let Ok((dir, prefix)) = locate_git(src_dir) else {
         if !o.since.is_empty() {
             return Err(Error(format!(
                 "changes since {}: the project is not in a Git repository",
@@ -266,6 +270,7 @@ pub fn load(
         }
         return Ok(None);
     };
+    let (src_dir, head) = (dir.as_path(), if o.rev.is_empty() { "HEAD" } else { o.rev.as_str() });
     let mut before: Option<HashSet<String>> = None; // full hashes of the commits up to Since
     let mut since_date = String::new();
     if !o.since.is_empty() {
@@ -279,9 +284,9 @@ pub fn load(
                 go_quote(&o.since)
             )));
         };
-        if git(src_dir, &["merge-base", "--is-ancestor", &rev, "HEAD"]).is_err() {
+        if git(src_dir, &["merge-base", "--is-ancestor", &rev, head]).is_err() {
             return Err(Error(format!(
-                "changes since {}: not in the history of HEAD",
+                "changes since {}: not in the history of {head}",
                 go_quote(&o.since)
             )));
         }
@@ -298,12 +303,11 @@ pub fn load(
                 .collect(),
         );
     }
-    let prefix = prefix.trim_ascii();
     let mut h = History::default();
-    if let Ok(head) = git(src_dir, &["rev-parse", "--short=8", "HEAD"]) {
-        h.head = lossy(&head).trim().to_string();
+    if let Ok(short) = git(src_dir, &["rev-parse", "--short=8", head]) {
+        h.head = lossy(&short).trim().to_string();
     }
-    let Ok((log, mut entries)) = read_log(src_dir, &[], prefix) else {
+    let Ok((log, mut entries)) = read_log(src_dir, &[head], prefix.as_bytes()) else {
         return Ok(Some(h));
     };
     entries.retain(|e| e.path.ends_with(".json"));

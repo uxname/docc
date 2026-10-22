@@ -42,7 +42,7 @@ Update it with `npx skills update`. The skill needs the `docc` binary from above
 
     docc init        # docc.json (maxWarnings 0, commitOut false), docs/schemas/page.json, docs/src/index.json, .gitignore lines, docs/out, a git pre-commit hook
     docc validate    # check the sources (--format json for agents and CI)
-    docc build       # write docs/out and docc.lock (--single, --html: also one .md file and one HTML app, kept up to date once made; --no-comments, --since)
+    docc build       # write docs/out and docc.lock (--single, --html: also one .md file and one HTML app, kept up to date once made; --no-comments, --since; --page: one page; --rev: the HTML file of a Git revision)
     docc compile     # print pages, tree and diagnostics as one JSON object, write nothing (--rev: a Git revision)
     docc log         # the commits that changed the documents, with the files and block counts of each (JSON for programs)
     docc diff A B    # the blocks of the documents of two revisions lined up (--path: one document, every block)
@@ -60,6 +60,8 @@ A document is one JSON file in `docs/src`; its id is the file name (`docs/src/si
   "body": ["After five wrong passwords sign-in locks for 15 minutes. ^lockout"]
 }
 ```
+
+Pictures (`png`, `jpg`, `jpeg`, `gif`, `svg`, `webp`) lie inside `docs/src` and are linked by a path relative to the document: `![Plan](img/plan.svg)`. A fenced ```` ```mermaid ```` block is drawn as a diagram in the HTML file, offline. A form field (`{"$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"]}`) asks the readers of the HTML file; radio and checkbox fields also take an own answer.
 
 Every document needs a `kind` and a schema `docs/schemas/<kind>.json` (rule DOC109). The project defines its own kinds; a schema sets `"additionalProperties"` to `true` (any extra field) or `false` (only the listed fields). Other documents link with `[[sign-in]]` or to one paragraph with `[[sign-in#^lockout]]`.
 

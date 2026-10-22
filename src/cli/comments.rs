@@ -35,6 +35,10 @@ last member of the document. The operations:
   {\"op\": \"add\", \"doc\": <id or path>, \"comment\": {...}}   id and created are filled in when left out
   {\"op\": \"rm\", \"id\": <id>}
   {\"op\": \"edit\", \"id\": <id>, \"text\": <new text>}
+  {\"op\": \"edit\", \"id\": <id>, \"answer\": [<new answer>]}   an answer to the same form field, quoting it as it is now
+An answer must fit its field, on add and edit: a text field and radio buttons take one
+value (radio: an option or an own answer), check boxes at most one value that is none of
+the options; no value blank or twice. Values that are not options are trimmed.
 A comment stands only where a reader looks: at must be the pointer of a block, a property
 or (for an answer) the form field that docc compile shows on the page of the document;
 notes, docIgnore, hidden, the title and \"$comments\" are refused. quote is always the
@@ -116,7 +120,8 @@ pub(super) fn cmd_comments(c: &mut Common, args: &[String], stdout: &mut dyn Wri
 pub(super) enum Op {
     Add { doc: String, comment: serde_json::Value },
     Rm { id: String },
-    Edit { id: String, text: String },
+    /// a comment gets a new text, an answer a new answer (one of the two)
+    Edit { id: String, text: Option<String>, answer: Option<Vec<String>> },
 }
 
 /// Applied is the output of docc comments apply.
@@ -269,6 +274,7 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
                 comments::check(&c).map_err(|m| fail(format!("comment: {m}")))?;
                 // the quote is always the text the reader sees there; a quote given that differs is replaced
                 c.quote = seer.quote(i, &c.at, c.input.as_deref()).map_err(fail)?;
+                answer_fits(d.root(), &mut c).map_err(|m| fail(format!("comment: {m}")))?;
                 owner.insert(id.clone(), vec![i]);
                 out.added.push(Added { id: id.clone(), doc: d.id.clone(), path: d.rel.clone() });
                 let b = comments::edit(&files[&i], &Edit::Add(&c)).map_err(|m| fail(format!("{}: {m}", d.rel)))?;
@@ -289,8 +295,14 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
                 let i = is[0];
                 seer.doc(i).map_err(fail)?;
                 read(i, &mut files)?;
-                let e = match op {
-                    Op::Edit { text, .. } => Edit::Text(id, text),
+                let again = match op {
+                    Op::Edit { text: None, answer: Some(a), .. } => Some(answer_again(&mut seer, i, &files[&i], id, a).map_err(fail)?),
+                    _ => None,
+                };
+                let e = match (op, &again) {
+                    (_, Some(c)) => Edit::Replace(id, c),
+                    (Op::Edit { text: Some(t), answer: None, .. }, _) => Edit::Text(id, t),
+                    (Op::Edit { .. }, _) => return Err(fail("edit takes either \"text\" (a comment) or \"answer\" (an answer to a form field)".into())),
                     _ => Edit::Remove(id),
                 };
                 let b = comments::edit(&files[&i], &e).map_err(|m| fail(format!("{}: {m}", p.docs[i].rel)))?;
@@ -322,6 +334,38 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
         out.files.push(p.docs[i].rel.clone());
     }
     Ok(out)
+}
+
+/// answer_again is the answer id of document i (its file now in src) with a
+/// new answer: it stays an answer to the same form field, follows the field
+/// if it moved, and quotes the field as the reader sees it now.
+fn answer_again(seer: &mut Seer, i: usize, src: &[u8], id: &str, answer: &[String]) -> Result<Comment, String> {
+    let r = loader::parse(src.strip_prefix(&[0xEF, 0xBB, 0xBF][..]).unwrap_or(src));
+    let root = r.root.as_ref().filter(|_| r.err.is_none()).ok_or("the file is not valid JSON")?;
+    let cur = comments::of(root).into_iter().find(|c| c.id == id).ok_or_else(|| format!("comment {} is malformed (DOC112)", go_quote(id)))?;
+    let Some(input) = cur.input.clone() else {
+        return Err(format!("comment {} is not an answer to a form field: edit its \"text\"", go_quote(id)));
+    };
+    let at = comments::find_input(root, "", &input).unwrap_or(cur.at.clone());
+    let quote = seer.quote(i, &at, Some(&input))?;
+    let mut c = Comment { at, quote, answer: Some(answer.to_vec()), ..cur };
+    comments::check(&c)?;
+    answer_fits(Some(root), &mut c)?;
+    Ok(c)
+}
+
+/// answer_fits trims an answer as the HTML file does and checks that the form
+/// field at its "at" (Seer found it there) takes it: Docspace passes on what
+/// any client sends, so the shape is checked here, not only by the page.
+fn answer_fits(root: Option<&Node>, c: &mut Comment) -> Result<(), String> {
+    let Some(f) = root.and_then(|r| crate::schema::resolve_pointer(r, &c.at)).filter(|f| engine::is_input(f)) else {
+        return Ok(());
+    };
+    if let Some(a) = c.answer.as_mut() {
+        comments::tidy_answer(f, a);
+    }
+    comments::check(c)?;
+    comments::answer_problem(f, c.answer.as_deref().unwrap_or_default()).map_or(Ok(()), Err)
 }
 
 fn print_applied(c: &Common, a: &Applied, stdout: &mut dyn Write) -> Result<i32, Error> {

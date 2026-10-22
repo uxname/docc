@@ -193,8 +193,57 @@ fn item_problem(it: &Node) -> Option<Problem> {
         (Some(t), None, None) if t.str.trim().is_empty() => bad(t, "the text of a comment is empty".into()),
         (Some(_), None, None) => None,
         (None, Some(i), Some(_)) if i.str.trim().is_empty() => bad(i, "\"input\" of an answer is empty".into()),
-        (None, Some(_), Some(_)) => None,
+        (None, Some(_), Some(a)) => {
+            // what no form field takes: no value, a blank one, the same one twice
+            let mut seen = std::collections::HashSet::new();
+            if a.items.is_empty() {
+                return bad(a, "\"answer\" of an answer is empty: give at least one value".into());
+            }
+            a.items.iter().find_map(|v| {
+                if v.str.trim().is_empty() {
+                    bad(v, "a value of \"answer\" is blank".into())
+                } else if !seen.insert(v.str.as_str()) {
+                    bad(v, format!("\"answer\" gives {} twice", go_quote(&v.str)))
+                } else {
+                    None
+                }
+            })
+        }
         _ => bad(it, "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)".into()),
+    }
+}
+
+/// options are the options of the form field n.
+fn options(n: &Node) -> Vec<&str> {
+    n.get("options").map(|o| o.items.iter().map(|i| i.str.as_str()).collect()).unwrap_or_default()
+}
+
+/// answer_problem is what the form field n cannot take in answer (the
+/// checks of item_problem aside), None when it takes it: a text field and
+/// radio buttons exactly one value (radio: an option or an own answer),
+/// check boxes at most one value that is none of the options (the own answer).
+pub fn answer_problem(n: &Node, answer: &[String]) -> Option<String> {
+    let kind = n.get(engine::INPUT_KEY).map_or("", |k| k.str.as_str());
+    let opts = options(n);
+    let own = answer.iter().filter(|a| !opts.contains(&a.as_str())).count();
+    match kind {
+        "text" | "radio" if answer.len() != 1 => {
+            Some(format!("a {kind} field takes exactly one answer, the answer gives {}", answer.len()))
+        }
+        "checkbox" if own > 1 => Some(format!(
+            "a checkbox field takes at most one own answer (a value that is none of its options), the answer gives {own}"
+        )),
+        _ => None,
+    }
+}
+
+/// tidy_answer trims the values of an answer to the form field n that are
+/// not its options, as the HTML file does with what a reader types (the text
+/// of a text field, the own answer); an option is kept exactly.
+pub fn tidy_answer(n: &Node, answer: &mut [String]) {
+    let opts = options(n);
+    for a in answer.iter_mut().filter(|a| !opts.contains(&a.as_str())) {
+        *a = a.trim().to_string();
     }
 }
 
@@ -295,6 +344,8 @@ pub enum Edit<'a> {
     Add(&'a Comment),
     Remove(&'a str),
     Text(&'a str, &'a str),
+    /// the comment with this id is replaced whole (an answer given again)
+    Replace(&'a str, &'a Comment),
 }
 
 /// edit applies e to the JSON text of a document and returns the new text:
@@ -382,6 +433,10 @@ pub fn edit(src: &[u8], e: &Edit) -> Result<Vec<u8>, String> {
                 return Err(format!("comment {} is an answer to a form field: it has no text to edit", go_quote(id)));
             };
             (t.start, t.end, quote(text).replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029"))
+        }
+        Edit::Replace(id, c) => {
+            let it = &items[pos(id)?];
+            (it.start, it.end, c.json())
         }
     };
     Ok(join(bom, &[&data[..start], text.as_bytes(), &data[end..]]))
@@ -758,6 +813,11 @@ mod tests {
         assert_eq!(String::from_utf8(edit(first.as_bytes(), &Edit::Remove("c-1")).unwrap()).unwrap(), "{\"title\": \"T\"}");
         assert!(edit(first.as_bytes(), &Edit::Text("c-1", "x")).unwrap_err().contains("no text"));
         assert!(edit(first.as_bytes(), &Edit::Remove("c-9")).unwrap_err().contains("no comment"));
+        // a replaced item keeps its place in the list, the other bytes stay
+        let two = "{\"title\": \"T\", \"$comments\": [{\"id\": \"c-1\"},\n  {\"id\": \"c-2\"}]}";
+        let c = comment("c-1", "/body/0");
+        let got = String::from_utf8(edit(two.as_bytes(), &Edit::Replace("c-1", &c)).unwrap()).unwrap();
+        assert_eq!(got, two.replacen("{\"id\": \"c-1\"}", &c.json(), 1));
     }
 
     #[test]
@@ -778,6 +838,9 @@ mod tests {
             (ok.replace("\"quote\"", "\"status\""), "unknown field \"status\""),
             (ok.replace("\"t\"", "1"), "\"text\" must be a string"),
             (ans.replace("[\"Yes\"]", "\"Yes\""), "\"answer\" must be an array"),
+            (ans.replace("[\"Yes\"]", "[]"), "\"answer\" of an answer is empty"),
+            (ans.replace("[\"Yes\"]", "[\"Yes\", \" \"]"), "a value of \"answer\" is blank"),
+            (ans.replace("[\"Yes\"]", "[\"Yes\", \"Yes\"]"), "\"answer\" gives \"Yes\" twice"),
         ] {
             let got = probs(&format!("[{bad}]"));
             assert!(got.len() == 1 && got[0].contains(want), "{bad}: {got:?}");
@@ -802,6 +865,31 @@ mod tests {
         let gone = Comment { input: Some("z".into()), ..field };
         assert_eq!(place(&root, &gone, &title).0, Place::Lost);
         assert_eq!(find_input(&root, "", "q").as_deref(), Some("/body/2"));
+    }
+
+    /// Each kind of field takes its shape of answer: text and radio one
+    /// value, checkbox the options and at most one own answer.
+    #[test]
+    fn answer_shapes() {
+        let root = parse(r#"{"body":[{"$input":"text","id":"t","label":"T"},{"$input":"radio","id":"r","label":"R","options":["A","B"]},{"$input":"checkbox","id":"c","label":"C","options":["A"," B "]}]}"#);
+        let f = |i: usize| &root.get("body").unwrap().items[i];
+        let a = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        for (i, ans, want) in [
+            (0, a(&["Free text"]), None),
+            (0, a(&["One", "Two"]), Some("a text field takes exactly one answer, the answer gives 2")),
+            (1, a(&["A"]), None),
+            (1, a(&["Own"]), None),
+            (1, a(&["A", "Own"]), Some("a radio field takes exactly one answer, the answer gives 2")),
+            (2, a(&["A", " B ", "Own"]), None),
+            (2, a(&["Own"]), None),
+            (2, a(&["A", "Own", "More"]), Some("at most one own answer (a value that is none of its options), the answer gives 2")),
+        ] {
+            let got = answer_problem(f(i), &ans);
+            assert!(got.as_deref().map(|g| want.is_some_and(|w| g.contains(w))).unwrap_or(want.is_none()), "{ans:?}: {got:?}");
+        }
+        let mut ans = a(&[" B ", "  Own  "]);
+        tidy_answer(f(2), &mut ans);
+        assert_eq!(ans, a(&[" B ", "Own"]), "an option stays as it is, typed text is trimmed");
     }
 
     /// A paragraph inserted above moves the commented block down by one.

@@ -173,10 +173,13 @@ h1{margin:0 0 1.2rem;font-size:30px;line-height:1.25;letter-spacing:-.015em;font
 .blk-body li{margin:.25rem 0}
 .blk-body ul,.blk-body ol{padding-left:1.5rem}
 .blk-body li>ul,.blk-body li>ol{margin:.25rem 0}
-code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px}
+code,pre,.mmd-err{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px}
 code{padding:.1em .35em;background:var(--code);border-radius:4px}
 pre{position:relative;padding:.9rem 1rem;overflow-x:auto;background:var(--code);border:1px solid var(--line);border-radius:8px;line-height:1.55}
 pre code{padding:0;background:none}
+.mmd{margin:0 0 1rem;overflow-x:auto}
+.mmd svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.mmd-err{margin:-.5rem 0 1rem;color:var(--rem);white-space:pre-wrap}
 .copy{position:absolute;top:.4rem;right:.4rem;padding:.15rem .55rem;font:inherit;font-size:.75rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;opacity:0}
 pre:hover .copy,pre:focus-within .copy,.copy:focus{opacity:1}
 @media (pointer:coarse){.copy{opacity:1;min-height:44px}}
@@ -264,8 +267,11 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px dotted var(-
 .fld .opt{display:flex;align-items:flex-start;gap:.5rem;min-height:var(--tgt);padding:calc((var(--tgt) - 1.6em) / 2) 0}
 .fld .opt input{flex:none;width:1.1rem;height:1.1rem;margin:.25em 0 0;accent-color:var(--accent)}
 .fld textarea{display:block;width:100%;min-height:4.5rem;max-height:40vh;max-height:40dvh;margin:.3rem 0 .5rem;padding:.5rem .6rem;resize:vertical}
-.fld textarea,.fld .who{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:6px}
-.fld .who{flex:1;min-width:0;min-height:var(--tgt);padding:.2rem .5rem}
+.fld textarea,.fld .who,.fld .own-t{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--field);border-radius:6px}
+.fld .who,.fld .own-t{flex:1;min-width:0;min-height:var(--tgt);padding:.2rem .5rem}
+.fld .own{align-items:center}
+.fld .own input:first-child{margin:0}
+.fld .own .own-t{flex:1;width:auto;height:auto;margin:0}
 .fld .who-l{margin:.4rem 0 0}
 .fld .row{margin-top:.3rem}
 .fld .fans{margin:.6rem 0 0;padding:.5rem 0 0;list-style:none;border-top:1px solid var(--line);font-size:.875rem}

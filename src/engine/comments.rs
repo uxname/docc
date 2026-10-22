@@ -6,8 +6,9 @@ use crate::config::go_quote;
 use crate::loader::Kind;
 
 impl Project {
-    /// check_comments reports DOC112, a malformed "$comments" or an id used
-    /// twice in the project, and DOC215, a comment that lost its place.
+    /// check_comments reports DOC112, a malformed "$comments", an id used
+    /// twice in the project or an answer its form field cannot take, and
+    /// DOC215, a comment that lost its place.
     pub(super) fn check_comments(&self) {
         let mut ids: HashMap<String, &str> = HashMap::new();
         for d in &self.docs {
@@ -40,7 +41,16 @@ impl Project {
             let title = |id: &str| self.doc(id).and_then(|t| t.root()?.get("title").map(|n| n.str.clone()));
             let items = v.items.iter().filter(|_| v.kind == Kind::Array);
             for (n, c) in items.filter_map(|it| comments::of_item(it).map(|c| (it, c))) {
-                if comments::place(root, &c, &title).0 != Place::Lost {
+                let place = comments::place(root, &c, &title).0;
+                // an answer to the field as it reads now must fit it; one to an
+                // earlier version of the question (changed) is left as it was given
+                if let (Place::Same, Some(a)) = (place, &c.answer)
+                    && let Some(m) = crate::schema::resolve_pointer(root, &c.at).and_then(|f| comments::answer_problem(f, a))
+                {
+                    let at = n.get("answer").unwrap_or(n);
+                    self.emit(d, "DOC112", at.start, at.end, format!("comment {}: {m}", go_quote(&c.id)), "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer), or delete the comment (docc comments rm <id>).".into());
+                }
+                if place != Place::Lost {
                     continue;
                 }
                 let at = n.get("at").unwrap_or(n);

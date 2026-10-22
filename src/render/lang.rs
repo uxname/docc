@@ -73,6 +73,8 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("Comment on the selection", "Комментировать выделенное"),
     ("Fragment changed", "Фрагмент изменён"),
     ("Answer saved.", "Ответ сохранён."),
+    ("Own answer", "Свой ответ"),
+    ("The diagram has an error:", "В диаграмме ошибка:"),
     ("Answers", "Ответы"),
     ("to an earlier question", "на прежний вопрос"),
     ("in this browser", "в этом браузере"),
