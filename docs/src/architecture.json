@@ -17,6 +17,7 @@
     "render: Markdown pages, the tree, the single Markdown file, the HTML application (`app.js` with Preact and htm from `vendor`, fed with a JSON island), numbering and images. `lang.rs` holds the Russian labels for `\"lang\": \"ru\"`.",
     "history: reads the Git history of the documents and follows every block through it; comments: the review comments of the HTML file and `docc.comments.json`.",
     "trace and report: `docc:` tags in code files, and the text and JSON reports.",
+    "source: where the files of a project are read from, the disk or the tree of a Git revision (`docc compile --rev`, with `git ls-tree` and one `git cat-file --batch` for many files); config, schema, engine, trace and render read every file through it.",
     "cli: the command line; its flags behave as those of the Go version, which docc was first written in. The changes of the move to Rust are listed in `docs/rust-port`."
   ],
   "principles": "Golden tests, a pure core with input and output at the edges, and stable codes. The main dependencies are jsonschema, regex, comrak (it parses the Markdown of the single HTML file; docc writes the HTML itself), icu_collator for sorting titles and unicode-normalization."

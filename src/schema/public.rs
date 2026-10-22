@@ -4,6 +4,13 @@ use super::DOCUMENT_SCHEMA;
 use crate::rules;
 
 const CONFIG_SCHEMA: &str = include_str!("config.json");
+const COMPILE_SCHEMA: &str = include_str!("output-compile.json");
+
+/// Compile returns the schema of the output of docc compile, printed by
+/// `docc schema compile`; its $id is the "$schema" of that output.
+pub fn compile_output() -> &'static [u8] {
+    COMPILE_SCHEMA.as_bytes()
+}
 
 /// Document returns the document meta-schema printed by `docc schema document`.
 pub fn document() -> &'static [u8] {

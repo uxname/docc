@@ -21,9 +21,10 @@ use serde_json::Value;
 
 use crate::config as cfg;
 use crate::loader::{self, Node};
+use crate::source::{self, Source};
 
 pub use kind::closest;
-pub use public::{config, document};
+pub use public::{compile_output, config, document};
 
 use texts::{display, go_quote, join_quoted, printer_float, printer_int, quote, type_of};
 
@@ -238,7 +239,7 @@ fn build(l: &Arc<MemLoader>, url: &str, root: &Value) -> Result<Validator, Strin
 
 /// Load compiles the built-in schema and every *.json file under dir.
 /// A missing dir is fine. display_dir is the project-relative path for messages.
-pub fn load(dir: &Path, display_dir: &str) -> Result<Set, LoadError> {
+pub fn load(dir: &Path, display_dir: &str, src: &Source) -> Result<Set, LoadError> {
     let res = loader::parse(DOCUMENT_SCHEMA.as_bytes());
     let Some(builtin_root) = res.root.as_ref().filter(|_| res.err.is_none()) else {
         let msg = res.err.map(|e| e.msg).unwrap_or_default();
@@ -248,14 +249,24 @@ pub fn load(dir: &Path, display_dir: &str) -> Result<Set, LoadError> {
     l.insert(BUILTIN_URL.to_string(), loader::value(builtin_root));
     let mut files: Vec<(String, String)> = Vec::new(); // rel path -> url, sorted
     let mut raw: HashMap<String, Node> = HashMap::new();
-    if dir.is_dir() {
+    if src.entry(dir) == Some(source::Entry::Dir) {
         let mut rels = Vec::new();
-        walk_dir(dir, "", &mut rels).map_err(|msg| cfg_err(display_dir, 0, 0, msg))?;
+        if let Source::Rev(rev) = src {
+            for (rel, b) in rev.files(display_dir) {
+                if !b.link && rel.ends_with(".json") {
+                    rels.push(rel.to_string());
+                }
+            }
+            rev.prefetch(rels.iter().map(|r| format!("{display_dir}/{r}")).collect::<Vec<_>>().iter().map(String::as_str));
+        } else {
+            walk_dir(dir, "", &mut rels).map_err(|msg| cfg_err(display_dir, 0, 0, msg))?;
+        }
         rels.sort();
         for rel in rels {
             let shown = format!("{display_dir}/{rel}");
             let path = dir.join(&rel);
-            let data = std::fs::read(&path)
+            let data = src
+                .read(&path)
                 .map_err(|e| cfg_err(&shown, 0, 0, go_path_error("open", &path, &e)))?;
             let r = loader::parse(&data);
             if let Some(e) = &r.err {

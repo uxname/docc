@@ -33,7 +33,7 @@ fn load_files(files: &[(&str, &str)]) -> Result<Set, LoadError> {
         std::fs::create_dir_all(p.parent().unwrap()).unwrap();
         std::fs::write(&p, content).unwrap();
     }
-    load(&dir, "docs/schemas")
+    load(&dir, "docs/schemas", &crate::source::Source::Disk)
 }
 
 fn messages(vs: &[Violation]) -> String {

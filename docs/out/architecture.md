@@ -30,6 +30,8 @@ history: reads the Git history of the documents and follows every block through 
 
 trace and report: `docc:` tags in code files, and the text and JSON reports.
 
+source: where the files of a project are read from, the disk or the tree of a Git revision (`docc compile --rev`, with `git ls-tree` and one `git cat-file --batch` for many files); config, schema, engine, trace and render read every file through it.
+
 cli: the command line; its flags behave as those of the Go version, which docc was first written in. The changes of the move to Rust are listed in `docs/rust-port`.
 
 ## Principles

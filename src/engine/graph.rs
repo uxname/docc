@@ -117,7 +117,10 @@ impl Project {
         self.dup_anchors();
         self.broken_refs();
         self.parent_cycles();
-        self.roots();
+        if !self.cfg.folders {
+            // in folder mode the tree is the folders: every document is in it
+            self.roots();
+        }
         self.includes();
         self.broken_files();
     }
@@ -137,10 +140,10 @@ impl Project {
                     }
                     let (a, b) = d.range(sn.node(), im.start, im.end);
                     let (rel, ok) = image_path(&d.rel, &im.inner);
-                    let st = std::fs::metadata(src.join(&rel));
+                    let st = self.cfg.source.entry(&src.join(&rel));
                     let msg = if !ok {
                         format!("the image path leaves {}", self.cfg.src)
-                    } else if st.as_ref().map_or(true, |m| m.is_dir()) {
+                    } else if st.is_none_or(|e| e == crate::source::Entry::Dir) {
                         format!("the image file does not exist: {}/{}", self.cfg.src, rel)
                     } else if image_ext(&text::to_lower(path_ext(&rel))).is_none() {
                         format!(

@@ -16,6 +16,7 @@ use crate::diag::{self, Diagnostic, Level};
 use crate::loader::{self, Node};
 use crate::rules;
 use crate::schema;
+use crate::source::{self, Rev, Source};
 use crate::text;
 use crate::trace;
 
@@ -152,7 +153,7 @@ pub(super) fn go_path_error(op: &str, path: &Path, err: &std::io::Error) -> Stri
 /// Load reads the config, schemas and all documents, and emits the file-level
 /// diagnostics (DOC101, DOC102, DOC104).
 pub fn load(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
-    let set = schema::load(&cfg.abs(&cfg.schemas), &cfg.schemas)?;
+    let set = schema::load(&cfg.abs(&cfg.schemas), &cfg.schemas, &cfg.source)?;
     let mut p = Project {
         cfg,
         schemas: set,
@@ -166,16 +167,18 @@ pub fn load(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
         matchers: RefCell::new(HashMap::new()),
     };
     let src_abs = p.cfg.abs(&p.cfg.src);
-    if !std::fs::metadata(&src_abs).is_ok_and(|m| m.is_dir()) {
+    if p.cfg.source.entry(&src_abs) != Some(source::Entry::Dir) {
         return Err(usage(format!(
             "source directory {} not found",
             go_quote(&p.cfg.src)
         )));
     }
     let mut paths = Vec::new();
-    // filepath.WalkDir Lstat's the root: a src that is itself a symbolic
-    // link is not a directory to it, so nothing below it is loaded
-    if !std::fs::symlink_metadata(&src_abs).is_ok_and(|m| m.file_type().is_symlink()) {
+    if let Source::Rev(rev) = &p.cfg.source {
+        p.walk_rev(rev, &src_abs, &mut paths);
+    } else if !std::fs::symlink_metadata(&src_abs).is_ok_and(|m| m.file_type().is_symlink()) {
+        // filepath.WalkDir Lstat's the root: a src that is itself a symbolic
+        // link is not a directory to it, so nothing below it is loaded
         p.walk(&src_abs, b"", &mut paths)?;
     }
     paths.sort();
@@ -235,6 +238,39 @@ fn has_sub(data: &[u8], pat: &[u8]) -> bool {
 }
 
 impl Project {
+    /// walk_rev is walk over the tree of a Git revision: the same files, the
+    /// same DOC104 for folder names; the contents are read with one git process.
+    fn walk_rev(&self, rev: &Rev, src_abs: &Path, paths: &mut Vec<(Vec<u8>, PathBuf)>) {
+        let mut dirs = std::collections::BTreeSet::new();
+        for (rel, b) in rev.files(&self.cfg.src) {
+            let parts: Vec<&str> = rel.split('/').collect();
+            if parts.iter().any(|n| n.starts_with('.')) || b.link {
+                continue;
+            }
+            for i in 1..parts.len() {
+                dirs.insert(parts[..i].join("/"));
+            }
+            if rel.ends_with(".json") {
+                paths.push((rel.as_bytes().to_vec(), src_abs.join(rel)));
+            }
+        }
+        for d in dirs {
+            let name = &d[d.rfind('/').map_or(0, |i| i + 1)..];
+            if !valid_id(name) {
+                self.emit_file(
+                    &format!("{}/{d}", self.cfg.src),
+                    "DOC104",
+                    1,
+                    1,
+                    format!("folder name {} is not a valid id", go_quote(name)),
+                    "Use only a-z, 0-9 and '-' in folder names, not starting or ending with '-', and avoid reserved Windows names.".into(),
+                );
+            }
+        }
+        let rels: Vec<String> = paths.iter().map(|(r, _)| format!("{}/{}", self.cfg.src, String::from_utf8_lossy(r))).collect();
+        rev.prefetch(rels.iter().map(String::as_str));
+    }
+
     /// walk is filepath.WalkDir below src: entries in lexical order, names
     /// starting with '.' and symbolic links skipped, DOC104 for a folder name
     /// that is not an id; the .json regular files go to paths as their path
@@ -294,10 +330,10 @@ impl Project {
             err: Some(loader::Error { offset: 0, msg }),
             ..Default::default()
         };
-        if std::fs::metadata(abs).is_ok_and(|m| m.len() > loader::MAX_FILE_SIZE as u64) {
+        if self.cfg.source.len(abs).is_some_and(|n| n > loader::MAX_FILE_SIZE as u64) {
             d.res = err_res("file is larger than 5 MB".into());
         } else {
-            match std::fs::read(abs) {
+            match self.cfg.source.read(abs) {
                 Err(e) => {
                     d.res = err_res(format!(
                         "cannot read file: {}",

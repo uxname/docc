@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::config::{self, Config};
 use crate::diag::Diagnostic;
@@ -16,6 +17,7 @@ use crate::engine::{self, Project};
 use crate::render;
 use crate::report;
 use crate::schema;
+use crate::source::{Rev, Source};
 
 use comments::cmd_comments;
 use flags::{FlagError, FlagSet};
@@ -39,12 +41,13 @@ Usage: docc [flags] <command> [flags]
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources
-  build              build Markdown into docs/out (--full: audit, --single/--html/--data: one file)
+  build              build Markdown into docs/out (--full: audit, --single/--html: one file)
+  compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision)
   check              read-only check for CI: validate + freshness of out/ and docc.lock
   ack <id|file>...   confirm the changed links around a document, target or code file in docc.lock (--all: every changed link)
   explain <code>     describe a rule
   rules              list rules with effective levels
-  schema document|config   print a JSON Schema
+  schema document|config|compile   print a JSON Schema
   update             replace docc with the latest release (--check: only look, --version vX.Y.Z)
   comments           review comments from the HTML file: import <file>, list (--all), done <id>, rm <id>
 
@@ -85,11 +88,10 @@ confirmed, vanished ones dropped). With errors in groups 1xx-2xx nothing is writ
 --single also writes every page into one Markdown file next to the directory (docs/out.md), --html
 into one self-contained HTML application (docs/out.html), no network needed: a document tree,
 search, dark theme, a timeline of the Git history with the edits drawn in the text, and comments
-on selected words (typed or dictated) copied or downloaded for docc comments import. --data
-writes the data that application draws from (pages, tree, history, comments) as JSON
-(docs/out.json), for a program that shows the pages itself. With --full the files are
-docs/out-full.md, docs/out-full.html and docs/out-full.json. Once written, such a file is
-rebuilt by every later docc build. They
+on selected words (typed or dictated) copied or downloaded for docc comments import. With
+--full the files are docs/out-full.md and docs/out-full.html. Once written, such a file is
+rebuilt by every later docc build. A program that shows the pages itself reads docc compile.
+They
 are for reading, are not checked by docc check and are usually kept out of git.
 
 Examples:
@@ -97,8 +99,24 @@ Examples:
   docc build --full
   docc build --single
   docc build --html
-  docc build --data
   docc build --full --single --html
+"
+        }
+        "compile" => {
+            "Usage: docc compile [--rev <revision>] [flags]
+
+Prints what the sources compile to, for a program that shows the pages itself, and writes
+nothing. With --format json (the format for programs) it is one JSON object on one line:
+$schema, ok, summary and diagnostics as validate reports them, project, tree and the pages
+of the reader (no hidden documents, no notes) cut into blocks with their HTML and sections.
+The object is printed even when the sources are broken: then pages and tree are empty and
+ok is false. Exit code as validate: 0 ok, 1 errors or too many warnings, 2 failure.
+--rev compiles the tree of a Git revision (commit, branch, tag) without a checkout.
+docc schema compile prints the JSON Schema of the object.
+
+Examples:
+  docc compile --format json
+  docc compile --rev HEAD~3 --format json
 "
         }
         "check" => {
@@ -148,9 +166,9 @@ Examples:
 "
         }
         "schema" => {
-            "Usage: docc schema document|config
+            "Usage: docc schema document|config|compile
 
-Prints a JSON Schema for documents or for docc.json.
+Prints a JSON Schema for documents, for docc.json or for the output of docc compile.
 
 Example:
   docc schema document
@@ -292,6 +310,7 @@ fn dispatch(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         "ack" => cmd_ack(c, rest, stdout),
         "explain" => cmd_explain(c, rest, stdout),
         "schema" => cmd_schema(rest, stdout).map(|_| 0),
+        "compile" => cmd_compile(c, rest, stdout, stderr),
         "update" => cmd_update(rest, stdout),
         "comments" => cmd_comments(c, rest, stdout),
         other => Err(usage_err(format!("unknown command {} (try docc --help)", config::go_quote(other)))),
@@ -353,13 +372,28 @@ impl Common {
 }
 
 fn load_config(c: &Common) -> Result<Config, Error> {
+    load_config_at(c, "")
+}
+
+/// load_config_at loads the config with the project read from the Git
+/// revision rev ("" for the disk). The project root is found on the disk as
+/// always (or given with --config, which need not exist on the disk then: a
+/// bare mirror has no checkout); a docc.json missing in the revision means
+/// the defaults, as a project without one has.
+fn load_config_at(c: &Common, rev: &str) -> Result<Config, Error> {
+    let open = |root: &Path| -> Result<Source, Error> {
+        if rev.is_empty() {
+            return Ok(Source::Disk);
+        }
+        Ok(Source::Rev(Arc::new(Rev::open(root, rev).map_err(usage_err)?)))
+    };
     if !c.config_path.is_empty() {
-        return config::load(&c.config_path, true);
+        return config::load_from(&c.config_path, rev.is_empty(), open);
     }
     if let Some(p) = find_config() {
-        return config::load(&p, true);
+        return config::load_from(&p, rev.is_empty(), open);
     }
-    config::load("docc.json", false)
+    config::load_from("docc.json", false, open)
 }
 
 /// find_config returns the nearest docc.json in the current folder or above it,
@@ -382,17 +416,24 @@ fn find_config() -> Option<String> {
     }
 }
 
-/// emit prints diagnostics and returns the exit code.
-fn emit(stdout: &mut dyn Write, stderr: &mut dyn Write, c: &Common, p: &Project, ds: &[Diagnostic]) -> Result<i32, Error> {
-    let (errs, warns) = report::counts(ds);
+/// warning_failure is why the exit code is 1 without errors: more warnings
+/// than --max-warnings (or maxWarnings); "" when there are not.
+fn warning_failure(c: &Common, p: &Project, ds: &[Diagnostic]) -> String {
+    let (_, warns) = report::counts(ds);
     let (mut limit, mut has) = (c.max_warnings, c.max_warnings >= 0);
-    let mut failure = String::new();
     if !has && p.cfg.has_max_warning {
         (limit, has) = (p.cfg.max_warnings, true);
     }
     if has && warns as i64 > limit {
-        failure = format!("too many warnings: {warns} > --max-warnings {limit}");
+        return format!("too many warnings: {warns} > --max-warnings {limit}");
     }
+    String::new()
+}
+
+/// emit prints diagnostics and returns the exit code.
+fn emit(stdout: &mut dyn Write, stderr: &mut dyn Write, c: &Common, p: &Project, ds: &[Diagnostic]) -> Result<i32, Error> {
+    let (errs, _) = report::counts(ds);
+    let failure = warning_failure(c, p, ds);
     let max = c.max_diag as usize;
     if c.format == "json" {
         report::json(stdout, ds, max, p.docs.len(), &failure)?;
@@ -420,15 +461,104 @@ fn cmd_validate(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr:
     emit(stdout, stderr, c, &p, &ds)
 }
 
+/// cmd_compile prints what the sources compile to as one JSON object on
+/// stdout and writes nothing: the diagnostics of validate and, without
+/// errors of groups 1xx-2xx, the tree and the pages of the reader. The object
+/// is printed in every case, a failure (exit code 2) included.
+fn cmd_compile(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
+    let mut rev = String::new();
+    let pos = {
+        let mut fs = new_flags("compile", c);
+        fs.string_var(&mut rev, "rev", "compile the tree of this Git revision (commit, branch, tag) instead of the files on disk");
+        parse(&mut fs, args)
+    };
+    if let Err(e) = &pos
+        && e.is::<HelpError>()
+    {
+        return pos.map(|_| 0);
+    }
+    let res = pos.and_then(|pos| {
+        no_args(&pos)?;
+        c.check()?;
+        let mut p = engine::load(load_config_at(c, &rev)?)?;
+        p.validate();
+        let out = if engine::structural(&p.diags()) {
+            render::Compiled { project: render::Renderer::new(&p, false).project_info(String::new()), ..Default::default() }
+        } else {
+            render::Renderer::new(&p, false).compile()
+        };
+        Ok((p, out))
+    });
+    let (mut p, out) = match res {
+        Ok(v) => v,
+        Err(e) if c.format == "json" => {
+            let ds = error_report(&*e);
+            write_compiled(stdout, false, &ds, 0, "", &render::Compiled::default())?;
+            return Ok(2);
+        }
+        Err(e) => return Err(e),
+    };
+    let ds = p.sorted();
+    if c.format != "json" {
+        let code = emit(stdout, stderr, c, &p, &ds)?;
+        if out.pages.is_empty() && engine::structural(&ds) {
+            say(stdout, "compile skipped: errors in groups 1xx-2xx\n");
+        } else {
+            say(stdout, &format!("compiled {} pages\n", out.pages.len()));
+        }
+        return Ok(code);
+    }
+    let failure = warning_failure(c, &p, &ds);
+    let (errs, _) = report::counts(&ds);
+    let ok = errs == 0 && failure.is_empty();
+    write_compiled(stdout, ok, &ds, p.docs.len(), &failure, &out)?;
+    Ok(if ok { 0 } else { 1 })
+}
+
+/// write_compiled writes the object of docc compile on one line.
+fn write_compiled(
+    w: &mut dyn Write,
+    ok: bool,
+    ds: &[Diagnostic],
+    checked: usize,
+    failure: &str,
+    out: &render::Compiled,
+) -> Result<(), Error> {
+    #[derive(serde::Serialize)]
+    struct Obj<'a> {
+        #[serde(rename = "$schema")]
+        schema: &'static str,
+        ok: bool,
+        summary: report::Summary,
+        diagnostics: &'a [Diagnostic],
+        #[serde(flatten)]
+        out: &'a render::Compiled,
+    }
+    let (errors, warnings) = report::counts(ds);
+    let summary = report::Summary { checked, errors, warnings, shown: ds.len(), truncated: false, failure: failure.into() };
+    let s = serde_json::to_string(&Obj { schema: render::COMPILE_SCHEMA_ID, ok, summary, diagnostics: ds, out })?
+        .replace('\u{2028}', "\\u2028")
+        .replace('\u{2029}', "\\u2029");
+    w.write_all(s.as_bytes())?;
+    w.write_all(b"\n")?;
+    Ok(())
+}
+
 fn cmd_schema(args: &[String], stdout: &mut dyn Write) -> Result<(), Error> {
     let pos = parse(&mut FlagSet::new("schema"), args)?;
     if pos.len() != 1 {
-        return Err(usage_err("usage: docc schema document|config"));
+        return Err(usage_err("usage: docc schema document|config|compile"));
     }
     match pos[0].as_str() {
         "document" => stdout.write_all(schema::document())?,
         "config" => stdout.write_all(&schema::config())?,
-        other => return Err(usage_err(format!("unknown schema {}: use document or config", config::go_quote(other)))),
+        "compile" => stdout.write_all(schema::compile_output())?,
+        other => {
+            return Err(usage_err(format!(
+                "unknown schema {}: use document, config or compile",
+                config::go_quote(other)
+            )));
+        }
     }
     Ok(())
 }
@@ -449,7 +579,7 @@ fn no_args(pos: &[String]) -> Result<(), Error> {
 }
 
 /// Built is what build made: the number of files, the one-file builds written
-/// and the error of the HTML and data files, which stops only those files.
+/// and the error of the HTML file, which stops only that file.
 struct Built {
     n: usize,
     extra: Vec<String>,
@@ -457,11 +587,10 @@ struct Built {
 }
 
 /// build validates, and when there are no errors of groups 1xx-2xx writes the
-/// Markdown into out (or outFull) and returns the number of files. With single,
-/// html and data, or when that file is already there, it also writes the
-/// one-file Markdown, HTML and JSON data next to the directory and returns their
-/// paths in extra.
-fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool, mut data: bool) -> Result<Built, Error> {
+/// Markdown into out (or outFull) and returns the number of files. With single
+/// and html, or when that file is already there, it also writes the one-file
+/// Markdown and HTML next to the directory and returns their paths in extra.
+fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool) -> Result<Built, Error> {
     let mut b = Built { n: 0, extra: Vec::new(), html_err: None };
     if engine::structural(&p.diags()) {
         return Ok(b);
@@ -469,7 +598,7 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     let dir = if full { &p.cfg.out_full } else { &p.cfg.out };
     render::check_dir(p, dir)?;
     // a one-file build made once is kept up to date by every later build, if docc wrote it
-    for (ext, flag, on) in [(".md", "single", &mut single), (".html", "html", &mut html), (".json", "data", &mut data)] {
+    for (ext, flag, on) in [(".md", "single", &mut single), (".html", "html", &mut html)] {
         if let Ok(f) = render::single_file(p, dir, ext) {
             if *on || std::fs::metadata(&f).is_err() {
                 continue;
@@ -493,17 +622,10 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     if single {
         one.push((".md", r.single()));
     }
-    // a bad changesSince stops only the HTML and data files, not the pages and the lock
-    if html || data {
-        match r.app_data() {
-            Ok(d) => {
-                if html {
-                    one.push((".html", r.html_of(&d)));
-                }
-                if data {
-                    one.push((".json", serde_json::to_string(&d).unwrap_or_default() + "\n")); // plain data, cannot fail
-                }
-            }
+    // a bad changesSince stops only the HTML file, not the pages and the lock
+    if html {
+        match r.html() {
+            Ok(h) => one.push((".html", h)),
             Err(e) => b.html_err = Some(e),
         }
     }
@@ -522,20 +644,19 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
 }
 
 fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
-    let (mut full, mut single, mut html, mut data) = (false, false, false, false);
+    let (mut full, mut single, mut html) = (false, false, false);
     let pos = {
         let mut fs = new_flags("build", c);
         fs.bool_var(&mut full, "full", "audit build into outFull");
         fs.bool_var(&mut single, "single", "also write all pages as one Markdown file next to the output directory");
         fs.bool_var(&mut html, "html", "also write all pages as one self-contained HTML file next to the output directory");
-        fs.bool_var(&mut data, "data", "also write the data of the HTML file (pages, tree, history, comments) as one JSON file next to the output directory");
         parse(&mut fs, args)
     };
     let pos = pos?;
     no_args(&pos)?;
     c.check()?;
     let mut p = load_project(c)?;
-    let b = build(&p, stderr, full, single, html, data)?;
+    let b = build(&p, stderr, full, single, html)?;
     let ds = p.sorted();
     let res = emit(stdout, stderr, c, &p, &ds);
     let mut code = *res.as_ref().unwrap_or(&2);
@@ -626,14 +747,12 @@ const INIT_SCHEMA: &str = r#"{
 const INIT_HOOK: &str = "#!/bin/sh\n# docc: refuse a commit with invalid documentation\nexec docc check\n";
 
 /// BUILT_IGNORE are the single-file and audit builds that are not committed.
-const BUILT_IGNORE: [&str; 7] = [
+const BUILT_IGNORE: [&str; 5] = [
     "docs/out.md",
     "docs/out.html",
-    "docs/out.json",
     "docs/out-full/",
     "docs/out-full.md",
     "docs/out-full.html",
-    "docs/out-full.json",
 ];
 
 /// ignore_built adds the lines of BUILT_IGNORE that .gitignore lacks, creating the file.
@@ -733,7 +852,7 @@ fn cmd_init(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         create(stdout, name, INIT_HOOK, 0o755)?;
     }
     let mut p = load_project(c)?;
-    let b = build(&p, stderr, false, false, false, false)?;
+    let b = build(&p, stderr, false, false, false)?;
     if b.n > 0 {
         say(stdout, &format!("built {} files in {}\n", b.n, p.cfg.out));
     }

@@ -11,6 +11,7 @@ use std::process::Command;
 use sha2::{Digest, Sha256};
 
 use crate::config::{Glob, match_any};
+use crate::source::Source;
 use crate::text;
 
 const MAX_FILE_SIZE: u64 = 1 << 20;
@@ -63,7 +64,26 @@ pub fn hashes(tags: &[Tag]) -> HashMap<Key, String> {
 /// otherwise the tree is walked without .git, node_modules and vendor.
 /// Skipped always: the given directories (docc's own src, out and outFull),
 /// symbolic links, files over 1 MB and files with a NUL byte.
-pub fn scan(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf]) -> io::Result<Vec<Tag>> {
+pub fn scan(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf], src: &Source) -> io::Result<Vec<Tag>> {
+    if let Source::Rev(rev) = src {
+        // the files of the revision; there is nothing untracked or ignored in it
+        let under = |rel: &str| skip_dirs.iter().any(|d| inside(d, &root.join(rel)));
+        let paths: Vec<&str> = rev
+            .files("")
+            .filter(|(rel, b)| !b.link && b.size <= MAX_FILE_SIZE && match_any(masks, rel) && !under(rel))
+            .map(|(rel, _)| rel)
+            .collect();
+        rev.prefetch(paths.iter().copied());
+        let mut tags = Vec::new();
+        for rel in paths {
+            if let Ok(data) = src.read(&root.join(rel))
+                && !data.contains(&0)
+            {
+                tags.extend(scan_file(rel, data.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&data)));
+            }
+        }
+        return Ok(tags);
+    }
     let paths = list(root, skip_dirs)?;
     let mut tags = Vec::new();
     for rel in &paths {
@@ -413,7 +433,7 @@ mod tests {
         };
         let files = |root: &Path| -> Vec<String> {
             let all = compile_glob("**").unwrap();
-            let tags = scan(root, &[all], &[root.join("docs")]).unwrap();
+            let tags = scan(root, &[all], &[root.join("docs")], &Source::Disk).unwrap();
             tags.into_iter().map(|t| t.file).collect()
         };
         let plain = temp_dir();

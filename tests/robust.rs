@@ -81,6 +81,7 @@ fn mutated_sources_do_not_panic() {
             &["build"],
             &["build", "--full"],
             &["check", "--format", "json"],
+            &["compile", "--format", "json"],
         ] {
             let (code, _, errs) = work.run(args);
             assert!((0..=2).contains(&code), "round {i} {args:?}: exit {code} {errs}");

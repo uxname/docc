@@ -178,7 +178,7 @@
       "default": [
         "index"
       ],
-      "description": "Ids of the root documents; reachability is counted from them.",
+      "description": "Ids of the root documents; reachability is counted from them. Ignored when tree is folders.",
       "items": {
         "type": "string"
       },
@@ -323,6 +323,14 @@
         }
       },
       "type": "object"
+    },
+    "tree": {
+      "default": "parents",
+      "description": "What the document tree is: parents nests documents by their parent field below the roots; folders is the folder structure of src (a folder's own page is the document named like the folder inside it, e.g. decisions/decisions.json; siblings by order, then title), and roots, DOC203 and DOC205 do not apply.",
+      "enum": [
+        "parents",
+        "folders"
+      ]
     }
   },
   "title": "docc.json",

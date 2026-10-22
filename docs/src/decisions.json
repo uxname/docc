@@ -25,6 +25,8 @@
     "Comments are kept in the browser and leave it as a file, because the HTML file has no server. `docc.comments.json` stores them one per line with the status `open` or `done`, so a change of status is a one-line diff. docc does not change the text by a comment: an agent reads `docc comments`, agrees the change with a person and marks the comment.",
     "Dictation uses the speech recognition of the browser: Chrome and Edge send the sound to their speech service. A Chromium without the keys of that service and Firefox show no microphone button; the comment is typed.",
     "docc was rewritten from Go in Rust in October 2026 for speed and type safety. The output stayed the same; every behaviour that changed is listed, with an example, in `docs/rust-port`, and the speed is in [[performance]].",
+    "A program that shows the pages itself reads `docc compile`, not a file: it prints one JSON object and writes nothing, so a server can compile any commit, even from a bare mirror with `--rev`, without a working folder that two jobs could share. The data file `docs/out.json` of `docc build --data` was removed with it.",
+    "In folder mode a folder's own page is the document named like the folder inside it, not `index.json`: ids stay the file names, unique in the whole project, so links, `docc.lock` and anchors do not depend on where a file lies.",
     "The rules are listed in [[rules]] and the settings in [[config]]."
   ],
   "not_verified": [

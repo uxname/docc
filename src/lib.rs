@@ -13,5 +13,6 @@ pub mod render;
 pub mod report;
 pub mod rules;
 pub mod schema;
+pub mod source;
 pub mod text;
 pub mod trace;

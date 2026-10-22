@@ -48,6 +48,10 @@ Dictation uses the speech recognition of the browser: Chrome and Edge send the s
 
 docc was rewritten from Go in Rust in October 2026 for speed and type safety. The output stayed the same; every behaviour that changed is listed, with an example, in `docs/rust-port`, and the speed is in [Performance](performance.md).
 
+A program that shows the pages itself reads `docc compile`, not a file: it prints one JSON object and writes nothing, so a server can compile any commit, even from a bare mirror with `--rev`, without a working folder that two jobs could share. The data file `docs/out.json` of `docc build --data` was removed with it.
+
+In folder mode a folder's own page is the document named like the folder inside it, not `index.json`: ids stay the file names, unique in the whole project, so links, `docc.lock` and anchors do not depend on where a file lies.
+
 The rules are listed in [Rules and diagnostics](rules.md) and the settings in [Configuration](config.md).
 
 ## Not verified

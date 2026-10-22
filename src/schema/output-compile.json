@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:docc:schema:compile:1",
+  "title": "docc compile output",
+  "description": "What docc compile --format json prints: one object on one line. It is printed in every case; when the sources have errors of groups 1xx-2xx, or docc failed (exit code 2), tree and pages are empty and ok is false.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "ok", "summary", "diagnostics", "project", "tree", "pages"],
+  "properties": {
+    "$schema": { "const": "urn:docc:schema:compile:1", "description": "The version of this shape." },
+    "ok": { "type": "boolean", "description": "No error diagnostics and not more warnings than maxWarnings (or --max-warnings): the exit code is 0." },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checked", "errors", "warnings", "shown", "truncated"],
+      "properties": {
+        "checked": { "type": "integer", "minimum": 0, "description": "Source files checked." },
+        "errors": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 },
+        "shown": { "type": "integer", "minimum": 0, "description": "Always the number of diagnostics: compile lists them all." },
+        "truncated": { "type": "boolean", "description": "Always false." },
+        "failure": { "type": "string", "description": "Why ok is false without errors: too many warnings." }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "description": "As docc validate --format json reports them; a failure of docc itself is one diagnostic with code config, usage or error.",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "lang", "brand"],
+      "properties": {
+        "title": { "type": "string", "description": "Title of the first page of the tree; empty when nothing was compiled." },
+        "lang": { "enum": ["en", "ru"], "description": "lang of docc.json: the language of fixed labels." },
+        "brand": {
+          "description": "branding of docc.json, null without it.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "url", "logo", "accent", "accentLight", "header"],
+              "properties": {
+                "name": { "type": "string" },
+                "url": { "type": ["string", "null"] },
+                "logo": { "type": ["string", "null"], "description": "The logo file as a data: URI." },
+                "accent": { "type": ["string", "null"] },
+                "accentLight": { "type": ["string", "null"] },
+                "header": { "type": ["string", "null"] }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "tree": {
+      "type": "array",
+      "description": "The document tree. With \"tree\": \"folders\" in docc.json it is the folders of src; otherwise pages nested by parent below the roots, then the pages without a parent.",
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "pages": {
+      "type": "array",
+      "description": "Every page a reader sees, in tree order; hidden documents and notes are left out.",
+      "items": { "$ref": "#/$defs/page" }
+    }
+  },
+  "$defs": {
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "rule", "level", "file", "line", "column", "endLine", "endColumn", "message", "hint"],
+      "properties": {
+        "code": { "type": "string", "description": "DOCxxx, or config, usage, error for a failure." },
+        "rule": { "type": "string" },
+        "level": { "enum": ["error", "warn"] },
+        "file": { "type": "string", "description": "Relative to the project root, with '/'." },
+        "line": { "type": "integer", "minimum": 0 },
+        "column": { "type": "integer", "minimum": 0 },
+        "endLine": { "type": "integer", "minimum": 0 },
+        "endColumn": { "type": "integer", "minimum": 0 },
+        "message": { "type": "string" },
+        "hint": { "type": "string" }
+      }
+    },
+    "entry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "path", "title", "children"],
+          "properties": {
+            "type": { "const": "folder" },
+            "path": { "type": "string", "description": "Folder path relative to src." },
+            "title": { "type": "string", "description": "Title of the folder's own page (the document named like the folder inside it), else the folder name." },
+            "id": { "type": "string", "description": "Id of the folder's own page, when it has one." },
+            "children": { "type": "array", "items": { "$ref": "#/$defs/entry" } }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id", "path", "title"],
+          "properties": {
+            "type": { "const": "page" },
+            "id": { "type": "string" },
+            "path": { "type": "string", "description": "Source path relative to src." },
+            "title": { "type": "string" },
+            "children": { "type": "array", "items": { "$ref": "#/$defs/entry" }, "description": "Pages whose parent this is; absent when there are none and always in folder mode." }
+          }
+        }
+      ]
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "title", "kind", "status", "tags", "parent", "crumbs", "props", "sections", "blocks"],
+      "properties": {
+        "id": { "type": "string" },
+        "path": { "type": "string", "description": "Source path relative to src, e.g. decisions/monolith.json." },
+        "title": { "type": "string", "description": "With its number when numbering is on." },
+        "kind": { "type": "string" },
+        "status": { "type": ["string", "null"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "parent": { "type": ["string", "null"], "description": "Id of the parent page, null when there is none or it is hidden." },
+        "crumbs": { "type": "array", "items": { "type": "string" }, "description": "Ids of the parent chain, outermost first." },
+        "props": {
+          "type": "array",
+          "description": "One-line fields shown as a property list instead of sections (when a page has two or more).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["k", "id", "p", "s", "h"],
+            "properties": {
+              "k": { "type": "string", "description": "Field name as a heading." },
+              "id": { "type": "string", "description": "Anchor of the field." },
+              "p": { "type": "string", "description": "JSON Pointer of the value." },
+              "s": { "type": "string", "description": "Source text." },
+              "h": { "type": "string", "description": "HTML, without the paragraph around it." }
+            }
+          }
+        },
+        "sections": {
+          "type": "array",
+          "description": "Field and $sections headings in page order. A section's heading stands before the first block whose sec is its id, after the blocks of the sections before it.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "title", "level"],
+            "properties": {
+              "id": { "type": "string", "description": "Anchor of the heading: what [[page#field]] links point at (#<page>--<id> in the HTML of blocks)." },
+              "title": { "type": "string" },
+              "level": { "type": "integer", "minimum": 2, "maximum": 6 }
+            }
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "description": "The text of the page in order: a string of an array of paragraphs, or a whole value (table, list, number).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["p", "s", "h", "sec"],
+            "properties": {
+              "p": { "type": "string", "description": "JSON Pointer of the value in the source; empty for the footnotes of the page." },
+              "s": { "type": "string", "description": "Source text (lists and tables flattened)." },
+              "h": { "type": "string", "description": "HTML. Links to pages are #<id>, to fields #<id>--<anchor>; images are data: URIs." },
+              "sec": { "type": ["string", "null"], "description": "Id of the section the block stands under; null above the first heading." },
+              "i": {
+                "type": "object",
+                "description": "A form field, drawn in place of h.",
+                "additionalProperties": false,
+                "required": ["t", "id", "label"],
+                "properties": {
+                  "t": { "enum": ["text", "radio", "checkbox"] },
+                  "id": { "type": "string" },
+                  "label": { "type": "string" },
+                  "options": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

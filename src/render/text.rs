@@ -24,6 +24,9 @@ pub(super) struct Page<'r, 'a> {
     pub tag: String,
     /// markers removed from the text again (the property list)
     pub cut: usize,
+    /// HTML file only: marker number of a field or section heading -> its
+    /// level and title
+    pub heads: std::collections::HashMap<usize, (usize, String)>,
 }
 
 /// prop is one entry of the property list of the HTML file.
@@ -47,6 +50,7 @@ impl<'r, 'a> Page<'r, 'a> {
             props: Vec::new(),
             tag: String::new(),
             cut: 0,
+            heads: std::collections::HashMap::new(),
         }
     }
 
@@ -58,6 +62,12 @@ impl<'r, 'a> Page<'r, 'a> {
         }
         self.marks.push(n);
         format!("<!--{}:{}-->\n\n", self.mark_tag(), self.marks.len() - 1)
+    }
+
+    /// mark_head is mark(None) for a heading of the given level and title.
+    pub fn mark_head(&mut self, level: usize, title: &str) -> String {
+        self.heads.insert(self.marks.len(), (level, title.to_string()));
+        self.mark(None)
     }
 
     pub fn mark_tag(&self) -> &str {
@@ -146,7 +156,7 @@ impl Renderer<'_> {
     /// the single Markdown file, a data URI in the single HTML file.
     pub(super) fn image(&self, page_path: &str, rel: &str) -> String {
         if self.html {
-            let Ok(b) = std::fs::read(self.src_file(rel)) else {
+            let Ok(b) = self.p.cfg.source.read(&self.src_file(rel)) else {
                 return rel.to_string();
             };
             return format!(

@@ -213,7 +213,7 @@ impl Project {
     /// readLock returns the text of docc.lock, the lines that parse, the number
     /// of the first one that does not (0: none) and whether the file exists.
     fn read_lock(&self) -> (String, Vec<Link>, usize, bool) {
-        let Ok(b) = std::fs::read(self.cfg.abs(LOCK_FILE)) else {
+        let Ok(b) = self.cfg.source.read(&self.cfg.abs(LOCK_FILE)) else {
             return (String::new(), Vec::new(), 0, false);
         };
         let data = String::from_utf8_lossy(&b).replace("\r\n", "\n"); // a checkout with autocrlf

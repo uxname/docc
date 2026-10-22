@@ -695,7 +695,7 @@ fn git(dir: &Path, args: &[&str]) -> std::io::Result<Vec<u8>> {
 
 /// catFiles returns the contents of the objects named one per line in req, in
 /// order; None for a missing one.
-fn cat_files(dir: &Path, req: Vec<u8>) -> std::io::Result<Vec<Option<Vec<u8>>>> {
+pub(crate) fn cat_files(dir: &Path, req: Vec<u8>) -> std::io::Result<Vec<Option<Vec<u8>>>> {
     let mut cmd = Command::new("git")
         .args(["cat-file", "--batch"])
         .current_dir(dir)

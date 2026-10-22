@@ -8,7 +8,7 @@ spec
 
 Paths: `src`, `out`, `schemas` and `outFull`. The folder `out` is owned by docc: the build deletes every file in it that no source produced. Folders that overlap the sources, the schemas or the project root are refused.
 
-`roots` lists the ids from which reachability is counted, default `index`. `tags` is an optional registry of allowed tags, checked by DOC107. Kinds have no registry: a kind exists when its schema file exists in the schemas folder.
+`roots` lists the ids from which reachability is counted, default `index`. `tree` says what the document tree is: `parents` (the default) nests the documents by their parent below the roots; `folders` makes it the folders of the source folder. In folder mode `roots`, DOC203 and DOC205 do not apply, since every document is in the tree, and `parent` still gives the breadcrumbs. A folder's own page is the document named like the folder inside it (`decisions/decisions.json`): its title and order are the folder's; without one the folder shows its name. Not `index.json`: ids are unique in the whole project, and every folder would hold one. Folders and documents of one folder sort together by `order`, then by title, then by name, and numbering follows the folders. `tags` is an optional registry of allowed tags, checked by DOC107. Kinds have no registry: a kind exists when its schema file exists in the schemas folder.
 
 `rules` maps a rule name (such as style/hedging), a group name or a code (DOC352, which gives DOC902) to a level or to an object with a level and the parameters `words` and `allow` of the word rules. A rule is more specific than its group, and a group is more specific than the preset. `recommended` set to `false` turns the preset off; core rules stay on. `maxWarnings` sets the warning limit of every command. `changesSince` names the Git revision (a tag, branch or commit) the HTML file shows the edits from by default, such as the version a reader last saw; the file keeps no history before it.
 
@@ -29,4 +29,5 @@ Paths: `src`, `out`, `schemas` and `outFull`. The folder `out` is owned by docc:
 - [Commands](commands.md)
 - [Decisions and assumptions](decisions.md)
 - [docc](index.md)
+- [Rendering](rendering.md)
 - [Rules and diagnostics](rules.md)

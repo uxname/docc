@@ -29,7 +29,7 @@ impl Renderer<'_> {
         let mut logo = String::new();
         if !b.logo.is_empty() {
             // the config checked that it exists
-            if let Ok(data) = std::fs::read(self.p.cfg.abs(&b.logo)) {
+            if let Ok(data) = self.p.cfg.source.read(&self.p.cfg.abs(&b.logo)) {
                 vars += &format!(
                     r#";--brand-logo:url("data:{};base64,{}")"#,
                     engine::image_ext(&path_ext(&b.logo).to_ascii_lowercase()).unwrap_or(""),

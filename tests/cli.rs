@@ -561,7 +561,7 @@ fn init_ignores_built_files() {
     let got = p.read(".gitignore");
     assert_eq!(
         got,
-        "node_modules\ndocs/out.md\ndocs/out.html\ndocs/out.json\ndocs/out-full/\ndocs/out-full.md\ndocs/out-full.html\ndocs/out-full.json\n",
+        "node_modules\ndocs/out.md\ndocs/out.html\ndocs/out-full/\ndocs/out-full.md\ndocs/out-full.html\n",
         "existing lines stay, missing ones are added once"
     );
     let (_, out, _) = p.run(&["init"]);
@@ -615,38 +615,15 @@ fn script_links_are_doc310() {
     );
 }
 
-/// build --data writes docs/out.json: the very data island of out.html, for a
-/// program that draws the pages itself; once there, every build rebuilds it.
+/// build --data is gone: a program that draws the pages itself reads docc
+/// compile, which writes nothing; a docs/out.json left from it is not touched.
 #[test]
-fn build_data_matches_html() {
+fn build_data_is_gone() {
     let p = project([("docs/src/index.json", r#"{"title":"I","body":["One."]}"#)]);
-    let git = |args: &[&str]| {
-        std::process::Command::new("git")
-            .args(["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"])
-            .args(args)
-            .current_dir(p.join(""))
-            .output()
-            .is_ok_and(|o| o.status.success())
-    };
-    let has_git = git(&["init", "-q"]) && git(&["add", "-A"]) && git(&["commit", "-qm", "one"]);
-    let (code, out, errs) = p.run(&["build", "--data"]);
-    assert!(code == 0 && out.contains("built docs/out.json") && !out.contains("out.html"), "{code} {out} {errs}");
-    let data: Value = serde_json::from_str(&p.read("docs/out.json")).expect("out.json is JSON");
-    for key in ["pages", "nav", "hist", "comments", "key"] {
-        assert!(data.get(key).is_some(), "out.json lacks {key}: {data}");
-    }
-    assert_eq!(data["pages"][0]["id"], "index");
-    if has_git {
-        assert!(data["hist"]["commits"].as_array().is_some_and(|c| !c.is_empty()), "no history: {}", data["hist"]);
-    }
-    p.run(&["build", "--html", "--data"]);
-    let data: Value = serde_json::from_str(&p.read("docs/out.json")).unwrap();
-    assert_eq!(data, read_app(&p, "docs/out.html").data, "out.json differs from the data island of out.html");
-    // a later build without the flag keeps it up to date; a file docc did not write is left alone
-    p.write("docs/src/index.json", r#"{"title":"I","kind":"page","body":["Two."]}"#);
-    let (_, out, _) = p.run(&["build"]);
-    assert!(out.contains("built docs/out.json") && p.read("docs/out.json").contains("Two."), "{out}");
-    p.write("docs/out.json", "{}");
-    let (_, out, errs) = p.run(&["build"]);
-    assert!(!out.contains("out.json") && errs.contains("build with --data"), "{out} {errs}");
+    let (code, _, errs) = p.run(&["build", "--data"]);
+    assert!(code == 2 && errs.contains("-data"), "{code} {errs}");
+    p.write("docs/out.json", r#"{"key":"docc:x"}"#);
+    let (code, out, errs) = p.run(&["build"]);
+    assert!(code == 0 && !out.contains("out.json") && errs.is_empty(), "{code} {out} {errs}");
+    assert_eq!(p.read("docs/out.json"), r#"{"key":"docc:x"}"#);
 }

@@ -20,7 +20,7 @@ impl Project {
             self.cfg.abs(&self.cfg.out),
             self.cfg.abs(&self.cfg.out_full),
         ];
-        let Ok(tags) = trace::scan(&self.cfg.root, &self.cfg.trace_scan, &skip) else {
+        let Ok(tags) = trace::scan(&self.cfg.root, &self.cfg.trace_scan, &skip, &self.cfg.source) else {
             return;
         };
         let mut covers: HashMap<String, Vec<String>> = HashMap::new();

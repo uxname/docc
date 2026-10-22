@@ -118,7 +118,8 @@ impl<'a> Page<'_, 'a> {
             if r.anchors {
                 blocks.push(self.anchor_tag(&r.anchor_of(d, Some(f.node)).anchor));
             }
-            blocks.push(self.mark(None) + "## " + &heading(&f.key));
+            let h = heading(&f.key);
+            blocks.push(self.mark_head(2, &h) + "## " + &h);
             blocks.push(f.content);
         }
         if r.full {
@@ -185,9 +186,8 @@ impl<'a> Page<'_, 'a> {
                 // the numbered heading gets another id on GitHub; links keep the plain anchor
                 blocks.push(format!(r#"<a id="{}"></a>"#, a.anchor));
             }
-            blocks.push(
-                self.mark(None) + &"#".repeat(level) + " " + &numbered(&a.num, &heading(&m.key)),
-            );
+            let h = numbered(&a.num, &heading(&m.key));
+            blocks.push(self.mark_head(level, &h) + &"#".repeat(level) + " " + &h);
             let c = self.field_content(&m.value, (level + 1).min(6));
             if !c.is_empty() {
                 blocks.push(c);
@@ -323,6 +323,35 @@ pub(super) struct Entry<'a> {
     pub depth: usize,
 }
 
+/// TreeNode is one entry of the document tree with its entries below it.
+pub(super) enum TreeNode<'a> {
+    Page { d: &'a Doc, kids: Vec<TreeNode<'a>> },
+    /// folder mode: a folder of src (path relative to src) and its own page
+    Folder { path: String, page: Option<&'a Doc>, kids: Vec<TreeNode<'a>> },
+}
+
+impl<'a> TreeNode<'a> {
+    pub fn kids(&self) -> &[TreeNode<'a>] {
+        match self {
+            TreeNode::Page { kids, .. } | TreeNode::Folder { kids, .. } => kids,
+        }
+    }
+
+    fn kids_mut(&mut self) -> &mut Vec<TreeNode<'a>> {
+        match self {
+            TreeNode::Page { kids, .. } | TreeNode::Folder { kids, .. } => kids,
+        }
+    }
+
+    /// page is the document of the entry, if it has one.
+    pub fn page(&self) -> Option<&'a Doc> {
+        match self {
+            TreeNode::Page { d, .. } => Some(d),
+            TreeNode::Folder { page, .. } => *page,
+        }
+    }
+}
+
 /// orderOf returns the order field of a document, if it is a number.
 fn order_of(d: &Doc) -> Option<f64> {
     let n = root(d).get("order").filter(|n| n.kind == Kind::Number)?;
@@ -420,6 +449,90 @@ impl<'a> Renderer<'a> {
         (tree, orphans)
     }
 
+    /// tree_nodes is the document tree: in folder mode the folders of src
+    /// (a folder's own page is the document named like the folder inside it;
+    /// siblings by order, then title, then name), otherwise layout nested by
+    /// parent with the documents without a parent after it.
+    pub(super) fn tree_nodes(&self) -> Vec<TreeNode<'a>> {
+        if !self.p.cfg.folders {
+            let (tree, orphans) = self.layout();
+            let mut out: Vec<TreeNode<'a>> = Vec::new();
+            for es in [tree, orphans] {
+                // the entries are depth-first: each one goes under the last one a level up
+                let mut path: Vec<usize> = Vec::new();
+                for e in es {
+                    path.truncate(e.depth);
+                    let mut list = &mut out;
+                    for &i in &path {
+                        list = list[i].kids_mut();
+                    }
+                    list.push(TreeNode::Page { d: e.d, kids: Vec::new() });
+                    path.push(list.len() - 1);
+                }
+            }
+            return out;
+        }
+        let c = collator();
+        self.folder("", &self.docs(), &c)
+    }
+
+    /// folder lists the entries of the folder dir ("" for src) out of docs,
+    /// the visible documents below it.
+    fn folder(&self, dir: &str, docs: &[&'a Doc], c: &CollatorBorrowed<'_>) -> Vec<TreeNode<'a>> {
+        let name = &dir[dir.rfind('/').map_or(0, |i| i + 1)..];
+        let mut subs: Vec<(&str, Vec<&'a Doc>)> = Vec::new(); // in path order
+        let mut out = Vec::new();
+        for &d in docs {
+            let rest = if dir.is_empty() { d.rel.as_str() } else { &d.rel[dir.len() + 1..] };
+            match rest.split_once('/') {
+                Some((sub, _)) => match subs.last_mut() {
+                    Some((s, list)) if *s == sub => list.push(d),
+                    _ => subs.push((sub, vec![d])),
+                },
+                None if !dir.is_empty() && d.id == name => {} // the folder's own page
+                None => out.push(TreeNode::Page { d, kids: Vec::new() }),
+            }
+        }
+        for (sub, list) in subs {
+            let path = if dir.is_empty() { sub.to_string() } else { format!("{dir}/{sub}") };
+            let page = list.iter().copied().find(|d| d.rel == format!("{path}/{sub}.json"));
+            let kids = self.folder(&path, &list, c);
+            out.push(TreeNode::Folder { path, page, kids });
+        }
+        let key = |n: &TreeNode<'a>| match n {
+            TreeNode::Page { d, .. } => (order_of(d), title_of(d), d.id.clone()),
+            TreeNode::Folder { path, page, .. } => {
+                let name = path[path.rfind('/').map_or(0, |i| i + 1)..].to_string();
+                match page {
+                    Some(d) => (order_of(d), title_of(d), name),
+                    None => (None, name.clone(), name),
+                }
+            }
+        };
+        out.sort_by(|a, b| {
+            let ((oa, ta, na), (ob, tb, nb)) = (key(a), key(b));
+            match (oa, ob) {
+                (Some(_), None) => return Ordering::Less,
+                (None, Some(_)) => return Ordering::Greater,
+                (Some(x), Some(y)) if x != y => return x.partial_cmp(&y).unwrap(),
+                _ => {}
+            }
+            c.compare(&ta, &tb).then_with(|| na.cmp(&nb))
+        });
+        out
+    }
+
+    /// node_title is the displayed title of a tree entry: a folder without
+    /// its own page is called by its name.
+    pub(super) fn node_title(&self, n: &TreeNode<'a>) -> String {
+        match n {
+            TreeNode::Page { d, .. } | TreeNode::Folder { page: Some(d), .. } => self.title(d),
+            TreeNode::Folder { path, page: None, .. } => {
+                numbered(&self.folder_number(path), &path[path.rfind('/').map_or(0, |i| i + 1)..])
+            }
+        }
+    }
+
     /// href is the link target of a page: its file, or an in-file anchor in a
     /// single-file build.
     pub(super) fn href(&self, d: &Doc) -> String {
@@ -447,9 +560,27 @@ impl<'a> Renderer<'a> {
         lines.join("\n")
     }
 
+    /// folder_lines renders the folder tree as a nested list: a folder with
+    /// its own page links to it, a folder without one is its plain name.
+    fn folder_lines(&self, ns: &[TreeNode<'a>], depth: usize, lines: &mut Vec<String>) {
+        for n in ns {
+            let mut line = format!("{}- ", "  ".repeat(depth));
+            match n.page() {
+                Some(d) => {
+                    line += &format!("[{}]({})", self.node_title(n), self.href(d));
+                    if self.full && d.hidden {
+                        line += &format!(" ({})", self.t("hidden"));
+                    }
+                }
+                None => line += &self.node_title(n),
+            }
+            lines.push(line);
+            self.folder_lines(n.kids(), depth + 1, lines);
+        }
+    }
+
     /// treeBlocks are the blocks of the document tree, without the header.
     pub(super) fn tree_blocks(&self) -> Vec<String> {
-        let (tree, orphans) = self.layout();
         let mut out = Vec::new();
         if self.full {
             out.push(format!(
@@ -458,6 +589,16 @@ impl<'a> Renderer<'a> {
             ));
         }
         out.push(format!("# {}", self.t("Document tree")));
+        let (tree, orphans) = if self.p.cfg.folders {
+            let mut lines = Vec::new();
+            self.folder_lines(&self.tree_nodes(), 0, &mut lines);
+            if !lines.is_empty() {
+                out.push(lines.join("\n"));
+            }
+            (Vec::new(), Vec::new())
+        } else {
+            self.layout()
+        };
         if !tree.is_empty() {
             out.push(self.tree_lines(&tree));
         }

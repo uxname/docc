@@ -43,7 +43,7 @@ fn go_marshal_indent(v: &impl Serialize) -> String {
         .replace('\u{2029}', "\\u2029")
 }
 
-/// golden runs every testdata/<CODE>/{red,green} case: the project in the
+/// golden runs every testdata/<CODE>/{red,green}[-variant] case: the project in the
 /// directory is checked with `docc <args> --format json` (args from args.txt,
 /// default "validate") and stdout is compared to expected.json.
 /// A red case must report its code, a green case must not.
@@ -59,14 +59,19 @@ fn golden() {
             continue;
         }
         let name = c.file_name().to_string_lossy().into_owned();
-        for kind in ["red", "green"] {
-            let dir = root.join(&name).join(kind);
-            if !dir.exists() {
-                continue;
-            }
+        // red and green, and variants of them such as green-folders
+        let mut cases: Vec<String> = std::fs::read_dir(c.path())
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|k| ["red", "green"].contains(&k.split('-').next().unwrap()))
+            .collect();
+        cases.sort();
+        for case in cases {
+            let dir = root.join(&name).join(&case);
             n += 1;
-            if let Err(e) = run_golden(&dir, &name, kind) {
-                fails.push(format!("{name}/{kind}: {e}"));
+            if let Err(e) = run_golden(&dir, &name, case.split('-').next().unwrap()) {
+                fails.push(format!("{name}/{case}: {e}"));
             }
         }
     }

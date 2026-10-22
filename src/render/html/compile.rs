@@ -1,0 +1,212 @@
+//! The data of `docc compile`: the pages of the reader (no hidden documents,
+//! no notes) cut into blocks with their HTML, their sections and the tree.
+//! The pages come from the same build as the HTML file, so a block's HTML
+//! here is the block's HTML there.
+
+use std::sync::LazyLock;
+
+use base64::Engine as _;
+use regex::Regex;
+use serde::Serialize;
+
+use super::super::page::TreeNode;
+use super::super::render::{Renderer, root};
+use super::super::text::path_ext;
+use super::InputData;
+use crate::engine;
+use crate::loader::Kind;
+
+/// SCHEMA_ID is the "$schema" of the output and the "$id" of its JSON Schema
+/// (`docc schema compile`); the number changes when the shape does.
+pub const SCHEMA_ID: &str = "urn:docc:schema:compile:1";
+
+/// Compiled is what the sources compile to; docc compile adds the diagnostics.
+#[derive(Serialize, Default)]
+pub struct Compiled {
+    pub project: ProjectInfo,
+    pub tree: Vec<TreeEntry>,
+    pub pages: Vec<CPage>,
+}
+
+#[derive(Serialize)]
+pub struct ProjectInfo {
+    /// the title of the first page of the tree
+    pub title: String,
+    pub lang: String,
+    pub brand: Option<BrandInfo>,
+}
+
+impl Default for ProjectInfo {
+    fn default() -> ProjectInfo {
+        ProjectInfo { title: String::new(), lang: "en".into(), brand: None }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BrandInfo {
+    name: String,
+    url: Option<String>,
+    /// a data: URI of the logo file
+    logo: Option<String>,
+    accent: Option<String>,
+    accent_light: Option<String>,
+    header: Option<String>,
+}
+
+/// TreeEntry is one entry of the document tree.
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum TreeEntry {
+    Folder {
+        /// relative to src
+        path: String,
+        title: String,
+        /// the folder's own page
+        #[serde(skip_serializing_if = "Option::is_none")]
+        id: Option<String>,
+        children: Vec<TreeEntry>,
+    },
+    Page {
+        id: String,
+        path: String,
+        title: String,
+        /// pages nested by parent (not in folder mode)
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        children: Vec<TreeEntry>,
+    },
+}
+
+#[derive(Serialize)]
+pub struct CPage {
+    id: String,
+    /// path of the source relative to src
+    path: String,
+    title: String,
+    kind: String,
+    status: Option<String>,
+    tags: Vec<String>,
+    parent: Option<String>,
+    crumbs: Vec<String>,
+    props: Vec<CProp>,
+    sections: Vec<Section>,
+    blocks: Vec<CBlock>,
+    // the comments of the page will stand here, next to the blocks they point at
+}
+
+/// CProp is a one-line field shown in the property list instead of a section.
+#[derive(Serialize)]
+pub struct CProp {
+    k: String,
+    id: String,
+    p: String,
+    s: String,
+    h: String,
+}
+
+/// Section is a field or $sections heading of a page.
+#[derive(Serialize)]
+pub struct Section {
+    /// the anchor of the heading, as [[id#field]] links and the HTML file use it
+    id: String,
+    title: String,
+    level: usize,
+}
+
+#[derive(Serialize)]
+pub struct CBlock {
+    /// JSON Pointer of the value in the source; "" for the footnotes of the page
+    p: String,
+    s: String,
+    h: String,
+    /// the section the block stands under; None above the first heading
+    sec: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    i: Option<InputData>,
+}
+
+static HEAD_ID: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"^<h[1-6] id="([^"]*)">"#).unwrap());
+
+impl<'a> Renderer<'a> {
+    /// compile builds the pages for a reader; call it only when validation
+    /// found no errors of groups 1xx and 2xx.
+    pub fn compile(&self) -> Compiled {
+        let s = self.variant(true, false, true);
+        let mut out = Compiled::default();
+        for d in s.ordered() {
+            let pd = s.build_page(d).pd;
+            let prefix = format!("{}--", d.id);
+            let slug = |id: &str| id.strip_prefix(&prefix).unwrap_or(id).replace("&amp;", "&");
+            let str_of = |k: &str| root(d).get(k).filter(|n| n.kind == Kind::String).map(|n| n.str.clone());
+            let mut pg = CPage {
+                id: pd.id,
+                path: pd.file,
+                title: pd.title,
+                kind: pd.kind,
+                status: str_of("status"),
+                tags: engine::string_list(root(d).get("tags")).into_iter().map(|n| n.str.clone()).collect(),
+                parent: Some(pd.parent).filter(|p| !p.is_empty()),
+                crumbs: pd.crumbs,
+                props: pd
+                    .props
+                    .into_iter()
+                    .map(|p| CProp { id: slug(&p.id), k: p.k, p: p.p, s: p.s, h: p.h })
+                    .collect(),
+                sections: Vec::new(),
+                blocks: Vec::new(),
+            };
+            let mut sec: Option<String> = None;
+            for b in pd.blocks {
+                if let Some((level, title)) = b.head {
+                    let id = HEAD_ID.captures(&b.h).map(|c| slug(&c[1])).unwrap_or_default();
+                    sec = Some(id.clone());
+                    pg.sections.push(Section { id, title, level });
+                    continue;
+                }
+                pg.blocks.push(CBlock { p: b.p, s: b.s, h: b.h, sec: sec.clone(), i: b.i });
+            }
+            out.pages.push(pg);
+        }
+        out.tree = s.tree_entries(&s.tree_nodes());
+        out.project = s.project_info(out.pages.first().map(|p| p.title.clone()).unwrap_or_default());
+        out
+    }
+
+    /// project_info is the project part of the output; title is the title of
+    /// the first page ("" when nothing was compiled).
+    pub fn project_info(&self, title: String) -> ProjectInfo {
+        let s = self;
+        let brand = s.p.cfg.brand.as_ref().map(|b| {
+            let some = |v: &str| Some(v.to_string()).filter(|v| !v.is_empty());
+            let logo = some(&b.logo).and_then(|l| {
+                let data = s.p.cfg.source.read(&s.p.cfg.abs(&l)).ok()?;
+                let mime = engine::image_ext(&path_ext(&l).to_ascii_lowercase()).unwrap_or("");
+                Some(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(data)))
+            });
+            BrandInfo {
+                name: b.name.clone(),
+                url: some(&b.url),
+                logo,
+                accent: some(&b.accent),
+                accent_light: some(&b.accent_light),
+                header: some(&b.header),
+            }
+        });
+        ProjectInfo { title, lang: s.p.cfg.lang.clone(), brand }
+    }
+
+    fn tree_entries(&self, ns: &[TreeNode<'a>]) -> Vec<TreeEntry> {
+        ns.iter()
+            .map(|n| {
+                let children = self.tree_entries(n.kids());
+                let title = self.node_title(n);
+                match n {
+                    TreeNode::Page { d, .. } => TreeEntry::Page { id: d.id.clone(), path: d.rel.clone(), title, children },
+                    TreeNode::Folder { path, page, .. } => {
+                        TreeEntry::Folder { path: path.clone(), title, id: page.map(|d| d.id.clone()), children }
+                    }
+                }
+            })
+            .collect()
+    }
+}

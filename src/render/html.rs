@@ -13,6 +13,7 @@ use super::lang::html_escape as esc;
 use super::render::{Renderer, lf, root};
 use super::text::Page;
 
+pub(super) mod compile;
 mod markdown;
 
 static HTML_TEMPLATE: &str = include_str!("page.html");
@@ -34,28 +35,10 @@ impl<'a> Renderer<'a> {
     }
 
     /// app_data is the data the HTML file draws its pages from (the JSON
-    /// island of html, written alone by docc build --data); the error is a bad
-    /// changesSince revision.
-    pub fn app_data(&self) -> Result<AppData, Box<dyn std::error::Error + Send + Sync>> {
+    /// island of html); the error is a bad changesSince revision.
+    fn app_data(&self) -> Result<AppData, Box<dyn std::error::Error + Send + Sync>> {
         // in-file links; the headings get their ids from the converter
         let s = self.variant(true, false, true);
-        // footnote ids are <page id>--fn:1, unique across the pages of the file
-        let conv = |d: &Doc, src: &str, marker: &Regex| -> String {
-            let mut g = Ids {
-                prefix: d.id.clone(),
-                used: HashSet::new(),
-                nums: HashSet::new(),
-            };
-            if let Some(slugs) = s.slugs.borrow().get(&(d as *const Doc)) {
-                // filled by s.page
-                for a in slugs.values() {
-                    if !a.num.is_empty() {
-                        g.nums.insert(a.num.clone());
-                    }
-                }
-            }
-            markdown::convert(src, &format!("{}--", d.id), marker, &mut g)
-        };
         let (tree, orphans) = s.layout();
         let kids = children_of(&[&tree, &orphans]);
         let mut data = AppData {
@@ -84,107 +67,14 @@ impl<'a> Renderer<'a> {
         )?;
         let mut pages: Vec<PageData> = Vec::new();
         for d in s.ordered() {
-            // a marker name that the text of the page does not contain, so no agent text can cut it
-            let mut pg = Page::new(&s, d);
-            let mut src = pg.build();
-            let mut k = 0;
-            while k < 8
-                && src.matches(&format!("<!--{}:", pg.mark_tag())).count()
-                    != pg.marks.len() - pg.cut
-            {
-                let tag = pg.mark_tag().to_string() + "x";
-                pg = Page::new(&s, d);
-                pg.tag = tag;
-                src = pg.build();
-                k += 1;
-            }
-            let marker = pg.mark_re();
-            let ptrs = history::pointers(root(d));
-            let ptr = |n: &Node| ptrs.get(&(n as *const Node)).cloned().unwrap_or_default();
-            let mut pd = PageData {
-                id: d.id.clone(),
-                title: s.title(d),
-                file: d.rel.clone(),
-                hidden: s.full && d.hidden,
-                kind: root(d)
-                    .get("kind")
-                    .filter(|n| n.kind == Kind::String)
-                    .map(|n| n.str.clone())
-                    .unwrap_or_default(),
-                summary: s.summary(d),
-                ..Default::default()
-            };
-            pd.crumbs = s.crumb_ids(d);
+            let Built { mut pd, pg, marker, strs } = s.build_page(d);
+            pd.summary = s.summary(d);
             pd.kids = kids
                 .get(d.id.as_str())
                 .into_iter()
                 .flatten()
                 .map(|k| k.id.clone())
                 .collect();
-            if let Some(n) = root(d).get("parent")
-                && n.kind == Kind::String
-                && s.has_page(s.p.doc(&n.str))
-            {
-                pd.parent = n.str.clone();
-            }
-            let out = conv(d, &src, &marker);
-            // string blocks: [pointer, current text, is a prop]; their old versions get HTML
-            let mut strs: Vec<(String, String, bool)> = Vec::new();
-            // cut the page at the block markers; footnotes become a block of their own
-            let mut add = |n: Option<&Node>, h: &str| {
-                let input = n.filter(|n| engine::is_input(n)).map(InputData::of);
-                if h.trim().is_empty() && input.is_none() {
-                    return;
-                }
-                let mut b = BlockData {
-                    h: h.to_string(),
-                    i: input,
-                    ..Default::default()
-                };
-                if let Some(n) = n {
-                    b.p = ptr(n);
-                    b.s = history::text(n);
-                    if n.kind == Kind::String {
-                        strs.push((b.p.clone(), b.s.clone(), false));
-                    }
-                }
-                pd.blocks.push(b);
-            };
-            let (mut prev, mut last) = (0, None);
-            for c in marker.captures_iter(&out) {
-                let (m, num) = (c.get(0).unwrap(), c.get(1).unwrap());
-                add(last, &out[prev..m.start()]);
-                let k: usize = num.as_str().parse().unwrap_or(0);
-                last = pg.marks.get(k).copied().flatten();
-                prev = m.end();
-            }
-            let tail = &out[prev..];
-            if let Some(i) = tail.find(r#"<div class="footnotes""#) {
-                add(last, &tail[..i]);
-                add(None, &tail[i..]);
-            } else {
-                add(last, tail);
-            }
-            for p in &pg.props {
-                let mut n = p.node;
-                if n.kind == Kind::Array && n.items.len() == 1 {
-                    n = &n.items[0];
-                }
-                let h = conv(d, &p.md, &marker);
-                let h = h.trim();
-                let h = h.strip_prefix("<p>").unwrap_or(h);
-                let h = h.strip_suffix("</p>").unwrap_or(h);
-                if n.kind == Kind::String {
-                    strs.push((ptr(n), history::text(n), true));
-                }
-                pd.props.push(PropData {
-                    k: p.key.clone(),
-                    id: p.id.clone(),
-                    p: ptr(n),
-                    h: h.to_string(),
-                    s: history::text(n),
-                });
-            }
             // ponytail: old tables, lists and objects stay plain text in the
             // file (their text is flattened); includes and links in old text
             // resolve against the documents as they are now
@@ -194,7 +84,7 @@ impl<'a> Renderer<'a> {
                         if v.text == *cur {
                             continue;
                         }
-                        let out = conv(d, &pg.source(&v.text), &marker);
+                        let out = s.to_html(d, &pg.source(&v.text), &marker);
                         let mut o = out.trim();
                         if *prop {
                             o = o.strip_prefix("<p>").unwrap_or(o);
@@ -230,8 +120,130 @@ impl<'a> Renderer<'a> {
         Ok(data)
     }
 
+    /// to_html converts the Markdown of a page of this (HTML) renderer; footnote
+    /// ids are <page id>--fn:1, unique across the pages of the file.
+    pub(super) fn to_html(&self, d: &Doc, src: &str, marker: &Regex) -> String {
+        let mut g = Ids {
+            prefix: d.id.clone(),
+            used: HashSet::new(),
+            nums: HashSet::new(),
+        };
+        if let Some(slugs) = self.slugs.borrow().get(&(d as *const Doc)) {
+            // filled by Page::build
+            for a in slugs.values() {
+                if !a.num.is_empty() {
+                    g.nums.insert(a.num.clone());
+                }
+            }
+        }
+        markdown::convert(src, &format!("{}--", d.id), marker, &mut g)
+    }
+
+    /// build_page renders the page of d with this (HTML) renderer and cuts it
+    /// into blocks at the markers: the page data without summary and kids, and
+    /// what the history needs to render old versions of its string blocks.
+    pub(super) fn build_page<'r>(&'r self, d: &'a Doc) -> Built<'r, 'a> {
+        // a marker name that the text of the page does not contain, so no agent text can cut it
+        let mut pg = Page::new(self, d);
+        let mut src = pg.build();
+        let mut k = 0;
+        while k < 8
+            && src.matches(&format!("<!--{}:", pg.mark_tag())).count()
+                != pg.marks.len() - pg.cut
+        {
+            let tag = pg.mark_tag().to_string() + "x";
+            pg = Page::new(self, d);
+            pg.tag = tag;
+            src = pg.build();
+            k += 1;
+        }
+        let marker = pg.mark_re();
+        let ptrs = history::pointers(root(d));
+        let ptr = |n: &Node| ptrs.get(&(n as *const Node)).cloned().unwrap_or_default();
+        let mut pd = PageData {
+            id: d.id.clone(),
+            title: self.title(d),
+            file: d.rel.clone(),
+            hidden: self.full && d.hidden,
+            kind: root(d)
+                .get("kind")
+                .filter(|n| n.kind == Kind::String)
+                .map(|n| n.str.clone())
+                .unwrap_or_default(),
+            ..Default::default()
+        };
+        pd.crumbs = self.crumb_ids(d);
+        if let Some(n) = root(d).get("parent")
+            && n.kind == Kind::String
+            && self.has_page(self.p.doc(&n.str))
+        {
+            pd.parent = n.str.clone();
+        }
+        let out = self.to_html(d, &src, &marker);
+        // string blocks: [pointer, current text, is a prop]; their old versions get HTML
+        let mut strs: Vec<(String, String, bool)> = Vec::new();
+        // cut the page at the block markers; footnotes become a block of their own
+        let mut add = |n: Option<&Node>, h: &str, head: Option<&(usize, String)>| {
+            let input = n.filter(|n| engine::is_input(n)).map(InputData::of);
+            if h.trim().is_empty() && input.is_none() {
+                return;
+            }
+            let mut b = BlockData {
+                h: h.to_string(),
+                i: input,
+                head: head.cloned(),
+                ..Default::default()
+            };
+            if let Some(n) = n {
+                b.p = ptr(n);
+                b.s = history::text(n);
+                if n.kind == Kind::String {
+                    strs.push((b.p.clone(), b.s.clone(), false));
+                }
+            }
+            pd.blocks.push(b);
+        };
+        let (mut prev, mut last, mut head) = (0, None, None);
+        for c in marker.captures_iter(&out) {
+            let (m, num) = (c.get(0).unwrap(), c.get(1).unwrap());
+            add(last, &out[prev..m.start()], head);
+            let k: usize = num.as_str().parse().unwrap_or(0);
+            last = pg.marks.get(k).copied().flatten();
+            head = pg.heads.get(&k);
+            prev = m.end();
+        }
+        let tail = &out[prev..];
+        if let Some(i) = tail.find(r#"<div class="footnotes""#) {
+            add(last, &tail[..i], head);
+            add(None, &tail[i..], None);
+        } else {
+            add(last, tail, head);
+        }
+        for p in &pg.props {
+            let mut n = p.node;
+            if n.kind == Kind::Array && n.items.len() == 1 {
+                n = &n.items[0];
+            }
+            let h = self.to_html(d, &p.md, &marker);
+            let h = h.trim();
+            let h = h.strip_prefix("<p>").unwrap_or(h);
+            let h = h.strip_suffix("</p>").unwrap_or(h);
+            if n.kind == Kind::String {
+                strs.push((ptr(n), history::text(n), true));
+            }
+            pd.props.push(PropData {
+                k: p.key.clone(),
+                id: p.id.clone(),
+                p: ptr(n),
+                h: h.to_string(),
+                s: history::text(n),
+            });
+        }
+        Built { pd, pg, marker, strs }
+    }
+
     /// html_of is the HTML file around data.
-    pub fn html_of(&self, data: &AppData) -> String {
+    fn html_of(&self, data: &AppData) -> String {
         let s = self.variant(true, false, true);
         let brand_css = s.brand().0;
         let title = if data.title.is_empty() {
@@ -317,7 +329,7 @@ fn base_name(p: &str) -> String {
 }
 
 #[derive(Serialize, Default)]
-pub struct AppData {
+struct AppData {
     title: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     lang: String,
@@ -348,8 +360,17 @@ struct BrandData {
     foot: String,
 }
 
+/// Built is one page cut into blocks (build_page).
+pub(super) struct Built<'r, 'a> {
+    pub pd: PageData,
+    pub pg: Page<'r, 'a>,
+    pub marker: Regex,
+    /// string blocks: pointer, current text, whether it is a property
+    pub strs: Vec<(String, String, bool)>,
+}
+
 #[derive(Serialize, Default)]
-struct PageData {
+pub(super) struct PageData {
     id: String,
     title: String,
     /// path relative to src: the key of the history
@@ -384,6 +405,9 @@ struct BlockData {
     /// a form field, drawn by the page script in place of h
     #[serde(skip_serializing_if = "Option::is_none")]
     i: Option<InputData>,
+    /// a field or section heading: its level and title (docc compile)
+    #[serde(skip)]
+    head: Option<(usize, String)>,
 }
 
 /// inputData is a form field: its kind (text, radio, checkbox), id, question

@@ -18,6 +18,7 @@ use regex::Regex;
 
 use crate::diag;
 use crate::loader;
+use crate::source::{self, Source};
 
 /// Error is a configuration error (exit code 2).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -150,6 +151,11 @@ pub struct Config {
     pub custom: Vec<Custom>,
     pub trace_scan: Vec<Glob>,
     pub brand: Option<Branding>,
+    /// "tree": "folders": the document tree is the folder structure of src
+    /// (roots, DOC203 and DOC205 do not apply); false: nested by parent
+    pub folders: bool,
+    /// where the files of the project are read from: the disk or a Git revision
+    pub source: Source,
 
     resolved: OnceLock<Resolved>,
 }
@@ -184,13 +190,24 @@ pub fn load(
     file: &str,
     explicit: bool,
 ) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
+    load_from(file, explicit, |_| Ok(Source::Disk))
+}
+
+/// load_from is load with the files read from the source that open gives for
+/// the project root (the folder of file): the disk or a Git revision.
+pub fn load_from(
+    file: &str,
+    explicit: bool,
+    open: impl FnOnce(&Path) -> Result<Source, Box<dyn std::error::Error + Send + Sync>>,
+) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
     let abs = abs_path(Path::new(file))?;
     let root = abs.parent().unwrap_or(&abs).to_path_buf();
-    let data = match std::fs::read(&abs) {
+    let src = open(&root)?;
+    let data = match src.read(&abs) {
         Ok(d) => d,
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound && !explicit {
-                return Ok(default(root));
+                return Ok(Config { source: src, ..default(root) });
             }
             let msg = go_path_error(&abs, &err);
             return Err(Box::new(Errors::from(Error {
@@ -201,7 +218,7 @@ pub fn load(
             })));
         }
     };
-    Ok(parse(&data, &root, &to_slash(file))?)
+    Ok(parse_from(&data, &root, &to_slash(file), src)?)
 }
 
 /// abs_path is filepath.Abs: the path joined to the working directory and cleaned.
@@ -429,7 +446,7 @@ impl Walker<'_> {
         Ok(())
     }
 
-    fn branding(&self, n: &loader::Node, root: &Path) -> Result<Branding, Error> {
+    fn branding(&self, n: &loader::Node, root: &Path, src: &Source) -> Result<Branding, Error> {
         if n.kind != loader::Kind::Object {
             return Err(self.type_err(n, "an object"));
         }
@@ -457,8 +474,8 @@ impl Walker<'_> {
                             "logo must be a png, jpg, jpeg, gif, svg or webp file",
                         ));
                     }
-                    match std::fs::metadata(root.join(from_slash(&b.logo))) {
-                        Ok(st) if !st.is_dir() => {}
+                    match src.entry(&root.join(from_slash(&b.logo))) {
+                        Some(e) if e != source::Entry::Dir => {}
                         _ => {
                             return Err(self.err_at(
                                 v.start,
@@ -495,6 +512,11 @@ impl Walker<'_> {
 
 /// Parse parses docc.json content. root is the project root.
 pub fn parse(data: &[u8], root: &Path, file: &str) -> Result<Config, Errors> {
+    parse_from(data, root, file, Source::Disk)
+}
+
+/// parse_from is parse for a project whose files come from src.
+pub fn parse_from(data: &[u8], root: &Path, file: &str, src: Source) -> Result<Config, Errors> {
     let r = loader::parse(data);
     let w = Walker { src: &r.src, file };
     if let Some(err) = &r.err {
@@ -513,6 +535,7 @@ pub fn parse(data: &[u8], root: &Path, file: &str) -> Result<Config, Errors> {
         .expect("loader returns a root without an error");
     let mut c = default(root);
     c.file = file.to_string();
+    c.source = src;
     let mut errs = Vec::new();
 
     // custom rules first: rules refer to their names
@@ -579,7 +602,14 @@ pub fn parse(data: &[u8], root: &Path, file: &str) -> Result<Config, Errors> {
                     }
                 }
                 "trace" => w.trace(&mut c, v)?,
-                "branding" => c.brand = Some(w.branding(v, root)?),
+                "branding" => c.brand = Some(w.branding(v, root, &c.source)?),
+                "tree" => {
+                    c.folders = match w.str(v)?.as_str() {
+                        "folders" => true,
+                        "parents" => false,
+                        _ => return Err(w.err_at(v.start, "tree must be \"parents\" or \"folders\"")),
+                    }
+                }
                 _ => return Err(w.err_at(m.key_start, format!("unknown key {}", go_quote(&m.key)))),
             }
             Ok(())
