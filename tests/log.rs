@@ -329,3 +329,46 @@ fn diff_lines_blocks_up() {
     }
     assert_eq!(compared, 7, "every file of a commit whose both sides compile");
 }
+
+/// A document drafted hidden, edited hidden, shown, hidden and shown again:
+/// the commits made while it was hidden list it as hidden with their counts
+/// (Docspace shows them only to who may see drafts); a commit that shows it
+/// counts every block as added, as docc diff lines it up, since a reader
+/// had no page before it.
+#[test]
+fn log_counts_a_shown_document_as_new() {
+    let r = Repo { d: temp_dir() };
+    if Command::new("git").arg("--version").output().is_err() {
+        return;
+    }
+    r.git(&["init", "-q"]);
+    let pay = |hidden: bool, body: &str| format!(r#"{{"title":"Pay","kind":"page","parent":"a","hidden":{hidden},"body":[{body}]}}"#);
+    r.commit(
+        "drafted",
+        &[
+            ("docc.json", r#"{"roots":["a"]}"#),
+            ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#),
+            ("docs/src/a.json", r#"{"title":"A","kind":"page","body":["One."]}"#),
+            ("docs/src/pay.json", &pay(true, r#""Secret one.""#)),
+        ],
+    );
+    r.commit("edited hidden", &[("docs/src/pay.json", &pay(true, r#""Secret two.","Secret three.""#))]);
+    r.commit("shown", &[("docs/src/pay.json", &pay(false, r#""Secret two.""#))]);
+    r.commit("hidden again", &[("docs/src/pay.json", &pay(true, r#""Secret two.","Secret four.""#))]);
+    r.commit("shown again", &[("docs/src/pay.json", &pay(false, r#""Public two.""#))]);
+    let (code, log) = run(&r.d.path, "log", &[]);
+    assert_eq!(code, 0, "{log}");
+    let f = |subject: &str| file(commit(&log, subject), "pay.json").clone();
+    for (subject, n) in [("drafted", (1, 0, 0)), ("edited hidden", (1, 1, 0)), ("hidden again", (1, 0, 0))] {
+        let p = f(subject);
+        assert_eq!((p["hidden"].clone(), s(&p, "title"), blocks(&p)), (Value::Bool(true), "Pay", n), "{subject}: {p}");
+    }
+    for subject in ["shown", "shown again"] {
+        let p = f(subject);
+        assert_eq!((p.get("hidden"), blocks(&p)), (None, (1, 0, 0)), "{subject}: {p}");
+        let c = commit(&log, subject);
+        let (_, v) = run(&r.d.path, "diff", &[c["parents"][0].as_str().unwrap(), s(c, "sha")]);
+        let ops: Vec<&str> = file(&v, "pay.json")["blocks"].as_array().unwrap().iter().map(|b| s(b, "op")).collect();
+        assert_eq!(ops, ["add"], "{subject}: {v}");
+    }
+}

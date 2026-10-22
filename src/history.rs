@@ -105,8 +105,9 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 /// Options of Load. Full keeps everything (the audit build). Otherwise the
-/// hidden fields of a document (notes, docIgnore, hidden) are left out, as in
-/// the pages, and so are the authors and messages of the commits. Since, a Git
+/// versions in which a document is hidden and the hidden fields of a document
+/// (notes, docIgnore, hidden) are left out, as in the pages, and so are the
+/// authors and messages of the commits. Since, a Git
 /// revision, cuts the history: what changed before it is not in the file.
 /// Rev is the revision the documents were read from (build --rev, no
 /// checkout): the history ends there instead of at HEAD and the working tree.
@@ -427,12 +428,19 @@ pub(crate) struct Replay {
     pub leaves: Vec<Leaf>,
     blocks: HashMap<String, Vec<Version>>,
     pub doc: Doc,
-    /// the last version says "hidden": true
+    /// the last version says "hidden": true (also when it was not replayed)
     pub hidden: bool,
 }
 
 impl Replay {
+    /// step replays one version. A version that says "hidden": true is one no
+    /// reader saw: unless Full it leaves the state as it was, so the history
+    /// goes on from the last version a reader saw (or starts at the next one).
     fn step(&mut self, root: &Node, c: usize, o: &Options) {
+        self.hidden = root.get("hidden").is_some_and(|n| n.kind == Kind::Bool && n.str == "true");
+        if self.hidden && !o.full {
+            return;
+        }
         let leaves = o.visible(root);
         let matched = align(&self.leaves, &leaves);
         let old: HashMap<&str, &Leaf> = self.leaves.iter().map(|l| (l.ptr.as_str(), l)).collect();
@@ -482,7 +490,6 @@ impl Replay {
             self.doc.changes.push(ch);
         }
         (self.root, self.leaves, self.blocks) = (true, leaves, blocks);
-        self.hidden = root.get("hidden").is_some_and(|n| n.kind == Kind::Bool && n.str == "true");
     }
 }
 
@@ -1002,6 +1009,45 @@ mod tests {
             "changes since a revision outside a repository must be an error"
         );
         let _ = (std::fs::remove_dir_all(a), std::fs::remove_dir_all(b));
+    }
+
+    // A version that says "hidden": true is not in the reader's history, as if
+    // the file were not there: a document drafted hidden is created when it is
+    // shown, and one hidden for a while changes from its last shown version.
+    // The full build keeps every version.
+    #[test]
+    fn hidden_versions_are_left_out() {
+        if no_git() {
+            return;
+        }
+        let r = Repo::new(ENV.to_vec());
+        r.run(&["init", "-q"]);
+        let doc = |hidden: bool, body: &str| {
+            format!(r#"{{"title":"Pay","hidden":{hidden},"body":["{body}"],"f":"{body} f","notes":["NOTE {body}"],"docIgnore":[{{"rule":"DOC353","reason":"WHY {body}"}}]}}"#)
+        };
+        r.step(&doc(true, "HIDDENDOCTEXT"), "drafted hidden");
+        r.step(&doc(true, "WHILEHIDDEN"), "edited hidden");
+        r.step(&doc(false, "SHOWN ONE"), "shown");
+        r.step(&doc(true, "HIDDENAGAIN"), "hidden again");
+        r.step(&doc(false, "SHOWN TWO"), "shown again");
+        let cur = root(&doc(false, "SHOWN TWO"));
+        let files = HashMap::from([("a.json".to_string(), &cur)]);
+
+        let h = load(&r.src, &files, &Options::default()).unwrap().unwrap();
+        let js = serde_json::to_string(&h).unwrap();
+        for leak in ["HIDDENDOCTEXT", "WHILEHIDDEN", "HIDDENAGAIN", "NOTE", "WHY", "/hidden"] {
+            assert!(!js.contains(leak), "the reader's history holds {leak:?}:\n{js}");
+        }
+        let d = &h.docs["a.json"];
+        let vs: Vec<(usize, &str)> = d.blocks["/body/0"].iter().map(|v| (v.c, v.text.as_str())).collect();
+        assert_eq!(vs, [(2, "SHOWN ONE"), (4, "SHOWN TWO")], "only the shown versions");
+        let ch: Vec<(usize, bool)> = d.changes.iter().map(|c| (c.c, c.created)).collect();
+        assert_eq!(ch, [(2, true), (4, false)], "created when first shown: {:?}", d.changes);
+        assert_eq!(d.changes[1].changed[0], ["/body/0", "SHOWN ONE", "SHOWN TWO"]);
+
+        let full = load(&r.src, &files, &Options { full: true, ..Default::default() }).unwrap().unwrap();
+        let js = serde_json::to_string(&full).unwrap();
+        assert!(js.contains("HIDDENDOCTEXT") && js.contains("WHILEHIDDEN") && js.contains("HIDDENAGAIN"), "{js}");
     }
 
     // The file for the reader has no hidden fields, no authors or messages of

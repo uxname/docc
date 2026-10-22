@@ -204,7 +204,8 @@ pub fn log(cfg: &Config, rev: &str, since: &str) -> Result<LogOut, String> {
         req.push(b'\n');
     }
     let mut blobs = if req.is_empty() { Vec::new() } else { cat_files(&dir, req).map_err(|e| e.to_string())? }.into_iter();
-    let o = Options::default();
+    // every version, hidden ones too: a file is marked hidden for the caller to leave out
+    let o = Options { full: true, ..Default::default() };
     let mut state: HashMap<String, Replay> = HashMap::new();
     let mut raw: HashMap<String, Vec<u8>> = HashMap::new();
     for (path, _) in &seeds {
@@ -252,10 +253,15 @@ pub fn log(cfg: &Config, rev: &str, since: &str) -> Result<LogOut, String> {
                 let data = blobs.next().flatten().unwrap_or_default();
                 let before = if e.status == b'R' { raw.remove(&e.old) } else { raw.get(&e.path).cloned() };
                 f.comments_only = e.status == b'M' && before.is_some_and(|b| comments_only(&b, &data));
+                let was_hidden = state.get(if e.status == b'R' { &e.old } else { &e.path }).is_some_and(|st| st.hidden);
                 f.broken = matches!(history::apply(&mut state, e, Some(&data), &o), Applied::Broken);
                 if let Some(st) = state.get(&e.path) {
                     if !f.broken {
                         f.blocks = counts(st, e.c);
+                        if was_hidden && !st.hidden {
+                            // shown: a reader had no page before, as docc diff lines it up
+                            f.blocks = Counts { add: st.leaves.iter().filter(|l| block_leaf(&l.ptr, &l.text)).count(), ..Default::default() };
+                        }
                     }
                     (f.title, f.hidden) = (title_of(st), st.hidden);
                 }

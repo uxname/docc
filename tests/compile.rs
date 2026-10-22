@@ -438,3 +438,41 @@ fn build_rev_writes_only_the_html_file() {
     let s = plain.read("docs/out.html");
     assert!(s.contains("Working copy") && s.contains(r#""hist":null"#), "no timeline without Git");
 }
+
+/// The review's reproduction: a page drafted hidden, edited while hidden and
+/// then shown. The reader's file (build --rev --html from a bare mirror, as
+/// Docspace builds it) has none of the hidden versions; the audit build has.
+#[test]
+fn hidden_versions_stay_out_of_the_timeline() {
+    let p = temp_dir();
+    if !git(&p.path, &["init", "-q"]) {
+        return; // no git here
+    }
+    let w = |rel: &str, s: &str| p.write(&format!("proj/{rel}"), s);
+    let pay = |hidden: bool, text: &str| format!(r#"{{"title":"Pay","kind":"page","parent":"index","hidden":{hidden},"body":["{text}"]}}"#);
+    w("docc.json", "{}");
+    w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
+    w("docs/src/index.json", r#"{"title":"I","kind":"page","body":["One"]}"#);
+    w("docs/src/pay.json", &pay(true, "HIDDENDOCTEXT"));
+    assert!(git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "hidden"]));
+    w("docs/src/pay.json", &pay(true, "WHILEHIDDEN"));
+    assert!(git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "hidden edit"]));
+    w("docs/src/pay.json", &pay(false, "NOWPUBLIC"));
+    assert!(git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "unhidden"]));
+    let bare = temp_dir();
+    let mirror = bare.join("mirror.git");
+    assert!(git(&p.path, &["clone", "-q", "--bare", ".", mirror.to_str().unwrap()]));
+    let cfg = mirror.join("proj/docc.json");
+    let cwd = temp_dir();
+    let (code, out, errs) = do_in(&cwd.path, &["build", "--rev", "HEAD", "--html", "--no-comments", "--config", cfg.to_str().unwrap()]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let s = cwd.read("out.html");
+    assert!(s.contains("NOWPUBLIC"), "the page as it is now");
+    for leak in ["HIDDENDOCTEXT", "WHILEHIDDEN"] {
+        assert!(!s.contains(leak), "the reader's file holds the hidden version {leak:?}");
+    }
+    let (code, out, errs) = do_in(&p.join("proj"), &["build", "--html", "--full"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let s = p.read("proj/docs/out-full.html");
+    assert!(s.contains("HIDDENDOCTEXT") && s.contains("WHILEHIDDEN"), "the audit build keeps every version");
+}
