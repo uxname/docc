@@ -13,6 +13,7 @@ use super::super::page::TreeNode;
 use super::super::render::{Renderer, root};
 use super::super::text::path_ext;
 use super::InputData;
+use crate::comments::{Comment, Place};
 use crate::engine;
 use crate::loader::Kind;
 
@@ -91,7 +92,16 @@ pub struct CPage {
     pub(crate) props: Vec<CProp>,
     pub(crate) sections: Vec<Section>,
     pub(crate) blocks: Vec<CBlock>,
-    // the comments of the page will stand here, next to the blocks they point at
+    /// the readers' comments of the page ("$comments") with their place
+    pub(crate) comments: Vec<CComment>,
+}
+
+/// CComment is a comment of a page as the reader sees it: no email.
+#[derive(Serialize)]
+pub struct CComment {
+    #[serde(flatten)]
+    c: Comment,
+    place: Place,
 }
 
 /// CProp is a one-line field shown in the property list instead of a section.
@@ -157,6 +167,11 @@ impl<'a> Renderer<'a> {
                     .collect(),
                 sections: Vec::new(),
                 blocks: Vec::new(),
+                comments: s
+                    .comments_of(d)
+                    .into_iter()
+                    .map(|(c, place)| CComment { c: Comment { email: String::new(), ..c }, place })
+                    .collect(),
             };
             let mut sec: Option<String> = None;
             for b in pd.blocks {

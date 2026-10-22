@@ -102,6 +102,7 @@ impl Kind {
             if self.allowed.contains(&m.key)
                 || BUILTIN_FIELDS.contains(&m.key.as_str())
                 || m.key == "docIgnore"
+                || m.key == crate::comments::KEY
             {
                 continue;
             }

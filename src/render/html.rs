@@ -3,12 +3,13 @@ use std::collections::{HashMap, HashSet};
 use regex::Regex;
 use serde::Serialize;
 
-use crate::comments;
+use crate::comments::{Comment, Place};
 use crate::engine::{self, Doc};
 use crate::history;
 use crate::loader::{Kind, Node};
 
 use super::htmlparts::children_of;
+use super::page::TreeNode;
 use super::lang::html_escape as esc;
 use super::render::{Renderer, lf, root};
 use super::text::Page;
@@ -29,29 +30,53 @@ impl<'a> Renderer<'a> {
     /// whose script (Preact, embedded) draws the pages from a JSON island. Go
     /// renders the Markdown of every block to HTML; the page adds the tree,
     /// search, block history from Git and comments. Same call
-    /// contract as Files; the error is a bad changesSince revision.
+    /// contract as Files; the error is a bad --since revision.
     pub fn html(&self) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         Ok(self.html_of(&self.app_data()?))
     }
 
     /// app_data is the data the HTML file draws its pages from (the JSON
-    /// island of html); the error is a bad changesSince revision.
+    /// island of html); the error is a bad --since revision.
     fn app_data(&self) -> Result<AppData, Box<dyn std::error::Error + Send + Sync>> {
         // in-file links; the headings get their ids from the converter
         let s = self.variant(true, false, true);
         let (tree, orphans) = s.layout();
-        let kids = children_of(&[&tree, &orphans]);
+        let mut kids: HashMap<String, Vec<String>> = children_of(&[&tree, &orphans])
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v.iter().map(|d| d.id.clone()).collect()))
+            .collect();
         let mut data = AppData {
             lang: s.p.cfg.lang.clone(),
             full: s.full,
             key: format!("docc:{}", base_name(&s.p.cfg.root.to_string_lossy())),
             ..Default::default()
         };
-        let nav = |es: &[super::page::Entry<'_>]| -> Vec<(String, usize)> {
-            es.iter().map(|e| (e.d.id.clone(), e.depth)).collect()
+        let nav = |es: &[super::page::Entry<'_>]| -> Vec<NavEntry> {
+            es.iter().map(|e| NavEntry::Page(e.d.id.clone(), e.depth)).collect()
         };
-        data.nav.tree = nav(&tree);
-        data.nav.orphans = nav(&orphans);
+        if s.p.cfg.folders {
+            // the tree of the folders, as docc compile gives it
+            kids.clear();
+            fn walk<'x>(r: &Renderer<'x>, ns: &[TreeNode<'x>], depth: usize, nav: &mut Vec<NavEntry>, kids: &mut HashMap<String, Vec<String>>) {
+                for n in ns {
+                    match n.page() {
+                        Some(d) => {
+                            nav.push(NavEntry::Page(d.id.clone(), depth));
+                            let ks: Vec<String> = n.kids().iter().filter_map(|k| k.page()).map(|k| k.id.clone()).collect();
+                            if !ks.is_empty() {
+                                kids.insert(d.id.clone(), ks);
+                            }
+                        }
+                        None => nav.push(NavEntry::Folder(String::new(), depth, r.node_title(n))),
+                    }
+                    walk(r, n.kids(), depth + 1, nav, kids);
+                }
+            }
+            walk(&s, &s.tree_nodes(), 0, &mut data.nav.tree, &mut kids);
+        } else {
+            data.nav.tree = nav(&tree);
+            data.nav.orphans = nav(&orphans);
+        }
         let current: HashMap<String, &Node> = s
             .ordered()
             .iter()
@@ -62,19 +87,14 @@ impl<'a> Renderer<'a> {
             &current,
             &history::Options {
                 full: s.full,
-                since: s.p.cfg.changes_since.clone(),
+                since: s.since.clone(),
             },
         )?;
         let mut pages: Vec<PageData> = Vec::new();
         for d in s.ordered() {
             let Built { mut pd, pg, marker, strs } = s.build_page(d);
             pd.summary = s.summary(d);
-            pd.kids = kids
-                .get(d.id.as_str())
-                .into_iter()
-                .flatten()
-                .map(|k| k.id.clone())
-                .collect();
+            pd.kids = kids.get(&d.id).cloned().unwrap_or_default();
             // ponytail: old tables, lists and objects stay plain text in the
             // file (their text is flattened); includes and links in old text
             // resolve against the documents as they are now
@@ -100,17 +120,12 @@ impl<'a> Renderer<'a> {
             data.title = p.title.clone();
         }
         data.hist = hist;
-        // docc comments reports a broken file
-        let all = comments::load(&s.p.cfg.root).unwrap_or_default();
-        for mut it in all {
-            if it.internal && !s.full {
-                // the team's own notes stay out of the file for the readers
-                continue;
+        // the comments of the documents, at their blocks; the page script draws
+        // those that lost their place at the top of the page
+        for d in s.ordered() {
+            for (c, pl) in s.comments_of(d) {
+                data.comments.push(AppComment { doc: d.id.clone(), lost: pl == Place::Lost, text: c.words(), c });
             }
-            // show a comment on its block even after the block moved
-            let root = s.p.doc(&it.doc).and_then(|d| d.root());
-            it.path = comments::locate(root, &it).0;
-            data.comments.push(it);
         }
         if !pages.is_empty() {
             data.pages = Some(pages);
@@ -340,14 +355,70 @@ struct AppData {
     nav: NavData,
     pages: Option<Vec<PageData>>,
     hist: Option<history::History>,
-    comments: Vec<comments::Item>,
+    comments: Vec<AppComment>,
     brand: BrandData,
+}
+
+/// AppComment is a comment of a document as the page script reads it: the
+/// fields of the browser's own comments (path is the block, text the words).
+#[derive(Serialize)]
+struct AppComment {
+    #[serde(flatten, serialize_with = "app_comment")]
+    c: Comment,
+    doc: String,
+    text: String,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    lost: bool,
+}
+
+fn app_comment<S: serde::Serializer>(c: &Comment, s: S) -> Result<S::Ok, S::Error> {
+    #[derive(Serialize)]
+    struct C<'a> {
+        id: &'a str,
+        path: &'a str,
+        quote: &'a str,
+        #[serde(skip_serializing_if = "str::is_empty")]
+        fragment: &'a str,
+        #[serde(skip_serializing_if = "str::is_empty")]
+        prefix: &'a str,
+        #[serde(skip_serializing_if = "str::is_empty")]
+        suffix: &'a str,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        input: &'a Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        answer: &'a Option<Vec<String>>,
+        #[serde(skip_serializing_if = "str::is_empty")]
+        author: &'a str,
+        created: &'a str,
+    }
+    C {
+        id: &c.id,
+        path: &c.at,
+        quote: &c.quote,
+        fragment: &c.fragment,
+        prefix: &c.prefix,
+        suffix: &c.suffix,
+        input: &c.input,
+        answer: &c.answer,
+        author: &c.author,
+        created: &c.created,
+    }
+    .serialize(s)
 }
 
 #[derive(Serialize, Default)]
 struct NavData {
-    tree: Vec<(String, usize)>,
-    orphans: Vec<(String, usize)>,
+    tree: Vec<NavEntry>,
+    orphans: Vec<NavEntry>,
+}
+
+/// NavEntry is a line of the tree: [id, depth] for a page, ["", depth, title]
+/// for a folder without a page of its own (tree "folders").
+#[derive(Serialize)]
+#[serde(untagged)]
+enum NavEntry {
+    Page(String, usize),
+    Folder(String, usize, String),
 }
 
 #[derive(Serialize, Default)]

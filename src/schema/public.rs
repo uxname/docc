@@ -7,6 +7,12 @@ const CONFIG_SCHEMA: &str = include_str!("config.json");
 const COMPILE_SCHEMA: &str = include_str!("output-compile.json");
 const LOG_SCHEMA: &str = include_str!("output-log.json");
 const DIFF_SCHEMA: &str = include_str!("output-diff.json");
+const APPLY_SCHEMA: &str = include_str!("output-comments-apply.json");
+
+/// comments_apply_output is the schema of the output of docc comments apply.
+pub fn comments_apply_output() -> &'static [u8] {
+    APPLY_SCHEMA.as_bytes()
+}
 
 /// log_output and diff_output are the schemas of the outputs of docc log
 /// and docc diff (`docc schema log|diff`).

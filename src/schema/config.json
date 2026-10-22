@@ -16,7 +16,7 @@
     "numbering": { "type": "boolean", "default": false, "description": "true numbers pages below the roots (1, 1.2) and the sections of their $sections fields (1.2.1) in headings, navigation and link text." },
     "lang": { "enum": ["en", "ru"], "default": "en", "description": "Language of the fixed labels in the generated Markdown and HTML (Parent, Referenced by, On this page...)." },
     "maxWarnings": { "type": "integer", "minimum": 0, "description": "Exit code 1 when there are more warnings than this." },
-    "changesSince": { "type": "string", "minLength": 1, "description": "Git revision (tag, branch or commit) of the version the reader last received: the HTML file shows the changes since it by default and keeps no history before it." },
+    "commitOut": { "type": "boolean", "default": true, "description": "true: docs/out is committed and docc check compares it with the sources (DOC501); false: docs/out is kept out of git (docc init adds it to .gitignore) and is not checked." },
     "rules": {
       "type": "object",
       "description": "Rule name (its code works too, with a DOC902 warning) or group name to a level or an object with parameters.",

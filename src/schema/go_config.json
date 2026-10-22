@@ -80,10 +80,10 @@
       ],
       "type": "object"
     },
-    "changesSince": {
-      "description": "Git revision (tag, branch or commit) of the version the reader last received: the HTML file shows the changes since it by default and keeps no history before it.",
-      "minLength": 1,
-      "type": "string"
+    "commitOut": {
+      "default": true,
+      "description": "true: docs/out is committed and docc check compares it with the sources (DOC501); false: docs/out is kept out of git (docc init adds it to .gitignore) and is not checked.",
+      "type": "boolean"
     },
     "customRules": {
       "items": {
@@ -216,6 +216,8 @@
               "syntax/reserved-field-typo",
               "DOC111",
               "syntax/invalid-input",
+              "DOC112",
+              "syntax/invalid-comment",
               "DOC201",
               "graph/duplicate-id",
               "DOC202",
@@ -238,6 +240,8 @@
               "graph/broken-file",
               "DOC214",
               "graph/wrong-target-kind",
+              "DOC215",
+              "graph/comment-lost",
               "DOC301",
               "text/forbidden-words",
               "DOC303",

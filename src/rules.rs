@@ -38,7 +38,7 @@ const fn rule(
     Rule { code, name, group, default, core, desc, bad, good }
 }
 
-static ALL: [Rule; 41] = [
+static ALL: [Rule; 43] = [
     rule(
         "DOC101",
         "syntax/invalid-json",
@@ -150,6 +150,16 @@ static ALL: [Rule; 41] = [
         r#"{ "title": "A", "body": ["Text.", { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] }] }"#,
     ),
     rule(
+        "DOC112",
+        "syntax/invalid-comment",
+        "syntax",
+        E,
+        false,
+        "An item of \"$comments\" (the readers' comments kept in the document) is malformed, or its id is used by another comment of the project. A comment is {id, at (the JSON Pointer of its block), quote (the text of the block when written), text, author, created (RFC 3339)} with optional fragment, prefix, suffix (the selected words and what stands around them) and email; an answer to a form field has input (the field id) and answer (an array of strings) instead of text. Edit the list with docc comments apply.",
+        r#"{ "title": "A", "$comments": [{ "id": "c-1", "text": "Why?", "status": "done" }] }"#,
+        r#"{ "title": "A", "$comments": [{ "id": "c-1", "at": "/body/0", "quote": "Alpha.", "text": "Why?", "author": "Ann", "created": "2026-10-22T09:00:00Z" }] }"#,
+    ),
+    rule(
         "DOC201",
         "graph/duplicate-id",
         "graph",
@@ -258,6 +268,16 @@ static ALL: [Rule; 41] = [
         "A reference in a field whose kind schema sets \"x-docc-target\" (or the parent value) points to a document of another kind.",
         r#""parent": "note-a"  (schema: "parent": { "x-docc-target": ["goal"] })"#,
         r#""parent": "goal-a"  (kind goal)"#,
+    ),
+    rule(
+        "DOC215",
+        "graph/comment-lost",
+        "graph",
+        W,
+        false,
+        "A comment of \"$comments\" lost its place: no block stands at its pointer \"at\" any more (a paragraph was inserted, moved or removed above it), the words it was left on (\"fragment\") are not in that block, or the form field it answers is gone. Point \"at\" to the block the comment is about now, or delete the comment when it is handled (docc comments apply).",
+        r#""body": ["New first.", "Alpha."], "$comments": [{ "at": "/body/0", "fragment": "Alpha", ... }]"#,
+        r#""body": ["New first.", "Alpha."], "$comments": [{ "at": "/body/1", "fragment": "Alpha", ... }]"#,
     ),
     rule(
         "DOC301",
@@ -512,7 +532,7 @@ mod tests {
     #[test]
     fn registry() {
         let n = all().len();
-        assert_eq!(n, 41, "want 41 rules, got {n}");
+        assert_eq!(n, 43, "want 43 rules, got {n}");
         let mut core = 0;
         for r in all() {
             assert!(

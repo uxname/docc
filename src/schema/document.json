@@ -33,6 +33,30 @@
         "additionalProperties": false
       },
       "description": "Suppressions; every entry needs a reason."
+    },
+    "$comments": {
+      "type": "array",
+      "description": "The readers' comments, written by docc comments apply (DOC112, DOC215). Each is about the block at the JSON Pointer at; an answer to a form field has input and answer instead of text. A handled comment is deleted.",
+      "items": {
+        "type": "object",
+        "required": ["id", "at", "quote", "author", "created"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "at": { "type": "string", "pattern": "^/" },
+          "quote": { "type": "string" },
+          "fragment": { "type": "string" },
+          "prefix": { "type": "string" },
+          "suffix": { "type": "string" },
+          "text": { "type": "string", "minLength": 1 },
+          "input": { "type": "string", "minLength": 1 },
+          "answer": { "type": "array", "items": { "type": "string" } },
+          "author": { "type": "string" },
+          "email": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" }
+        },
+        "oneOf": [{ "required": ["text"] }, { "required": ["input", "answer"] }]
+      }
     }
   }
 }

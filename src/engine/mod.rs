@@ -2,6 +2,7 @@
 //! checks, producing diagnostics.
 
 mod analyze;
+mod comments;
 mod core;
 mod custom;
 mod graph;

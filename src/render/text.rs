@@ -27,6 +27,10 @@ pub(super) struct Page<'r, 'a> {
     /// HTML file only: marker number of a field or section heading -> its
     /// level and title
     pub heads: std::collections::HashMap<usize, (usize, String)>,
+    /// Markdown only: the readers' comments under each block (by the address
+    /// of its node) and those that lost their place
+    pub notes: std::collections::HashMap<*const Node, String>,
+    pub lost: String,
 }
 
 /// prop is one entry of the property list of the HTML file.
@@ -42,7 +46,11 @@ static MARK_B: LazyLock<Regex> =
 
 impl<'r, 'a> Page<'r, 'a> {
     pub fn new(r: &'r Renderer<'a>, doc: &'a Doc) -> Page<'r, 'a> {
+        // the HTML file draws the comments itself
+        let (notes, lost) = if r.html { Default::default() } else { r.md_comments(doc) };
         Page {
+            notes,
+            lost,
             r,
             doc,
             path: page_path(doc),
@@ -336,17 +344,18 @@ impl<'a> Page<'_, 'a> {
     pub fn paragraphs(&mut self, v: &'a Node, includes: bool) -> Vec<String> {
         let elems: Vec<&'a Node> = match v.kind {
             Kind::String => vec![v],
-            Kind::Array => v
-                .items
-                .iter()
-                .filter(|it| it.kind == Kind::String || (self.r.html && engine::is_input(it)))
-                .collect(),
+            Kind::Array => v.items.iter().filter(|it| it.kind == Kind::String || engine::is_input(it)).collect(),
             _ => Vec::new(),
         };
         let mut out = Vec::new();
         for n in elems {
             if n.kind != Kind::String {
-                out.push(self.mark(Some(n)).trim_end().to_string());
+                if self.r.html {
+                    out.push(self.mark(Some(n)).trim_end().to_string());
+                } else if let Some(note) = self.notes.get(&(n as *const Node)) {
+                    // the field is not in the Markdown, its answers are
+                    out.push(note.clone());
+                }
                 continue;
             }
             let (e, tag) = self.block(n);
@@ -362,8 +371,16 @@ impl<'a> Page<'_, 'a> {
                 }
                 out.push(x);
             }
+            if let Some(note) = self.notes.get(&(n as *const Node)) {
+                out.push(note.clone());
+            }
         }
         out
+    }
+
+    /// note is the comments under the block of n, after a blank line; "" for none.
+    pub fn note(&self, n: &Node) -> String {
+        self.notes.get(&(n as *const Node)).map(|s| format!("\n\n{s}")).unwrap_or_default()
     }
 
     /// block returns the text of a string of this page without its block anchor

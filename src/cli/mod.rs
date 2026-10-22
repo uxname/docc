@@ -42,7 +42,7 @@ Usage: docc [flags] <command> [flags]
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources
-  build              build Markdown into docs/out (--full: audit, --single/--html: one file)
+  build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --since)
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision)
   log                print the commits that changed the documents, with the files and block counts of each
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
@@ -50,9 +50,9 @@ Commands:
   ack <id|file>...   confirm the changed links around a document, target or code file in docc.lock (--all: every changed link)
   explain <code>     describe a rule
   rules              list rules with effective levels
-  schema document|config|compile|log|diff   print a JSON Schema
+  schema document|config|compile|log|diff|comments-apply   print a JSON Schema
   update             replace docc with the latest release (--check: only look, --version vX.Y.Z)
-  comments           review comments from the HTML file: import <file>, list (--all), done <id>, rm <id>
+  comments           the readers' comments in the documents: list, apply (edits from stdin), import <file>, rm <id>
 
 Flags: --format text|json, --config <file>, --max-diagnostics N, --max-warnings N
 (they may stand before or after the command)
@@ -66,8 +66,9 @@ fn cmd_usage(name: &str) -> &'static str {
         "init" => {
             "Usage: docc init
 
-Creates docc.json, docs/schemas/page.json and docs/src/index.json (existing files are kept)
-and builds docs/out.
+Creates docc.json (with \"commitOut\": false: docs/out is built but not committed, so it
+goes into .gitignore with the one-file builds), docs/schemas/page.json and
+docs/src/index.json (existing files are kept) and builds docs/out.
 
 Example:
   docc init
@@ -94,14 +95,19 @@ search, dark theme, a timeline of the Git history with the edits drawn in the te
 on selected words (typed or dictated) copied or downloaded for docc comments import. With
 --full the files are docs/out-full.md and docs/out-full.html. Once written, such a file is
 rebuilt by every later docc build. A program that shows the pages itself reads docc compile.
-They
-are for reading, are not checked by docc check and are usually kept out of git.
+They are for reading, are not checked by docc check and are usually kept out of git.
+The readers' comments (\"$comments\" of the documents) stand under their blocks in the
+Markdown and the HTML file, those that lost their place at the top of the page;
+--no-comments leaves them out. --since names the revision (tag, branch, commit) of the
+version the reader last received: the HTML file shows the edits since it and no history
+before it.
 
 Examples:
   docc build
   docc build --full
   docc build --single
   docc build --html
+  docc build --html --since sent-2026-10-06 --no-comments
   docc build --full --single --html
 "
         }
@@ -159,7 +165,8 @@ Examples:
             "Usage: docc check [flags]
 
 Read-only check for CI: validate, and fail when docs/out (DOC501) or docc.lock (DOC503)
-differs from the sources.
+differs from the sources. docs/out may be built with or without the comments; with
+\"commitOut\": false in docc.json it is not compared.
 
 Example:
   docc check --max-warnings 0
@@ -202,9 +209,10 @@ Examples:
 "
         }
         "schema" => {
-            "Usage: docc schema document|config|compile|log|diff
+            "Usage: docc schema document|config|compile|log|diff|comments-apply
 
-Prints a JSON Schema for documents, for docc.json or for the output of docc compile, log or diff.
+Prints a JSON Schema for documents, for docc.json or for the output of docc compile, log,
+diff or comments apply.
 
 Example:
   docc schema document
@@ -656,7 +664,7 @@ fn cmd_diff(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i
 fn cmd_schema(args: &[String], stdout: &mut dyn Write) -> Result<(), Error> {
     let pos = parse(&mut FlagSet::new("schema"), args)?;
     if pos.len() != 1 {
-        return Err(usage_err("usage: docc schema document|config|compile|log|diff"));
+        return Err(usage_err("usage: docc schema document|config|compile|log|diff|comments-apply"));
     }
     match pos[0].as_str() {
         "document" => stdout.write_all(schema::document())?,
@@ -664,9 +672,10 @@ fn cmd_schema(args: &[String], stdout: &mut dyn Write) -> Result<(), Error> {
         "compile" => stdout.write_all(schema::compile_output())?,
         "log" => stdout.write_all(schema::log_output())?,
         "diff" => stdout.write_all(schema::diff_output())?,
+        "comments-apply" => stdout.write_all(schema::comments_apply_output())?,
         other => {
             return Err(usage_err(format!(
-                "unknown schema {}: use document, config, compile, log or diff",
+                "unknown schema {}: use document, config, compile, log, diff or comments-apply",
                 config::go_quote(other)
             )));
         }
@@ -689,6 +698,15 @@ fn no_args(pos: &[String]) -> Result<(), Error> {
     Ok(())
 }
 
+/// BuildOpts are the flags of docc build that change what is written.
+#[derive(Default)]
+struct BuildOpts {
+    /// leave the readers' comments out (--no-comments)
+    no_comments: bool,
+    /// the revision the HTML file counts the edits from (--since)
+    since: String,
+}
+
 /// Built is what build made: the number of files, the one-file builds written
 /// and the error of the HTML file, which stops only that file.
 struct Built {
@@ -701,7 +719,7 @@ struct Built {
 /// Markdown into out (or outFull) and returns the number of files. With single
 /// and html, or when that file is already there, it also writes the one-file
 /// Markdown and HTML next to the directory and returns their paths in extra.
-fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool) -> Result<Built, Error> {
+fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool, o: &BuildOpts) -> Result<Built, Error> {
     let mut b = Built { n: 0, extra: Vec::new(), html_err: None };
     if engine::structural(&p.diags()) {
         return Ok(b);
@@ -727,13 +745,14 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
             }
         }
     }
-    let r = render::Renderer::new(p, full);
+    let mut r = render::Renderer::new(p, full);
+    (r.comments, r.since) = (!o.no_comments, o.since.clone());
     let files = r.files();
     let mut one: Vec<(&str, String)> = Vec::new(); // extension -> content of a single-file build
     if single {
         one.push((".md", r.single()));
     }
-    // a bad changesSince stops only the HTML file, not the pages and the lock
+    // a bad --since stops only the HTML file, not the pages and the lock
     if html {
         match r.html() {
             Ok(h) => one.push((".html", h)),
@@ -756,18 +775,24 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
 
 fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
     let (mut full, mut single, mut html) = (false, false, false);
+    let mut o = BuildOpts::default();
     let pos = {
         let mut fs = new_flags("build", c);
         fs.bool_var(&mut full, "full", "audit build into outFull");
         fs.bool_var(&mut single, "single", "also write all pages as one Markdown file next to the output directory");
         fs.bool_var(&mut html, "html", "also write all pages as one self-contained HTML file next to the output directory");
+        fs.bool_var(&mut o.no_comments, "no-comments", "leave the readers' comments ($comments) out of everything this build writes");
+        fs.string_var(&mut o.since, "since", "HTML file: the Git revision (tag, branch, commit) of the version the reader last received; the edits since it are shown, the history before it is left out");
         parse(&mut fs, args)
     };
     let pos = pos?;
     no_args(&pos)?;
     c.check()?;
+    if !o.since.is_empty() && o.since.trim().is_empty() {
+        return Err(usage_err("--since must name a Git revision"));
+    }
     let mut p = load_project(c)?;
-    let b = build(&p, stderr, full, single, html)?;
+    let b = build(&p, stderr, full, single, html, &o)?;
     let ds = p.sorted();
     let res = emit(stdout, stderr, c, &p, &ds);
     let mut code = *res.as_ref().unwrap_or(&2);
@@ -798,7 +823,15 @@ fn cmd_check(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
     c.check()?;
     let mut p = load_project(c)?;
     if !engine::structural(&p.diags()) {
-        render::check_fresh(&p, &p.cfg.out, &render::Renderer::new(&p, false).files());
+        if p.cfg.commit_out {
+            // docs/out may be built with or without the readers' comments
+            let r = render::Renderer::new(&p, false);
+            let mut bare = render::Renderer::new(&p, false);
+            bare.comments = false;
+            let with = r.files();
+            let without = p.docs.iter().any(|d| d.root().is_some_and(|r| r.get(crate::comments::KEY).is_some())).then(|| bare.files());
+            render::check_fresh(&p, &p.cfg.out, &with, without.as_ref());
+        }
         p.check_lock_file();
     }
     let ds = p.sorted();
@@ -843,7 +876,8 @@ const INIT_CONFIG: &str = r#"{
   "src": "docs/src",
   "out": "docs/out",
   "roots": ["index"],
-  "maxWarnings": 0
+  "maxWarnings": 0,
+  "commitOut": false
 }
 "#;
 
@@ -866,8 +900,10 @@ const BUILT_IGNORE: [&str; 5] = [
     "docs/out-full.html",
 ];
 
-/// ignore_built adds the lines of BUILT_IGNORE that .gitignore lacks, creating the file.
-fn ignore_built(stdout: &mut dyn Write) -> Result<(), Error> {
+/// ignore_built adds the lines of BUILT_IGNORE that .gitignore lacks, and the
+/// output directory when it is not committed (out: "commitOut": false),
+/// creating the file.
+fn ignore_built(stdout: &mut dyn Write, out: Option<&str>) -> Result<(), Error> {
     // bytes, not a string: a file in another encoding is kept as it is
     let old = match std::fs::read(".gitignore") {
         Ok(b) => b,
@@ -882,8 +918,9 @@ fn ignore_built(stdout: &mut dyn Write) -> Result<(), Error> {
         text.push(b'\n');
     }
     let mut added = false;
-    for l in BUILT_IGNORE {
-        if !have.contains(l) {
+    let out = out.map(|o| format!("{}/", o.trim_end_matches('/')));
+    for l in BUILT_IGNORE.iter().copied().chain(out.as_deref()) {
+        if !have.contains(l) && !have.contains(l.trim_end_matches('/')) {
             text.extend_from_slice(l.as_bytes());
             text.push(b'\n');
             added = true;
@@ -953,7 +990,8 @@ fn cmd_init(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         Ok(())
     };
     create(stdout, "docc.json", INIT_CONFIG, 0o644)?;
-    ignore_built(stdout)?;
+    let cfg = load_config(c)?;
+    ignore_built(stdout, (!cfg.commit_out).then_some(cfg.out.as_str()))?;
     create(stdout, "docs/schemas/page.json", INIT_SCHEMA, 0o644)?;
     create(stdout, "docs/src/index.json", "{ \"title\": \"Index\", \"kind\": \"page\" }\n", 0o644)?;
     let mut hook = false; // a pre-commit hook is created now; an existing one is never touched
@@ -963,7 +1001,7 @@ fn cmd_init(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         create(stdout, name, INIT_HOOK, 0o755)?;
     }
     let mut p = load_project(c)?;
-    let b = build(&p, stderr, false, false, false)?;
+    let b = build(&p, stderr, false, false, false, &BuildOpts::default())?;
     if b.n > 0 {
         say(stdout, &format!("built {} files in {}\n", b.n, p.cfg.out));
     }

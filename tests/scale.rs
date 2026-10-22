@@ -80,7 +80,7 @@ fn scale() {
         let t2 = Instant::now();
         let files = render::Renderer::new(&p, false).files();
         let t3 = Instant::now();
-        render::check_fresh(&p, &p.cfg.out, &files);
+        render::check_fresh(&p, &p.cfg.out, &files, None);
         let t4 = Instant::now();
         eprintln!(
             "run {run}: load {}, validate {}, render {}, compare out/ {}, total {} (diagnostics: {})",

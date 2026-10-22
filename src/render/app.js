@@ -89,12 +89,12 @@
     for (var i = 0; i < u.length; i++) { b += String.fromCharCode(u[i]); }
     return btoa(b);
   }
+  // the id of a new comment, as docc comments apply makes one: c- and 10 of a-z, 2-7
   function uuid() {
-    if (window.crypto && crypto.randomUUID) { return crypto.randomUUID(); }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = Math.random() * 16 | 0;
-      return (c === 'x' ? r : (r & 3 | 8)).toString(16);
-    });
+    var a = new Uint8Array(10), abc = 'abcdefghijklmnopqrstuvwxyz234567', s = 'c-';
+    if (window.crypto && crypto.getRandomValues) { crypto.getRandomValues(a); } else { for (var i = 0; i < 10; i++) { a[i] = Math.random() * 256; } }
+    for (var k = 0; k < 10; k++) { s += abc[a[k] & 31]; }
+    return s;
   }
   // a short hash of a text: the id of a removed block
   function hash(s) {
@@ -484,11 +484,11 @@
     return '«' + snip(b ? b.s : fallback || '', 70) + '»';
   }
 
-  // ---- comments: kept in localStorage until they are imported into the project ----
+  // ---- comments: kept in localStorage until they are imported into the documents ----
   var listeners = [];
   var imported = D.comments || [], inRepo = {};
   imported.forEach(function (c) { inRepo[c.id] = true; });
-  // comments already imported into the repository leave the browser
+  // comments already imported into the documents leave the browser
   var kept = store('comments') || [], local = kept.filter(function (c) { return !inRepo[c.id]; });
   if (local.length !== kept.length) { store('comments', local); }
   function setLocal(list) {
@@ -563,20 +563,19 @@
     return (pathCache[k] = best);
   }
   // the comments of a block as cards; answers are shown by their field
-  function commentsOn(list, doc, ptr) { return list.filter(function (c) { return c.doc === doc && !c.input && pathOf(c) === ptr; }); }
+  function commentsOn(list, doc, ptr) { return list.filter(function (c) { return c.doc === doc && !c.input && !c.lost && pathOf(c) === ptr; }); }
   // Where a comment stands now: its page and paragraph, or which of them is
-  // gone. An accepted comment often outlives its place: the answered question
-  // is deleted, or its paragraph rewritten into another document.
+  // gone (docc marks a comment of the documents that lost its place as lost).
   function commentPlace(c) {
     var p = byId[c.doc], ptr = pathOf(c);
     if (!p) { return { gone: 'page' }; }
-    if (ptr && !blocksOf(p).some(function (b) { return b.p === ptr; })) { return { page: p, gone: 'block' }; }
+    var b = ptr && blocksOf(p).filter(function (x) { return x.p === ptr; })[0];
+    // an answer stands at its field wherever the field went
+    if ((ptr && !b) || (c.lost && !(c.input && b && b.i && b.i.id === c.input))) { return { page: p, gone: 'block' }; }
     return { page: p, ptr: ptr };
   }
-  // An imported comment that was answered (done) and has lost its place is
-  // history: the list keeps it in the archive, out of the count. An open one,
-  // or one still in place, stays where it is, and so does the reader's own.
-  function settled(c) { return c.status === 'done' && !!commentPlace(c).gone; }
+  // the comments of a page that lost their place, shown at its top
+  function lostOn(list, doc) { return list.filter(function (c) { return c.doc === doc && commentPlace(c).gone === 'block'; }); }
 
   var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var speechLang = D.lang === 'ru' ? 'ru-RU' : 'en-US';
@@ -686,7 +685,6 @@
           <button type="button" class="link" onClick=${function () { edit[1](true); }}>{{t:Edit}}</button>
           <button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button></span>`}
       </div>
-      ${c.reply && html`<div class="reply"><small>{{t:Answer}}</small>${c.reply}</div>`}
     </aside>`;
   }
 
@@ -1003,7 +1001,7 @@
         window.removeEventListener('resize', relayout); document.removeEventListener('toggle', relayout, true); document.removeEventListener('input', relayout, true);
       };
     });
-    var prev = pages[page.i - 1], next = pages[page.i + 1], d = pageDelta(page, s, t);
+    var prev = pages[page.i - 1], next = pages[page.i + 1], d = pageDelta(page, s, t), lost = lostOn(imported.concat(props.comments), page.id);
     var bl = { comments: props.comments, s: s, t: t, page: page, cur: props.cur, editor: props.editor, closeEditor: props.closeEditor, activeC: props.activeC };
     function extra(i) {
       return d.ghosts.filter(function (g) { return g.at === i; }).map(function (g) { return html`<${Ghost} key=${g.a} g=${g} cur=${props.cur} />`; })
@@ -1021,6 +1019,11 @@
         <button type="button" class="btn sm" onClick=${function () { props.setT(last); }}>{{t:Back to now}}</button></p>`}
       <h1>${page.title}</h1>
       ${page.hidden && html`<p class="badges"><span class="chip bad">{{t:hidden}}</span></p>`}
+      ${!past && lost.length > 0 && html`<aside class="notice lostc" aria-label="{{t:Comments that lost their place:}}"><b>💬 {{t:Comments that lost their place:}}</b>
+        <ul class="clist">${lost.map(function (c) {
+          return html`<li><span class="cp">«${snip(c.fragment || (c.input ? fieldWords(c.quote) : c.quote), 70)}»</span> <span class="ctx">${c.text}</span>
+            <span class="cp">— ${c.author || '{{t:Anonymous}}'}</span></li>`;
+        })}</ul></aside>`}
       <div class="doc">
         ${ps.length > 0 && html`<div class="props">${ps.map(function (p) {
           return html`<${Block} ...${bl} key=${p.p || p.k} b=${p} label=${p.k} id=${p.id} />`;
@@ -1058,16 +1061,19 @@
     note: '<path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/>',
     overview: '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
     file: '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/>',
+    folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
     '#': '<path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3l-2 18"/>'
   };
   ICONS.spec = ICONS.requirement;
   function Icon(props) {
     return html`<span class="ic" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: '<svg viewBox="0 0 24 24">' + (ICONS[props.name] || ICONS.file) + '</svg>' }}></span>`;
   }
+  // the tree is [id, depth] per page in order; a folder without a page of its
+  // own (tree "folders") is ["", depth, title]
   function nest(list) {
     var root = { kids: [] }, stack = [root];
-    list.forEach(function (e) {
-      var node = { id: e[0], kids: [] };
+    list.forEach(function (e, k) {
+      var node = { id: e[0], key: e[0] || 'folder:' + k, title: e[2], kids: [] };
       stack.length = e[1] + 1;
       (stack[e[1]] || root).kids.push(node);
       stack.push(node);
@@ -1089,7 +1095,7 @@
     if (at >= 0 && (at < lo || at >= hi)) { lo = Math.max(0, at - 10); hi = Math.min(n, at + 11); }
     return html`<ul>
       ${lo > 0 && html`<li><button type="button" class="more" onClick=${function () { win[1]([Math.max(0, lo - 30), hi]); }}>↑ ${lo} {{t:earlier}}</button></li>`}
-      ${all.slice(lo, hi).map(function (x) { return html`<${Node} ...${props} key=${x.id} node=${x} />`; })}
+      ${all.slice(lo, hi).map(function (x) { return html`<${Node} ...${props} key=${x.key} node=${x} />`; })}
       ${hi < n && html`<li><button type="button" class="more" onClick=${function () { win[1]([lo, Math.min(n, hi + 30)]); }}>${n - hi} {{t:more}} ↓</button></li>`}
     </ul>`;
   }
@@ -1099,8 +1105,17 @@
     var open = useState(null);
     var isOpen = top || (open[0] == null ? inside : open[0]);
     useEffect(function () { if (inside) { open[1](null); } }, [props.cur]);
-    if (!p) { return null; }
-    var here = p.id === props.cur, m = props.marks[p.id], inner = !isOpen && props.inner[x.id];
+    if (!p && x.id) { return null; }
+    if (!p) {
+      // a folder without a page of its own: its name opens and folds it
+      var fin = !isOpen && props.inner[x.key];
+      return html`<li class="parent">
+        <button type="button" class="fd" aria-expanded=${isOpen ? 'true' : 'false'} disabled=${top} onClick=${function () { open[1](!isOpen); }}><${Icon} name="folder" /><span class="tt">${x.title}</span>
+          ${fin && html`<span class="td" title="{{t:Edits inside}}"><span class="sr">{{t:Edits inside}}</span></span>`}</button>
+        ${x.kids.length > 0 && isOpen && html`<${Items} ...${props} depth=${(props.depth || 0) + 1} nodes=${x.kids} />`}
+      </li>`;
+    }
+    var here = p.id === props.cur, m = props.marks[p.id], inner = !isOpen && props.inner[x.key];
     // the colour of the title says the kind, the mark beside it says it without colour
     return html`<li class=${x.kids.length ? 'parent' : ''}>
       <a href=${'#' + p.id} class=${m ? 'm-' + m.k : undefined} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><${Icon} name=${p.kind} /><span class="tt">${p.title}</span>${p.hidden && html` <span class="chip bad">{{t:hidden}}</span>`}
@@ -1118,7 +1133,7 @@
   function marked(nodes, m, out) {
     var any = false;
     nodes.forEach(function (x) {
-      if (marked(x.kids, m, out)) { out[x.id] = true; any = true; }
+      if (marked(x.kids, m, out)) { out[x.key] = true; any = true; }
       if (m[x.id]) { any = true; }
     });
     return any;
@@ -1260,15 +1275,13 @@
     var list = props.comments, rows = [];
     list.forEach(function (c) { rows.push([c, false]); });
     imported.forEach(function (c) { rows.push([c, true]); });
-    var live = rows.filter(function (x) { return !settled(x[0]); }), old = rows.filter(function (x) { return settled(x[0]); });
     function row(x) {
         var c = x[0], at = commentPlace(c), p = at.page;
         var body = html`
           <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : c.input ? '«' + snip(c.quote, 70) + '»' : placeOf(p, c.path, c.quote)}
             ${at.gone && html` <span class="chip">${at.gone === 'page' ? '{{t:page removed}}' : '{{t:paragraph removed}}'}</span>`}</span>
           <span class="ctx">${c.text}</span>
-          ${c.author && html`<span class="cp">— ${c.author}</span>`}
-          ${c.reply && html`<span class="crep"><b>{{t:Answer}}:</b> ${c.reply}</span>`}`;
+          ${c.author && html`<span class="cp">— ${c.author}</span>`}`;
         if (!at.gone) { return html`<li><button type="button" class="cr" onClick=${function () { props.show(c); }}>${body}</button></li>`; }
         // its place is not in the text any more: the comment opens here, with the words it was left on
         return html`<li><details class="cg"><summary class="cr">${body}</summary>
@@ -1282,9 +1295,7 @@
           <button type="button" class="btn" onClick=${sendFile}>{{t:Download as a file}}</button></div>
       </div>`}
       ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text on the page to comment on it.}}</p>`}
-      <ul class="clist">${live.map(row)}</ul>
-      ${old.length > 0 && html`<details class="arch"><summary>{{t:Archive: answered, place removed}} <span class="tc">${old.length}</span></summary>
-        <ul class="clist">${old.map(row)}</ul></details>`}
+      <ul class="clist">${rows.map(row)}</ul>
     </div>`;
   }
   // the edits listed beside the tree (in its place in the drawer of a narrow screen)
@@ -1318,7 +1329,7 @@
     if (open && !props.wide) {
       return html`<div class="side-in" id="edits" role="region" aria-labelledby="eds-h"><${EditsPanel} ...${props} close=${toggle} /></div>`;
     }
-    var tabs = [['pages', '{{t:Pages}}', 0], ['comments', '{{t:Comments}}', props.comments.length + imported.filter(function (c) { return !settled(c); }).length]];
+    var tabs = [['pages', '{{t:Pages}}', 0], ['comments', '{{t:Comments}}', props.comments.length + imported.length]];
     var tab = props.tab === 'comments' ? 'comments' : 'pages';
     function key(e) {
       var k = tabs.map(function (t) { return t[0]; }).indexOf(tab), n = tabs.length;
@@ -1581,7 +1592,7 @@
     var eds = wide[0] && edits[0];
     var curA = all.list[cur[0]] ? all.list[cur[0]].a : null;
     // the margin for the cards opens only when the page has comments or an editor
-    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id && !c.input; }));
+    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id && !c.input && !c.lost; }));
     return html`
       <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>{{t:Skip to content}}</a>
       <header class=${'top' + (last > 0 ? ' has-tl' : '')} role="banner">
@@ -1614,6 +1625,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, settled: settled, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

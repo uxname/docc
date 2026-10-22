@@ -378,7 +378,9 @@ fn src(p: &Project, rel: &str) -> String {
 
 /// CheckFresh compares dir with the expected files and reports DOC501 for
 /// missing, outdated and extra files.
-pub fn check_fresh(p: &Project, out_rel: &str, files: &HashMap<String, Vec<u8>>) {
+/// alt, when given, is a second build a file may equal instead (docs/out built
+/// without the readers' comments).
+pub fn check_fresh(p: &Project, out_rel: &str, files: &HashMap<String, Vec<u8>>, alt: Option<&HashMap<String, Vec<u8>>>) {
     let dir = p.cfg.abs(out_rel);
     let mut seen = std::collections::HashSet::new();
     for e in walk_dir(&dir).0 {
@@ -413,7 +415,8 @@ pub fn check_fresh(p: &Project, out_rel: &str, files: &HashMap<String, Vec<u8>>)
                 g
             }
         });
-        if !got.is_ok_and(|g| g == *want) {
+        let other = alt.and_then(|a| e.key().and_then(|k| a.get(k)));
+        if !got.is_ok_and(|g| g == *want || other.is_some_and(|o| g == *o)) {
             p.report_file(
                 &file,
                 "DOC501",

@@ -1,0 +1,9 @@
+{
+  "title": "Other",
+  "kind": "page",
+  "parent": "index",
+  "body": ["Gamma."],
+  "$comments": [
+    {"id": "c-2", "at": "/body/0", "quote": "Gamma.", "text": "Same id as in index.", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
+  ]
+}

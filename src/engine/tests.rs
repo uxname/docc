@@ -129,7 +129,9 @@ fn golden_json(work: &Path, check: bool) -> Result<(String, Vec<Diagnostic>), St
     let mut ds = p.validate();
     if check && !structural(&ds) {
         let files = crate::render::Renderer::new(&p, false).files();
-        crate::render::check_fresh(&p, &p.cfg.out, &files);
+        if p.cfg.commit_out {
+            crate::render::check_fresh(&p, &p.cfg.out, &files, None);
+        }
         p.check_lock_file();
         ds = p.sorted();
     }

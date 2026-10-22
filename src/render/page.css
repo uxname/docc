@@ -94,6 +94,10 @@ main{min-width:0;padding:2rem 1.5rem 6rem;outline:0;container:main/inline-size}
 #tree a:has(+.tw){padding-right:1rem}
 #tree a>.tt{flex:1;min-width:0}
 #tree a:hover{background:var(--accent-bg)}
+#tree .fd{display:flex;align-items:center;gap:.35rem;width:100%;min-height:var(--tgt);padding:.2rem .5rem .2rem .25rem;border:0;border-radius:6px;background:none;color:var(--muted);font:inherit;text-align:left;cursor:pointer}
+#tree .fd>.tt{flex:1;min-width:0}
+#tree .fd:hover:not(:disabled){background:var(--accent-bg)}
+#tree .fd:disabled{cursor:default;opacity:1}
 #tree a[aria-current=page]{background:var(--accent-bg);font-weight:700}
 .ic{flex:none;display:flex;color:var(--muted)}
 .ic svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -135,7 +139,6 @@ main{min-width:0;padding:2rem 1.5rem 6rem;outline:0;container:main/inline-size}
 .er:hover,.cr:hover,.er.on{background:var(--accent-bg)}
 .g{flex:none;align-self:flex-start;padding:0 .35rem;font-size:.6875rem;font-weight:700;line-height:1.6;border-radius:99px;background:var(--bg)}
 .es{color:var(--muted);font-size:.75rem}
-.crep{display:block;margin-top:.15rem;padding-left:.5rem;border-left:2px solid var(--line);color:var(--muted)}
 .g.chg{color:var(--chg)}.g.new{color:var(--new)}.g.rm{color:var(--rem)}
 .cr{flex-direction:column;align-items:flex-start;gap:.15rem;border-bottom:1px solid var(--line);border-radius:0}
 .cp{color:var(--muted);font-size:.75rem}
@@ -145,8 +148,8 @@ main{min-width:0;padding:2rem 1.5rem 6rem;outline:0;container:main/inline-size}
 .cg[open]>summary .ctx{display:block}
 .cg[open]{padding:0 .5rem .6rem;background:var(--bg);border-bottom:1px solid var(--line)}
 .cg[open]>summary{margin:0 -.5rem;border-bottom:0}
-.arch{margin-top:1rem;border-top:1px solid var(--line);padding-top:.5rem}
-.arch>summary{cursor:pointer;color:var(--muted);font-size:.85rem;min-height:44px;display:flex;align-items:center;gap:.4rem}
+.lostc .clist{margin-top:.3rem}
+.lostc li{padding:.15rem 0}
 .cg .fq{white-space:pre-line;margin:.2rem 0 .5rem}
 .cg>.cp{margin:.4rem 0 0}
 .send{margin:.2rem 0 .8rem;padding:.7rem;background:var(--warn-bg);border-radius:8px}
@@ -249,8 +252,6 @@ blockquote.fq{white-space:normal;background:none;border-radius:0}
 .meta{display:flex;flex-wrap:wrap;gap:.3rem .5rem;align-items:center;margin-top:.35rem;font-size:.8125rem}
 .meta small{color:var(--muted)}
 .acts{display:flex;gap:.7rem;margin-left:auto}
-.reply{margin-top:.4rem;padding-top:.4rem;border-top:1px dashed var(--line)}
-.reply small{display:block;color:var(--muted)}
 mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px dotted var(--frag-line);border-radius:2px}
 .editor{padding:.7rem;background:var(--bg);border:1px solid var(--accent);border-radius:8px}
 .who-l{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;color:var(--muted);font-size:.875rem}

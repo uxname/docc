@@ -127,7 +127,7 @@ fn history() -> Option<(Repo, HashMap<&'static str, String>)> {
         ),
     );
     // only the comments of a change (and its layout)
-    let commented = a2.replace(r#""team":"Core""#, "\n  \"team\": \"Core\",\n  \"$comments\": [{\"id\": \"c1\", \"text\": \"Hi\"}]");
+    let commented = a2.replace(r#""team":"Core""#, "\n  \"team\": \"Core\",\n  \"$comments\": [{\"id\": \"c1\", \"at\": \"/body/0\", \"quote\": \"One.\", \"text\": \"Hi\", \"author\": \"Ann\", \"created\": \"2026-10-01T10:00:00Z\"}]");
     sha.insert("comments", r.commit("comments", &[("docs/src/a.json", &commented)]));
     sha.insert("broken", r.commit("broken", &[("docs/src/a.json", "{")]));
     // a fixed against its last good version; b deleted

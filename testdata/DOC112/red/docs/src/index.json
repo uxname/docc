@@ -1,0 +1,15 @@
+{
+  "title": "Index",
+  "kind": "page",
+  "body": ["Alpha.", "Beta."],
+  "$comments": [
+    {"id": "c-1", "text": "Why?", "status": "done"},
+    {"id": "c-2", "at": "/body/0", "quote": "Alpha.", "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-3", "at": "/body/0", "quote": "Alpha.", "text": "Why?", "input": "x", "answer": ["Yes"], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-4", "at": "body/1", "quote": "Beta.", "text": "Why?", "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-5", "at": "/body/1", "quote": "Beta.", "text": "Why?", "author": "Ann", "created": "22.10.2026"},
+    {"id": "c-6", "at": "/body/1", "quote": "Beta.", "text": "Why?", "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-6", "at": "/body/1", "quote": "Beta.", "text": "Again.", "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    "a string"
+  ]
+}

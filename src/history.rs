@@ -1084,7 +1084,7 @@ mod tests {
     }
 
     // A merge is one change on the main line: a clean tree after a merge has no
-    // uncommitted commit, and changesSince must be an ancestor of HEAD.
+    // uncommitted commit, and --since must be an ancestor of HEAD.
     #[test]
     fn history_across_merge() {
         if no_git() {

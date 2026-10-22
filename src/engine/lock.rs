@@ -106,7 +106,7 @@ fn path_unescape(s: &str) -> Option<String> {
 }
 
 /// lockSkip are the top-level keys a whole-document target does not depend on.
-const LOCK_SKIP: &[&str] = &["notes", "docIgnore", "hidden", "order", "parent"];
+const LOCK_SKIP: &[&str] = &["notes", "docIgnore", "hidden", "order", "parent", "$comments"];
 
 impl Project {
     /// targetHash hashes the canonical JSON of the value a target points to: the

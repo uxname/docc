@@ -26,7 +26,7 @@ rules: the registry of all rules; explain, rules and the skill are built from it
 
 render: Markdown pages, the tree, the single Markdown file, the HTML application (`app.js` with Preact and htm from `vendor`, fed with a JSON island), numbering and images. `lang.rs` holds the Russian labels for `"lang": "ru"`.
 
-history: reads the Git history of the documents (one `git log` and one `git cat-file --batch`) and follows every block through it with the one alignment of blocks, `ops`, which the HTML history, `docc log` and `docc diff` share; changes: the output of `docc log` and `docc diff`; comments: the review comments of the HTML file and `docc.comments.json`.
+history: reads the Git history of the documents (one `git log` and one `git cat-file --batch`) and follows every block through it with the one alignment of blocks, `ops`, which the HTML history, `docc log` and `docc diff` share; changes: the output of `docc log` and `docc diff`; comments: the readers' comments in `$comments`, their shape (DOC112) and place (DOC215), the in-place edit of `docc comments apply` and the export of the HTML file.
 
 trace and report: `docc:` tags in code files, and the text and JSON reports.
 

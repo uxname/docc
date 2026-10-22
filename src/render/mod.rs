@@ -2,6 +2,7 @@
 //! the audit build (docs/out-full).
 
 mod brand;
+mod comments;
 mod html;
 mod htmlparts;
 mod lang;

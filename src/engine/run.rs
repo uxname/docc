@@ -5,6 +5,7 @@ impl Project {
     /// Validate runs every check and returns the diagnostics, sorted.
     pub fn validate(&mut self) -> Vec<Diagnostic> {
         self.check_syntax();
+        self.check_comments();
         self.analyze();
         self.check_graph();
         self.parse_ignores();

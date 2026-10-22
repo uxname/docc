@@ -142,8 +142,9 @@ pub struct Config {
     pub lang: String,
     pub max_warnings: i64,
     pub has_max_warning: bool,
-    /// Git revision the HTML file counts the changes from; "" for none
-    pub changes_since: String,
+    /// docs/out is committed (the default): docc check compares it with the
+    /// sources (DOC501); false: it is kept out of git and not checked
+    pub commit_out: bool,
 
     pub rules: RuleSet,
     /// keys of the rules section written as a code or an old name: line, column, key (DOC902)
@@ -170,6 +171,7 @@ pub fn default(root: impl Into<PathBuf>) -> Config {
         out_full: "docs/out-full".into(),
         roots: vec!["index".into()],
         recommended: true,
+        commit_out: true,
         lang: "en".into(),
         ..Config::default()
     }
@@ -586,11 +588,17 @@ pub fn parse_from(data: &[u8], root: &Path, file: &str, src: Source) -> Result<C
                     c.max_warnings = w.non_neg_int(v)?;
                     c.has_max_warning = true;
                 }
-                "changesSince" => {
-                    c.changes_since = w.str(v)?;
-                    if c.changes_since.trim().is_empty() {
-                        return Err(w.err_at(v.start, "changesSince must name a Git revision"));
+                "commitOut" => {
+                    if v.kind != loader::Kind::Bool {
+                        return Err(w.type_err(v, "true or false"));
                     }
+                    c.commit_out = v.str == "true";
+                }
+                "changesSince" => {
+                    return Err(w.err_at(
+                        m.key_start,
+                        "changesSince is no longer a key of docc.json: give the revision to the HTML build (docc build --html --since <revision>); a program that shows the pages reads the history with docc log and docc diff",
+                    ));
                 }
                 "rules" => {
                     c.rules = w.rule_set(&c, v)?;

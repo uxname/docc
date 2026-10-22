@@ -561,8 +561,8 @@ fn init_ignores_built_files() {
     let got = p.read(".gitignore");
     assert_eq!(
         got,
-        "node_modules\ndocs/out.md\ndocs/out.html\ndocs/out-full/\ndocs/out-full.md\ndocs/out-full.html\n",
-        "existing lines stay, missing ones are added once"
+        "node_modules\ndocs/out.md\ndocs/out.html\ndocs/out-full/\ndocs/out-full.md\ndocs/out-full.html\ndocs/out/\n",
+        "existing lines stay, missing ones are added once; docs/out is not committed (commitOut false)"
     );
     let (_, out, _) = p.run(&["init"]);
     assert!(!out.contains(".gitignore"), "a second init changes nothing: {out}");
@@ -587,7 +587,7 @@ fn help_and_odd_flags_of_comments_and_update() {
     let p = project(Vec::<(&str, &str)>::new());
     for (args, want) in [
         (vec!["update", "--help"], "Usage: docc update [--check]"),
-        (vec!["comments", "--help"], "Usage: docc comments [--all]"),
+        (vec!["comments", "--help"], "Usage: docc comments [list] | apply"),
     ] {
         let (code, out, errs) = p.run(&args);
         assert!(code == 0 && errs.is_empty() && out.starts_with(want), "{args:?}: {code} {out:?} {errs:?}");

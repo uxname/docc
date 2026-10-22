@@ -115,7 +115,7 @@
     "page": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "path", "title", "kind", "status", "tags", "parent", "crumbs", "props", "sections", "blocks"],
+      "required": ["id", "path", "title", "kind", "status", "tags", "parent", "crumbs", "props", "sections", "blocks", "comments"],
       "properties": {
         "id": { "type": "string" },
         "path": { "type": "string", "description": "Source path relative to src, e.g. decisions/monolith.json." },
@@ -180,6 +180,33 @@
                 }
               }
             }
+          }
+        },
+        "comments": {
+          "type": "array",
+          "description": "The readers' comments of the page (\"$comments\" of the source) in file order, without their email. A lost one is shown at the top of the page, the others under their block.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "at", "quote", "author", "created", "place"],
+            "properties": {
+              "id": { "type": "string", "description": "Unique in the project." },
+              "at": { "type": "string", "description": "JSON Pointer of the block (p of a block or a prop); for an answer, the pointer of the form field." },
+              "quote": { "type": "string", "description": "The text of the block when the comment was written." },
+              "fragment": { "type": "string", "description": "The words the reader selected; absent for a comment on the whole block." },
+              "prefix": { "type": "string", "description": "A few characters before the fragment, to tell one occurrence from another." },
+              "suffix": { "type": "string", "description": "A few characters after the fragment." },
+              "text": { "type": "string", "description": "The comment; absent for an answer." },
+              "input": { "type": "string", "description": "An answer: the id of the form field." },
+              "answer": { "type": "array", "items": { "type": "string" }, "description": "An answer: the text given, the option picked or the options ticked." },
+              "author": { "type": "string", "description": "The name of the author; may be empty." },
+              "created": { "type": "string", "description": "RFC 3339 time." },
+              "place": { "enum": ["same", "changed", "lost"], "description": "same: the block reads as quoted; changed: the block was edited since; lost: no block at at, the fragment is not in it, or the answered field is gone (DOC215)." }
+            },
+            "oneOf": [
+              { "required": ["text"], "not": { "anyOf": [{ "required": ["input"] }, { "required": ["answer"] }] } },
+              { "required": ["input", "answer"], "not": { "required": ["text"] } }
+            ]
           }
         }
       }

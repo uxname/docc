@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:docc:schema:comments-apply:1",
+  "title": "docc comments apply --format json",
+  "description": "What docc comments apply did: the comments it added, removed and edited, and the files it changed. A failed batch prints no such object: it exits with code 2 and changes nothing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "added", "removed", "edited", "files"],
+  "properties": {
+    "$schema": { "const": "urn:docc:schema:comments-apply:1" },
+    "added": {
+      "type": "array",
+      "description": "The comments added, in the order of the operations.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "doc", "path"],
+        "properties": {
+          "id": { "type": "string", "description": "The id of the comment: the one given, or a new one (c- and 10 characters a-z, 2-7)." },
+          "doc": { "type": "string", "description": "The id of the document." },
+          "path": { "type": "string", "description": "The path of the document relative to src." }
+        }
+      }
+    },
+    "removed": { "type": "array", "items": { "type": "string" }, "description": "Ids of the comments removed." },
+    "edited": { "type": "array", "items": { "type": "string" }, "description": "Ids of the comments whose text was replaced." },
+    "files": { "type": "array", "items": { "type": "string" }, "description": "The files written, relative to src, in path order." }
+  }
+}

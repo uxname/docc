@@ -76,6 +76,9 @@ impl<'a> Page<'_, 'a> {
             if r.full && d.hidden {
                 blocks.push(format!("> {}", r.t("Hidden document.")));
             }
+            if !self.lost.is_empty() {
+                blocks.push(self.lost.clone());
+            }
         }
         if let Some(body) = root(d).get("body") {
             let ps = self.paragraphs(body, true);
@@ -165,17 +168,17 @@ impl<'a> Page<'_, 'a> {
         }
         let t = self.table(v);
         if !t.is_empty() {
-            return self.mark(Some(v)) + &t;
+            return self.mark(Some(v)) + &t + &self.note(v);
         }
         match v.kind {
             Kind::String => return self.paragraphs(v, true).join("\n\n"),
-            Kind::Number | Kind::Bool => return self.mark(Some(v)) + &v.str,
+            Kind::Number | Kind::Bool => return self.mark(Some(v)) + &v.str + &self.note(v),
             Kind::Array if v.items.iter().all(|it| it.kind == Kind::String || engine::is_input(it)) => {
                 return self.paragraphs(v, true).join("\n\n");
             }
             _ => {}
         }
-        self.mark(Some(v)) + &self.list_lines(v, "", true).join("\n")
+        self.mark(Some(v)) + &self.list_lines(v, "", true).join("\n") + &self.note(v)
     }
 
     /// sections renders the members of a set of sections as headings of the given

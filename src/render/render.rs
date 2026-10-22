@@ -31,6 +31,10 @@ pub struct Renderer<'a> {
     pub(super) html: bool,
     /// images the pages show, paths relative to src; collected by Files
     pub(super) imgs: RefCell<Option<HashSet<String>>>,
+    /// the readers' comments are shown ("$comments"); false: build --no-comments
+    pub comments: bool,
+    /// the Git revision the HTML file counts the edits from (build --since); "" for none
+    pub since: String,
 }
 
 impl<'a> Renderer<'a> {
@@ -46,6 +50,8 @@ impl<'a> Renderer<'a> {
             anchors: false,
             html: false,
             imgs: RefCell::new(None),
+            comments: true,
+            since: String::new(),
         }
     }
 
@@ -56,6 +62,8 @@ impl<'a> Renderer<'a> {
             single,
             anchors,
             html,
+            comments: self.comments,
+            since: self.since.clone(),
             ..Renderer::new(self.p, self.full)
         }
     }

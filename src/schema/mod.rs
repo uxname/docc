@@ -24,7 +24,7 @@ use crate::loader::{self, Node};
 use crate::source::{self, Source};
 
 pub use kind::closest;
-pub use public::{compile_output, config, diff_output, document, log_output};
+pub use public::{comments_apply_output, compile_output, config, diff_output, document, log_output};
 
 use texts::{display, go_quote, join_quoted, printer_float, printer_int, quote, type_of};
 
@@ -443,7 +443,8 @@ impl Set {
         };
         let mut inst = serde_json::Map::new();
         for m in &root.members {
-            if !inst.contains_key(&m.key) {
+            // the comments are docc's own (DOC112), allowed under every kind like the title
+            if !inst.contains_key(&m.key) && m.key != crate::comments::KEY {
                 inst.insert(m.key.clone(), loader::value(&m.value));
             }
         }

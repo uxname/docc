@@ -22,6 +22,11 @@ pub(super) const RU: &[(&str, &str)] = &[
         "Документы без покрытия кодом",
     ),
     ("Hidden document.", "Скрытый документ."),
+    // comments under their blocks
+    ("Comments that lost their place:", "Комментарии, потерявшие своё место:"),
+    ("on", "к словам"),
+    ("answer to", "ответ на"),
+    ("answer", "ответ"),
     ("Service information.", "Служебная информация."),
     ("Notes (hidden)", "Заметки (скрыто)"),
     ("Suppressions (docIgnore)", "Подавления (docIgnore)"),
@@ -134,7 +139,6 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("Download as a file", "Скачать файлом"),
     ("Navigation", "Навигация"),
     // timeline, comments, reset
-    ("Answer", "Ответ"),
     ("Back to now", "Вернуться к сейчас"),
     (
         "Comments can be left on the current text only.",
@@ -220,7 +224,6 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("paragraph removed", "абзац удалён"),
     ("It was left on:", "Оставлен к тексту:"),
     ("Open the page", "Открыть страницу"),
-    ("Archive: answered, place removed", "Архив: отвечено, места в тексте нет"),
 ];
 
 static RU_MAP: LazyLock<HashMap<&str, &str>> = LazyLock::new(|| RU.iter().copied().collect());

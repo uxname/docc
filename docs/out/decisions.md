@@ -42,7 +42,7 @@ The history of a block comes from Git, not from a journal of docc: it covers the
 
 The HTML application uses Preact with htm in one embedded file instead of a framework with a build step, so `cargo build` stays the only build and the project needs no Node.
 
-Comments are kept in the browser and leave it as a file, because the HTML file has no server. `docc.comments.json` stores them one per line with the status `open` or `done`, so a change of status is a one-line diff. docc does not change the text by a comment: an agent reads `docc comments`, agrees the change with a person and marks the comment.
+Comments live in the documents, in a flat list `$comments`, because agents read the documents through git and a comment should travel with the text it is about. There are no statuses and no replies: a handled comment is deleted in the same commit as the fix, so the list only shrinks and the next agent sees only what is open. Only docc writes the member: `docc comments apply` edits it in place, keeping every other byte, so the CLI, the import of the HTML file and Docspace never reformat each other's files. The browser still keeps a reader's comments until they are exported, because the HTML file has no server. docc does not change the text by a comment: an agent agrees the change with a person, makes it and deletes the comment.
 
 Dictation uses the speech recognition of the browser: Chrome and Edge send the sound to their speech service. A Chromium without the keys of that service and Firefox show no microphone button; the comment is typed.
 
@@ -50,7 +50,7 @@ docc was rewritten from Go in Rust in October 2026 for speed and type safety. Th
 
 A program that shows the pages itself reads `docc compile`, not a file: it prints one JSON object and writes nothing, so a server can compile any commit, even from a bare mirror with `--rev`, without a working folder that two jobs could share. The data file `docs/out.json` of `docc build --data` was removed with it.
 
-Blocks are followed through versions by one alignment (`history::ops`): the HTML history, the block counts of `docc log` and the pairs of `docc diff` come from it, and comments are to follow their blocks through it too, so two views of the same change never disagree. Equal texts in an array match in order, the rest of a gap pairs by likeness or as a rewrite, other fields match by pointer. `docc log` counts on the JSON of each version, without compiling it, so a long history stays one `git log` and one `cat-file`; `docc diff` compiles both sides, because a reader sees includes and links resolved.
+Blocks are followed through versions by one alignment (`history::ops`): the HTML history, the block counts of `docc log`, the pairs of `docc diff` and the place a comment from an older build moves to on import come from it, so two views of the same change never disagree. Equal texts in an array match in order, the rest of a gap pairs by likeness or as a rewrite, other fields match by pointer. `docc log` counts on the JSON of each version, without compiling it, so a long history stays one `git log` and one `cat-file`; `docc diff` compiles both sides, because a reader sees includes and links resolved.
 
 In folder mode a folder's own page is the document named like the folder inside it, not `index.json`: ids stay the file names, unique in the whole project, so links, `docc.lock` and anchors do not depend on where a file lies.
 

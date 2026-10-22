@@ -1,0 +1,98 @@
+[
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 6,
+    "column": 35,
+    "endLine": 6,
+    "endColumn": 43,
+    "message": "unknown field \"status\" in a comment",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 7,
+    "column": 5,
+    "endLine": 7,
+    "endColumn": 106,
+    "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 8,
+    "column": 5,
+    "endLine": 8,
+    "endColumn": 155,
+    "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 9,
+    "column": 25,
+    "endLine": 9,
+    "endColumn": 33,
+    "message": "\"at\" of a comment must be the JSON Pointer of a block (\"/body/0\")",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 10,
+    "column": 98,
+    "endLine": 10,
+    "endColumn": 110,
+    "message": "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 12,
+    "column": 12,
+    "endLine": 12,
+    "endColumn": 17,
+    "message": "comment id \"c-6\" is used twice",
+    "hint": "Give every comment its own id (docc comments apply makes one when the id is left out)."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 13,
+    "column": 5,
+    "endLine": 13,
+    "endColumn": 15,
+    "message": "a comment must be an object",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/other.json",
+    "line": 7,
+    "column": 12,
+    "endLine": 7,
+    "endColumn": 17,
+    "message": "comment id \"c-2\" is used in docs/src/index.json too",
+    "hint": "Give every comment of the project its own id (docc comments apply makes one when the id is left out)."
+  }
+]

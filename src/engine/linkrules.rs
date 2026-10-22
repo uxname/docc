@@ -7,7 +7,7 @@ use crate::loader::{Kind, Node};
 use crate::text;
 
 /// Fingerprint is the first 8 hex digits of SHA-256 of the canonical JSON of a
-/// document without docIgnore and notes.
+/// document without docIgnore, notes and the readers' comments.
 pub fn fingerprint(root: &Node) -> String {
     let mut b = String::new();
     canonical(&mut b, root, FINGERPRINT_SKIP);
@@ -15,7 +15,7 @@ pub fn fingerprint(root: &Node) -> String {
     hex::encode(sum)[..8].to_string()
 }
 
-pub(super) const FINGERPRINT_SKIP: &[&str] = &["docIgnore", "notes"];
+pub(super) const FINGERPRINT_SKIP: &[&str] = &["docIgnore", "notes", "$comments"];
 
 /// canonical writes n as JSON with sorted keys and NFC strings; skip names the
 /// keys dropped at the top level only.

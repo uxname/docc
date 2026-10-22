@@ -263,7 +263,7 @@ fn golden_render_basic() {
 /// (left out of the heading ids), the property list, headings and footnotes in
 /// the text, tables, task lists, images (an SVG one goldmark drops), raw HTML,
 /// a hidden page, Russian labels and statuses, code coverage, branding and
-/// comments (internal ones, moved and missing blocks).
+/// comments ("$comments": on a block, on words, on a property, one that lost its place).
 const RICH: &[(&str, &str)] = &[
     (
         "docc.json",
@@ -317,21 +317,18 @@ const RICH: &[(&str, &str)] = &[
   "title": "Требование A", "parent": "index", "kind": "requirement", "status": "accepted",
   "body": ["Body of A with a heading:\n\n### 2.1 Numbered heading text\n\nand [[index#plan/Цели]].", "Second <b>&</b> text"],
   "owner": "Bob",
-  "parts": { "$sections": true, "Обзор": "## 1.1 Обзор\n\nSame title as the section.", "Детали": "x" }
+  "parts": { "$sections": true, "Обзор": "## 1.1 Обзор\n\nSame title as the section.", "Детали": "x" },
+  "$comments": [
+    {"id": "c1", "at": "/body/0", "quote": "Body of A with a heading:\n\n### 2.1 Numbered heading text\n\nand [[index#plan/Цели]].", "text": "Fix this", "author": "Eve", "created": "2026-10-01T10:00:00Z"},
+    {"id": "c2", "at": "/body/1", "quote": "Second <b>&</b> text", "fragment": "text", "prefix": "</b> ", "text": "words", "author": "", "created": "2026-10-02T10:00:00Z"},
+    {"id": "c3", "at": "/owner", "quote": "Rob", "text": "on a property", "author": "Ann", "email": "ann@example.com", "created": "2026-10-03T10:00:00Z"},
+    {"id": "c4", "at": "/body/5", "quote": "x", "text": "lost", "author": "Ann", "created": "2026-10-04T10:00:00Z"}
+  ]
 }"###,
     ),
     (
         "docs/src/h.json",
         r#"{ "title": "Скрытый", "parent": "index", "kind": "page", "hidden": true, "body": "Secret [[a]]." }"#,
-    ),
-    (
-        "docc.comments.json",
-        r#"{"comments": [
-{"id": "c1", "doc": "a", "path": "/body/0", "quote": "Body of A with a heading:\n\n### 2.1 Numbered heading text\n\nand [[index#plan/Цели]].", "text": "Fix this", "author": "Eve", "created": "2026-10-01T10:00:00Z"},
-{"id": "c2", "doc": "a", "path": "/body/5", "quote": "Second <b>&</b> text", "text": "moved", "fragment": "text", "prefix": "</b> ", "status": "done", "reply": "ok"},
-{"id": "c3", "doc": "a", "path": "/owner", "quote": "Bob", "text": "internal note", "internal": true},
-{"id": "c4", "doc": "gone", "path": "/body", "quote": "x", "text": "missing doc"}
-]}"#,
     ),
 ];
 

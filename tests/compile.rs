@@ -56,7 +56,7 @@ fn listing(dir: &Path) -> BTreeMap<String, Vec<u8>> {
 
 fn git(dir: &Path, args: &[&str]) -> bool {
     Command::new("git")
-        .args(["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main"])
+        .args(["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main", "-c", "maintenance.auto=false", "-c", "gc.auto=0"])
         .args(args)
         .current_dir(dir)
         .output()
@@ -319,6 +319,17 @@ fn folder_tree() {
          - guides\n  - [Intro](guides/intro.md)\n\
          - [Zeta](zeta.md)\n"
     );
+    // the HTML file nests its tree the same way: a folder without a page is a line with its name
+    let (code, out, errs) = p.run(&["build", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let app = read_app(&p, "docs/out.html");
+    assert_eq!(
+        app.data["nav"]["tree"],
+        serde_json::json!([["index", 0], ["decisions", 0], ["alpha", 1], ["monolith", 1], ["", 1, "old"], ["ancient", 2], ["", 0, "guides"], ["intro", 1], ["zeta", 0]])
+    );
+    let kids = |id: &str| app.pages().iter().find(|p| p["id"] == id).unwrap()["kids"].clone();
+    assert_eq!(kids("decisions"), serde_json::json!(["alpha", "monolith"]), "the pages of a folder are its own page's kids");
+    std::fs::remove_file(p.join("docs/out.html")).unwrap();
     // numbering follows the folders
     p.write("docc.json", r#"{"tree":"folders","numbering":true}"#);
     let (_, v) = compile(&p.path, &[]);

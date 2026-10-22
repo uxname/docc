@@ -1,29 +1,449 @@
-//! Package comments keeps the review comments left on blocks of the HTML file:
-//! the export the browser downloads and docc.comments.json in the project root.
+//! Package comments keeps the readers' comments: a flat list in the reserved
+//! top-level member "$comments" of each document. It checks the shape of the
+//! items (DOC112), tells whether a comment still has its block (DOC215,
+//! compile), edits the member in place without touching the rest of the file
+//! (docc comments apply), and reads the export of the HTML file.
 
 use std::fmt;
-use std::io::Write as _;
-use std::path::Path;
 use std::sync::LazyLock;
 
 use base64::Engine as _;
 use base64::engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig};
-use regex::bytes::Regex;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::engine;
-use crate::history;
-use crate::loader::Node;
+use crate::history::{self, Leaf};
+use crate::loader::{self, Kind, Node};
 use crate::schema;
 
-/// File is the name of the comments file in the project root.
-pub const FILE: &str = "docc.comments.json";
+/// KEY is the reserved top-level member that holds the comments of a document.
+pub const KEY: &str = "$comments";
 
-pub const OPEN: &str = "open";
-pub const DONE: &str = "done";
+/// Comment is one item of "$comments", the contract Docspace codes against:
+/// either a text, or an answer to the form field `input` (then `at` is the
+/// pointer of the field).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Comment {
+    pub id: String,
+    /// JSON Pointer of the block
+    pub at: String,
+    /// the text of the block when the comment was written
+    pub quote: String,
+    /// the selected words, and a few characters around them
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub fragment: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub prefix: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub suffix: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub answer: Option<Vec<String>>,
+    pub author: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub email: String,
+    /// RFC 3339
+    pub created: String,
+}
 
-/// Item is one comment on a block: the document id, the JSON Pointer of the
-/// block and the text of the block when the comment was written.
+/// FIELDS are the members of a comment, in the order docc writes them.
+pub const FIELDS: [&str; 12] =
+    ["id", "at", "quote", "fragment", "prefix", "suffix", "text", "input", "answer", "author", "email", "created"];
+
+impl Comment {
+    /// words is what the comment says: its text, or the answer given.
+    pub fn words(&self) -> String {
+        match (&self.text, &self.answer) {
+            (Some(t), _) => t.clone(),
+            (None, Some(a)) => a.join(", "),
+            _ => String::new(),
+        }
+    }
+
+    /// json is the item as docc writes it into a document: one line, the
+    /// members in the order of FIELDS.
+    pub fn json(&self) -> String {
+        let v = serde_json::to_value(self).expect("a Comment always encodes");
+        let parts: Vec<String> = FIELDS
+            .iter()
+            .filter_map(|k| v.get(*k).map(|x| format!("{}: {}", quote(k), serde_json::to_string(x).unwrap_or_default())))
+            .collect();
+        format!("{{{}}}", parts.join(", ")).replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029")
+    }
+}
+
+fn quote(s: &str) -> String {
+    serde_json::to_string(s).unwrap_or_default()
+}
+
+/// of reads the comments of a document; an item of the wrong shape (DOC112)
+/// is left out.
+pub fn of(root: &Node) -> Vec<Comment> {
+    let Some(v) = root.get(KEY).filter(|v| v.kind == Kind::Array) else {
+        return Vec::new();
+    };
+    v.items.iter().filter_map(of_item).collect()
+}
+
+/// of_item reads one item of "$comments", None when it is malformed.
+pub fn of_item(it: &Node) -> Option<Comment> {
+    if item_problem(it).is_some() {
+        return None;
+    }
+    serde_json::from_value(loader::value(it)).ok()
+}
+
+/// check is the first thing wrong with a comment as docc would write it.
+pub fn check(c: &Comment) -> Result<(), String> {
+    let r = loader::parse(c.json().as_bytes());
+    match r.root.as_ref().and_then(item_problem) {
+        Some(p) => Err(p.msg),
+        None => Ok(()),
+    }
+}
+
+/// Problem is something wrong with "$comments": the byte range it covers and the text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Problem {
+    pub start: usize,
+    pub end: usize,
+    pub msg: String,
+    pub hint: String,
+}
+
+const SHAPE_HINT: &str = "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply.";
+
+static RFC3339: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$").unwrap()
+});
+
+/// problems checks the shape of the value of "$comments" (DOC112); the ids
+/// repeated across documents are checked by the engine.
+pub fn problems(v: &Node) -> Vec<Problem> {
+    if v.kind != Kind::Array {
+        return vec![Problem {
+            start: v.start,
+            end: v.end,
+            msg: "\"$comments\" must be an array of comments".into(),
+            hint: SHAPE_HINT.into(),
+        }];
+    }
+    let mut out: Vec<Problem> = v.items.iter().filter_map(item_problem).collect();
+    let mut seen = std::collections::HashSet::new();
+    for it in &v.items {
+        if let Some(id) = it.get("id").filter(|n| n.kind == Kind::String)
+            && !seen.insert(id.str.as_str())
+        {
+            out.push(Problem {
+                start: id.start,
+                end: id.end,
+                msg: format!("comment id {} is used twice", go_quote(&id.str)),
+                hint: "Give every comment its own id (docc comments apply makes one when the id is left out).".into(),
+            });
+        }
+    }
+    out
+}
+
+/// item_problem is the first thing wrong with one comment, None when it is well formed.
+fn item_problem(it: &Node) -> Option<Problem> {
+    let bad = |n: &Node, msg: String| Some(Problem { start: n.start, end: n.end, msg, hint: SHAPE_HINT.into() });
+    if it.kind != Kind::Object {
+        return bad(it, "a comment must be an object".into());
+    }
+    for m in &it.members {
+        if !FIELDS.contains(&m.key.as_str()) {
+            return Some(Problem {
+                start: m.key_start,
+                end: m.key_end,
+                msg: format!("unknown field {} in a comment", go_quote(&m.key)),
+                hint: SHAPE_HINT.into(),
+            });
+        }
+        let ok = match m.key.as_str() {
+            "answer" => m.value.kind == Kind::Array && m.value.items.iter().all(|a| a.kind == Kind::String),
+            _ => m.value.kind == Kind::String,
+        };
+        if !ok {
+            let want = if m.key == "answer" { "an array of strings" } else { "a string" };
+            return bad(&m.value, format!("comment field {} must be {want}", go_quote(&m.key)));
+        }
+    }
+    let s = |k: &str| it.get(k).map(|n| n.str.as_str());
+    for k in ["id", "at", "quote", "author", "created"] {
+        if it.get(k).is_none() {
+            return bad(it, format!("a comment lacks {}", go_quote(k)));
+        }
+    }
+    if s("id").unwrap_or_default().trim().is_empty() {
+        return bad(it.get("id")?, "the id of a comment is empty".into());
+    }
+    if !s("at").unwrap_or_default().starts_with('/') {
+        return bad(it.get("at")?, "\"at\" of a comment must be the JSON Pointer of a block (\"/body/0\")".into());
+    }
+    if !RFC3339.is_match(s("created").unwrap_or_default()) {
+        return bad(it.get("created")?, "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")".into());
+    }
+    match (it.get("text"), it.get("input"), it.get("answer")) {
+        (Some(t), None, None) if t.str.trim().is_empty() => bad(t, "the text of a comment is empty".into()),
+        (Some(_), None, None) => None,
+        (None, Some(i), Some(_)) if i.str.trim().is_empty() => bad(i, "\"input\" of an answer is empty".into()),
+        (None, Some(_), Some(_)) => None,
+        _ => bad(it, "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)".into()),
+    }
+}
+
+fn go_quote(s: &str) -> String {
+    crate::config::go_quote(s)
+}
+
+/// Place is where a comment stands in the current text: its block reads as
+/// quoted, the block was edited, or the comment lost its place (no block at
+/// `at`, the selected words are not in it, or the answered field is gone).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Place {
+    Same,
+    Changed,
+    Lost,
+}
+
+/// blocks are the blocks of a document, "$comments" left out.
+pub fn blocks(root: &Node) -> Vec<Leaf> {
+    let pre = format!("/{KEY}");
+    history::flatten(root).into_iter().filter(|l| l.ptr != pre && !l.ptr.starts_with(&format!("{pre}/"))).collect()
+}
+
+/// place tells where c stands in the document root and returns the current
+/// text of its block ("" when lost); title gives the title of a linked document.
+pub fn place(root: &Node, c: &Comment, title: &dyn Fn(&str) -> Option<String>) -> (Place, String) {
+    if let Some(input) = &c.input {
+        let n = schema::resolve_pointer(root, &c.at)
+            .filter(|n| engine::is_input(n) && n.get("id").is_some_and(|v| v.str == *input));
+        return match n {
+            Some(n) => {
+                let t = history::text(n);
+                (if t == c.quote { Place::Same } else { Place::Changed }, t)
+            }
+            None => (Place::Lost, String::new()),
+        };
+    }
+    let Some(l) = blocks(root).into_iter().find(|l| l.ptr == c.at) else {
+        return (Place::Lost, String::new());
+    };
+    if !c.fragment.is_empty() && !squeeze(&readable(&l.text, title)).contains(&squeeze(&c.fragment)) {
+        return (Place::Lost, l.text);
+    }
+    (if l.text == c.quote { Place::Same } else { Place::Changed }, l.text)
+}
+
+static LINK: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[\[([^\]#|]+)(?:#([^\]|]*))?(?:\|([^\]]*))?\]\]").unwrap());
+
+/// readable is the source text of a block with its links as the reader sees
+/// them: the title of the page, the label, or the name of the section.
+// ponytail: includes ({{id#field}}) are not expanded; a fragment selected in
+// the included text reads as lost.
+fn readable(s: &str, title: &dyn Fn(&str) -> Option<String>) -> String {
+    LINK.replace_all(s, |c: &regex::Captures| {
+        if let Some(l) = c.get(3) {
+            return l.as_str().to_string();
+        }
+        if let Some(a) = c.get(2).map(|a| a.as_str()).filter(|a| a.contains('/')) {
+            return a[a.rfind('/').unwrap() + 1..].to_string();
+        }
+        title(c[1].trim()).unwrap_or_else(|| c[1].to_string())
+    })
+    .into_owned()
+}
+
+/// squeeze keeps only the letters and digits of s, in lower case: the words
+/// a reader selects on the page match the Markdown source whatever marks and
+/// spaces stand between them.
+fn squeeze(s: &str) -> String {
+    crate::text::to_lower(s).chars().filter(|c| c.is_alphanumeric()).collect()
+}
+
+/// follow is the pointer of the block that continues the block at ptr of an
+/// older version of a document (history::ops, the alignment of the history
+/// and docc diff); None when that block was removed or there is none at ptr.
+pub fn follow(old: &Node, cur: &Node, ptr: &str) -> Option<String> {
+    let (a, b) = (blocks(old), blocks(cur));
+    let i = a.iter().position(|l| l.ptr == ptr)?;
+    history::ops(&a, &b).into_iter().find(|(o, _)| *o == Some(i)).and_then(|(_, n)| n).map(|j| b[j].ptr.clone())
+}
+
+/// find_input is the pointer of the form field with the given id.
+pub fn find_input(n: &Node, ptr: &str, id: &str) -> Option<String> {
+    if engine::is_input(n) {
+        return n.get("id").is_some_and(|v| v.str == id).then(|| ptr.to_string());
+    }
+    let items = n.items.iter().enumerate().map(|(i, it)| (i.to_string(), it));
+    let members = n.members.iter().filter(|m| m.key != KEY).map(|m| (history::escape(&m.key), &m.value));
+    items.chain(members).find_map(|(k, v)| find_input(v, &format!("{ptr}/{k}"), id))
+}
+
+// ---- editing "$comments" in place ----
+
+/// Edit is one change of the comments of a file.
+pub enum Edit<'a> {
+    Add(&'a Comment),
+    Remove(&'a str),
+    Text(&'a str, &'a str),
+}
+
+/// edit applies e to the JSON text of a document and returns the new text:
+/// only the "$comments" member changes, every other byte stays. A new member
+/// goes last in the top-level object, indented like the file; the member is
+/// removed with its last comment.
+pub fn edit(src: &[u8], e: &Edit) -> Result<Vec<u8>, String> {
+    let (bom, data) = match src.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+        Some(rest) => (true, rest),
+        None => (false, src),
+    };
+    let r = loader::parse(data);
+    let root = match (&r.err, &r.root) {
+        (None, Some(root)) if root.kind == Kind::Object => root,
+        _ => return Err("the file is not valid JSON with an object at the root".into()),
+    };
+    if r.dups.iter().any(|d| d.key == KEY) {
+        return Err(format!("the file has {} twice", go_quote(KEY)));
+    }
+    let nl = if data.windows(2).any(|w| w == b"\r\n") { "\r\n" } else { "\n" };
+    let member = root.members.iter().find(|m| m.key == KEY);
+    let arr = member.map(|m| &m.value);
+    if arr.is_some_and(|a| a.kind != Kind::Array) {
+        return Err(format!("{} is not an array", go_quote(KEY)));
+    }
+    let items: &[Node] = arr.map_or(&[], |a| &a.items);
+    let pos = |id: &str| {
+        items
+            .iter()
+            .position(|it| it.get("id").is_some_and(|v| v.str == id))
+            .ok_or_else(|| format!("no comment {} in the file", go_quote(id)))
+    };
+    let ws = |a: usize, b: usize| String::from_utf8_lossy(&data[a..b]).into_owned();
+    // the indent of the top-level members, None for an object on one line
+    let indent = root.members.first().and_then(|m| {
+        let lead = &data[root.start + 1..m.key_start];
+        let at = lead.iter().rposition(|&c| c == b'\n')?;
+        Some(String::from_utf8_lossy(&lead[at + 1..]).into_owned())
+    });
+    let (start, end, text) = match e {
+        Edit::Add(c) => {
+            let item = c.json();
+            match (member, items.last()) {
+                (Some(_), Some(last)) => {
+                    let sep = if items.len() >= 2 {
+                        ws(items[items.len() - 2].end, last.start)
+                    } else {
+                        let lead = ws(arr.unwrap().start + 1, last.start);
+                        if lead.contains('\n') { format!(",{lead}") } else { ", ".into() }
+                    };
+                    (last.end, last.end, format!("{sep}{item}"))
+                }
+                (Some(m), None) => (m.value.start, m.value.end, array(&[item], &indent, nl)),
+                (None, _) => {
+                    let Some(last) = root.members.last() else {
+                        return Ok(join(bom, &[&data[..root.start + 1], format!("\"{KEY}\": [{item}]").as_bytes(), &data[root.start + 1..]]));
+                    };
+                    let lead = match &indent {
+                        Some(ind) => format!(",{nl}{ind}"),
+                        None => ", ".into(),
+                    };
+                    (last.value.end, last.value.end, format!("{lead}\"{KEY}\": {}", array(&[item], &indent, nl)))
+                }
+            }
+        }
+        Edit::Remove(id) => {
+            let i = pos(id)?;
+            if items.len() > 1 {
+                if i > 0 { (items[i - 1].end, items[i].end, String::new()) } else { (items[0].start, items[1].start, String::new()) }
+            } else {
+                let k = root.members.iter().position(|m| m.key == KEY).unwrap();
+                let m = &root.members[k];
+                if k > 0 {
+                    (root.members[k - 1].value.end, m.value.end, String::new())
+                } else if let Some(next) = root.members.get(1) {
+                    (m.key_start, next.key_start, String::new())
+                } else {
+                    (m.key_start, m.value.end, String::new())
+                }
+            }
+        }
+        Edit::Text(id, text) => {
+            let it = &items[pos(id)?];
+            let Some(t) = it.get("text") else {
+                return Err(format!("comment {} is an answer to a form field: it has no text to edit", go_quote(id)));
+            };
+            (t.start, t.end, quote(text).replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029"))
+        }
+    };
+    Ok(join(bom, &[&data[..start], text.as_bytes(), &data[end..]]))
+}
+
+/// array is a new "$comments" array of items: one item per line, one level
+/// below the member, or on one line in an object written on one line.
+fn array(items: &[String], indent: &Option<String>, nl: &str) -> String {
+    match indent {
+        Some(ind) => format!("[{nl}{ind}{ind}{}{nl}{ind}]", items.join(&format!(",{nl}{ind}{ind}"))),
+        None => format!("[{}]", items.join(", ")),
+    }
+}
+
+fn join(bom: bool, parts: &[&[u8]]) -> Vec<u8> {
+    let mut out = Vec::new();
+    if bom {
+        out.extend_from_slice(&[0xEF, 0xBB, 0xBF]);
+    }
+    for p in parts {
+        out.extend_from_slice(p);
+    }
+    out
+}
+
+/// new_id is a fresh comment id: "c-" and 10 characters of base32 (a-z, 2-7).
+pub fn new_id() -> String {
+    use std::hash::{BuildHasher, Hasher};
+    let mut h = std::collections::hash_map::RandomState::new().build_hasher();
+    h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos()));
+    h.write_u32(std::process::id());
+    let mut v = h.finish();
+    let mut s = String::from("c-");
+    for _ in 0..10 {
+        s.push(b"abcdefghijklmnopqrstuvwxyz234567"[(v & 31) as usize] as char);
+        v >>= 5;
+    }
+    s
+}
+
+/// now is the current time in RFC 3339, UTC, to the second.
+pub fn now() -> String {
+    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()) as i64;
+    let (days, rem) = (secs.div_euclid(86400), secs.rem_euclid(86400));
+    // civil_from_days (H. Hinnant)
+    let z = days + 719468;
+    let era = z.div_euclid(146097);
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = yoe + era * 400 + i64::from(m <= 2);
+    format!("{y:04}-{m:02}-{d:02}T{:02}:{:02}:{:02}Z", rem / 3600, rem % 3600 / 60, rem % 60)
+}
+
+// ---- the export of the HTML file ----
+
+/// Item is one comment as the HTML file exports it: the document id, the
+/// JSON Pointer of the block, the text of the block when the comment was
+/// written, and the commit the file was built from.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Item {
@@ -31,12 +451,8 @@ pub struct Item {
     pub doc: String,
     pub path: String,
     pub quote: String,
-    /// Fragment is the part of the block the reader selected, when the
-    /// comment is about a few words rather than the whole block.
     #[serde(skip_serializing_if = "String::is_empty")]
     pub fragment: String,
-    /// Prefix and Suffix are a few characters around the fragment, to tell
-    /// one occurrence of it from another.
     #[serde(skip_serializing_if = "String::is_empty")]
     pub prefix: String,
     #[serde(skip_serializing_if = "String::is_empty")]
@@ -44,8 +460,7 @@ pub struct Item {
     pub text: String,
     /// Input is the id of the form field this comment answers; Answer is the
     /// value given (one text, the picked option, or the ticked options), and
-    /// Text the same in words. Quote is the field as it read then, so an
-    /// answer to a question rewritten since reads as changed.
+    /// Text the same in words.
     #[serde(skip_serializing_if = "String::is_empty")]
     pub input: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -54,20 +469,9 @@ pub struct Item {
     pub author: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub created: String,
+    /// the short hash of the commit the HTML file was built from
     #[serde(skip_serializing_if = "String::is_empty")]
     pub build: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub status: String,
-    /// Reply is the team's answer, shown under the comment in the next HTML file.
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub reply: String,
-    /// Internal comments (imported with --internal) stay out of the HTML file.
-    #[serde(skip_serializing_if = "is_false")]
-    pub internal: bool,
-}
-
-fn is_false(b: &bool) -> bool {
-    !*b
 }
 
 /// Export is the file the HTML page downloads.
@@ -90,24 +494,6 @@ impl fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
-
-/// Load reads docc.comments.json from the project root; a missing file is an
-/// empty list.
-pub fn load(root: &Path) -> Result<Vec<Item>, Error> {
-    let path = root.join(FILE);
-    let b = match std::fs::read(&path) {
-        Ok(b) => b,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(e) => return Err(Error(go_path_error("open", &path, &e))),
-    };
-    #[derive(Deserialize, Default)]
-    #[serde(default)]
-    struct Store {
-        comments: Vec<Item>,
-    }
-    let s: Store = decode(FILE, &b)?;
-    Ok(s.comments)
-}
 
 /// decode reads JSON into T. serde_json refuses a lone surrogate escape such
 /// as "\\ud800", which a browser writes for an emoji cut in half, invalid UTF-8
@@ -143,78 +529,14 @@ fn drop_nulls(v: &mut serde_json::Value) {
     }
 }
 
-/// Save writes the comments to docc.comments.json, one comment per line, so a
-/// change of status is a one-line diff.
-pub fn save(root: &Path, items: &[Item]) -> Result<(), Error> {
-    let mut b = String::from("{\"comments\": [");
-    for (i, it) in items.iter().enumerate() {
-        let line = marshal(it);
-        if i > 0 {
-            b.push(',');
-        }
-        b.push_str("\n  ");
-        b.push_str(&line);
-    }
-    if !items.is_empty() {
-        b.push('\n');
-    }
-    b.push_str("]}\n");
-    write_file(&root.join(FILE), b.as_bytes())
-}
-
-/// marshal is Go's encoder with SetEscapeHTML(false): "<", ">" and "&" stay
-/// as they are, U+2028 and U+2029 are still escaped. They can only occur
-/// inside strings, so a plain replace is safe.
-fn marshal(it: &Item) -> String {
-    serde_json::to_string(it)
-        .expect("an Item always marshals")
-        .replace('\u{2028}', "\\u2028")
-        .replace('\u{2029}', "\\u2029")
-}
-
-/// write_file is os.WriteFile with mode 0644 (before the umask), with Go's
-/// error text.
-fn write_file(path: &Path, data: &[u8]) -> Result<(), Error> {
-    let mut o = std::fs::OpenOptions::new();
-    o.write(true).create(true).truncate(true);
-    #[cfg(unix)]
-    std::os::unix::fs::OpenOptionsExt::mode(&mut o, 0o644);
-    let mut f = o
-        .open(path)
-        .map_err(|e| Error(go_path_error("open", path, &e)))?;
-    f.write_all(data)
-        .map_err(|e| Error(go_path_error("write", path, &e)))
-}
-
-/// go_path_error is the text of Go's *fs.PathError: "open <path>: permission denied".
-fn go_path_error(op: &str, path: &Path, err: &std::io::Error) -> String {
-    let op = if err.kind() == std::io::ErrorKind::IsADirectory {
-        "read"
-    } else {
-        op
-    };
-    let mut text = err.to_string();
-    if let Some(code) = err.raw_os_error() {
-        // Rust adds " (os error N)" and capitalizes strerror; Go does neither.
-        text = text
-            .trim_end_matches(&format!(" (os error {code})"))
-            .to_string();
-        let mut cs = text.chars();
-        if let Some(c) = cs.next() {
-            text = c.to_lowercase().chain(cs).collect();
-        }
-    }
-    format!("{op} {}: {text}", path.display())
-}
-
 /// Marker starts the machine part of the comments copied from the HTML page
 /// as text: the export JSON in base64, so a messenger cannot mangle it.
 pub const MARKER: &str = "docc-comments:";
 
 // the base64 may be folded into lines by a messenger or mail, so it runs to the end
 // (Go's \s is ASCII: tab, newline, form feed, carriage return and space)
-static MARKER_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(&format!(
+static MARKER_RE: LazyLock<regex::bytes::Regex> = LazyLock::new(|| {
+    regex::bytes::Regex::new(&format!(
         "{}([A-Za-z0-9+/=\\t\\n\\x0C\\r ]+)",
         regex::escape(MARKER)
     ))
@@ -274,82 +596,6 @@ pub fn parse_export(name: &str, b: &[u8]) -> Result<Vec<Item>, Error> {
         }
     }
     Ok(e.comments)
-}
-
-// States of a comment's block, see Locate.
-/// the block still reads as quoted
-pub const UNCHANGED: &str = "unchanged";
-/// the quoted text stands at another pointer now
-pub const MOVED: &str = "moved";
-/// the block was edited
-pub const CHANGED: &str = "changed";
-/// no block at the pointer
-pub const REMOVED: &str = "removed";
-/// no such document
-pub const MISSING: &str = "missing";
-
-/// Locate finds the block of a comment in the current document (root None: the
-/// document is gone): the pointer to use, its current text and the state.
-pub fn locate(root: Option<&Node>, it: &Item) -> (String, String, &'static str) {
-    let Some(root) = root else {
-        return (it.path.clone(), String::new(), MISSING);
-    };
-    if !it.input.is_empty() {
-        // an answer belongs to its form field wherever it stands; the question
-        // may have been rewritten since
-        let Some((ptr, n)) = find_input(root, "", &it.input) else {
-            return (it.path.clone(), String::new(), REMOVED);
-        };
-        let text = history::text(n);
-        let state = if text != it.quote {
-            CHANGED
-        } else if ptr != it.path {
-            MOVED
-        } else {
-            UNCHANGED
-        };
-        return (ptr, text, state);
-    }
-    let mut text = String::new();
-    if let Some(n) = schema::resolve_pointer(root, &it.path)
-        && !it.path.is_empty()
-    {
-        text = history::text(n);
-        if text == it.quote {
-            return (it.path.clone(), text, UNCHANGED);
-        }
-    }
-    let leaves = history::flatten(root);
-    for l in &leaves {
-        if l.text == it.quote {
-            return (l.ptr.clone(), l.text.clone(), MOVED);
-        }
-    }
-    // edited: the block at the pointer if it still resembles the quote, else the most similar one
-    if !text.is_empty() && history::similar(&text, &it.quote) >= 0.5 {
-        return (it.path.clone(), text, CHANGED);
-    }
-    let (mut best, mut bp, mut bt) = (0.3, "", "");
-    for l in &leaves {
-        let s = history::similar(&l.text, &it.quote);
-        if s > best || (s == best && l.ptr == it.path) {
-            (best, bp, bt) = (s, &l.ptr, &l.text);
-        }
-    }
-    if !bp.is_empty() {
-        return (bp.to_string(), bt.to_string(), CHANGED);
-    }
-    (it.path.clone(), String::new(), REMOVED)
-}
-
-/// find_input is the pointer and node of the form field with the given id.
-fn find_input<'a>(n: &'a Node, ptr: &str, id: &str) -> Option<(String, &'a Node)> {
-    if engine::is_input(n) {
-        return n.get("id").is_some_and(|v| v.str == id).then(|| (ptr.to_string(), n));
-    }
-    let items = n.items.iter().enumerate().map(|(i, it)| (i.to_string(), it));
-    let members = n.members.iter().map(|m| (history::escape(&m.key), &m.value));
-    items.chain(members).find_map(|(k, v)| find_input(v, &format!("{ptr}/{k}"), id))
 }
 
 #[cfg(test)]
@@ -424,6 +670,10 @@ mod tests {
             {
                 continue;
             }
+            // the statuses of docc.comments.json are not read any more
+            if c.err.as_deref().is_some_and(|e| ["internal", "status", "reply"].iter().any(|k| e.contains(&format!("comments.0.{k} ")))) {
+                continue;
+            }
             match (parse_export("t", &input), c.err) {
                 // serde_json words a malformed file its own way (docs/rust-port/comments.md)
                 (Err(_), Some(want)) if !DOMAIN.iter().any(|d| want.starts_with(d)) => {}
@@ -439,6 +689,15 @@ mod tests {
                     } else {
                         want
                     };
+                    // the old statuses of docc.comments.json are not read any more
+                    let mut want = want;
+                    for it in want.as_array_mut().into_iter().flatten() {
+                        if let Some(o) = it.as_object_mut() {
+                            for k in ["status", "reply", "internal"] {
+                                o.remove(k);
+                            }
+                        }
+                    }
                     if serde_json::to_value(&items).unwrap() != want {
                         off.push(format!("{shown:?}: items differ"));
                     }
@@ -449,127 +708,116 @@ mod tests {
         assert!(off.is_empty(), "{}", off.join("\n"));
     }
 
-    fn tmp_dir(name: &str) -> std::path::PathBuf {
-        let d = std::env::temp_dir().join(format!("docc-comments-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&d);
-        std::fs::create_dir_all(&d).unwrap();
-        d
+    fn parse(s: &str) -> Node {
+        crate::loader::parse(s.as_bytes()).root.unwrap_or_else(|| panic!("not JSON: {s}"))
     }
 
-    /// The bytes Go's Save writes for the same items.
-    #[test]
-    fn save_matches_go() {
-        let dir = tmp_dir("save");
-        save(&dir, &[]).unwrap();
-        assert_eq!(
-            std::fs::read(dir.join(FILE)).unwrap(),
-            b"{\"comments\": []}\n"
-        );
-        let items = vec![
-            Item {
-                id: "c1".into(),
-                doc: "d".into(),
-                path: "/a".into(),
-                quote: "<b> & \u{2028} \u{2029} \x01\x7f\x08\x0c\t\n\r\"\\ é😀".into(),
-                text: "t".into(),
-                internal: true,
-                status: DONE.into(),
-                ..Default::default()
-            },
-            Item {
-                id: "c2".into(),
-                doc: "e".into(),
-                text: "x".into(),
-                ..Default::default()
-            },
-        ];
-        save(&dir, &items).unwrap();
-        assert_eq!(
-            String::from_utf8(std::fs::read(dir.join(FILE)).unwrap()).unwrap(),
-            "{\"comments\": [\n  {\"id\":\"c1\",\"doc\":\"d\",\"path\":\"/a\",\"quote\":\"<b> & \\u2028 \\u2029 \\u0001\x7f\\b\\f\\t\\n\\r\\\"\\\\ é😀\",\"text\":\"t\",\"status\":\"done\",\"internal\":true},\n  {\"id\":\"c2\",\"doc\":\"e\",\"path\":\"\",\"quote\":\"\",\"text\":\"x\"}\n]}\n"
-        );
-        assert_eq!(load(&dir).unwrap(), items);
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    /// Load's errors as Go prints them.
-    #[test]
-    fn load_matches_go() {
-        let dir = tmp_dir("load");
-        assert_eq!(load(&dir).unwrap(), Vec::<Item>::new());
-        for (data, want) in [
-            (
-                r#"{"comments":"x"}"#,
-                "docc.comments.json: json: cannot unmarshal string into Go struct field store.comments of type []comments.Item",
-            ),
-            (
-                r#"{"comments":["#,
-                "docc.comments.json: unexpected end of JSON input",
-            ),
-            (
-                r#"{"comments":[{"id":1}]}"#,
-                "docc.comments.json: json: cannot unmarshal number into Go struct field store.comments.0.id of type string",
-            ),
-        ] {
-            std::fs::write(dir.join(FILE), data).unwrap();
-            // Go words its decoder errors otherwise (docs/rust-port/comments.md): {want}
-            let _ = want;
-            let e = load(&dir).unwrap_err().0;
-            assert!(e.starts_with("docc.comments.json: "), "{data}: {e}");
-        }
-        std::fs::write(
-            dir.join(FILE),
-            r#"{"comments":[{"id":"a","x":[{}]}],"other":1}"#,
-        )
-        .unwrap();
-        assert_eq!(
-            load(&dir).unwrap(),
-            vec![Item {
-                id: "a".into(),
-                ..Default::default()
-            }]
-        );
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn locate_states() {
-        let r = crate::loader::parse(br#"{"title":"T","body":["alpha beta gamma","second para"]}"#);
-        let root = r.root.as_ref().unwrap();
-        let at = |path: &str, quote: &str| {
-            let it = Item {
-                path: path.into(),
-                quote: quote.into(),
-                ..Default::default()
-            };
-            let (p, t, s) = locate(Some(root), &it);
-            (p, t, s.to_string())
-        };
-        let want = |p: &str, t: &str, s: &str| (p.to_string(), t.to_string(), s.to_string());
-        assert_eq!(
-            at("/body/0", "alpha beta gamma"),
-            want("/body/0", "alpha beta gamma", UNCHANGED)
-        );
-        assert_eq!(
-            at("/body/1", "alpha beta gamma"),
-            want("/body/0", "alpha beta gamma", MOVED)
-        );
-        assert_eq!(
-            at("/body/0", "alpha beta gamme"),
-            want("/body/0", "alpha beta gamma", CHANGED)
-        );
-        assert_eq!(
-            at("/x", "second paragraph"),
-            want("/body/1", "second para", CHANGED)
-        );
-        assert_eq!(at("/x", "zzzz"), want("/x", "", REMOVED));
-        let it = Item {
-            path: "/a".into(),
+    fn comment(id: &str, at: &str) -> Comment {
+        Comment {
+            id: id.into(),
+            at: at.into(),
+            quote: "Alpha.".into(),
+            text: Some("Why?".into()),
+            author: "Ann".into(),
+            created: "2026-10-22T09:00:00Z".into(),
             ..Default::default()
-        };
+        }
+    }
+
+    /// Adding to a file without comments appends "$comments" as its last member,
+    /// indented like the file; removing the comment gives back the same bytes.
+    #[test]
+    fn edit_in_place() {
+        for src in [
+            "{\n  \"title\": \"T\",\n  \"body\": [\"Alpha.\"]\n}\n",
+            "{\r\n\t\"title\": \"T\",\r\n\t\"body\": [\"Alpha.\"]\r\n}",
+            "{\"title\":\"T\",\"body\":[\"Alpha.\"]}",
+            "\u{feff}{ \"title\": \"T\", \"body\": [\"Alpha.\"] }\n",
+        ] {
+            let (a, b) = (comment("c-1", "/body/0"), comment("c-2", "/body/0"));
+            let one = edit(src.as_bytes(), &Edit::Add(&a)).unwrap();
+            let two = edit(&one, &Edit::Add(&b)).unwrap();
+            let s = String::from_utf8(two.clone()).unwrap();
+            let root = parse(s.trim_start_matches('\u{feff}'));
+            assert_eq!(of(&root), vec![a.clone(), b.clone()], "{s}");
+            assert!(s.starts_with(&src[..src.find("\"body\"").unwrap()]), "the members before stay: {s}");
+            let ed = String::from_utf8(edit(&two, &Edit::Text("c-1", "Why \"so\"?")).unwrap()).unwrap();
+            assert_eq!(ed, s.replacen("\"text\": \"Why?\"", "\"text\": \"Why \\\"so\\\"?\"", 1));
+            let back = edit(&edit(&two, &Edit::Remove("c-2")).unwrap(), &Edit::Remove("c-1")).unwrap();
+            assert_eq!(String::from_utf8(back).unwrap(), src, "the file is as it was");
+            assert_eq!(String::from_utf8(edit(&two, &Edit::Remove("c-2")).unwrap()).unwrap(), String::from_utf8(one).unwrap());
+        }
+        let pretty = "{\n  \"title\": \"T\",\n  \"body\": [\"Alpha.\"]\n}\n";
+        let s = String::from_utf8(edit(pretty.as_bytes(), &Edit::Add(&comment("c-1", "/body/0"))).unwrap()).unwrap();
         assert_eq!(
-            locate(None, &it),
-            ("/a".to_string(), String::new(), MISSING)
+            s,
+            "{\n  \"title\": \"T\",\n  \"body\": [\"Alpha.\"],\n  \"$comments\": [\n    {\"id\": \"c-1\", \"at\": \"/body/0\", \"quote\": \"Alpha.\", \"text\": \"Why?\", \"author\": \"Ann\", \"created\": \"2026-10-22T09:00:00Z\"}\n  ]\n}\n"
         );
+        // the first member, and the comments of an answer have no text to edit
+        let first = "{\"$comments\": [{\"id\": \"c-1\"}], \"title\": \"T\"}";
+        assert_eq!(String::from_utf8(edit(first.as_bytes(), &Edit::Remove("c-1")).unwrap()).unwrap(), "{\"title\": \"T\"}");
+        assert!(edit(first.as_bytes(), &Edit::Text("c-1", "x")).unwrap_err().contains("no text"));
+        assert!(edit(first.as_bytes(), &Edit::Remove("c-9")).unwrap_err().contains("no comment"));
+    }
+
+    #[test]
+    fn shapes() {
+        let probs = |s: &str| problems(parse(&format!("{{\"c\": {s}}}")).get("c").unwrap()).into_iter().map(|p| p.msg).collect::<Vec<_>>();
+        let ok = r#"{"id":"c-1","at":"/body/0","quote":"q","text":"t","author":"A","created":"2026-10-22T09:00:00+03:00"}"#;
+        assert!(probs(&format!("[{ok}]")).is_empty());
+        let ans = r#"{"id":"c-2","at":"/body/1","quote":"q","input":"x","answer":["Yes"],"author":"","created":"2026-10-22T09:00:00.5Z"}"#;
+        assert!(probs(&format!("[{ans}]")).is_empty());
+        assert_eq!(probs("{}"), ["\"$comments\" must be an array of comments"]);
+        assert_eq!(probs(&format!("[{ok}, {ok}]")), ["comment id \"c-1\" is used twice"]);
+        for (bad, want) in [
+            (ok.replace("\"text\":\"t\"", "\"text\":\"t\",\"input\":\"x\""), "a comment has either"),
+            (ok.replace("\"text\":\"t\",", ""), "a comment has either"),
+            (ok.replace("2026-10-22T09:00:00+03:00", "yesterday"), "RFC 3339"),
+            (ok.replace("/body/0", "body"), "JSON Pointer"),
+            (ok.replace("\"author\":\"A\",", ""), "lacks \"author\""),
+            (ok.replace("\"quote\"", "\"status\""), "unknown field \"status\""),
+            (ok.replace("\"t\"", "1"), "\"text\" must be a string"),
+            (ans.replace("[\"Yes\"]", "\"Yes\""), "\"answer\" must be an array"),
+        ] {
+            let got = probs(&format!("[{bad}]"));
+            assert!(got.len() == 1 && got[0].contains(want), "{bad}: {got:?}");
+        }
+    }
+
+    #[test]
+    fn places() {
+        let root = parse(r#"{"title":"T","body":["Alpha **beta** [[x]].","Two.",{"$input":"radio","id":"q","label":"Q?","options":["A","B"]}]}"#);
+        let title = |id: &str| (id == "x").then(|| "Gamma page".to_string());
+        let at = |at: &str, quote: &str, frag: &str| {
+            let c = Comment { at: at.into(), quote: quote.into(), fragment: frag.into(), ..comment("c", "") };
+            place(&root, &c, &title).0
+        };
+        assert_eq!(at("/body/1", "Two.", ""), Place::Same);
+        assert_eq!(at("/body/1", "One.", ""), Place::Changed);
+        assert_eq!(at("/body/0", "", "beta Gamma"), Place::Changed, "marks and links read as on the page");
+        assert_eq!(at("/body/0", "", "delta"), Place::Lost, "the words are gone");
+        assert_eq!(at("/body/7", "Two.", ""), Place::Lost, "no block there");
+        let field = Comment { input: Some("q".into()), answer: Some(vec!["A".into()]), text: None, ..comment("c", "/body/2") };
+        assert_eq!(place(&root, &field, &title).0, Place::Changed);
+        let gone = Comment { input: Some("z".into()), ..field };
+        assert_eq!(place(&root, &gone, &title).0, Place::Lost);
+        assert_eq!(find_input(&root, "", "q").as_deref(), Some("/body/2"));
+    }
+
+    /// A paragraph inserted above moves the commented block down by one.
+    #[test]
+    fn follows_its_block() {
+        let old = parse(r#"{"title":"T","body":["One.","Two.","Three."]}"#);
+        let cur = parse(r#"{"title":"T","body":["Zero.","One.","Two, edited.","Three."],"$comments":[]}"#);
+        assert_eq!(follow(&old, &cur, "/body/1").as_deref(), Some("/body/2"));
+        assert_eq!(follow(&old, &cur, "/title").as_deref(), Some("/title"));
+        assert_eq!(follow(&old, &cur, "/body/9"), None);
+    }
+
+    #[test]
+    fn ids_and_time() {
+        let (a, b) = (new_id(), new_id());
+        assert!(a != b && a.len() == 12 && a.starts_with("c-"), "{a} {b}");
+        assert!(RFC3339.is_match(&now()), "{}", now());
     }
 }

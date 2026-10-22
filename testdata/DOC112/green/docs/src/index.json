@@ -1,0 +1,12 @@
+{
+  "title": "Index",
+  "kind": "page",
+  "body": [
+    "Delivery takes five days.",
+    { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] }
+  ],
+  "$comments": [
+    {"id": "c-aaaaaaaaaa", "at": "/body/0", "quote": "Delivery takes five days.", "fragment": "five days", "prefix": "takes ", "text": "TODO: is it working days? [[nowhere]]", "author": "Ann", "email": "ann@example.com", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-bbbbbbbbbb", "at": "/body/1", "quote": "$input: radio; id: export; label: Export?; options: Yes\nNo", "input": "export", "answer": ["Yes"], "author": "", "created": "2026-10-22T09:00:00.123+03:00"}
+  ]
+}
