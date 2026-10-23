@@ -22,7 +22,7 @@ pub(super) const COMMENTS_USAGE: &str = "Usage: docc comments [list] | apply | i
 
 The readers' comments live in the documents themselves, in the top-level member
 \"$comments\": [{id, at, quote, fragment?, prefix?, suffix?, text | input+answer, author,
-email?, created}]. A comment is about the block at the JSON Pointer at; an answer to a form
+email?, created, edited?}]. A comment is about the block at the JSON Pointer at; an answer to a form
 field ({\"$input\": ...}) has the field id in input and the answer in answer instead of text.
 There are no statuses and no replies: a handled comment is deleted, in the same commit as
 the fix.
@@ -36,6 +36,7 @@ last member of the document. The operations:
   {\"op\": \"rm\", \"id\": <id>}
   {\"op\": \"edit\", \"id\": <id>, \"text\": <new text>}
   {\"op\": \"edit\", \"id\": <id>, \"answer\": [<new answer>]}   an answer to the same form field, quoting it as it is now
+An edit keeps created and sets edited to the time now (RFC 3339, UTC); add never sets it.
 An answer must fit its field, on add and edit: a text field and radio buttons take one
 value (radio: an option or an own answer), check boxes at most one value that is none of
 the options; no value blank or twice. Values that are not options are trimmed.
@@ -295,13 +296,14 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
                 let i = is[0];
                 seer.doc(i).map_err(fail)?;
                 read(i, &mut files)?;
+                let when = comments::now();
                 let again = match op {
-                    Op::Edit { text: None, answer: Some(a), .. } => Some(answer_again(&mut seer, i, &files[&i], id, a).map_err(fail)?),
+                    Op::Edit { text: None, answer: Some(a), .. } => Some(answer_again(&mut seer, i, &files[&i], id, a, &when).map_err(fail)?),
                     _ => None,
                 };
                 let e = match (op, &again) {
                     (_, Some(c)) => Edit::Replace(id, c),
-                    (Op::Edit { text: Some(t), answer: None, .. }, _) => Edit::Text(id, t),
+                    (Op::Edit { text: Some(t), answer: None, .. }, _) => Edit::Text(id, t, &when),
                     (Op::Edit { .. }, _) => return Err(fail("edit takes either \"text\" (a comment) or \"answer\" (an answer to a form field)".into())),
                     _ => Edit::Remove(id),
                 };
@@ -338,8 +340,8 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
 
 /// answer_again is the answer id of document i (its file now in src) with a
 /// new answer: it stays an answer to the same form field, follows the field
-/// if it moved, and quotes the field as the reader sees it now.
-fn answer_again(seer: &mut Seer, i: usize, src: &[u8], id: &str, answer: &[String]) -> Result<Comment, String> {
+/// if it moved, quotes the field as the reader sees it now and is edited at when.
+fn answer_again(seer: &mut Seer, i: usize, src: &[u8], id: &str, answer: &[String], when: &str) -> Result<Comment, String> {
     let r = loader::parse(src.strip_prefix(&[0xEF, 0xBB, 0xBF][..]).unwrap_or(src));
     let root = r.root.as_ref().filter(|_| r.err.is_none()).ok_or("the file is not valid JSON")?;
     let cur = comments::of(root).into_iter().find(|c| c.id == id).ok_or_else(|| format!("comment {} is malformed (DOC112)", go_quote(id)))?;
@@ -348,7 +350,7 @@ fn answer_again(seer: &mut Seer, i: usize, src: &[u8], id: &str, answer: &[Strin
     };
     let at = comments::find_input(root, "", &input).unwrap_or(cur.at.clone());
     let quote = seer.quote(i, &at, Some(&input))?;
-    let mut c = Comment { at, quote, answer: Some(answer.to_vec()), ..cur };
+    let mut c = Comment { at, quote, answer: Some(answer.to_vec()), edited: when.into(), ..cur };
     comments::check(&c)?;
     answer_fits(Some(root), &mut c)?;
     Ok(c)
@@ -465,6 +467,7 @@ fn import(c: &Common, p: &Project, files: &[String], hidden: bool, stdout: &mut 
             author: it.author,
             email: String::new(),
             created: if it.created.is_empty() { comments::now() } else { it.created },
+            edited: it.edited,
         };
         ops.push(Op::Add { doc: d.id.clone(), comment: serde_json::to_value(&cm)? });
     }

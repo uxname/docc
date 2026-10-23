@@ -422,3 +422,82 @@ fn apply_checks_the_answer_against_its_field() {
     assert_eq!(code, 0, "{errs}");
     assert!(p.read("docs/src/index.json").contains(r#""answer": ["Own"]"#));
 }
+
+/// is_rfc3339_utc tells a time as docc writes it: "2026-10-23T10:48:18Z".
+fn is_rfc3339_utc(s: &str) -> bool {
+    let b = s.as_bytes();
+    b.len() == 20 && b[10] == b'T' && b[19] == b'Z' && s.chars().enumerate().all(|(i, c)| [4, 7, 10, 13, 16, 19].contains(&i) || c.is_ascii_digit())
+}
+
+/// An edit of a comment's text or of an answer sets "edited" to the time now
+/// and keeps "created"; a second edit overwrites it; add never sets it. The
+/// field passes through validate, compile, comments list, the HTML file and
+/// import.
+#[test]
+fn edit_sets_edited() {
+    let page = "{\n  \"title\": \"Index\",\n  \"kind\": \"page\",\n  \"body\": [\n    \"Alpha text.\",\n    {\"$input\": \"radio\", \"id\": \"when\", \"label\": \"When?\", \"options\": [\"Now\", \"Later\"]}\n  ]\n}\n";
+    let p = project([SCHEMA, ("docs/src/index.json", page)]);
+    let ops = json!([
+        {"op": "add", "doc": "index", "comment": {"id": "c-text", "at": "/body/0", "text": "Why?", "author": "Ann", "created": "2026-10-22T09:00:00Z"}},
+        {"op": "add", "doc": "index", "comment": {"id": "c-when", "at": "/body/1", "input": "when", "answer": ["Now"], "author": "Ann", "created": "2026-10-22T09:00:00Z"}}
+    ]);
+    let (code, _, errs) = apply(&p.path, &ops);
+    assert_eq!(code, 0, "{errs}");
+    assert!(!p.read("docs/src/index.json").contains("edited"), "add sets no \"edited\"");
+
+    let (code, _, errs) = apply(&p.path, &json!([{"op": "edit", "id": "c-text", "text": "Why so?"}, {"op": "edit", "id": "c-when", "answer": ["Later"]}]));
+    assert_eq!(code, 0, "{errs}");
+    let src = p.read("docs/src/index.json");
+    let doc: Value = serde_json::from_str(&src).unwrap();
+    for c in doc["$comments"].as_array().unwrap() {
+        assert_eq!(c["created"], "2026-10-22T09:00:00Z", "created stays: {c}");
+        assert!(c["edited"].as_str().is_some_and(is_rfc3339_utc), "edited is the time now: {c}");
+    }
+    // the text edit changes only the text and adds "edited" after the last member
+    let text_item = src.lines().find(|l| l.contains("c-text")).unwrap();
+    assert!(text_item.contains(r#""text": "Why so?", "author": "Ann", "created": "2026-10-22T09:00:00Z", "edited": ""#), "{text_item}");
+    let (code, out, errs) = p.run(&["validate", "--max-warnings", "0"]);
+    assert_eq!(code, 0, "a valid \"edited\" is no problem: {out} {errs}");
+
+    // a second edit overwrites "edited", once in the item
+    p.write("docs/src/index.json", src.replace(doc["$comments"][0]["edited"].as_str().unwrap(), "2020-01-01T00:00:00Z"));
+    let (code, _, errs) = apply(&p.path, &json!([{"op": "edit", "id": "c-text", "text": "Why, then?"}]));
+    assert_eq!(code, 0, "{errs}");
+    let src = p.read("docs/src/index.json");
+    let text_item = src.lines().find(|l| l.contains("c-text")).unwrap();
+    assert!(!text_item.contains("2020-01-01") && text_item.matches("\"edited\"").count() == 1, "{text_item}");
+
+    // compile, comments list and the HTML file pass it through
+    let (_, out, _) = p.run(&["compile", "--format", "json"]);
+    let v: Value = serde_json::from_str(&out).unwrap();
+    check_schema("compile", &v);
+    assert!(v["pages"][0]["comments"].as_array().unwrap().iter().all(|c| c["edited"].as_str().is_some_and(is_rfc3339_utc)), "{}", v["pages"][0]["comments"]);
+    let (_, out, _) = p.run(&["comments", "--format", "json"]);
+    let list: Value = serde_json::from_str(&out).unwrap();
+    assert!(list["comments"].as_array().unwrap().iter().all(|c| c["edited"].as_str().is_some_and(is_rfc3339_utc)), "{list}");
+    p.must_build();
+    let (code, _, errs) = p.run(&["build", "--html"]);
+    assert_eq!(code, 0, "{errs}");
+    assert!(p.read("docs/out.html").contains(r#""edited":"20"#), "the HTML file carries edited");
+
+    // a malformed "edited" is DOC112, like a malformed "created"
+    p.write("docs/src/index.json", src.replacen("\"edited\": \"20", "\"edited\": \"yesterday 20", 1));
+    let (code, out, _) = p.run(&["validate"]);
+    assert!(code != 0 && out.contains("DOC112") && out.contains("\"edited\" of a comment must be an RFC 3339 time"), "{out}");
+    p.write("docs/src/index.json", src.replacen("\"created\": \"2026", "\"created\": \"yesterday 2026", 1));
+    let (_, created, _) = p.run(&["validate"]);
+    assert!(created.contains("DOC112"), "{created}");
+
+    // import keeps an "edited" the export gives
+    p.write("docs/src/index.json", page);
+    p.write(
+        "export.json",
+        json!({"docc": "comments", "version": 1, "comments": [
+            {"id": "c-imp0000001", "doc": "index", "path": "/body/0", "quote": "Alpha text.", "text": "Hm", "author": "Ann", "created": "2026-10-20T10:00:00Z", "edited": "2026-10-21T10:00:00Z"}
+        ]})
+        .to_string(),
+    );
+    let (code, out, errs) = p.run(&["comments", "import", "export.json"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    assert!(p.read("docs/src/index.json").contains(r#""created": "2026-10-20T10:00:00Z", "edited": "2026-10-21T10:00:00Z""#), "{}", p.read("docs/src/index.json"));
+}

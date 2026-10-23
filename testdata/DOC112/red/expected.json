@@ -9,7 +9,7 @@
     "endLine": 10,
     "endColumn": 43,
     "message": "unknown field \"status\" in a comment",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -21,7 +21,7 @@
     "endLine": 11,
     "endColumn": 106,
     "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -33,7 +33,7 @@
     "endLine": 12,
     "endColumn": 155,
     "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -45,7 +45,7 @@
     "endLine": 13,
     "endColumn": 33,
     "message": "\"at\" of a comment must be the JSON Pointer of a block (\"/body/0\")",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -57,7 +57,7 @@
     "endLine": 14,
     "endColumn": 110,
     "message": "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -81,7 +81,7 @@
     "endLine": 17,
     "endColumn": 15,
     "message": "a comment must be an object",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -129,7 +129,7 @@
     "endLine": 21,
     "endColumn": 125,
     "message": "\"answer\" of an answer is empty: give at least one value",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -141,7 +141,7 @@
     "endLine": 22,
     "endColumn": 133,
     "message": "a value of \"answer\" is blank",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -153,7 +153,7 @@
     "endLine": 23,
     "endColumn": 132,
     "message": "\"answer\" gives \"A\" twice",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",

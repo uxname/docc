@@ -415,6 +415,8 @@ fn app_comment<S: serde::Serializer>(c: &Comment, s: S) -> Result<S::Ok, S::Erro
         #[serde(skip_serializing_if = "str::is_empty")]
         author: &'a str,
         created: &'a str,
+        #[serde(skip_serializing_if = "str::is_empty")]
+        edited: &'a str,
     }
     C {
         id: &c.id,
@@ -427,6 +429,7 @@ fn app_comment<S: serde::Serializer>(c: &Comment, s: S) -> Result<S::Ok, S::Erro
         answer: &c.answer,
         author: &c.author,
         created: &c.created,
+        edited: &c.edited,
     }
     .serialize(s)
 }

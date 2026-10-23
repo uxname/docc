@@ -53,7 +53,8 @@
           "answer": { "type": "array", "items": { "type": "string" } },
           "author": { "type": "string" },
           "email": { "type": "string" },
-          "created": { "type": "string", "format": "date-time" }
+          "created": { "type": "string", "format": "date-time" },
+          "edited": { "type": "string", "format": "date-time" }
         },
         "oneOf": [{ "required": ["text"] }, { "required": ["input", "answer"] }]
       }

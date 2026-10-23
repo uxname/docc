@@ -111,6 +111,7 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("Save", "Сохранить"),
     ("Anonymous", "Без имени"),
     ("Edit", "Изменить"),
+    ("edited", "изменено"),
     ("Delete", "Удалить"),
     ("Comment deleted.", "Комментарий удалён."),
     (

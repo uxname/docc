@@ -49,11 +49,14 @@ pub struct Comment {
     pub email: String,
     /// RFC 3339
     pub created: String,
+    /// RFC 3339: when docc comments apply last edited the text or the answer
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub edited: String,
 }
 
 /// FIELDS are the members of a comment, in the order docc writes them.
-pub const FIELDS: [&str; 12] =
-    ["id", "at", "quote", "fragment", "prefix", "suffix", "text", "input", "answer", "author", "email", "created"];
+pub const FIELDS: [&str; 13] =
+    ["id", "at", "quote", "fragment", "prefix", "suffix", "text", "input", "answer", "author", "email", "created", "edited"];
 
 impl Comment {
     /// words is what the comment says: its text, or the answer given.
@@ -116,7 +119,7 @@ pub struct Problem {
     pub hint: String,
 }
 
-const SHAPE_HINT: &str = "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\" and \"email\"; edit the list with docc comments apply.";
+const SHAPE_HINT: &str = "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply.";
 
 static RFC3339: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$").unwrap()
@@ -188,6 +191,9 @@ fn item_problem(it: &Node) -> Option<Problem> {
     }
     if !RFC3339.is_match(s("created").unwrap_or_default()) {
         return bad(it.get("created")?, "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")".into());
+    }
+    if let Some(e) = it.get("edited").filter(|e| !RFC3339.is_match(&e.str)) {
+        return bad(e, "\"edited\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")".into());
     }
     match (it.get("text"), it.get("input"), it.get("answer")) {
         (Some(t), None, None) if t.str.trim().is_empty() => bad(t, "the text of a comment is empty".into()),
@@ -343,7 +349,8 @@ pub fn find_input(n: &Node, ptr: &str, id: &str) -> Option<String> {
 pub enum Edit<'a> {
     Add(&'a Comment),
     Remove(&'a str),
-    Text(&'a str, &'a str),
+    /// the comment with this id gets a new text and "edited" set to the time given
+    Text(&'a str, &'a str, &'a str),
     /// the comment with this id is replaced whole (an answer given again)
     Replace(&'a str, &'a Comment),
 }
@@ -427,12 +434,28 @@ pub fn edit(src: &[u8], e: &Edit) -> Result<Vec<u8>, String> {
                 }
             }
         }
-        Edit::Text(id, text) => {
+        Edit::Text(id, text, when) => {
             let it = &items[pos(id)?];
             let Some(t) = it.get("text") else {
                 return Err(format!("comment {} is an answer to a form field: it has no text to edit", go_quote(id)));
             };
-            (t.start, t.end, quote(text).replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029"))
+            // two changes inside the item: the text, and "edited" replaced or added after the last member
+            let mut cut = vec![(t.start, t.end, quote(text).replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029"))];
+            match it.get("edited") {
+                Some(e) => cut.push((e.start, e.end, quote(when))),
+                None => {
+                    let ms = &it.members;
+                    let sep = if ms.len() >= 2 { ws(ms[ms.len() - 2].value.end, ms[ms.len() - 1].key_start) } else { ", ".into() };
+                    let end = ms.last().map_or(t.end, |m| m.value.end);
+                    cut.push((end, end, format!("{sep}\"edited\": {}", quote(when))));
+                }
+            }
+            cut.sort_by_key(|c| std::cmp::Reverse(c.0));
+            let mut item = data[it.start..it.end].to_vec();
+            for (a, b, s) in cut {
+                item.splice(a - it.start..b - it.start, s.into_bytes());
+            }
+            (it.start, it.end, String::from_utf8_lossy(&item).into_owned())
         }
         Edit::Replace(id, c) => {
             let it = &items[pos(id)?];
@@ -524,6 +547,8 @@ pub struct Item {
     pub author: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub created: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub edited: String,
     /// the short hash of the commit the HTML file was built from
     #[serde(skip_serializing_if = "String::is_empty")]
     pub build: String,
@@ -796,8 +821,15 @@ mod tests {
             let root = parse(s.trim_start_matches('\u{feff}'));
             assert_eq!(of(&root), vec![a.clone(), b.clone()], "{s}");
             assert!(s.starts_with(&src[..src.find("\"body\"").unwrap()]), "the members before stay: {s}");
-            let ed = String::from_utf8(edit(&two, &Edit::Text("c-1", "Why \"so\"?")).unwrap()).unwrap();
-            assert_eq!(ed, s.replacen("\"text\": \"Why?\"", "\"text\": \"Why \\\"so\\\"?\"", 1));
+            let ed = String::from_utf8(edit(&two, &Edit::Text("c-1", "Why \"so\"?", "2026-10-23T10:48:18Z")).unwrap()).unwrap();
+            let want = s.replacen("\"text\": \"Why?\"", "\"text\": \"Why \\\"so\\\"?\"", 1).replacen(
+                "\"created\": \"2026-10-22T09:00:00Z\"",
+                "\"created\": \"2026-10-22T09:00:00Z\", \"edited\": \"2026-10-23T10:48:18Z\"",
+                1,
+            );
+            assert_eq!(ed, want, "the text and a new \"edited\" after the last member, the rest stays");
+            let again = String::from_utf8(edit(ed.as_bytes(), &Edit::Text("c-1", "Why \"so\"?", "2026-10-24T08:00:00Z")).unwrap()).unwrap();
+            assert_eq!(again, want.replacen("2026-10-23T10:48:18Z", "2026-10-24T08:00:00Z", 1), "a second edit overwrites \"edited\"");
             let back = edit(&edit(&two, &Edit::Remove("c-2")).unwrap(), &Edit::Remove("c-1")).unwrap();
             assert_eq!(String::from_utf8(back).unwrap(), src, "the file is as it was");
             assert_eq!(String::from_utf8(edit(&two, &Edit::Remove("c-2")).unwrap()).unwrap(), String::from_utf8(one).unwrap());
@@ -811,7 +843,7 @@ mod tests {
         // the first member, and the comments of an answer have no text to edit
         let first = "{\"$comments\": [{\"id\": \"c-1\"}], \"title\": \"T\"}";
         assert_eq!(String::from_utf8(edit(first.as_bytes(), &Edit::Remove("c-1")).unwrap()).unwrap(), "{\"title\": \"T\"}");
-        assert!(edit(first.as_bytes(), &Edit::Text("c-1", "x")).unwrap_err().contains("no text"));
+        assert!(edit(first.as_bytes(), &Edit::Text("c-1", "x", "2026-10-23T10:48:18Z")).unwrap_err().contains("no text"));
         assert!(edit(first.as_bytes(), &Edit::Remove("c-9")).unwrap_err().contains("no comment"));
         // a replaced item keeps its place in the list, the other bytes stay
         let two = "{\"title\": \"T\", \"$comments\": [{\"id\": \"c-1\"},\n  {\"id\": \"c-2\"}]}";
@@ -827,12 +859,17 @@ mod tests {
         assert!(probs(&format!("[{ok}]")).is_empty());
         let ans = r#"{"id":"c-2","at":"/body/1","quote":"q","input":"x","answer":["Yes"],"author":"","created":"2026-10-22T09:00:00.5Z"}"#;
         assert!(probs(&format!("[{ans}]")).is_empty());
+        let edited = ok.replace("\"author\"", "\"edited\":\"2026-10-23T10:48:18Z\",\"author\"");
+        assert!(probs(&format!("[{edited}]")).is_empty(), "\"edited\" is an RFC 3339 time like \"created\"");
         assert_eq!(probs("{}"), ["\"$comments\" must be an array of comments"]);
         assert_eq!(probs(&format!("[{ok}, {ok}]")), ["comment id \"c-1\" is used twice"]);
         for (bad, want) in [
             (ok.replace("\"text\":\"t\"", "\"text\":\"t\",\"input\":\"x\""), "a comment has either"),
             (ok.replace("\"text\":\"t\",", ""), "a comment has either"),
             (ok.replace("2026-10-22T09:00:00+03:00", "yesterday"), "RFC 3339"),
+            (ok.replace("\"author\"", "\"edited\":\"yesterday\",\"author\""), "\"edited\" of a comment must be an RFC 3339 time"),
+            (ok.replace("\"author\"", "\"edited\":\"\",\"author\""), "\"edited\" of a comment must be an RFC 3339 time"),
+            (ok.replace("\"author\"", "\"edited\":1,\"author\""), "\"edited\" must be a string"),
             (ok.replace("/body/0", "body"), "JSON Pointer"),
             (ok.replace("\"author\":\"A\",", ""), "lacks \"author\""),
             (ok.replace("\"quote\"", "\"status\""), "unknown field \"status\""),

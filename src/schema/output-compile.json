@@ -201,6 +201,7 @@
               "answer": { "type": "array", "items": { "type": "string" }, "description": "An answer: the text given, the option picked or the options ticked." },
               "author": { "type": "string", "description": "The name of the author; may be empty." },
               "created": { "type": "string", "description": "RFC 3339 time." },
+              "edited": { "type": "string", "description": "RFC 3339 time of the last edit of the text or the answer (docc comments apply, op edit); absent when never edited." },
               "place": { "enum": ["same", "changed", "lost"], "description": "same: the block reads as quoted; changed: the block was edited since; lost: no block at at, the fragment is not in it, or the answered field is gone (DOC215)." }
             },
             "oneOf": [

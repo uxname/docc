@@ -681,6 +681,7 @@
       <div class="nt">${c.text}</div>
       <div class="meta"><b>${c.author || '{{t:Anonymous}}'}</b>
         <small>${c.created ? new Date(c.created).toLocaleDateString() : ''}</small>
+        ${c.edited && html`<small>{{t:edited}} ${new Date(c.edited).toLocaleDateString()}</small>`}
         ${!props.repo && html`<span class="acts">
           <button type="button" class="link" onClick=${function () { edit[1](true); }}>{{t:Edit}}</button>
           <button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button></span>`}
