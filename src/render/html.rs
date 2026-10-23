@@ -63,10 +63,12 @@ impl<'a> Renderer<'a> {
             kids.clear();
             fn walk<'x>(r: &Renderer<'x>, ns: &[TreeNode<'x>], depth: usize, nav: &mut Vec<NavEntry>, kids: &mut HashMap<String, Vec<String>>) {
                 for n in ns {
-                    match n.page() {
+                    // a title-only folder page has no page: its folder is a line with its title
+                    match n.page().filter(|d| !r.title_only(d)) {
                         Some(d) => {
                             nav.push(NavEntry::Page(d.id.clone(), depth));
-                            let ks: Vec<String> = n.kids().iter().filter_map(|k| k.page()).map(|k| k.id.clone()).collect();
+                            let ks: Vec<String> =
+                                n.kids().iter().filter_map(|k| k.page()).filter(|k| !r.title_only(k)).map(|k| k.id.clone()).collect();
                             if !ks.is_empty() {
                                 kids.insert(d.id.clone(), ks);
                             }

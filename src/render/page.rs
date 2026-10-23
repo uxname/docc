@@ -572,11 +572,12 @@ impl<'a> Renderer<'a> {
     }
 
     /// folder_lines renders the folder tree as a nested list: a folder with
-    /// its own page links to it, a folder without one is its plain name.
+    /// its own page links to it, a folder without one (or with a title-only
+    /// one) is its plain name.
     fn folder_lines(&self, ns: &[TreeNode<'a>], depth: usize, lines: &mut Vec<String>) {
         for n in ns {
             let mut line = format!("{}- ", "  ".repeat(depth));
-            match n.page() {
+            match n.page().filter(|d| !self.title_only(d)) {
                 Some(d) => {
                     line += &format!("[{}]({})", self.node_title(n), self.href(d));
                     if self.full && d.hidden {
@@ -634,7 +635,7 @@ impl<'a> Renderer<'a> {
     pub(super) fn uncovered(&self) -> Vec<&'a Doc> {
         self.docs()
             .into_iter()
-            .filter(|d| self.p.needs_code(d))
+            .filter(|d| self.p.needs_code(d) && !self.title_only(d))
             .collect()
     }
 
@@ -680,7 +681,7 @@ impl<'a> Renderer<'a> {
             return b.clone();
         }
         let mut back: HashMap<String, Vec<&'a Doc>> = HashMap::new();
-        for d in self.docs() {
+        for d in self.docs().into_iter().filter(|d| !self.title_only(d)) {
             let mut seen = HashSet::from([d.id.as_str()]);
             let mut add = |id: &'a str| {
                 if !seen.contains(id) && self.has_page(self.p.doc(id)) {
