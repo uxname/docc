@@ -82,7 +82,7 @@ Every document has a `kind`, and `docs/schemas/<kind>.json` (JSON Schema 2020-12
 
 ## Review comments
 
-Readers' comments live in the documents themselves, in the top-level member `"$comments"`: a flat list `[{"id", "at", "quote", "fragment"?, "prefix"?, "suffix"?, "text", "author", "email"?, "created"}]`. `at` is the JSON Pointer of the block the comment is about, `quote` the text of that block when the comment was written, `fragment` the selected words. An answer to a form field has `input` (the field id) and `answer` (an array of strings) instead of `text`. There are no statuses and no replies.
+Readers' comments live in the documents themselves, in the top-level member `"$comments"`: a flat list `[{"id", "at", "quote", "fragment"?, "prefix"?, "suffix"?, "text", "author", "email"?, "created", "edited"?}]`. `at` is the JSON Pointer of the block the comment is about, `quote` the text of that block when the comment was written, `fragment` the selected words, `edited` the time of the last `docc comments apply` edit. An answer to a form field has `input` (the field id) and `answer` (an array of strings) instead of `text`. There are no statuses and no replies.
 
 - Read `$comments` with the document (or list all of them with `docc comments --format json`: each has its document, the current text of its block and `place`: `same`, `changed`, or `lost`). A comment is a request, not an order: agree the change with the person before you edit.
 - Handle a comment by fixing the text, then delete the comment **in the same commit as the fix**: `docc comments rm <id>`. A comment you did not handle stays. A note for agents only goes into `notes`, not into `$comments`.
