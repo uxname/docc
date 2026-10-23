@@ -3,13 +3,13 @@ agent-workflow rules 56bb61ef
 architecture performance 4cd8a00f
 commands config b113b732
 commands document-model#comments f54b7ef2
-commands rendering c7a3972e
-config rendering c7a3972e
+commands rendering f8ed6dc1
+config rendering f8ed6dc1
 decisions config b113b732
 decisions performance 4cd8a00f
 decisions rules 56bb61ef
 document-model commands 2b5f5ef7
-document-model rendering c7a3972e
+document-model rendering f8ed6dc1
 document-model rules 56bb61ef
 index agent-workflow de4eb97a
 index architecture 38fb8591
@@ -19,7 +19,7 @@ index decisions 8873aebd
 index document-model d6d68bfd
 index goals f9145401
 index performance 4cd8a00f
-index rendering c7a3972e
+index rendering f8ed6dc1
 index rules 56bb61ef
 rendering commands 2b5f5ef7
 rendering config b113b732

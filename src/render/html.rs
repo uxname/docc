@@ -25,8 +25,8 @@ static HTML_JS: &str = include_str!("app.js");
 /// tagged templates the page script is written in. No build step.
 static VENDOR_JS: &str = include_str!("vendor/htm-preact-standalone.js");
 
-/// MERMAID_JS is mermaid 11.17.2 (dist/mermaid.min.js), which draws the
-/// ```mermaid blocks; a file gets it only when a page has one (3.5 MB).
+/// MERMAID_JS is mermaid 12.2.0 (dist/mermaid.min.js), which draws the
+/// ```mermaid blocks; a file gets it only when a page has one (5.5 MB).
 static MERMAID_JS: &str = include_str!("vendor/mermaid.min.js");
 
 impl<'a> Renderer<'a> {
