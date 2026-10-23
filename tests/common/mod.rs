@@ -159,7 +159,11 @@ pub fn do_stdin(dir: &Path, input: &[u8], args: &[&str]) -> (i32, String, String
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    ch.stdin.take().unwrap().write_all(input).unwrap();
+    // the command may exit before it reads its input (a flag it refuses): the
+    // broken pipe is then its answer, not a failure of the test
+    if let Err(e) = ch.stdin.take().unwrap().write_all(input) {
+        assert_eq!(e.kind(), std::io::ErrorKind::BrokenPipe, "{e}");
+    }
     let out = ch.wait_with_output().unwrap();
     (
         out.status.code().unwrap_or(-1),
