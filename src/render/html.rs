@@ -197,7 +197,7 @@ impl<'a> Renderer<'a> {
             id: d.id.clone(),
             title: self.title(d),
             file: d.rel.clone(),
-            hidden: self.full && d.hidden,
+            hidden: self.shows_hidden() && d.hidden,
             kind: root(d)
                 .get("kind")
                 .filter(|n| n.kind == Kind::String)

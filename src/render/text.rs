@@ -211,7 +211,7 @@ impl<'a> Page<'_, 'a> {
             let (id, field, has_field) = cut(&rf.inner);
             let t = self.r.p.doc(id);
             let Some(t) = t.filter(|t| self.r.has_page(Some(t))) else {
-                if let Some(t) = t.filter(|t| self.r.title_only(t) && (self.r.full || !t.hidden)) {
+                if let Some(t) = t.filter(|t| self.r.title_only(t) && (self.r.shows_hidden() || !t.hidden)) {
                     // a title-only folder page has no page: its title, without a link
                     b.push_str(&s[last..rf.start]);
                     b.push_str(&self.r.title(t));

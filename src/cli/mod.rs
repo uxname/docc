@@ -43,7 +43,7 @@ Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate           check sources
   build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --since, --page, --rev)
-  compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision)
+  compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision, --hidden: with hidden documents)
   log                print the commits that changed the documents, with the files and block counts of each
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
   check              read-only check for CI: validate + freshness of out/ and docc.lock
@@ -123,12 +123,14 @@ Examples:
 "
         }
         "compile" => {
-            "Usage: docc compile [--rev <revision>] [flags]
+            "Usage: docc compile [--rev <revision>] [--hidden] [flags]
 
 Prints what the sources compile to, for a program that shows the pages itself, and writes
 nothing. With --format json (the format for programs) it is one JSON object on one line:
 $schema, ok, summary and diagnostics as validate reports them, project, tree and the pages
 of the reader (no hidden documents, no notes) cut into blocks with their HTML and sections.
+--hidden adds the hidden documents to pages and tree, each marked hidden: true; notes stay out and
+the diagnostics are the same (a visible document linking to a hidden one is still DOC210).
 The object is printed even when the sources are broken: then pages and tree are empty and
 ok is false. Exit code as validate: 0 ok, 1 errors or too many warnings, 2 failure.
 --rev compiles the tree of a Git revision (commit, branch, tag) without a checkout.
@@ -137,6 +139,7 @@ docc schema compile prints the JSON Schema of the object.
 Examples:
   docc compile --format json
   docc compile --rev HEAD~3 --format json
+  docc compile --hidden --format json
 "
         }
         "log" => {
@@ -524,8 +527,10 @@ fn cmd_validate(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr:
 /// is printed in every case, a failure (exit code 2) included.
 fn cmd_compile(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
     let mut rev = String::new();
+    let mut hidden = false;
     let pos = {
         let mut fs = new_flags("compile", c);
+        fs.bool_var(&mut hidden, "hidden", "also compile the hidden documents (\"hidden\": true), marked hidden in tree and pages; notes stay out");
         fs.string_var(&mut rev, "rev", "compile the tree of this Git revision (commit, branch, tag) instead of the files on disk");
         parse(&mut fs, args)
     };
@@ -542,7 +547,9 @@ fn cmd_compile(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: 
         let out = if engine::structural(&p.diags()) {
             render::Compiled { project: render::Renderer::new(&p, false).project_info(String::new()), ..Default::default() }
         } else {
-            render::Renderer::new(&p, false).compile()
+            let mut r = render::Renderer::new(&p, false);
+            r.hidden = hidden;
+            r.compile()
         };
         Ok((p, out))
     });

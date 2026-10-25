@@ -1,5 +1,5 @@
-//! The data of `docc compile`: the pages of the reader (no hidden documents,
-//! no notes) cut into blocks with their HTML, their sections and the tree.
+//! The data of `docc compile`: the pages of the reader (no hidden documents
+//! unless Renderer::hidden is set, no notes) cut into blocks with their HTML, their sections and the tree.
 //! The pages come from the same build as the HTML file, so a block's HTML
 //! here is the block's HTML there.
 
@@ -66,12 +66,18 @@ pub enum TreeEntry {
         /// the folder's own page
         #[serde(skip_serializing_if = "Option::is_none")]
         id: Option<String>,
+        /// the folder's own page is a hidden document (compile --hidden)
+        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        hidden: bool,
         children: Vec<TreeEntry>,
     },
     Page {
         id: String,
         path: String,
         title: String,
+        /// a hidden document (compile --hidden)
+        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        hidden: bool,
         /// pages nested by parent (not in folder mode)
         #[serde(skip_serializing_if = "Vec::is_empty")]
         children: Vec<TreeEntry>,
@@ -84,6 +90,9 @@ pub struct CPage {
     /// path of the source relative to src
     pub(crate) path: String,
     pub(crate) title: String,
+    /// a hidden document (compile --hidden); absent otherwise
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    hidden: bool,
     kind: String,
     status: Option<String>,
     tags: Vec<String>,
@@ -165,6 +174,7 @@ impl<'a> Renderer<'a> {
                 id: pd.id,
                 path: pd.file,
                 title: pd.title,
+                hidden: pd.hidden,
                 kind: pd.kind,
                 status: str_of("status"),
                 tags: engine::string_list(root(d).get("tags")).into_iter().map(|n| n.str.clone()).collect(),
@@ -242,9 +252,15 @@ impl<'a> Renderer<'a> {
                 let children = self.tree_entries(n.kids());
                 let title = self.node_title(n);
                 match n {
-                    TreeNode::Page { d, .. } => TreeEntry::Page { id: d.id.clone(), path: d.rel.clone(), title, children },
+                    TreeNode::Page { d, .. } => TreeEntry::Page { id: d.id.clone(), path: d.rel.clone(), title, hidden: d.hidden, children },
                     TreeNode::Folder { path, page, .. } => {
-                        TreeEntry::Folder { path: path.clone(), title, id: page.map(|d| d.id.clone()), children }
+                        TreeEntry::Folder {
+                            path: path.clone(),
+                            title,
+                            id: page.map(|d| d.id.clone()),
+                            hidden: page.is_some_and(|d| d.hidden),
+                            children,
+                        }
                     }
                 }
             })

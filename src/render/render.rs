@@ -18,6 +18,8 @@ pub(super) type Backrefs<'a> = Rc<HashMap<String, Vec<&'a Doc>>>;
 pub struct Renderer<'a> {
     pub p: &'a Project,
     pub full: bool,
+    /// documents with "hidden": true get pages like the others (docc compile --hidden); notes stay out unless `full`
+    pub hidden: bool,
 
     pub(super) back: RefCell<Option<Backrefs<'a>>>,
     pub(super) slugs: RefCell<HashMap<*const Doc, Rc<HashMap<*const Node, AnchorInfo>>>>,
@@ -45,6 +47,7 @@ impl<'a> Renderer<'a> {
         Renderer {
             p,
             full,
+            hidden: false,
             back: RefCell::new(None),
             slugs: RefCell::new(HashMap::new()),
             nums: RefCell::new(None),
@@ -68,8 +71,14 @@ impl<'a> Renderer<'a> {
             comments: self.comments,
             since: self.since.clone(),
             only: self.only.clone(),
+            hidden: self.hidden,
             ..Renderer::new(self.p, self.full)
         }
+    }
+
+    /// shows_hidden reports whether hidden documents get pages: a full build, or compile --hidden.
+    pub(super) fn shows_hidden(&self) -> bool {
+        self.full || self.hidden
     }
 
     /// Files returns every generated file: path relative to the output directory
@@ -182,7 +191,7 @@ impl<'a> Renderer<'a> {
         let mut out: Vec<&'a Doc> = p
             .docs
             .iter()
-            .filter(|d| self.in_graph(d) && d.parsed() && (self.full || !d.hidden))
+            .filter(|d| self.in_graph(d) && d.parsed() && (self.shows_hidden() || !d.hidden))
             .collect();
         out.sort_by(|a, b| a.rel.cmp(&b.rel));
         out
@@ -195,7 +204,7 @@ impl<'a> Renderer<'a> {
 
     /// hasPage reports whether links may point at the document.
     pub(super) fn has_page(&self, d: Option<&Doc>) -> bool {
-        d.is_some_and(|d| self.in_graph(d) && d.parsed() && (self.full || !d.hidden) && !self.title_only(d))
+        d.is_some_and(|d| self.in_graph(d) && d.parsed() && (self.shows_hidden() || !d.hidden) && !self.title_only(d))
     }
 
     /// numberOf returns the number of a page ("2.1"), or "" when numbering is off

@@ -273,6 +273,117 @@ fn compile_rev_reads_git_without_checkout() {
     assert_eq!((ids(&v), v["project"]["lang"].clone()), (vec!["index", "a"], Value::from("ru")));
 }
 
+/// --hidden puts the hidden documents into pages and tree, marked
+/// "hidden": true, on their place by parent; their notes never come out, the
+/// numbers of the others stay, links among hidden documents work, and without
+/// the flag nothing changes.
+#[test]
+fn compile_hidden_adds_hidden_pages_without_notes() {
+    let p = project([
+        ("docc.json", r#"{"numbering":true}"#),
+        ("docs/src/index.json", r#"{"title":"Home","notes":["index note"]}"#),
+        ("docs/src/a.json", r#"{"title":"A","parent":"index","body":"Visible."}"#),
+        (
+            "docs/src/h1.json",
+            r#"{"title":"H1","parent":"index","hidden":true,"order":-1,"body":"See [[a]] and [[h2]].","notes":["secret note"]}"#,
+        ),
+        ("docs/src/h2.json", r#"{"title":"H2","parent":"h1","hidden":true,"body":"Back to [[h1]].","notes":["other secret"]}"#),
+        ("docs/src/b.json", r#"{"title":"B","parent":"index"}"#),
+    ]);
+    let (code, plain) = compile(&p.path, &[]);
+    assert_eq!(code, 0, "{plain}");
+    assert_eq!(ids(&plain), ["index", "a", "b"], "without the flag no hidden page");
+    assert!(!plain.to_string().contains("\"hidden\""), "and no hidden field: {plain}");
+
+    let (code, v) = compile(&p.path, &["--hidden"]);
+    assert_eq!(code, 0, "{v}");
+    assert_eq!(v["diagnostics"], plain["diagnostics"], "the verdict does not change");
+    assert_eq!(ids(&v), ["index", "h1", "h2", "a", "b"], "hidden pages in tree order");
+    let all = v.to_string();
+    assert!(!all.contains("secret") && !all.contains("index note"), "no notes: {all}");
+    assert_eq!(
+        v["tree"],
+        serde_json::json!([{"type":"page","id":"index","path":"index.json","title":"Home","children":[
+            {"type":"page","id":"h1","path":"h1.json","title":"H1","hidden":true,"children":[
+                {"type":"page","id":"h2","path":"h2.json","title":"H2","hidden":true}]},
+            {"type":"page","id":"a","path":"a.json","title":"1 A"},
+            {"type":"page","id":"b","path":"b.json","title":"2 B"}]}])
+    );
+    for id in ["index", "a", "b"] {
+        assert!(page(&v, id).get("hidden").is_none(), "{id} is visible");
+        assert_eq!(page(&v, id), page(&plain, id), "{id} reads as without the flag: numbers stay");
+    }
+    let h2 = page(&v, "h2");
+    assert_eq!((h2["hidden"].clone(), s(h2, "parent")), (Value::Bool(true), "h1"));
+    assert_eq!(h2["crumbs"], serde_json::json!(["index", "h1"]));
+    assert_eq!(page(&v, "h1")["crumbs"], serde_json::json!(["index"]));
+    assert_eq!(s(&page(&v, "h2")["blocks"][0], "h"), "<p>Back to <a href=\"#h1\">H1</a>.</p>\n");
+    let h1 = s(&page(&v, "h1")["blocks"][0], "h");
+    assert!(h1.contains("href=\"#a\"") && h1.contains("href=\"#h2\""), "{h1}");
+
+    // a visible document that links to a hidden one stays an error, the flag or not
+    p.write("docs/src/a.json", r#"{"title":"A","parent":"index","body":"Link [[h1]]."}"#);
+    let (c0, no) = compile(&p.path, &[]);
+    let (c1, yes) = compile(&p.path, &["--hidden"]);
+    assert_eq!((c0, c1), (1, 1));
+    assert_eq!(yes["diagnostics"], no["diagnostics"]);
+    assert!(yes["diagnostics"].to_string().contains("DOC210"), "{yes}");
+    assert_eq!((yes["ok"].clone(), yes["pages"].clone()), (Value::Bool(false), serde_json::json!([])));
+}
+
+/// --hidden together with --rev and --config: the hidden documents of the
+/// commit, read from a bare mirror too; the disk is not read.
+#[test]
+fn compile_hidden_with_rev_and_config() {
+    let p = temp_dir();
+    if !git(&p.path, &["init", "-q"]) {
+        return; // no git here
+    }
+    let w = |rel: &str, s: &str| p.write(&format!("proj/{rel}"), s);
+    w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
+    w("docs/src/index.json", r#"{"title":"I","kind":"page"}"#);
+    w("docs/src/h.json", r#"{"title":"H","kind":"page","parent":"index","hidden":true,"notes":["secret"]}"#);
+    assert!(git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "one"]));
+    w("docs/src/h.json", r#"{"title":"H on disk","kind":"page","parent":"index","hidden":true}"#);
+    let dir = p.join("proj");
+    let (code, v) = compile(&dir, &["--rev", "HEAD", "--hidden"]);
+    assert_eq!(code, 0, "{v}");
+    assert_eq!((ids(&v), s(page(&v, "h"), "title"), page(&v, "h")["hidden"].clone()), (vec!["index", "h"], "H", Value::Bool(true)));
+    assert!(!v.to_string().contains("secret"));
+    let (_, v) = compile(&dir, &["--rev", "HEAD"]);
+    assert_eq!(ids(&v), ["index"]);
+
+    let bare = temp_dir();
+    let target = bare.join("mirror.git");
+    assert!(git(&p.path, &["clone", "-q", "--bare", ".", target.to_str().unwrap()]));
+    let (code, v) = compile(&target, &["--rev", "HEAD", "--config", "proj/docc.json", "--hidden"]);
+    assert_eq!(code, 0, "{v}");
+    assert_eq!(ids(&v), ["index", "h"]);
+    assert_eq!(v["tree"][0]["children"][0]["hidden"], true);
+}
+
+/// In folder mode a hidden page is in its folder with the mark, and a folder
+/// whose own page is hidden is marked too.
+#[test]
+fn compile_hidden_in_folders() {
+    let p = project([
+        ("docc.json", r#"{"tree":"folders"}"#),
+        ("docs/src/index.json", r#"{"title":"Home"}"#),
+        ("docs/src/g/g.json", r#"{"title":"G","hidden":true,"body":"x"}"#),
+        ("docs/src/g/k.json", r#"{"title":"K","hidden":true,"body":"y"}"#),
+    ]);
+    let (_, plain) = compile(&p.path, &[]);
+    assert_eq!(ids(&plain), ["index"]);
+    let (code, v) = compile(&p.path, &["--hidden"]);
+    assert_eq!(code, 0, "{v}");
+    assert_eq!(ids(&v), ["g", "k", "index"], "the folder G comes before Home");
+    assert_eq!(
+        v["tree"][0],
+        serde_json::json!({"type":"folder","path":"g","title":"G","id":"g","hidden":true,"children":[
+            {"type":"page","id":"k","path":"g/k.json","title":"K","hidden":true}]})
+    );
+}
+
 /// "tree": "folders": the tree is the folders of src, a folder's own page is
 /// the document named like it, siblings by order, then title; roots, DOC203
 /// and DOC205 do not apply; _tree.md follows the folders.

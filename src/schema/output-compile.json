@@ -62,7 +62,7 @@
     },
     "pages": {
       "type": "array",
-      "description": "Every page a reader sees, in tree order; hidden documents and notes are left out.",
+      "description": "Every page a reader sees, in tree order; notes are left out, and hidden documents unless docc compile --hidden.",
       "items": { "$ref": "#/$defs/page" }
     }
   },
@@ -95,6 +95,7 @@
             "path": { "type": "string", "description": "Folder path relative to src." },
             "title": { "type": "string", "description": "Title of the folder's own page (the document named like the folder inside it), else the folder name." },
             "id": { "type": "string", "description": "Id of the folder's own page, when it has one." },
+            "hidden": { "const": true, "description": "The folder's own page is a hidden document (docc compile --hidden); absent otherwise." },
             "children": { "type": "array", "items": { "$ref": "#/$defs/entry" } }
           }
         },
@@ -107,6 +108,7 @@
             "id": { "type": "string" },
             "path": { "type": "string", "description": "Source path relative to src." },
             "title": { "type": "string" },
+            "hidden": { "const": true, "description": "A hidden document (docc compile --hidden); absent on the others." },
             "children": { "type": "array", "items": { "$ref": "#/$defs/entry" }, "description": "Pages whose parent this is; absent when there are none and always in folder mode." }
           }
         }
@@ -119,6 +121,7 @@
       "properties": {
         "id": { "type": "string" },
         "path": { "type": "string", "description": "Source path relative to src, e.g. decisions/monolith.json." },
+        "hidden": { "const": true, "description": "A hidden document (docc compile --hidden); absent on the others." },
         "title": { "type": "string", "description": "With its number when numbering is on." },
         "kind": { "type": "string" },
         "status": { "type": ["string", "null"] },
