@@ -271,14 +271,49 @@ fn first_by_key(ls: &[Link]) -> HashMap<String, &Link> {
     m
 }
 
+/// moved pairs a new region link with the region link it replaces when a code file
+/// moved: the old source is gone from the links and, for that target, exactly one region
+/// link vanished that way and exactly one new one appeared. The new link keeps the old
+/// fingerprints, so a change made on the way is still unconfirmed (DOC402, DOC209)
+/// instead of being taken as new. Two or more on either side cannot be told apart and
+/// are left new.
+fn moved<'a>(
+    cur: &[Link],
+    stored: &'a [Link],
+    old: &HashMap<String, &Link>,
+) -> HashMap<String, &'a Link> {
+    let sources: HashSet<&str> = cur.iter().map(|l| l.source.as_str()).collect();
+    let mut gone: HashMap<&str, Vec<&'a Link>> = HashMap::new();
+    for o in stored {
+        if !o.code.is_empty() && !sources.contains(o.source.as_str()) {
+            gone.entry(o.target.as_str()).or_default().push(o);
+        }
+    }
+    let mut new: HashMap<&str, Vec<&Link>> = HashMap::new();
+    for l in cur {
+        if !l.code.is_empty() && !old.contains_key(&l.key()) {
+            new.entry(l.target.as_str()).or_default().push(l);
+        }
+    }
+    let mut out = HashMap::new();
+    for (target, ls) in new {
+        if let (Some([o]), [l]) = (gone.get(target).map(Vec::as_slice), ls.as_slice()) {
+            out.insert(l.key(), *o);
+        }
+    }
+    out
+}
+
 /// lockText is what docc build writes: every current link, with the hashes
-/// stored for it when the lock has it, else with the current ones.
+/// stored for it when the lock has it (or for the link it moved from), else with
+/// the current ones.
 fn lock_text(cur: &[Link], stored: &[Link]) -> String {
     let old = first_by_key(stored);
+    let moved = moved(cur, stored, &old);
     let mut b = String::new();
     for l in cur {
         let (mut hash, mut code) = (&l.hash, &l.code);
-        if let Some(o) = old.get(&l.key()) {
+        if let Some(o) = old.get(&l.key()).or_else(|| moved.get(&l.key())) {
             hash = &o.hash;
             if !o.code.is_empty() && !l.code.is_empty() {
                 code = &o.code;

@@ -110,6 +110,54 @@ fn lock_code() {
 }
 
 #[test]
+fn lock_code_moved() {
+    let region = |v: u8| format!("package a\n// docc:begin index#^limit\nconst a = {v}\n// docc:end\n");
+    let start = || {
+        let p = project([
+            ("docc.json", r#"{"trace":{"scan":["code/**"]}}"#.to_string()),
+            ("docs/src/index.json", r#"{"title":"Index","body":"Five. ^limit"}"#.to_string()),
+            ("code/a.go", region(5)),
+        ]);
+        p.must_build();
+        std::fs::remove_file(p.join("code/a.go")).unwrap();
+        p
+    };
+
+    // Moved as it was: the link keeps its confirmed fingerprints, nothing to read.
+    let p = start();
+    p.write("code/b.go", region(5));
+    p.must_build();
+    let (_, out, _) = p.run(&["validate"]);
+    assert!(!out.contains("DOC402"), "a plain move raised DOC402:\n{out}");
+
+    // Moved and changed on the way: the change is not confirmed by the move.
+    let p = start();
+    p.write("code/b.go", region(7));
+    p.must_build();
+    let (_, out, _) = p.run(&["validate"]);
+    assert!(out.contains("DOC402") && out.contains("code/b.go:2"), "a move hid the code change:\n{out}");
+    assert_eq!(p.run(&["ack", "code/b.go"]).0, 0);
+    let (_, out, _) = p.run(&["validate"]);
+    assert!(!out.contains("DOC402"), "ack did not confirm the moved region:\n{out}");
+
+    // Two files gone and two new with the same target: no telling which went where.
+    let p = project([
+        ("docc.json", r#"{"trace":{"scan":["code/**"]}}"#.to_string()),
+        ("docs/src/index.json", r#"{"title":"Index","body":"Five. ^limit"}"#.to_string()),
+        ("code/a.go", region(5)),
+        ("code/c.go", region(6)),
+    ]);
+    p.must_build();
+    std::fs::remove_file(p.join("code/a.go")).unwrap();
+    std::fs::remove_file(p.join("code/c.go")).unwrap();
+    p.write("code/b.go", region(7));
+    p.write("code/d.go", region(8));
+    p.must_build();
+    let (_, out, _) = p.run(&["validate"]);
+    assert!(!out.contains("DOC402"), "an ambiguous move guessed a pair:\n{out}");
+}
+
+#[test]
 fn lock_merge_problems() {
     let p = project([
         ("docs/src/index.json", r#"{"title":"Index","body":"[[a]] [[b]]"}"#),

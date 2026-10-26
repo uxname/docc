@@ -5,7 +5,7 @@ description: Write, edit and fix project documentation stored as JSON in docs/sr
 
 # docc
 
-`docc` checks documentation written as JSON files (structure, links, text, style) and builds readable Markdown from it. The JSON in `docs/src` is the source of truth. `docs/out` is generated: never edit it by hand. `docc.lock` records every link with a hash of its target, so a change on one side shows up as a warning on the other.
+`docc` checks documentation written as JSON files (structure, links, text, style) and builds readable Markdown from it. The JSON in `docs/src` is the source of truth. `docs/out` is generated: never edit it by hand. `docc.lock` records every link with a hash of its target, so a change on one side shows up as a warning on the other. A code file moved to another path keeps its confirmed hashes, so a change made along with the move is still flagged.
 
 The binary must be on PATH (`docc --version`). Install it with `curl -fsSL https://raw.githubusercontent.com/uxname/docc/main/install.sh | sh` (Windows: `irm https://raw.githubusercontent.com/uxname/docc/main/install.ps1 | iex`); `docc update` upgrades it. A project without `docc.json` is not set up: ask the user before you run `docc init`.
 
