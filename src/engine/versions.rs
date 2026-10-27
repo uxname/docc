@@ -117,9 +117,16 @@ pub fn diff(a: &str, b: &str) -> String {
     out.trim_end().to_string()
 }
 
-/// indent puts every line of s under the hint.
+/// indent puts the lines of s under the hint
+/// (at most HINT_LINES lines: a whole document would flood the report).
 fn indent(s: &str) -> String {
-    s.lines().map(|l| format!("\n    {l}")).collect()
+    const HINT_LINES: usize = 30;
+    let n = s.lines().count();
+    let mut out: String = s.lines().take(HINT_LINES).map(|l| format!("\n    {l}")).collect();
+    if n > HINT_LINES {
+        out.push_str(&format!("\n    … {} more lines", n - HINT_LINES));
+    }
+    out
 }
 
 impl Project {

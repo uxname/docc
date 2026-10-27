@@ -123,3 +123,29 @@ fn code_fingerprints() {
     let (code, out, _) = p.run(&["check"]);
     assert!(code == 1 && out.contains("code/a.go:4:") && out.contains("DOC209") && !out.contains("DOC402"), "{out}");
 }
+
+/// An old hash fails validate and check, but the pages still render and take
+/// comments: a draft stays readable while an agent checks the links. The hint
+/// of a whole-document link shows at most 30 lines.
+#[test]
+fn stale_hashes_do_not_stop_the_output() {
+    let long: Vec<String> = (1..=40).map(|i| format!("\"Line {i}.\"")).collect();
+    let p = project([
+        ("docc.json", r#"{"commitOut":false}"#.to_string()),
+        ("docs/src/index.json", r#"{"title":"Index","body":["See [[b]]."]}"#.to_string()),
+        ("docs/src/b.json", format!(r#"{{"title":"B","parent":"index","body":[{}]}}"#, long.join(","))),
+    ]);
+    p.write("docs/src/b.json", p.read("docs/src/b.json").replace("Line 1.", "Line one."));
+    assert_eq!(p.run(&["validate"]).0, 1);
+    assert_eq!(p.run(&["check"]).0, 1);
+    let (code, out, _) = p.run(&["build"]);
+    assert!(code == 1 && out.contains("DOC209") && p.exists("docs/out/index.md"), "{out}");
+    let (_, v, _) = p.run(&["compile", "--format", "json"]);
+    let v: serde_json::Value = serde_json::from_str(&v).unwrap();
+    assert!(v["ok"] == false && v["pages"].as_array().unwrap().len() == 2, "{}", v["diagnostics"]);
+    let hint = s(&v["diagnostics"][0], "hint");
+    assert!(hint.contains("… ") && hint.contains("more lines") && !hint.contains("Line 40."), "{hint}");
+    let ops = r#"[{"op":"add","doc":"index","comment":{"at":"/body/0","text":"?","author":"A"}}]"#;
+    let (code, _, errs) = do_stdin(&p.path, ops.as_bytes(), &["comments", "apply"]);
+    assert_eq!(code, 0, "{errs}");
+}

@@ -89,8 +89,9 @@ Examples:
             "Usage: docc build [flags]
 
 First gives a code to every block that has none (as docc codes; never a hash), then
-validates and writes Markdown into docs/out. With errors in groups 1xx-2xx (a link whose
-version hash is missing or old, DOC209, among them) nothing is written.
+validates and writes Markdown into docs/out. With errors in groups 1xx-2xx nothing is written,
+except a link whose version hash is missing or old (DOC209) and a block without a code
+(DOC216): the pages are written and the exit code is 1.
 --single also writes every page into one Markdown file next to the directory (docs/out.md), --html
 into one self-contained HTML application (docs/out.html), no network needed: a document tree,
 search, dark theme, a timeline of the Git history with the edits drawn in the text, and comments
