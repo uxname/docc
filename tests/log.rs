@@ -80,6 +80,8 @@ impl Repo {
                 self.d.write(name, content);
             }
         }
+        // the documents get their codes and hashes, as an agent's docc build gives them
+        do_in(&self.d.path, &["migrate"]);
         self.git(&["add", "-A"]);
         self.git(&["commit", "-q", "-m", msg]);
         self.git(&["rev-parse", "HEAD"])
@@ -253,7 +255,11 @@ fn diff_lines_blocks_up() {
         .as_array()
         .unwrap()
         .iter()
-        .map(|b| (s(b, "op"), b["old"]["s"].clone(), b["new"]["s"].clone()))
+        .map(|b| {
+            // the text without the code of the block
+            let t = |v: &Value| v.as_str().map(|t| json!(t.split(" ^").next().unwrap())).unwrap_or(Value::Null);
+            (s(b, "op"), t(&b["old"]["s"]), t(&b["new"]["s"]))
+        })
         .collect();
     assert_eq!(
         ops,

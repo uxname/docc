@@ -213,11 +213,11 @@ static ALL: [Rule; 43] = [
         "DOC209",
         "graph/suspect-link",
         "graph",
-        W,
-        false,
-        "The target of a link ([[id]], [[id#field]], [[id#^anchor]] or a docc: tag in code) changed after the link was confirmed in docc.lock: the source may no longer match it. docc build confirms new links; docc ack confirms after a review.",
-        r#"docc.lock: "a b#^limit 1f2e3d4c", then the paragraph ^limit in b is edited"#,
-        r#"check a against b#^limit, then run docc ack b#^limit"#,
+        E,
+        true,
+        "A link ([[id@hash]], [[id#field@hash]], [[id#^code@hash]] or a target of a docc: tag in code) has no version hash, or its hash no longer matches the target: the target changed and this place may no longer agree with it. The message shows what changed (the old version is looked up in the Git history by its hash) and the new hash. Read the change, check the place, then write the new hash by hand; there is no command that confirms links in bulk.",
+        r#""body": "See [[b#^k7f2@3a9c]]."  (the paragraph ^k7f2 of b was edited, its hash is now 77aa)"#,
+        r#""body": "See [[b#^k7f2@77aa]]."  (after checking the sentence against the new paragraph)"#,
     ),
     rule(
         "DOC210",
@@ -245,9 +245,9 @@ static ALL: [Rule; 43] = [
         "graph",
         E,
         true,
-        "A block anchor ^name is used twice in one document, or equals the anchor of a field or section heading of its page.",
-        r#""body": ["First. ^a", "Second. ^a"]"#,
-        r#""body": ["First. ^a", "Second. ^b"]"#,
+        "A block code ^k7f2 stands on two blocks of the project (usually a copied paragraph; the message names both places), or equals the anchor of a field or section heading of its page. Delete the code of the copy and run docc build: it gives the block a new code.",
+        r#"a.json "body": ["First. ^k7f2"], b.json "body": ["Copy. ^k7f2"]"#,
+        r#"b.json "body": ["Copy. ^m2pq"]  (code removed, docc build gave a new one)"#,
     ),
     rule(
         "DOC213",
@@ -278,6 +278,16 @@ static ALL: [Rule; 43] = [
         "A comment of \"$comments\" lost its place: no block stands at its pointer \"at\" any more (a paragraph was inserted, moved or removed above it), the words it was left on (\"fragment\") are not in that block, or the form field it answers is gone. Point \"at\" to the block the comment is about now, or delete the comment when it is handled (docc comments apply).",
         r#""body": ["New first.", "Alpha."], "$comments": [{ "at": "/body/0", "fragment": "Alpha", ... }]"#,
         r#""body": ["New first.", "Alpha."], "$comments": [{ "at": "/body/1", "fragment": "Alpha", ... }]"#,
+    ),
+    rule(
+        "DOC216",
+        "graph/missing-code",
+        "graph",
+        E,
+        true,
+        "A text block (a paragraph, a list item, the text of a field or section) has no block code ^k7f2 at its end, or ends in a marker that is not a code (a named anchor of the old format). docc build gives every block without a code its own; codes are never written or changed by hand.",
+        r#""body": ["A new paragraph."]"#,
+        r#""body": ["A new paragraph. ^m2pq"]  (after docc build)"#,
     ),
     rule(
         "DOC301",
@@ -413,11 +423,11 @@ static ALL: [Rule; 43] = [
         "DOC402",
         "trace/code-changed",
         "trace",
-        W,
-        false,
-        "A docc:begin ... docc:end region changed after its link was confirmed in docc.lock: the document it points to may no longer match the code. Works only when trace.scan is set.",
-        "the lines between // docc:begin req-x and // docc:end are edited",
-        "check req-x still matches, then run docc ack <code file>",
+        E,
+        true,
+        "The fingerprint ~xxxx of a code file (on its docc: tag: the lines outside regions) or of a region (on docc:begin: the lines up to docc:end) is missing or no longer matches the code: the code changed and may no longer agree with the documents it points to. The message names the targets and the new fingerprint; check the code against them, then write it by hand. Works only when trace.scan is set.",
+        "// docc: req-x@3a9c ~e91d  (a line of the file was edited)",
+        "// docc: req-x@3a9c ~0c4f  (after checking the code against req-x)",
     ),
     rule(
         "DOC501",
@@ -428,16 +438,6 @@ static ALL: [Rule; 43] = [
         "out/ differs from what the sources produce: a file is missing, outdated or extra.",
         "docs/out/a.md edited by hand",
         "run docc build",
-    ),
-    rule(
-        "DOC503",
-        "build/stale-lock",
-        "build",
-        E,
-        true,
-        "docc.lock differs from the links in the sources: a link is missing or extra, a line repeats or is malformed (often after a merge), or the file is missing. Checked by docc check.",
-        "docc.lock without the line of a new [[b]] in a",
-        "run docc build and commit docc.lock",
     ),
     rule(
         "DOC800",
@@ -546,7 +546,7 @@ mod tests {
             }
             assert!(is_group(r.group), "{}: bad group {}", r.code, r.group);
         }
-        // 101-105, 108, 109, 201-205, 210-213, 401, 501, 503
-        assert_eq!(core, 19, "core rules: {core}");
+        // 101-105, 108, 109, 201-205, 209-213, 216, 401, 402, 501
+        assert_eq!(core, 21, "core rules: {core}");
     }
 }

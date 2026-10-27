@@ -7,7 +7,7 @@
     "line": 1,
     "column": 34,
     "endLine": 1,
-    "endColumn": 44,
+    "endColumn": 49,
     "message": "reference [[secret]] points to the hidden document \"secret\"",
     "hint": "A visible document cannot link to a hidden one: make the target visible, or move the reference into notes."
   },
@@ -17,9 +17,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 46,
+    "column": 51,
     "endLine": 1,
-    "endColumn": 61,
+    "endColumn": 66,
     "message": "include points to the hidden document \"secret\"",
     "hint": "A visible document cannot include text from a hidden one: make the target visible or remove the include."
   }

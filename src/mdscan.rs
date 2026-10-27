@@ -165,6 +165,7 @@ impl Scan {
                     start: sp.start + a,
                     end: sp.start + a + open.len() + z + close.len(),
                     inner: inner.to_string(),
+                    hash: None,
                 });
                 i = a + open.len() + z + close.len();
             }
@@ -172,9 +173,15 @@ impl Scan {
         out
     }
 
-    /// Refs returns [[...]] occurrences outside code.
+    /// Refs returns [[...]] occurrences outside code; the version hash of a
+    /// link ("@3a9c" at its end) is cut from inner into hash, a block code in
+    /// it is lower-cased.
     pub fn refs(&self) -> Vec<Ref> {
-        self.delimited("[[", "]]")
+        let mut rs = self.delimited("[[", "]]");
+        for r in &mut rs {
+            (r.inner, r.hash) = crate::codes::split_hash(&r.inner);
+        }
+        rs
     }
 
     /// Images returns the paths of Markdown images ![alt](path) outside code:
@@ -190,7 +197,7 @@ impl Scan {
             for m in re.captures_iter(&self.s[sp.start..sp.end]) {
                 let g = m.get(1).unwrap();
                 let (a, b) = (sp.start + g.start(), sp.start + g.end());
-                out.push(Ref { start: a, end: b, inner: self.s[a..b].to_string() });
+                out.push(Ref { start: a, end: b, inner: self.s[a..b].to_string(), hash: None });
             }
         }
         out
@@ -300,6 +307,8 @@ pub struct Ref {
     pub start: usize,
     pub end: usize,
     pub inner: String,
+    /// the version hash of a link, lower case
+    pub hash: Option<String>,
 }
 
 // Go's \s is ASCII [\t\n\f\r ]; spelled out because Rust's \s is Unicode.

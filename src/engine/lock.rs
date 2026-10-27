@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::error::Error;
 use std::fmt;
 use std::fmt::Write as _;
 
@@ -8,7 +7,7 @@ use sha2::{Digest, Sha256};
 use super::analyze::split_ref;
 use super::linkrules::{canonical, quote};
 use super::mdrules::fragment_problem;
-use super::project::{Project, go_path_error, usage};
+use super::project::Project;
 use super::strings::resolve;
 
 /// LockFile is the link lock next to docc.json.
@@ -113,7 +112,7 @@ impl Project {
     /// document without service fields, order and parent; a field or section; the
     /// text of an anchored paragraph. None when the target does not resolve.
     fn target_hash(&self, target: &str) -> Option<String> {
-        let (id, field, has_field, ok) = split_ref(target);
+        let (id, field, has_field, ok) = split_ref(target, true);
         let t = self.doc(id)?;
         let root = t.root()?;
         if !ok {
@@ -262,329 +261,30 @@ fn parse_lock_line(row: &str) -> Option<Link> {
     (ok && !l.source.is_empty() && !l.target.is_empty() && is_hash(&l.hash)).then_some(l)
 }
 
-/// firstByKey maps a key to its first line in the lock.
-fn first_by_key(ls: &[Link]) -> HashMap<String, &Link> {
-    let mut m = HashMap::new();
-    for l in ls {
-        m.entry(l.key()).or_insert(l);
-    }
-    m
-}
-
-/// moved pairs a new region link with the region link it replaces when a code file
-/// moved: the old source is gone from the links and, for that target, exactly one region
-/// link vanished that way and exactly one new one appeared. The new link keeps the old
-/// fingerprints, so a change made on the way is still unconfirmed (DOC402, DOC209)
-/// instead of being taken as new. Two or more on either side cannot be told apart and
-/// are left new.
-fn moved<'a>(
-    cur: &[Link],
-    stored: &'a [Link],
-    old: &HashMap<String, &Link>,
-) -> HashMap<String, &'a Link> {
-    let sources: HashSet<&str> = cur.iter().map(|l| l.source.as_str()).collect();
-    let mut gone: HashMap<&str, Vec<&'a Link>> = HashMap::new();
-    for o in stored {
-        if !o.code.is_empty() && !sources.contains(o.source.as_str()) {
-            gone.entry(o.target.as_str()).or_default().push(o);
-        }
-    }
-    let mut new: HashMap<&str, Vec<&Link>> = HashMap::new();
-    for l in cur {
-        if !l.code.is_empty() && !old.contains_key(&l.key()) {
-            new.entry(l.target.as_str()).or_default().push(l);
-        }
-    }
-    let mut out = HashMap::new();
-    for (target, ls) in new {
-        if let (Some([o]), [l]) = (gone.get(target).map(Vec::as_slice), ls.as_slice()) {
-            out.insert(l.key(), *o);
-        }
-    }
-    out
-}
-
-/// lockText is what docc build writes: every current link, with the hashes
-/// stored for it when the lock has it (or for the link it moved from), else with
-/// the current ones.
-fn lock_text(cur: &[Link], stored: &[Link]) -> String {
-    let old = first_by_key(stored);
-    let moved = moved(cur, stored, &old);
-    let mut b = String::new();
-    for l in cur {
-        let (mut hash, mut code) = (&l.hash, &l.code);
-        if let Some(o) = old.get(&l.key()).or_else(|| moved.get(&l.key())) {
-            hash = &o.hash;
-            if !o.code.is_empty() && !l.code.is_empty() {
-                code = &o.code;
-            }
-        }
-        let l = Link {
-            hash: hash.clone(),
-            code: code.clone(),
-            ..l.clone()
-        };
-        let _ = writeln!(b, "{l}");
-    }
-    b
-}
-
-/// stale reports whether the lock line o no longer matches the current link l:
-/// the target (or, for a region link, the code) changed after it was confirmed.
-fn stale(o: &Link, l: &Link) -> bool {
-    o.hash != l.hash || o.code != l.code
-}
+/// Pairs are (source, target) pairs of links.
+pub type Pairs = HashSet<(String, String)>;
 
 impl Project {
-    /// WriteLock rewrites docc.lock for docc build: new links are confirmed with
-    /// their current hashes, vanished ones dropped. Without links there is no file.
-    pub fn write_lock(&self) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let (data, stored, _, exists) = self.read_lock();
-        let want = lock_text(&self.links(), &stored);
-        let abs = self.cfg.abs(LOCK_FILE);
-        if want == data && exists {
-            return Ok(());
-        }
-        if want.is_empty() {
-            return match std::fs::remove_file(&abs) {
-                Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
-                    Err(go_path_error("remove", &abs, &e).into())
-                }
-                _ => Ok(()),
-            };
-        }
-        std::fs::write(&abs, want).map_err(|e| go_path_error("open", &abs, &e).into())
-    }
-
-    /// checkLock reports links whose target (DOC209) or code region (DOC402)
-    /// changed after they were confirmed in docc.lock. Several stale links of one
-    /// document to parts of the same document are one DOC209, at the first of them.
-    pub(super) fn check_lock(&self) {
+    /// stale_links are the links of an old docc.lock that were not confirmed
+    /// after their target changed, and the regions whose code changed: docc
+    /// migrate does not confirm them on the way. Each is (source, target as written).
+    pub fn stale_links(&self) -> (Pairs, Pairs) {
         let (_, stored, _, _) = self.read_lock();
-        if stored.is_empty() {
-            return;
+        let mut old: HashMap<String, &Link> = HashMap::new();
+        for l in &stored {
+            old.entry(l.key()).or_insert(l);
         }
-        let old = first_by_key(&stored);
-        struct Group {
-            first: Link,
-            targets: Vec<String>,
-        }
-        let mut groups: HashMap<String, Group> = HashMap::new();
-        let mut order: Vec<String> = Vec::new(); // groups in link order
+        let (mut target, mut code) = (HashSet::new(), HashSet::new());
         for l in self.links() {
-            let Some(o) = old.get(&l.key()) else {
-                continue;
-            };
-            if o.hash != l.hash {
-                if l.doc.is_some() {
-                    let (id, _, _, _) = split_ref(&l.target);
-                    let k = format!("{} {}", l.source, id);
-                    match groups.get_mut(&k) {
-                        None => {
-                            order.push(k.clone());
-                            groups.insert(
-                                k,
-                                Group {
-                                    targets: vec![l.target.clone()],
-                                    first: l.clone(),
-                                },
-                            );
-                        }
-                        Some(g) => {
-                            if l.start < g.first.start {
-                                g.first = l.clone();
-                            }
-                            g.targets.push(l.target.clone());
-                        }
-                    }
-                } else {
-                    let msg = format!(
-                        "the target {} changed after the link from {} was confirmed",
-                        l.target, l.source
-                    );
-                    self.emit_file(
-                        &l.source,
-                        "DOC209",
-                        l.line,
-                        l.col,
-                        msg,
-                        format!(
-                            "Check the code in {} against {}, then run docc ack {}.",
-                            l.source, l.target, l.target
-                        ),
-                    );
+            if let Some(o) = old.get(&l.key()) {
+                if o.hash != l.hash {
+                    target.insert((l.source.clone(), l.target.clone()));
                 }
-            }
-            if !o.code.is_empty() && !l.code.is_empty() && o.code != l.code {
-                self.emit_file(
-                    &l.source,
-                    "DOC402",
-                    l.line,
-                    l.col,
-                    format!("code region in {} for {} changed", l.source, l.target),
-                    format!(
-                        "Check the document {} still matches, then run docc ack {}.",
-                        l.target, l.source
-                    ),
-                );
-            }
-        }
-        for k in &order {
-            let g = &groups[k];
-            let l = &g.first;
-            let mut msg = format!(
-                "the target {} changed after the link from {} was confirmed",
-                l.target, l.source
-            );
-            if g.targets.len() > 1 {
-                msg = format!(
-                    "the targets {} changed after the links from {} were confirmed",
-                    g.targets.join(", "),
-                    l.source
-                );
-            }
-            let mut hint = format!(
-                "Check {} against {}, then run docc ack {} (it prints the links it confirms).",
-                l.source, l.target, l.target
-            );
-            if !l.target.contains('#') {
-                let _ = write!(
-                    hint,
-                    " To be warned only when one part changes, link {}#^anchor or {}#field instead of the whole document.",
-                    l.target, l.target
-                );
-            }
-            let d = &self.docs[l.doc.expect("a document link")];
-            self.emit(d, "DOC209", l.start, l.end, msg, hint);
-        }
-    }
-
-    /// CheckLock reports DOC503 when docc.lock is not what docc build would write:
-    /// a link is missing or extra, a key repeats, a line is malformed.
-    pub fn check_lock_file(&self) {
-        let (data, stored, bad, exists) = self.read_lock();
-        let cur = self.links();
-        if lock_text(&cur, &stored) == data {
-            return;
-        }
-        let (mut line, mut msg) = (
-            1,
-            "docc.lock is not in the form docc build writes".to_string(),
-        );
-        let now: HashSet<String> = cur.iter().map(Link::key).collect();
-        let first = first_by_key(&stored);
-        if !exists {
-            msg = format!(
-                "docc.lock is missing, and the sources have {} links",
-                cur.len()
-            );
-        } else if bad > 0 {
-            (line, msg) = (
-                bad,
-                format!("line {bad} is not \"<source> <target> <hash> [<code hash>]\""),
-            );
-        } else {
-            let mut found = false;
-            for l in &stored {
-                if first[&l.key()].at != l.at {
-                    (line, msg, found) = (
-                        l.at,
-                        format!("the link from {} to {} is listed twice", l.source, l.target),
-                        true,
-                    );
-                } else if !now.contains(&l.key()) {
-                    (line, msg, found) = (
-                        l.at,
-                        format!(
-                            "the link from {} to {} no longer exists",
-                            l.source, l.target
-                        ),
-                        true,
-                    );
-                }
-                if found {
-                    break;
-                }
-            }
-            for l in &cur {
-                if !first.contains_key(&l.key()) && !found {
-                    (msg, found) = (
-                        format!(
-                            "the link from {} to {} is not in docc.lock",
-                            l.source, l.target
-                        ),
-                        true,
-                    );
+                if !o.code.is_empty() && !l.code.is_empty() && o.code != l.code {
+                    code.insert((l.source, l.target));
                 }
             }
         }
-        self.emit_file(
-            LOCK_FILE,
-            "DOC503",
-            line,
-            1,
-            msg,
-            "Run docc build and commit docc.lock.".into(),
-        );
-    }
-
-    /// Ack confirms the stale lock lines around each name: its source or target is
-    /// the name, or the target lies in the document with that id; with all, every
-    /// stale line. Lines that are not stale are left as they are, and so are lines
-    /// of links that no longer exist (docc build drops them). It returns the links
-    /// it confirmed.
-    pub fn ack(
-        &self,
-        names: &[String],
-        all: bool,
-    ) -> Result<Vec<Link>, Box<dyn Error + Send + Sync>> {
-        let (data, _, _, exists) = self.read_lock();
-        if !exists {
-            return Err(usage("docc.lock not found: run docc build first".into()));
-        }
-        let cur: HashMap<String, Link> = self.links().into_iter().map(|l| (l.key(), l)).collect();
-        let mut rows: Vec<String> = lock_rows(&data).into_iter().map(String::from).collect();
-        let mut hit: HashSet<&str> = HashSet::new();
-        let mut done = Vec::new();
-        for row in &mut rows {
-            let Some(mut l) = parse_lock_line(row) else {
-                continue;
-            };
-            let Some(c) = cur.get(&l.key()) else {
-                continue;
-            };
-            let mut matched = all;
-            let (id, _, _, _) = split_ref(&l.target);
-            for x in names {
-                if l.source == *x || l.target == *x || id == x {
-                    matched = true;
-                    hit.insert(x);
-                }
-            }
-            if matched && stale(&l, c) {
-                (l.hash, l.code) = (c.hash.clone(), c.code.clone());
-                *row = l.to_string();
-                done.push(Link {
-                    source: l.source,
-                    target: l.target,
-                    ..Default::default()
-                });
-            }
-        }
-        for x in names {
-            if !hit.contains(x.as_str()) {
-                return Err(usage(format!(
-                    "no link in docc.lock matches {} (a new link gets there with docc build)",
-                    crate::config::go_quote(x)
-                )));
-            }
-        }
-        if done.is_empty() {
-            return Ok(Vec::new());
-        }
-        let abs = self.cfg.abs(LOCK_FILE);
-        std::fs::write(&abs, rows.join("\n") + "\n")
-            .map_err(|e| go_path_error("open", &abs, &e))?;
-        Ok(done)
+        (target, code)
     }
 }

@@ -8,4 +8,4 @@ C [item 9](d.md).
 
 ## Parent
 
-[Home page [[b]]](index.md)
+[Home page [[b@3pc2]]](index.md)

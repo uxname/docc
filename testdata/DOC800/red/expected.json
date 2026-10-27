@@ -7,7 +7,7 @@
     "line": 1,
     "column": 53,
     "endLine": 1,
-    "endColumn": 75,
+    "endColumn": 81,
     "message": "A requirement statement must contain \"must\"",
     "hint": ""
   },
@@ -41,9 +41,9 @@
     "level": "warn",
     "file": "docs/src/req-d.json",
     "line": 1,
-    "column": 99,
+    "column": 105,
     "endLine": 1,
-    "endColumn": 104,
+    "endColumn": 110,
     "message": "hedging word \"maybe\"",
     "hint": "State the fact plainly, or say exactly when it holds."
   },
@@ -53,9 +53,9 @@
     "level": "warn",
     "file": "docs/src/req-d.json",
     "line": 1,
-    "column": 99,
+    "column": 105,
     "endLine": 1,
-    "endColumn": 104,
+    "endColumn": 110,
     "message": "No hedging in criteria",
     "hint": ""
   },
@@ -65,9 +65,9 @@
     "level": "warn",
     "file": "docs/src/req-d.json",
     "line": 1,
-    "column": 132,
+    "column": 150,
     "endLine": 1,
-    "endColumn": 137,
+    "endColumn": 155,
     "message": "hedging word \"maybe\"",
     "hint": "State the fact plainly, or say exactly when it holds."
   },
@@ -77,9 +77,9 @@
     "level": "warn",
     "file": "docs/src/req-d.json",
     "line": 1,
-    "column": 132,
+    "column": 150,
     "endLine": 1,
-    "endColumn": 137,
+    "endColumn": 155,
     "message": "No hedging in criteria",
     "hint": ""
   }

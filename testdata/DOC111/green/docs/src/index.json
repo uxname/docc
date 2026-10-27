@@ -2,13 +2,13 @@
   "title": "Index",
   "kind": "page",
   "body": [
-    "Text.",
+    "Text. ^5v78",
     { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] },
     { "$input": "checkbox", "id": "formats", "label": "Formats", "options": ["CSV"] },
     { "$input": "text", "id": "more", "label": "Anything else?" }
   ],
   "questions": {
     "$sections": true,
-    "Delivery": ["When?", { "$input": "text", "id": "when", "label": "Date" }]
+    "Delivery": ["When? ^vfgx", { "$input": "text", "id": "when", "label": "Date" }]
   }
 }

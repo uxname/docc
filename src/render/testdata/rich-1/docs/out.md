@@ -2,7 +2,7 @@
 
 # Document tree
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
   - [елка](#f)
   - [b](#b)
   - [Item 10](#a)
@@ -26,13 +26,13 @@
 
 page · draft now · priority 2 · x, y
 
-See [Item 10](#a), [Item 10](#a--goals), [Item 10](#a--g1), [Sub](#sec--sub), [Part two](#sec--part-two), [Sections](#sec--deep), [Item 10](#a) and hidden.
+See [Item 10](#a), [Item 10](#a--goals), [Item 10](#a--tk2x), [Sub](#sec--sub), [Part two](#sec--part-two), [Sections](#sec--deep), [Item 10](#a) and hidden.
 
-<a id="index--intro"></a>![pic](out/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out/img/p.png "t")
+![pic](out/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out/img/p.png "t")
 
 G1
 
-G2 with [Home page [[b]]](#index)
+G2 with [Home page [[b@3pc2]]](#index)
 
 Inline short text and G1 end.
 
@@ -127,7 +127,7 @@ page
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -142,11 +142,11 @@ B.
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Referenced by
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -163,9 +163,9 @@ A body with ![sub](out/img/p.png).
 
 ## Goals
 
-<a id="a--g1"></a>G1
+<a id="a--tk2x"></a>G1
 
-<a id="a--g2"></a>G2 with [Home page [[b]]](#index)
+G2 with [Home page [[b@3pc2]]](#index)
 
 <a id="a--short"></a>
 
@@ -175,11 +175,11 @@ short text
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Referenced by
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 - [Req](#req)
 - [Sections](#sec)
 
@@ -239,7 +239,7 @@ namesake
 
 l1
 
-<a id="sec--lf"></a>l2
+l2
 
 <a id="sec--part-two"></a>
 
@@ -267,7 +267,7 @@ again
 
 ## Referenced by
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -280,7 +280,7 @@ page
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -295,7 +295,7 @@ C [item 9](#d).
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -310,7 +310,7 @@ D.
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Referenced by
 
@@ -340,7 +340,7 @@ No parent.
 
 page
 
-![up](out/img/p.png) A body with ![sub](out/img/p.png). [Home page [[b]]](#index--short-field) [Home page [[b]]](#index--a-b-1)
+![up](out/img/p.png) A body with ![sub](out/img/p.png). [Home page [[b@3pc2]]](#index--short-field) [Home page [[b@3pc2]]](#index--a-b-1)
 
 ## Parent
 

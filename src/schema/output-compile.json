@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:docc:schema:compile:1",
+  "$id": "urn:docc:schema:compile:2",
   "title": "docc compile output",
   "description": "What docc compile --format json prints: one object on one line. It is printed in every case; when the sources have errors of groups 1xx-2xx, or docc failed (exit code 2), tree and pages are empty and ok is false.",
   "type": "object",
   "additionalProperties": false,
   "required": ["$schema", "ok", "summary", "diagnostics", "project", "tree", "pages"],
   "properties": {
-    "$schema": { "const": "urn:docc:schema:compile:1", "description": "The version of this shape." },
+    "$schema": { "const": "urn:docc:schema:compile:2", "description": "The version of this shape." },
     "ok": { "type": "boolean", "description": "No error diagnostics and not more warnings than maxWarnings (or --max-warnings): the exit code is 0." },
     "summary": {
       "type": "object",
@@ -117,7 +117,7 @@
     "page": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "path", "title", "kind", "status", "tags", "parent", "crumbs", "props", "sections", "blocks", "comments"],
+      "required": ["id", "path", "title", "kind", "status", "tags", "parent", "crumbs", "hash", "props", "sections", "blocks", "comments"],
       "properties": {
         "id": { "type": "string" },
         "path": { "type": "string", "description": "Source path relative to src, e.g. decisions/monolith.json." },
@@ -128,16 +128,19 @@
         "tags": { "type": "array", "items": { "type": "string" } },
         "parent": { "type": ["string", "null"], "description": "Id of the parent page, null when there is none or it is hidden." },
         "crumbs": { "type": "array", "items": { "type": "string" }, "description": "Ids of the parent chain, outermost first." },
+        "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the whole document: what a link [[id@hash]] carries." },
         "props": {
           "type": "array",
           "description": "One-line fields shown as a property list instead of sections (when a page has two or more).",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["k", "id", "p", "s", "h"],
+            "required": ["k", "id", "hash", "p", "s", "h"],
             "properties": {
               "k": { "type": "string", "description": "Field name as a heading." },
               "id": { "type": "string", "description": "Anchor of the field." },
+              "code": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Block code of the value (lower case; shown upper case to readers); absent when it has none." },
+              "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the value: what [[id#^code@hash]] carries." },
               "p": { "type": "string", "description": "JSON Pointer of the value." },
               "s": { "type": "string", "description": "Source text." },
               "h": { "type": "string", "description": "HTML, without the paragraph around it." }
@@ -166,8 +169,10 @@
             "additionalProperties": false,
             "required": ["p", "s", "h", "sec"],
             "properties": {
-              "p": { "type": "string", "description": "JSON Pointer of the value in the source; empty for the footnotes of the page." },
-              "s": { "type": "string", "description": "Source text (lists and tables flattened)." },
+              "p": { "type": "string", "description": "JSON Pointer of the value in the source; empty for the footnotes of the page. Old links by pointer still resolve with it." },
+              "code": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Block code of a text block (lower case; links take it in any case, readers see it upper case); absent for a block without one (a table, a list of objects, a form field, the footnotes)." },
+              "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the block: what [[page#^code@hash]] carries; for a block without a code, the hash of the value at p. Absent for the footnotes." },
+              "s": { "type": "string", "description": "Source text (lists and tables flattened), with the code at its end." },
               "h": { "type": "string", "description": "HTML. Links to pages are #<id>, to fields #<id>--<anchor>; images are data: URIs." },
               "sec": { "type": ["string", "null"], "description": "Id of the section the block stands under; null above the first heading." },
               "i": {
@@ -194,7 +199,7 @@
             "required": ["id", "at", "quote", "author", "created", "place"],
             "properties": {
               "id": { "type": "string", "description": "Unique in the project." },
-              "at": { "type": "string", "description": "JSON Pointer of the block (p of a block or a prop); for an answer, the pointer of the form field." },
+              "at": { "type": "string", "description": "The block: its code \"^k7f2\" (code of a block or a prop, any case), or the JSON Pointer of a block without a code (p); for an answer, the pointer of the form field." },
               "quote": { "type": "string", "description": "The text of the block when the comment was written." },
               "fragment": { "type": "string", "description": "The words the reader selected; absent for a comment on the whole block." },
               "prefix": { "type": "string", "description": "A few characters before the fragment, to tell one occurrence from another." },

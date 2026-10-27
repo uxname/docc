@@ -1,1 +1,1 @@
-{ "title": "B", "body": "{{a#body}}", "kind": "page" }
+{ "title": "B", "body": "{{a#body}} ^2cnt", "kind": "page" }

@@ -171,7 +171,7 @@ fn build_cleans_out_and_is_idempotent() {
     p.run(&["build"]);
     assert_eq!(first, p.read("docs/out/index.md") + &p.read("docs/out/_tree.md"), "two builds differ");
     // stale: change a source without building
-    p.write("docs/src/a.json", r#"{"title":"A2","parent":"index","kind":"page"}"#);
+    p.write("docs/src/index.json", p.read("docs/src/index.json").replace("See", "Look at"));
     let (code, out, _) = p.run(&["check", "--format", "json"]);
     assert!(code == 1 && out.contains("DOC501"), "{code} {out}");
 }
@@ -297,6 +297,7 @@ fn init_config_blocks_suspect_links() {
     assert_eq!(code, 0, "{out}");
     p.write("docs/src/index.json", r#"{"title":"Index","kind":"page","body":"See [[a]]."}"#);
     p.write("docs/src/a.json", r#"{"title":"A","kind":"page","parent":"index","body":"Five."}"#);
+    p.migrate();
     p.must_build();
     p.write("docs/src/a.json", r#"{"title":"A","kind":"page","parent":"index","body":"Ten."}"#);
     let (code, out, _) = p.run(&["check"]);

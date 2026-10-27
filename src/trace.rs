@@ -32,6 +32,29 @@ pub struct Tag {
     pub body: Vec<u8>,
     /// a malformed region: unclosed, nested or a stray end
     pub err: String,
+    /// the version hash written after each target ("@3a9c"), lower case
+    pub hashes: Vec<Option<String>>,
+    /// the fingerprint written on the line ("~e91d"), lower case
+    pub print: Option<String>,
+    /// the fingerprint of the code now: of the region for docc:begin, of the
+    /// lines outside the regions of the file for a plain tag
+    pub want: String,
+}
+
+/// TAG_HASHES are the version hashes and the fingerprint on a docc: line,
+/// which no fingerprint covers (so writing them never changes one).
+static TAG_HASHES: std::sync::LazyLock<regex::bytes::Regex> = std::sync::LazyLock::new(|| {
+    regex::bytes::Regex::new(r"(?i)@[2-9a-hjkmnp-z]{4}\b|[\t ]*~[2-9a-hjkmnp-z]{4}\b").unwrap()
+});
+
+/// PRINT is the fingerprint on a docc: line.
+static PRINT: std::sync::LazyLock<regex::bytes::Regex> =
+    std::sync::LazyLock::new(|| regex::bytes::Regex::new(r"(?i)(?:^|[\t ])~([2-9a-hjkmnp-z]{4})\b").unwrap());
+
+/// tag_at is the offset of "docc:" in a line that is a tag: only blanks and
+/// comment markers stand before it.
+pub fn tag_at(line: &[u8]) -> Option<usize> {
+    line.windows(5).position(|w| w == b"docc:").filter(|&at| comment_only(&line[..at]))
 }
 
 /// Key is a pair of a code file and a target.
@@ -102,6 +125,18 @@ pub fn scan(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf], src: &Source) ->
         tags.extend(scan_file(rel, data.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&data)));
     }
     Ok(tags)
+}
+
+/// files are the code files on the disk that scan reads: under masks, not
+/// in skip_dirs, regular, at most 1 MB.
+pub fn files(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf]) -> io::Result<Vec<String>> {
+    Ok(list(root, skip_dirs)?
+        .into_iter()
+        .filter(|rel| {
+            match_any(masks, rel)
+                && std::fs::symlink_metadata(root.join(rel)).is_ok_and(|st| st.is_file() && st.len() <= MAX_FILE_SIZE)
+        })
+        .collect())
 }
 
 /// list returns the candidate files, relative to root with '/', sorted.
@@ -205,8 +240,20 @@ fn comment_only(s: &[u8]) -> bool {
     true
 }
 
-/// targets splits "a, b#x */" into its targets; comment closers are dropped.
-fn targets(s: &[u8]) -> Vec<String> {
+/// targets splits "a@3a9c, b#x */ ~e91d" into its targets (without their
+/// hashes) and their hashes; comment closers and the fingerprint are dropped.
+fn targets(s: &[u8]) -> (Vec<String>, Vec<Option<String>>) {
+    let s = PRINT.replace_all(s, &b""[..]);
+    let (mut ts, mut hs) = (Vec::new(), Vec::new());
+    for t in raw_targets(&s) {
+        let (t, h) = crate::codes::split_hash(&t);
+        ts.push(t);
+        hs.push(h);
+    }
+    (ts, hs)
+}
+
+fn raw_targets(s: &[u8]) -> Vec<String> {
     let mut s = trim_space(s);
     for c in ["*/", "-->"] {
         s = trim_space(s.strip_suffix(c.as_bytes()).unwrap_or(s));
@@ -220,14 +267,56 @@ fn targets(s: &[u8]) -> Vec<String> {
         .collect()
 }
 
-fn scan_file(rel: &str, data: &[u8]) -> Vec<Tag> {
+/// norm_line is a line as fingerprints read it: trimmed, NFC, and on a
+/// docc: line without the hashes and the fingerprint.
+fn norm_line(line: &[u8]) -> Vec<u8> {
+    let l = nfc(trim_space(line));
+    if tag_at(&l).is_some() {
+        return TAG_HASHES.replace_all(&l, &b""[..]).into_owned();
+    }
+    l
+}
+
+/// scan_file finds the tags of a file; every tag gets the fingerprint it should carry.
+pub fn scan_file(rel: &str, data: &[u8]) -> Vec<Tag> {
+    let mut tags = scan_lines(rel, data);
+    let mut outside: Vec<Vec<u8>> = Vec::new();
+    let mut inside = false;
+    for line in data.split(|&b| b == b'\n') {
+        let line = line.strip_suffix(b"\r").unwrap_or(line);
+        let word = tag_at(line).map(|at| {
+            let rest = &line[at + 5..];
+            let w = &rest[..index_space(rest).unwrap_or(rest.len())];
+            let w = w.strip_suffix(b"*/").unwrap_or(w);
+            trim_space(w.strip_suffix(b"-->").unwrap_or(w)).to_vec()
+        });
+        match word.as_deref() {
+            Some(b"begin") => {
+                outside.push(norm_line(line));
+                inside = true;
+            }
+            Some(b"end") => {
+                outside.push(norm_line(line));
+                inside = false;
+            }
+            _ if !inside => outside.push(norm_line(line)),
+            _ => {}
+        }
+    }
+    let file = crate::codes::hash4_bytes(&outside.join(&b'\n'));
+    for t in &mut tags {
+        t.want = if t.region { crate::codes::hash4_bytes(&t.body) } else { file.clone() };
+    }
+    tags
+}
+
+fn scan_lines(rel: &str, data: &[u8]) -> Vec<Tag> {
     let mut tags: Vec<Tag> = Vec::new();
     let mut open: Option<usize> = None; // index in tags of the open region
     let mut body: Vec<Vec<u8>> = Vec::new();
     for (i, line) in data.split(|&b| b == b'\n').enumerate() {
         let line = line.strip_suffix(b"\r").unwrap_or(line);
-        let at = line.windows(5).position(|w| w == b"docc:");
-        let Some(at) = at.filter(|&at| comment_only(&line[..at])) else {
+        let Some(at) = tag_at(line) else {
             if open.is_some() {
                 body.push(nfc(trim_space(line)));
             }
@@ -236,6 +325,7 @@ fn scan_file(rel: &str, data: &[u8]) -> Vec<Tag> {
         // line[..at] is only blanks and markers, so it is valid UTF-8
         let col = String::from_utf8_lossy(&line[..at]).chars().count() + 1;
         let mut t = Tag { file: rel.to_string(), line: i + 1, col, ..Tag::default() };
+        t.print = PRINT.captures(line).map(|c| String::from_utf8_lossy(&c[1]).to_ascii_lowercase());
         let rest = &line[at + "docc:".len()..];
         let (word, args) = match index_space(rest) {
             Some(j) => (&rest[..j], &rest[j..]),
@@ -246,7 +336,7 @@ fn scan_file(rel: &str, data: &[u8]) -> Vec<Tag> {
         match word {
             b"begin" => {
                 t.region = true;
-                t.targets = targets(args);
+                (t.targets, t.hashes) = targets(args);
                 if open.is_some() {
                     t.err = "a region opened inside another region".into();
                 } else {
@@ -262,9 +352,9 @@ fn scan_file(rel: &str, data: &[u8]) -> Vec<Tag> {
                 }
             },
             _ => {
-                t.targets = targets(rest);
+                (t.targets, t.hashes) = targets(rest);
                 if open.is_some() {
-                    body.push(nfc(trim_space(line)));
+                    body.push(norm_line(line));
                 }
             }
         }

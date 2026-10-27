@@ -15,7 +15,9 @@ impl Project {
         self.check_markdown();
         self.check_custom();
         self.check_trace();
-        self.check_lock();
+        if !self.legacy {
+            self.check_versions();
+        }
         self.suppress();
         self.sorted()
     }

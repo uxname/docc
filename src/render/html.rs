@@ -142,7 +142,9 @@ impl<'a> Renderer<'a> {
         // those that lost their place at the top of the page
         for d in s.pages() {
             for (c, pl) in s.comments_of(d) {
-                data.comments.push(AppComment { doc: d.id.clone(), lost: pl == Place::Lost, text: c.words(), c });
+                // the page script finds a block by its pointer
+                let at = d.root().and_then(|r| crate::comments::pointer(r, &c.at)).unwrap_or_else(|| c.at.clone());
+                data.comments.push(AppComment { doc: d.id.clone(), lost: pl == Place::Lost, text: c.words(), c: Comment { at, ..c } });
             }
         }
         if !pages.is_empty() {
@@ -230,6 +232,7 @@ impl<'a> Renderer<'a> {
             if let Some(n) = n {
                 b.p = ptr(n);
                 b.s = history::text(n);
+                (b.c, b.v) = code_hash(n);
                 if n.kind == Kind::String {
                     strs.push((b.p.clone(), b.s.clone(), false));
                 }
@@ -264,9 +267,12 @@ impl<'a> Renderer<'a> {
             if n.kind == Kind::String {
                 strs.push((ptr(n), history::text(n), true));
             }
+            let (c, v) = code_hash(n);
             pd.props.push(PropData {
                 k: p.key.clone(),
                 id: p.id.clone(),
+                c,
+                v,
                 p: ptr(n),
                 h: h.to_string(),
                 s: history::text(n),
@@ -501,6 +507,12 @@ struct BlockData {
     #[serde(skip_serializing_if = "String::is_empty")]
     s: String,
     h: String,
+    /// the code of a text block ("k7f2"), shown on the page and in links to it
+    #[serde(skip_serializing_if = "String::is_empty")]
+    c: String,
+    /// the version hash of the block (of its value when it has no code)
+    #[serde(skip_serializing_if = "String::is_empty")]
+    v: String,
     /// a form field, drawn by the page script in place of h
     #[serde(skip_serializing_if = "Option::is_none")]
     i: Option<InputData>,
@@ -532,10 +544,20 @@ impl InputData {
     }
 }
 
+/// code_hash is the code of a block ("" when it has none) and its version hash.
+fn code_hash(n: &Node) -> (String, String) {
+    let c = if n.kind == Kind::String { crate::codes::code_of(&n.str).unwrap_or_default().to_string() } else { String::new() };
+    (c, crate::codes::value_hash(n))
+}
+
 #[derive(Serialize, Default)]
 struct PropData {
     k: String,
     id: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    c: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    v: String,
     p: String,
     s: String,
     h: String,

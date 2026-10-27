@@ -1,0 +1,38 @@
+[
+  {
+    "code": "DOC216",
+    "rule": "graph/missing-code",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 46,
+    "endLine": 1,
+    "endColumn": 74,
+    "message": "the block has no code",
+    "hint": "Run docc build: it gives every block without a code its own. Never write or change a code by hand."
+  },
+  {
+    "code": "DOC216",
+    "rule": "graph/missing-code",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 76,
+    "endLine": 1,
+    "endColumn": 113,
+    "message": "the block ends in \"^limit\", which is not a block code",
+    "hint": "Named anchors are gone: remove the marker and run docc build, which gives the block a code (a project of the old format: run docc migrate). Codes are four lower-case signs such as ^k7f2, given by docc only."
+  },
+  {
+    "code": "DOC216",
+    "rule": "graph/missing-code",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 145,
+    "endLine": 1,
+    "endColumn": 153,
+    "message": "the block has no code",
+    "hint": "Run docc build: it gives every block without a code its own. Never write or change a code by hand."
+  }
+]

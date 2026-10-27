@@ -48,16 +48,17 @@ impl Project {
                 bad(
                     t,
                     "no targets after docc:".into(),
-                    "Write // docc: id, id#field or id#^anchor.".into(),
+                    "Write // docc: id@hash, id#field@hash or id#^code@hash, and ~fingerprint at the end.".into(),
                 );
             }
-            for g in &t.targets {
-                let (id, field, has_field, ok) = split_ref(g);
+            let mut texts = Vec::new();
+            for (gi, g) in t.targets.iter().enumerate() {
+                let (id, field, has_field, ok) = split_ref(g, self.legacy);
                 if !ok {
                     bad(
                         t,
                         format!("{} is not a target", go_quote(g)),
-                        "Write id, id#field/section or id#^anchor, and separate targets with commas.".into(),
+                        "Write id, id#field/section or id#^code, each with its @hash, and separate targets with commas.".into(),
                     );
                     continue;
                 }
@@ -79,6 +80,16 @@ impl Project {
                         continue;
                     }
                 }
+                if !self.legacy
+                    && let Some(v) = self.version(g)
+                {
+                    let had = t.hashes.get(gi).cloned().flatten();
+                    if had.as_deref() != Some(v.hash.as_str()) {
+                        let (msg, hint) = self.stale_message(&format!("code tag target {}", go_quote(g)), g, had.as_deref(), &v);
+                        self.emit_file(&t.file, "DOC209", t.line, t.col, msg, hint);
+                    }
+                    texts.push(format!("{g}: {}", v.text.replace('\n', " / ")));
+                }
                 let k = Key {
                     file: t.file.clone(),
                     target: g.clone(),
@@ -89,6 +100,22 @@ impl Project {
                 if !files.contains(&t.file) {
                     files.push(t.file.clone());
                 }
+            }
+            if !self.legacy && !t.targets.is_empty() && t.print.as_deref() != Some(t.want.as_str()) {
+                let what = if t.region { "the region of this docc:begin" } else { "the code of this file outside its regions" };
+                let msg = match &t.print {
+                    None => format!("the code tag has no fingerprint; {what} is ~{}", t.want),
+                    Some(p) => format!("{what} changed: its fingerprint is ~{} now, not ~{p}", t.want),
+                };
+                let mut hint = format!(
+                    "Check that the code agrees with what it points to (fix the code or the documents if not), then write ~{} at the end of the tag line by hand. The targets read now:",
+                    t.want
+                );
+                for x in &texts {
+                    hint.push_str("\n    ");
+                    hint.push_str(x);
+                }
+                self.emit_file(&t.file, "DOC402", t.line, t.col, msg, hint);
             }
         }
         for (k, h) in trace::hashes(&tags) {

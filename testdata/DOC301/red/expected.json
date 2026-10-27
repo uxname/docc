@@ -41,9 +41,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 3,
-    "column": 56,
+    "column": 62,
     "endLine": 3,
-    "endColumn": 62,
+    "endColumn": 68,
     "message": "forbidden word or phrase \"быстро\"",
     "hint": "Replace it with a specific, measurable statement."
   },
@@ -53,9 +53,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 3,
-    "column": 65,
+    "column": 71,
     "endLine": 3,
-    "endColumn": 71,
+    "endColumn": 77,
     "message": "forbidden word or phrase \"удобно\"",
     "hint": "Replace it with a specific, measurable statement."
   },
@@ -65,9 +65,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 3,
-    "column": 73,
+    "column": 79,
     "endLine": 3,
-    "endColumn": 79,
+    "endColumn": 85,
     "message": "forbidden word or phrase \"и т.д.\"",
     "hint": "Replace it with a specific, measurable statement."
   },
@@ -77,9 +77,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 3,
-    "column": 89,
+    "column": 101,
     "endLine": 3,
-    "endColumn": 95,
+    "endColumn": 107,
     "message": "forbidden word or phrase \"срочно\"",
     "hint": "Replace it with a specific, measurable statement."
   }

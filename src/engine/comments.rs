@@ -45,7 +45,7 @@ impl Project {
                 // an answer to the field as it reads now must fit it; one to an
                 // earlier version of the question (changed) is left as it was given
                 if let (Place::Same, Some(a)) = (place, &c.answer)
-                    && let Some(m) = crate::schema::resolve_pointer(root, &c.at).and_then(|f| comments::answer_problem(f, a))
+                    && let Some(m) = comments::pointer(root, &c.at).and_then(|at| crate::schema::resolve_pointer(root, &at)).and_then(|f| comments::answer_problem(f, a))
                 {
                     let at = n.get("answer").unwrap_or(n);
                     self.emit(d, "DOC112", at.start, at.end, format!("comment {}: {m}", go_quote(&c.id)), "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer), or delete the comment (docc comments rm <id>).".into());
@@ -56,7 +56,7 @@ impl Project {
                 let at = n.get("at").unwrap_or(n);
                 let why = if c.input.is_some() {
                     format!("the form field {} is not at {}", go_quote(c.input.as_deref().unwrap_or_default()), go_quote(&c.at))
-                } else if comments::blocks(root).iter().any(|l| l.ptr == c.at) {
+                } else if comments::pointer(root, &c.at).is_some_and(|at| comments::blocks(root).iter().any(|l| l.ptr == at)) {
                     format!("the words {} are not in the block at {}", go_quote(&c.fragment), go_quote(&c.at))
                 } else {
                     format!("no block at {}", go_quote(&c.at))
@@ -67,7 +67,7 @@ impl Project {
                     at.start,
                     at.end,
                     format!("comment {} lost its place: {why}", go_quote(&c.id)),
-                    "Move it: set \"at\" to the pointer of the block it is about now; or delete it if it is handled (docc comments rm <id>).".into(),
+                    "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm <id>).".into(),
                 );
             }
         }

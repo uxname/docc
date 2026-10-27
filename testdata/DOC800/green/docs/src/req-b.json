@@ -1,6 +1,6 @@
 {
   "title": "B",
   "kind": "requirement",
-  "statement": "It must handle множество requests.",
+  "statement": "It must handle множество requests. ^z45x",
   "docIgnore": [{ "rule": "custom/no-vague-quantity", "reason": "wording from the customer", "path": "/statement" }]
 }

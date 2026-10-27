@@ -360,6 +360,8 @@ impl Side {
         };
         let props = pg.props.iter().map(|p| CBlock {
             p: p.p.clone(),
+            code: p.code.clone(),
+            hash: Some(p.hash.clone()),
             s: p.s.clone(),
             h: p.h.clone(),
             sec: None,

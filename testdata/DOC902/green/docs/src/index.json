@@ -1,6 +1,6 @@
 {
   "title": "Index",
-  "body": ["It is fast."],
+  "body": ["It is fast. ^5v78"],
   "docIgnore": [{ "rule": "text/forbidden-words", "reason": "the customer's word" }],
   "kind": "page"
 }

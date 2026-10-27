@@ -12,6 +12,8 @@ use docc::loader;
 /// Dir is a temporary directory removed on drop (Go: t.TempDir()).
 pub struct Dir {
     pub path: PathBuf,
+    /// a document written later is moved to codes and hashes too (project)
+    pub auto: bool,
 }
 
 impl Drop for Dir {
@@ -30,7 +32,7 @@ pub fn temp_dir() -> Dir {
     std::fs::create_dir_all(&path).unwrap();
     // the canonical path: what the binary sees as its working directory
     let path = path.canonicalize().unwrap();
-    Dir { path }
+    Dir { path, auto: false }
 }
 
 impl Dir {
@@ -60,10 +62,19 @@ impl Dir {
         let p = self.path.join(rel);
         std::fs::create_dir_all(p.parent().unwrap()).unwrap();
         std::fs::write(&p, content).unwrap();
+        if self.auto && rel.contains("/src/") && rel.ends_with(".json") {
+            self.migrate();
+        }
     }
 
     pub fn exists(&self, rel: &str) -> bool {
         std::fs::metadata(self.path.join(rel)).is_ok()
+    }
+
+    /// migrate runs docc migrate (codes fixed by place), whatever it says:
+    /// the documents a test writes in the short old form get codes and hashes.
+    pub fn migrate(&self) {
+        let _ = do_in(&self.path, &["migrate"]);
     }
 
     /// must_build is mustBuild.
@@ -82,8 +93,21 @@ pub fn files<K: AsRef<str>, V: AsRef<[u8]>>(pairs: impl IntoIterator<Item = (K, 
 }
 
 /// project creates a temp project from path -> content. Documents without a
-/// kind get the kind "page" (see page_kind); raw_project keeps the files as given.
+/// kind get the kind "page" (see page_kind), and the project is moved to
+/// block codes and version hashes (docc migrate: tests write documents in the
+/// short old form); raw_project keeps the files as given.
 pub fn project<K: AsRef<str>, V: AsRef<[u8]>>(pairs: impl IntoIterator<Item = (K, V)>) -> Dir {
+    let mut fs = files(pairs);
+    page_kind(&mut fs);
+    let mut d = write_project(&fs);
+    d.migrate();
+    d.auto = true;
+    d
+}
+
+/// coded_project is project without the move to codes and hashes: the
+/// documents stay byte for byte (a test that counts positions writes its codes itself).
+pub fn coded_project<K: AsRef<str>, V: AsRef<[u8]>>(pairs: impl IntoIterator<Item = (K, V)>) -> Dir {
     let mut fs = files(pairs);
     page_kind(&mut fs);
     write_project(&fs)
@@ -138,6 +162,7 @@ pub fn do_in(dir: &Path, args: &[&str]) -> (i32, String, String) {
     let out = Command::new(env!("CARGO_BIN_EXE_docc"))
         .args(args)
         .current_dir(dir)
+        .env("DOCC_CODE_SEED", "test")
         .output()
         .unwrap();
     (
@@ -154,6 +179,7 @@ pub fn do_stdin(dir: &Path, input: &[u8], args: &[&str]) -> (i32, String, String
     let mut ch = Command::new(env!("CARGO_BIN_EXE_docc"))
         .args(args)
         .current_dir(dir)
+        .env("DOCC_CODE_SEED", "test")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

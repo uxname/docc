@@ -2,8 +2,8 @@
   "title": "Other",
   "kind": "page",
   "parent": "index",
-  "body": ["Gamma."],
+  "body": ["Gamma. ^sdfk"],
   "$comments": [
-    {"id": "c-2", "at": "/body/0", "quote": "Gamma.", "text": "Same id as in index.", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
+    {"id": "c-2", "at": "^sdfk", "quote": "Gamma.", "text": "Same id as in index.", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
   ]
 }

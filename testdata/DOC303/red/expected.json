@@ -17,9 +17,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 51,
+    "column": 57,
     "endLine": 1,
-    "endColumn": 54,
+    "endColumn": 60,
     "message": "placeholder \"tbd\" is left in the text",
     "hint": "Write the real text or remove the placeholder."
   },
@@ -29,9 +29,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 58,
+    "column": 70,
     "endLine": 1,
-    "endColumn": 63,
+    "endColumn": 75,
     "message": "placeholder \"Lorem\" is left in the text",
     "hint": "Write the real text or remove the placeholder."
   },
@@ -41,9 +41,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 87,
+    "column": 105,
     "endLine": 1,
-    "endColumn": 90,
+    "endColumn": 108,
     "message": "placeholder \"???\" is left in the text",
     "hint": "Write the real text or remove the placeholder."
   }

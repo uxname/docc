@@ -4,7 +4,7 @@
 
 # Дерево документов
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
   - [1 елка](#f)
   - [2 b](#b)
   - [3 Item 10](#a)
@@ -32,19 +32,19 @@
 
 page · draft now · приоритет 2 · x, y
 
-See [3 Item 10](#a), [3 Item 10](#a--goals), [3 Item 10](#a--g1), [3.2.1.1 Sub](#sec--sub), [3.2.2 Part two](#sec--part-two), [3.2 Sections](#sec--deep), [3 Item 10](#a) and hidden.
+See [3 Item 10](#a), [3 Item 10](#a--goals), [3 Item 10](#a--tk2x), [3.2.1.1 Sub](#sec--sub), [3.2.2 Part two](#sec--part-two), [3.2 Sections](#sec--deep), [3 Item 10](#a) and hidden.
 
-<a id="index--intro"></a>![pic](out-full/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out-full/img/p.png "t")
+![pic](out-full/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out-full/img/p.png "t")
 
 <!-- вставка a#goals -->
 
 G1
 
-G2 with [Home page [[b]]](#index)
+G2 with [Home page [[b@3pc2]]](#index)
 
 <!-- /вставка -->
 
-Inline <!-- вставка a#short -->short text<!-- /вставка --> and <!-- вставка a#^g1 -->G1<!-- /вставка --> end.
+Inline <!-- вставка a#short -->short text<!-- /вставка --> and <!-- вставка a#^tk2x -->G1<!-- /вставка --> end.
 
 <!-- вставка sec#content/Part two -->
 
@@ -156,7 +156,7 @@ page
 
 ## Родитель
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -171,11 +171,11 @@ B.
 
 ## Родитель
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Ссылаются
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -192,9 +192,9 @@ A body with ![sub](out-full/img/p.png).
 
 ## Goals
 
-<a id="a--g1"></a>G1
+<a id="a--tk2x"></a>G1
 
-<a id="a--g2"></a>G2 with [Home page [[b]]](#index)
+G2 with [Home page [[b@3pc2]]](#index)
 
 <a id="a--short"></a>
 
@@ -204,12 +204,12 @@ short text
 
 ## Родитель
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Ссылаются
 
 - [Hidden one](#hidden)
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 - [3.1 Req](#req)
 - [3.2 Sections](#sec)
 
@@ -269,7 +269,7 @@ namesake
 
 l1
 
-<a id="sec--lf"></a>l2
+l2
 
 <a id="sec--part-two"></a>
 
@@ -297,7 +297,7 @@ again
 
 ## Ссылаются
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -310,7 +310,7 @@ page
 
 ## Родитель
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -327,7 +327,7 @@ Secret [3 Item 10](#a).
 
 ## Родитель
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -342,7 +342,7 @@ C [6 item 9](#d).
 
 ## Родитель
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -357,7 +357,7 @@ D.
 
 ## Родитель
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Ссылаются
 
@@ -387,7 +387,7 @@ No parent.
 
 page
 
-![up](out-full/img/p.png) <!-- вставка a#body -->A body with ![sub](out-full/img/p.png).<!-- /вставка --> [Home page [[b]]](#index--short-field) [Home page [[b]]](#index--a-b-1)
+![up](out-full/img/p.png) <!-- вставка a#body -->A body with ![sub](out-full/img/p.png).<!-- /вставка --> [Home page [[b@3pc2]]](#index--short-field) [Home page [[b@3pc2]]](#index--a-b-1)
 
 ## Родитель
 

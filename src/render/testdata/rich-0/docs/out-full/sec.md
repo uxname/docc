@@ -32,7 +32,7 @@ namesake
 
 l1
 
-<a id="lf"></a>l2
+l2
 
 <a id="part-two"></a>
 
@@ -58,4 +58,4 @@ again
 
 ## Ссылаются
 
-- [Home page [[b]]](index.md)
+- [Home page [[b@3pc2]]](index.md)

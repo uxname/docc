@@ -5,11 +5,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 68,
+    "column": 54,
     "endLine": 1,
-    "endColumn": 70,
-    "message": "block anchor \"^a\" is already used in this document",
-    "hint": "Give each block anchor a name unique within the document."
+    "endColumn": 59,
+    "message": "block code \"^k7f2\" is used twice: also at docs/src/b.json:1:85",
+    "hint": "One of the two blocks is a copy: delete the code of the copy (keep the code of the block other places link to) and run docc build, which gives it a new one."
   },
   {
     "code": "DOC212",
@@ -17,10 +17,22 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 81,
+    "column": 79,
     "endLine": 1,
-    "endColumn": 92,
-    "message": "block anchor \"^scope-note\" equals the anchor of a heading on this page",
-    "hint": "Rename the block anchor: a link to it would land on the heading."
+    "endColumn": 84,
+    "message": "block code \"^k7f2\" is used twice: also at docs/src/b.json:1:85",
+    "hint": "One of the two blocks is a copy: delete the code of the copy (keep the code of the block other places link to) and run docc build, which gives it a new one."
+  },
+  {
+    "code": "DOC212",
+    "rule": "graph/duplicate-anchor",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 95,
+    "endLine": 1,
+    "endColumn": 100,
+    "message": "block code \"^m2pq\" equals the anchor of a heading on this page",
+    "hint": "Delete the code and run docc build for a new one: a link to it would land on the heading."
   }
 ]

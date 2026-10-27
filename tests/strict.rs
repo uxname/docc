@@ -32,6 +32,7 @@ fn kind_schema_required() {
     );
     fs.insert("docs/schemas/ghost.json", r#"{"type":"object","required":["title"],"additionalProperties":false}"#);
     let p = raw_project(fs);
+    p.migrate();
     let (code, out, _) = p.run(&["validate"]);
     assert_eq!(code, 0, "with schemas: {out}");
 }

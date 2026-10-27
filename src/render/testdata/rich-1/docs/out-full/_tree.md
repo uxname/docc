@@ -4,7 +4,7 @@
 
 # Document tree
 
-- [Home page [[b]]](index.md)
+- [Home page [[b@3pc2]]](index.md)
   - [елка](f.md)
   - [b](b.md)
   - [Item 10](a.md)

@@ -108,15 +108,15 @@ impl Project {
 pub(super) fn fragment_problem(t: &Doc, id: &str, field: &str) -> (String, String) {
     if let Some(name) = field.strip_prefix('^') {
         if !t.blocks.contains_key(name) {
+            if t.legacy {
+                return (
+                    format!("document {} has no block anchor {}", go_quote(id), go_quote(&format!("^{name}"))),
+                    format!("End a paragraph or list item of the target with \" ^{name}\", or fix the name."),
+                );
+            }
             return (
-                format!(
-                    "document {} has no block anchor {}",
-                    go_quote(id),
-                    go_quote(&format!("^{name}"))
-                ),
-                format!(
-                    "End a paragraph or list item of the target with \" ^{name}\", or fix the name."
-                ),
+                format!("document {} has no block with the code {}", go_quote(id), go_quote(&format!("^{name}"))),
+                "The block was deleted or moved to another document, or the code is mistyped: find the block you mean and link its code (codes are four signs, such as ^k7f2).".into(),
             );
         }
     } else if service_field(field) {

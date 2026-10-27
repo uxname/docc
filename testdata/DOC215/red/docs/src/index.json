@@ -2,12 +2,12 @@
   "title": "Index",
   "kind": "page",
   "body": [
-    "Inserted above.",
-    "The owner of [[other]] signs it.",
+    "Inserted above. ^5v78",
+    "The owner of [[other@adjw]] signs it. ^muum",
     { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] }
   ],
   "$comments": [
-    {"id": "c-1", "at": "/body/0", "quote": "The owner of [[other]] signs it.", "fragment": "owner", "text": "Who is it?", "author": "Bob", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-1", "at": "^5v78", "quote": "The owner of [[other]] signs it.", "fragment": "owner", "text": "Who is it?", "author": "Bob", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-2", "at": "/body/1", "quote": "", "input": "export", "answer": ["No"], "author": "Bob", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-3", "at": "/body/9", "quote": "Gone.", "text": "Removed paragraph.", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
   ]

@@ -8,9 +8,9 @@ A body with ![sub](img/p.png).
 
 ## Goals
 
-<a id="g1"></a>G1
+<a id="tk2x"></a>G1
 
-<a id="g2"></a>G2 with [Home page [[b]]](index.md)
+G2 with [Home page [[b@3pc2]]](index.md)
 
 ## Short
 
@@ -18,11 +18,11 @@ short text
 
 ## Родитель
 
-[Home page [[b]]](index.md)
+[Home page [[b@3pc2]]](index.md)
 
 ## Ссылаются
 
-- [Home page [[b]]](index.md)
+- [Home page [[b@3pc2]]](index.md)
 - [3.1 Req](req.md)
 - [3.2 Sections](sec.md)
 

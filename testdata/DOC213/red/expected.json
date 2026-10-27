@@ -17,9 +17,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 90,
+    "column": 96,
     "endLine": 1,
-    "endColumn": 98,
+    "endColumn": 104,
     "message": "the image path leaves docs/src",
     "hint": "Put the image under docs/src and write its path relative to the folder of this document."
   }

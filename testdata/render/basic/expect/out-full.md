@@ -30,7 +30,7 @@ Second fact.
 
 <!-- /include -->
 
-Quote: <!-- include req#^first -->First fact.<!-- /include -->
+Quote: <!-- include req#^2vh9 -->First fact.<!-- /include -->
 
 <a id="index--owner-name"></a>
 
@@ -116,7 +116,7 @@ Back to [Index](#index) and [Index](#index--owner-name).
 
 Given X.
 
-Then Y with [Requirement](#req--statement) and [Requirement](#req--first).
+Then Y with [Requirement](#req--statement) and [Requirement](#req--2vh9).
 
 ## Parent
 
@@ -142,7 +142,7 @@ Requirement body, see [Deep doc](#deep--acceptance-criteria).
 
 ## Statement
 
-<a id="req--first"></a>First fact.
+<a id="req--2vh9"></a>First fact.
 
 Second fact.
 
@@ -150,7 +150,7 @@ Second fact.
 
 ## Checks
 
-- <a id="req--check"></a>Plain check.
+- Plain check.
 - - **name:** n
 
 <a id="req--formula"></a>

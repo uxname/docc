@@ -43,7 +43,7 @@
     "line": 1,
     "column": 61,
     "endLine": 1,
-    "endColumn": 68,
+    "endColumn": 74,
     "message": "document violates the schema of kind \"requirement\": /statement: minLength: got 5, want 10",
     "hint": "Change the value so that it matches the schema."
   }

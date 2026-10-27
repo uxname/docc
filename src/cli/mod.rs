@@ -46,8 +46,9 @@ Commands:
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision, --hidden: with hidden documents)
   log                print the commits that changed the documents, with the files and block counts of each
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
-  check              read-only check for CI: validate + freshness of out/ and docc.lock
-  ack <id|file>...   confirm the changed links around a document, target or code file in docc.lock (--all: every changed link)
+  check              read-only check for CI: validate + freshness of out/
+  codes              give a code to every block that has none (build does it too)
+  migrate            move a project of the old format (docc.lock, named anchors) to block codes and version hashes
   explain <code>     describe a rule
   rules              list rules with effective levels
   schema document|config|compile|log|diff|comments-apply   print a JSON Schema
@@ -87,8 +88,9 @@ Examples:
         "build" => {
             "Usage: docc build [flags]
 
-Validates and writes Markdown into docs/out and the links into docc.lock (new links are
-confirmed, vanished ones dropped). With errors in groups 1xx-2xx nothing is written.
+First gives a code to every block that has none (as docc codes; never a hash), then
+validates and writes Markdown into docs/out. With errors in groups 1xx-2xx (a link whose
+version hash is missing or old, DOC209, among them) nothing is written.
 --single also writes every page into one Markdown file next to the directory (docs/out.md), --html
 into one self-contained HTML application (docs/out.html), no network needed: a document tree,
 search, dark theme, a timeline of the Git history with the edits drawn in the text, and comments
@@ -109,7 +111,7 @@ compile gives it (decisions/monolith.json, .json may be left out) or by its id.
 --rev builds the tree of a Git revision without a checkout, as docc compile --rev reads it
 (a bare mirror too, with --config naming the project's docc.json): it needs --html and writes
 only that file, into the current folder (out.html, out-full.html with --full), with the
-history up to that revision; docs/out and docc.lock are not written.
+history up to that revision; docs/out and the sources are not written.
 
 Examples:
   docc build
@@ -178,29 +180,43 @@ Examples:
         "check" => {
             "Usage: docc check [flags]
 
-Read-only check for CI: validate, and fail when docs/out (DOC501) or docc.lock (DOC503)
-differs from the sources. docs/out may be built with or without the comments; with
+Read-only check for CI: validate (a block without a code is DOC216, a link whose version
+hash is missing or old is DOC209), and fail when docs/out (DOC501) differs from the sources. docs/out may be built with or without the comments; with
 \"commitOut\": false in docc.json it is not compared.
 
 Example:
   docc check --max-warnings 0
 "
         }
-        "ack" => {
-            "Usage: docc ack <id, target or code file>... | --all
+        "codes" => {
+            "Usage: docc codes [flags]
 
-Confirms changed links in docc.lock after a review: sets the stored hashes of every
-changed line whose source or target is the argument, or whose target lies in the document
-with that id, to the current ones, and prints each link it confirmed. This clears DOC209
-and DOC402. Links that did not change are left alone. New links are confirmed by docc build.
-Read every document the output lists before you run it: the argument may match more
-links than the one you reviewed.
+Gives a code to every block of the documents that has none (a new paragraph, a list item, the
+text of a field) and prints how many it gave: the source files get \" ^k7f2\" at the end of
+those blocks, nothing else changes. It never touches a code that is there, never writes a
+version hash and checks nothing; docc build does the same before it builds. For a program
+that writes documents (Docspace) and needs the codes in at once.
 
 Examples:
-  docc ack req-login
-  docc ack req-login#^limit
-  docc ack internal/auth/login.go
-  docc ack --all
+  docc codes
+  docc codes --format json
+"
+        }
+        "migrate" => {
+            "Usage: docc migrate [flags]
+
+Moves a project of the old format (docc.lock, named anchors ^name, links without version
+hashes) to block codes and version hashes, once, without asking anything:
+every block gets a code and a named anchor becomes one; every link in the documents and every
+id#^anchor in the code files of trace.scan (a docc: tag, <Req to=\"i4#^i4-3\">) follows;
+links and the targets of docc: tags get the version hash of their target, docc: tags the
+fingerprint of their code; \"at\" of the readers' comments points at the code of its block;
+docc.lock is deleted. A link or region docc.lock held unconfirmed gets a hash that does not
+match, so docc check still asks to review it. Running it again changes nothing. Then run
+docc build and commit.
+
+Examples:
+  docc migrate
 "
         }
         "explain" => {
@@ -365,7 +381,8 @@ fn dispatch(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         "check" => cmd_check(c, rest, stdout, stderr),
         "init" => cmd_init(c, rest, stdout, stderr),
         "rules" => cmd_rules(c, rest, stdout),
-        "ack" => cmd_ack(c, rest, stdout),
+        "codes" => cmd_codes(c, rest, stdout),
+        "migrate" => cmd_migrate(c, rest, stdout),
         "explain" => cmd_explain(c, rest, stdout),
         "schema" => cmd_schema(rest, stdout).map(|_| 0),
         "compile" => cmd_compile(c, rest, stdout, stderr),
@@ -799,7 +816,6 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
         paths.insert(ext, render::single_file(p, dir, ext)?);
     }
     render::write(&p.cfg.abs(dir), dir, &p.cfg.abs(&p.cfg.src), &files)?;
-    p.write_lock()?;
     for (ext, content) in &one {
         render::write_file(&paths[ext], content.as_bytes())?;
         b.extra.push(format!("{dir}{ext}"));
@@ -833,6 +849,10 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
         return Err(usage_err("--rev writes only the HTML file: give --html, and no --single (its pages link the images of the output directory, which --rev does not write)"));
     }
     o.rev = !rev.is_empty();
+    if rev.is_empty() {
+        // blocks without a code get one first; the project is read again below
+        engine::assign_codes(&engine::load(load_config(c)?)?)?;
+    }
     let mut p = engine::load(load_config_at(c, &rev)?)?;
     p.validate();
     if !page.is_empty() {
@@ -876,53 +896,68 @@ fn cmd_check(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
     no_args(&pos)?;
     c.check()?;
     let mut p = load_project(c)?;
-    if !engine::structural(&p.diags()) {
-        if p.cfg.commit_out {
-            // docs/out may be built with or without the readers' comments
-            let r = render::Renderer::new(&p, false);
-            let mut bare = render::Renderer::new(&p, false);
-            bare.comments = false;
-            let with = r.files();
-            let without = p.docs.iter().any(|d| d.root().is_some_and(|r| r.get(crate::comments::KEY).is_some())).then(|| bare.files());
-            render::check_fresh(&p, &p.cfg.out, &with, without.as_ref());
-        }
-        p.check_lock_file();
+    // docs/out may be built with or without the readers' comments
+    if !engine::structural(&p.diags()) && p.cfg.commit_out {
+        let r = render::Renderer::new(&p, false);
+        let mut bare = render::Renderer::new(&p, false);
+        bare.comments = false;
+        let with = r.files();
+        let without = p.docs.iter().any(|d| d.root().is_some_and(|r| r.get(crate::comments::KEY).is_some())).then(|| bare.files());
+        render::check_fresh(&p, &p.cfg.out, &with, without.as_ref());
     }
     let ds = p.sorted();
     emit(stdout, stderr, c, &p, &ds)
 }
 
-fn cmd_ack(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
-    let mut all = false;
-    let pos = {
-        let mut fs = new_flags("ack", c);
-        fs.bool_var(&mut all, "all", "confirm every link");
-        parse(&mut fs, args)
-    };
-    let pos = pos?;
-    if all != pos.is_empty() {
-        return Err(usage_err("give the ids, targets or code files to confirm, or --all"));
-    }
+/// cmd_codes gives a code to every block without one (engine::assign_codes).
+fn cmd_codes(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
+    let pos = parse(&mut new_flags("codes", c), args)?;
+    no_args(&pos)?;
     c.check()?;
-    let p = load_project(c)?;
-    let done = p.ack(&pos, all)?;
+    let n = engine::assign_codes(&engine::load(load_config(c)?)?)?;
     if c.format == "json" {
         #[derive(serde::Serialize)]
-        struct Ack {
-            confirmed: usize,
-            links: Vec<std::collections::BTreeMap<&'static str, String>>,
+        struct Out {
+            given: usize,
         }
-        let links = done
-            .iter()
-            .map(|l| [("source", l.source.clone()), ("target", l.target.clone())].into_iter().collect())
-            .collect();
-        write_json(stdout, &Ack { confirmed: done.len(), links })?;
+        write_json(stdout, &Out { given: n })?;
+    } else {
+        say(stdout, &format!("gave codes to {n} blocks\n"));
+    }
+    Ok(0)
+}
+
+/// cmd_migrate moves a project of the old format to codes and hashes (engine::migrate).
+fn cmd_migrate(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
+    let pos = parse(&mut new_flags("migrate", c), args)?;
+    no_args(&pos)?;
+    c.check()?;
+    let r = engine::migrate(load_config(c)?)?;
+    if c.format == "json" {
+        write_json(stdout, &r)?;
         return Ok(0);
     }
-    for l in &done {
-        say(stdout, &format!("confirmed {} -> {}\n", l.source, l.target));
-    }
-    say(stdout, &format!("confirmed {} links in {}\n", done.len(), engine::LOCK_FILE));
+    say(
+        stdout,
+        &format!(
+            "codes given: {}, named anchors replaced: {}, links rewritten: {}, link hashes added: {}, comments moved: {}\n\
+             code files written: {}, id#^anchor rewritten in code: {}, tag hashes added: {}, fingerprints added: {}\n\
+             unconfirmed in docc.lock (left to review): {}, documents written: {}, docc.lock removed: {}\n\
+             Next: docc build, docc check, then commit.\n",
+            r.codes_given,
+            r.anchors_replaced,
+            r.links_rewritten,
+            r.hashes_added,
+            r.comments_moved,
+            r.code_files,
+            r.code_refs_rewritten,
+            r.tag_hashes_added,
+            r.prints_added,
+            r.unconfirmed,
+            r.documents,
+            if r.lock_removed { "yes" } else { "no" },
+        ),
+    );
     Ok(0)
 }
 

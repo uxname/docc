@@ -159,6 +159,12 @@ fn load_valid(dir: &Path) -> Result<crate::engine::Project, String> {
         Ok(data) => config::parse(&data, dir, "docc.json").map_err(|e| e.to_string())?,
         Err(_) => config::default(dir),
     };
+    // a test project is written in the old format, without codes and hashes:
+    // a copy in the temporary folder is moved to them first, with codes fixed by place
+    if dir.starts_with(std::env::temp_dir()) {
+        crate::codes::FIXED.store(true, std::sync::atomic::Ordering::Relaxed);
+        crate::engine::migrate(cfg.clone()).map_err(|e| e.to_string())?;
+    }
     let mut p = crate::engine::load(cfg).map_err(|e| e.to_string())?;
     let ds = p.validate();
     if crate::engine::structural(&ds) {
@@ -565,7 +571,8 @@ fn blocks_html(data: &Value) -> String {
 }
 
 /// Blocks carry the JSON Pointer and
-/// source text of their element; headings have none; a block marker written
+/// source text of their element (with its code: the codes are fixed by place
+/// in tests); headings have none; a block marker written
 /// by an agent is dropped like other raw HTML.
 #[test]
 fn html_blocks_have_pointers() {
@@ -587,7 +594,7 @@ fn html_blocks_have_pointers() {
         .collect();
     assert_eq!(
         got.join(" "),
-        "/body/0=One. /body/1=<!--b:0--> /body/2=Two. = /field=Free text. = /list=a: x"
+        "/body/0=One. ^4xh7 /body/1=<!--b:0--> ^6935 /body/2=Two. ^at73 = /field=Free text. ^d7gd = /list=a: x"
     );
     let b = blocks_html(&data);
     assert!(

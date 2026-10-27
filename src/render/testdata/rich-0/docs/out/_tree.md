@@ -2,7 +2,7 @@
 
 # Дерево документов
 
-- [Home page [[b]]](index.md)
+- [Home page [[b@3pc2]]](index.md)
   - [1 елка](f.md)
   - [2 b](b.md)
   - [3 Item 10](a.md)

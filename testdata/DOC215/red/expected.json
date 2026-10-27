@@ -7,9 +7,9 @@
     "line": 10,
     "column": 25,
     "endLine": 10,
-    "endColumn": 34,
-    "message": "comment \"c-1\" lost its place: the words \"owner\" are not in the block at \"/body/0\"",
-    "hint": "Move it: set \"at\" to the pointer of the block it is about now; or delete it if it is handled (docc comments rm \u003cid\u003e)."
+    "endColumn": 32,
+    "message": "comment \"c-1\" lost its place: the words \"owner\" are not in the block at \"^5v78\"",
+    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
   },
   {
     "code": "DOC215",
@@ -21,7 +21,7 @@
     "endLine": 11,
     "endColumn": 34,
     "message": "comment \"c-2\" lost its place: the form field \"export\" is not at \"/body/1\"",
-    "hint": "Move it: set \"at\" to the pointer of the block it is about now; or delete it if it is handled (docc comments rm \u003cid\u003e)."
+    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
   },
   {
     "code": "DOC215",
@@ -33,6 +33,6 @@
     "endLine": 12,
     "endColumn": 34,
     "message": "comment \"c-3\" lost its place: no block at \"/body/9\"",
-    "hint": "Move it: set \"at\" to the pointer of the block it is about now; or delete it if it is handled (docc comments rm \u003cid\u003e)."
+    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
   }
 ]

@@ -1,7 +1,7 @@
 {
   "title": "Index",
   "parent": "no-parent",
-  "body": "See [[a]], [[no-link]], [[no-ref]] and [[Bad Id]].",
+  "body": "See [[a@apak]], [[no-link]], [[no-ref]] and [[Bad Id]]. ^gnda",
   "notes": ["Check [[no-note]] too."],
   "kind": "page"
 }

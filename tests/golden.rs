@@ -147,7 +147,7 @@ fn render_golden() {
         let src = c.path();
         // the HTML file keys its comments by the folder name, which is 001 in Go's t.TempDir()
         let tmp = temp_dir();
-        let work = Dir { path: tmp.join("001") };
+        let work = Dir { path: tmp.join("001"), auto: false };
         copy_tree(&src.join("docs"), &work.join("docs")).unwrap();
         if let Ok(b) = std::fs::read(src.join("docc.json")) {
             std::fs::write(work.join("docc.json"), b).unwrap();

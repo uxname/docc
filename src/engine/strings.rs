@@ -6,6 +6,7 @@ use regex::Regex;
 
 use super::project::Doc;
 use crate::loader::{Kind, Node};
+use crate::codes;
 use crate::mdscan;
 use crate::text;
 
@@ -64,10 +65,17 @@ pub struct StrNode {
     pub path: String,
     /// inside notes: hidden from readers, text rules do not apply
     pub notes: bool,
-    /// Anchor is the block anchor name of a trailing " ^name", "" for none;
+    /// Anchor is the block code of a trailing " ^k7f2", "" for none;
     /// the marker starts at anchor_at.
     pub anchor: String,
     pub anchor_at: usize,
+    /// a block: a string that carries a code (the value of a field or
+    /// section, an item of an array of paragraphs; not the title, notes, a
+    /// member of a list object or a table row)
+    pub blk: bool,
+    /// a block that ends in a marker which is not a code (an old named
+    /// anchor, upper case): DOC216
+    pub bad_mark: bool,
     pub(super) scan: OnceCell<mdscan::Scan>,
 }
 
@@ -83,14 +91,14 @@ impl StrNode {
     }
 }
 
-/// blockAnchor is a block anchor marker at the very end of a string. The name
-/// starts with a letter, so "x ^2" and footnotes `[^1]` are not anchors.
-static BLOCK_ANCHOR: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"[\t\n\f\r ]\^([a-z][a-z0-9-]*)$").unwrap());
-
-/// AnchorName reports whether s is a valid block anchor name.
-pub fn anchor_name(s: &str) -> bool {
-    BLOCK_ANCHOR.is_match(&format!(" ^{s}"))
+/// AnchorName reports whether s is a block code (an old named anchor in a
+/// project of the old format, which only docc migrate reads).
+pub fn anchor_name(s: &str, legacy: bool) -> bool {
+    if legacy {
+        codes::NAMED_MARK.is_match(&format!(" ^{s}"))
+    } else {
+        codes::is_code(s)
+    }
 }
 
 /// is_letter is unicode.IsLetter; is_digit is unicode.IsDigit.
@@ -129,9 +137,10 @@ pub fn heading_anchor(key: &str) -> String {
     anchor(&key.replace(['_', '-'], " "))
 }
 
-/// SplitAnchor cuts a trailing block anchor marker from s.
+/// SplitAnchor cuts a trailing block code (or anything that looks like one or
+/// like an old anchor: the output never shows it) from s.
 pub fn split_anchor(s: &str) -> (&str, &str) {
-    match BLOCK_ANCHOR.captures(s) {
+    match codes::ANY_MARK.captures(s) {
         Some(m) => (&s[..m.get(0).unwrap().start()], m.get(1).unwrap().as_str()),
         None => (s, ""),
     }
@@ -217,10 +226,11 @@ impl Doc {
                         !reserved_key(k),
                         false,
                         k != "title",
+                        self.legacy,
                         &mut out,
                     );
                 } else if k == "notes" {
-                    walk(&m.value, "/notes", k, k, false, true, false, &mut out);
+                    walk(&m.value, "/notes", k, k, false, true, false, self.legacy, &mut out);
                 }
             }
             out
@@ -246,6 +256,7 @@ fn walk(
     sec: bool,
     notes: bool,
     blk: bool,
+    legacy: bool,
     out: &mut Vec<StrNode>,
 ) {
     match n.kind {
@@ -258,11 +269,16 @@ fn walk(
                 notes,
                 anchor: String::new(),
                 anchor_at: 0,
+                blk,
+                bad_mark: false,
                 scan: OnceCell::new(),
             };
-            if blk && let Some(m) = BLOCK_ANCHOR.captures(&n.str) {
+            let re = if legacy { &codes::NAMED_MARK } else { &codes::CODE_MARK };
+            if blk && let Some(m) = re.captures(&n.str) {
                 sn.anchor = m.get(1).unwrap().as_str().to_string();
                 sn.anchor_at = m.get(0).unwrap().start();
+            } else if blk && !legacy && codes::ANY_MARK.is_match(&n.str) {
+                sn.bad_mark = true;
             }
             out.push(sn);
         }
@@ -276,6 +292,7 @@ fn walk(
                     false,
                     notes,
                     blk,
+                    legacy,
                     out,
                 );
             }
@@ -300,6 +317,7 @@ fn walk(
                     is_sec,
                     notes,
                     blk && is_sec,
+                    legacy,
                     out,
                 );
             }

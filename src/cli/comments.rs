@@ -208,9 +208,10 @@ impl<'a> Seer<'a> {
             return Err("the project has errors of groups 1xx-2xx, so readers see no page: fix them first (docc check)".into());
         }
         let d = &self.p.docs[i];
+        let at = &d.root().and_then(|r| comments::pointer(r, at)).unwrap_or_else(|| at.to_string());
         let seen = self.cache.entry(i).or_insert_with(|| self.r.seen(d));
         let rel = &d.rel;
-        let Some(v) = seen.iter().find(|v| v.p == at) else {
+        let Some(v) = seen.iter().find(|v| v.p == *at) else {
             return Err(format!(
                 "{rel} shows a reader no block at {}: a comment stands on a block or a form field of the page, never on what readers do not see (notes, docIgnore, hidden, the title, \"$comments\")",
                 go_quote(at)
@@ -218,7 +219,8 @@ impl<'a> Seer<'a> {
         };
         match input {
             Some(f) if v.input.as_deref() != Some(f) => Err(format!("{rel} has no form field {} at {}", go_quote(f), go_quote(at))),
-            _ => Ok(v.s.clone()),
+            // the text as the reader reads it: without the code of the block
+            _ => Ok(engine::split_anchor(&v.s).0.to_string()),
         }
     }
 }
@@ -275,6 +277,12 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
                 comments::check(&c).map_err(|m| fail(format!("comment: {m}")))?;
                 // the quote is always the text the reader sees there; a quote given that differs is replaced
                 c.quote = seer.quote(i, &c.at, c.input.as_deref()).map_err(fail)?;
+                // a block with a code is named by it: the comment keeps its place when blocks move
+                if let Some(r) = d.root()
+                    && let Some(ptr) = comments::pointer(r, &c.at)
+                {
+                    c.at = comments::at_of(r, &ptr);
+                }
                 answer_fits(d.root(), &mut c).map_err(|m| fail(format!("comment: {m}")))?;
                 owner.insert(id.clone(), vec![i]);
                 out.added.push(Added { id: id.clone(), doc: d.id.clone(), path: d.rel.clone() });
@@ -456,7 +464,7 @@ fn import(c: &Common, p: &Project, files: &[String], hidden: bool, stdout: &mut 
         let answer = (!it.input.is_empty()).then(|| if it.answer.is_empty() { vec![it.text.clone()] } else { it.answer.clone() });
         let cm = Comment {
             id: it.id,
-            at,
+            at: comments::at_of(root, &at),
             quote: it.quote,
             fragment: it.fragment,
             prefix: it.prefix,

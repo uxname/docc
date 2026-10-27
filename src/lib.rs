@@ -2,6 +2,7 @@
 //! Pipeline: loader → schema → engine → render; cli is flag parsing and dispatch only.
 
 pub mod changes;
+pub mod codes;
 pub mod cli;
 pub mod comments;
 pub mod config;

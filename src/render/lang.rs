@@ -147,6 +147,11 @@ pub(super) const RU: &[(&str, &str)] = &[
         "Comments can be left on the current text only.",
         "Комментарии оставляются только к текущему тексту.",
     ),
+    ("Code of the paragraph", "Код абзаца"),
+    ("Copy link", "Скопировать ссылку"),
+    ("Copy code", "Скопировать код"),
+    ("Link copied.", "Ссылка скопирована."),
+    ("Code copied.", "Код скопирован."),
     (
         "Copied. Paste it into a message.",
         "Скопировано. Вставьте в сообщение.",

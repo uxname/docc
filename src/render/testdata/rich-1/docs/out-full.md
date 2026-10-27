@@ -4,7 +4,7 @@
 
 # Document tree
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
   - [елка](#f)
   - [b](#b)
   - [Item 10](#a)
@@ -29,19 +29,19 @@
 
 page · draft now · priority 2 · x, y
 
-See [Item 10](#a), [Item 10](#a--goals), [Item 10](#a--g1), [Sub](#sec--sub), [Part two](#sec--part-two), [Sections](#sec--deep), [Item 10](#a) and hidden.
+See [Item 10](#a), [Item 10](#a--goals), [Item 10](#a--tk2x), [Sub](#sec--sub), [Part two](#sec--part-two), [Sections](#sec--deep), [Item 10](#a) and hidden.
 
-<a id="index--intro"></a>![pic](out-full/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out-full/img/p.png "t")
+![pic](out-full/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out-full/img/p.png "t")
 
 <!-- include a#goals -->
 
 G1
 
-G2 with [Home page [[b]]](#index)
+G2 with [Home page [[b@3pc2]]](#index)
 
 <!-- /include -->
 
-Inline <!-- include a#short -->short text<!-- /include --> and <!-- include a#^g1 -->G1<!-- /include --> end.
+Inline <!-- include a#short -->short text<!-- /include --> and <!-- include a#^tk2x -->G1<!-- /include --> end.
 
 <!-- include sec#content/Part two -->
 
@@ -153,7 +153,7 @@ page
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -168,11 +168,11 @@ B.
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Referenced by
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -189,9 +189,9 @@ A body with ![sub](out-full/img/p.png).
 
 ## Goals
 
-<a id="a--g1"></a>G1
+<a id="a--tk2x"></a>G1
 
-<a id="a--g2"></a>G2 with [Home page [[b]]](#index)
+G2 with [Home page [[b@3pc2]]](#index)
 
 <a id="a--short"></a>
 
@@ -201,12 +201,12 @@ short text
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Referenced by
 
 - [Hidden one](#hidden)
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 - [Req](#req)
 - [Sections](#sec)
 
@@ -266,7 +266,7 @@ namesake
 
 l1
 
-<a id="sec--lf"></a>l2
+l2
 
 <a id="sec--part-two"></a>
 
@@ -294,7 +294,7 @@ again
 
 ## Referenced by
 
-- [Home page [[b]]](#index)
+- [Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -307,7 +307,7 @@ page
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -324,7 +324,7 @@ Secret [Item 10](#a).
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -339,7 +339,7 @@ C [item 9](#d).
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 
 ---
@@ -354,7 +354,7 @@ D.
 
 ## Parent
 
-[Home page [[b]]](#index)
+[Home page [[b@3pc2]]](#index)
 
 ## Referenced by
 
@@ -384,7 +384,7 @@ No parent.
 
 page
 
-![up](out-full/img/p.png) <!-- include a#body -->A body with ![sub](out-full/img/p.png).<!-- /include --> [Home page [[b]]](#index--short-field) [Home page [[b]]](#index--a-b-1)
+![up](out-full/img/p.png) <!-- include a#body -->A body with ![sub](out-full/img/p.png).<!-- /include --> [Home page [[b@3pc2]]](#index--short-field) [Home page [[b@3pc2]]](#index--a-b-1)
 
 ## Parent
 

@@ -19,7 +19,7 @@ use crate::loader::Kind;
 
 /// SCHEMA_ID is the "$schema" of the output and the "$id" of its JSON Schema
 /// (`docc schema compile`); the number changes when the shape does.
-pub const SCHEMA_ID: &str = "urn:docc:schema:compile:1";
+pub const SCHEMA_ID: &str = "urn:docc:schema:compile:2";
 
 /// Compiled is what the sources compile to; docc compile adds the diagnostics.
 #[derive(Serialize, Default)]
@@ -98,6 +98,8 @@ pub struct CPage {
     tags: Vec<String>,
     parent: Option<String>,
     crumbs: Vec<String>,
+    /// the version hash of the whole document: what [[id@hash]] carries
+    hash: String,
     pub(crate) props: Vec<CProp>,
     pub(crate) sections: Vec<Section>,
     pub(crate) blocks: Vec<CBlock>,
@@ -118,6 +120,11 @@ pub struct CComment {
 pub struct CProp {
     pub(crate) k: String,
     id: String,
+    /// the block code of the value ("k7f2"), absent when it has none
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) code: Option<String>,
+    /// the version hash of the value
+    pub(crate) hash: String,
     pub(crate) p: String,
     pub(crate) s: String,
     pub(crate) h: String,
@@ -136,6 +143,14 @@ pub struct Section {
 pub struct CBlock {
     /// JSON Pointer of the value in the source; "" for the footnotes of the page
     pub(crate) p: String,
+    /// the block code ("k7f2", lower case: links take it in any case), absent
+    /// when the block has none (a table, a list of objects, a heading, footnotes)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) code: Option<String>,
+    /// the version hash of the block: what [[page#^code@hash]] carries; of the
+    /// value at p when the block has no code; absent for the footnotes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) hash: Option<String>,
     pub(crate) s: String,
     pub(crate) h: String,
     /// the section the block stands under; None above the first heading
@@ -180,10 +195,11 @@ impl<'a> Renderer<'a> {
                 tags: engine::string_list(root(d).get("tags")).into_iter().map(|n| n.str.clone()).collect(),
                 parent: Some(pd.parent).filter(|p| !p.is_empty()),
                 crumbs: pd.crumbs,
+                hash: crate::codes::doc_hash(root(d)),
                 props: pd
                     .props
                     .into_iter()
-                    .map(|p| CProp { id: slug(&p.id), k: p.k, p: p.p, s: p.s, h: p.h })
+                    .map(|p| CProp { id: slug(&p.id), k: p.k, code: Some(p.c).filter(|c| !c.is_empty()), hash: p.v, p: p.p, s: p.s, h: p.h })
                     .collect(),
                 sections: Vec::new(),
                 blocks: Vec::new(),
@@ -201,7 +217,16 @@ impl<'a> Renderer<'a> {
                     pg.sections.push(Section { id, title, level });
                     continue;
                 }
-                pg.blocks.push(CBlock { p: b.p, s: b.s, h: b.h, sec: sec.clone(), i: b.i, k: None });
+                pg.blocks.push(CBlock {
+                    p: b.p,
+                    code: Some(b.c).filter(|c| !c.is_empty()),
+                    hash: Some(b.v).filter(|v| !v.is_empty()),
+                    s: b.s,
+                    h: b.h,
+                    sec: sec.clone(),
+                    i: b.i,
+                    k: None,
+                });
             }
             out.pages.push(pg);
         }

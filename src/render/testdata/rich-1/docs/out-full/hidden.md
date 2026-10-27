@@ -10,4 +10,4 @@ Secret [Item 10](a.md).
 
 ## Parent
 
-[Home page [[b]]](index.md)
+[Home page [[b@3pc2]]](index.md)

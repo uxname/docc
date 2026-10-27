@@ -1,8 +1,8 @@
 package x
 
-// docc: real, ghost-one
+// docc: real@uev8, ghost-one ~s9yc
 func TestA() {}
 	s := "docc: ghost-string"
-	// docc: real#nope, index#^nope
-// docc:begin real
+	// docc: real#nope, index#^nope ~s9yc
+// docc:begin real@uev8
 x := 1

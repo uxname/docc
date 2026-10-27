@@ -1,5 +1,0 @@
-code/auth.go security-policy#^lockout 0ed9bcaf d5fd385e
-code/auth.go security-policy#^password-length 86e8ed26 c3ae4e58
-index login-screen b3dcb8bc
-index security-policy 73e4e7af
-login-screen security-policy#^lockout 0ed9bcaf

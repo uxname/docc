@@ -2,13 +2,13 @@
   {
     "code": "DOC209",
     "rule": "graph/suspect-link",
-    "level": "warn",
+    "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
     "column": 62,
     "endLine": 1,
-    "endColumn": 74,
-    "message": "the target b#^limit changed after the link from index was confirmed",
-    "hint": "Check index against b#^limit, then run docc ack b#^limit (it prints the links it confirms)."
+    "endColumn": 78,
+    "message": "link \"[[b#^tz3n@ud8q]]\": the target changed, its hash is now @sj38",
+    "hint": "Read the change, check that this place still agrees with it (fix it if not), then write @sj38 in place of @ud8q by hand. Version @ud8q is not in the Git history; it reads now:\n    Ten attempts per minute."
   }
 ]

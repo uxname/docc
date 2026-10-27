@@ -1,6 +1,6 @@
-// docc: real
-/* docc: index#body, real#^limit */
+// docc: real@mmqa ~837j
+/* docc: index#body@45qe, real#^n9fp@zkex ~837j */
 fmt.Println("docc: ghost")
-# docc:begin real
+# docc:begin real@mmqa ~qmrq
   code  
 -- docc:end

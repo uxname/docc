@@ -52,6 +52,9 @@ pub struct Doc {
     // tree must never change once the document is loaded
     res: loader::Result,
     pub hidden: bool,
+    /// the project is in the old format (named anchors, links without hashes,
+    /// docc.lock): only docc migrate and old revisions read it
+    pub legacy: bool,
 
     pub refs: Vec<RefUse>,
     pub incs: Vec<IncUse>,
@@ -114,6 +117,11 @@ pub struct Project {
     pub(super) code_at: HashMap<trace::Key, (usize, usize)>,
     pub(super) by_file: HashMap<String, usize>,
     pub(super) matchers: RefCell<HashMap<String, Rc<text::Matcher>>>,
+    /// the project is in the old format: it has a docc.lock (Doc::legacy)
+    pub legacy: bool,
+    /// the blocks some [[id#^code]] links to, as "id#code": only they get an
+    /// anchor tag in the Markdown
+    pub linked: std::collections::HashSet<String>,
 }
 
 /// UsageError is a problem with the environment (exit code 2).
@@ -150,9 +158,23 @@ pub(super) fn go_path_error(op: &str, path: &Path, err: &std::io::Error) -> Stri
     format!("{op} {}: {text}", path.display())
 }
 
+/// MIGRATE is what docc says about a project of the old format.
+pub const MIGRATE: &str = "this project is in the old format of docc (docc.lock, named anchors ^name, links without version hashes): run docc migrate once, then docc build";
+
 /// Load reads the config, schemas and all documents, and emits the file-level
-/// diagnostics (DOC101, DOC102, DOC104).
+/// diagnostics (DOC101, DOC102, DOC104). A project of the old format (it has
+/// a docc.lock) is refused on the disk; a Git revision of it is read as it
+/// was, so the history and old revisions still show.
 pub fn load(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
+    let p = load_any(cfg)?;
+    if p.legacy && !matches!(p.cfg.source, Source::Rev(_)) {
+        return Err(usage(MIGRATE.into()));
+    }
+    Ok(p)
+}
+
+/// load_any is load that also reads a project of the old format (docc migrate).
+pub fn load_any(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
     let set = schema::load(&cfg.abs(&cfg.schemas), &cfg.schemas, &cfg.source)?;
     let mut p = Project {
         cfg,
@@ -165,7 +187,10 @@ pub fn load(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
         code_at: HashMap::new(),
         by_file: HashMap::new(),
         matchers: RefCell::new(HashMap::new()),
+        legacy: false,
+        linked: Default::default(),
     };
+    p.legacy = p.cfg.source.entry(&p.cfg.abs(super::LOCK_FILE)) == Some(source::Entry::File);
     let src_abs = p.cfg.abs(&p.cfg.src);
     if p.cfg.source.entry(&src_abs) != Some(source::Entry::Dir) {
         return Err(usage(format!(
@@ -205,6 +230,7 @@ pub fn load(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
             id,
             rel,
             file,
+            legacy: p.legacy,
             ..Default::default()
         };
         p.read(&mut d, &abs);

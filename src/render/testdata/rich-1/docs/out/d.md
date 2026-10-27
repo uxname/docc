@@ -8,7 +8,7 @@ D.
 
 ## Parent
 
-[Home page [[b]]](index.md)
+[Home page [[b@3pc2]]](index.md)
 
 ## Referenced by
 

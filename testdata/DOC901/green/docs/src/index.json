@@ -1,6 +1,6 @@
 {
   "title": "Index",
-  "body": ["It is fast.", "Also fast and TODO."],
+  "body": ["It is fast. ^5v78", "Also fast and TODO. ^muum"],
   "docIgnore": [
     { "rule": "text/forbidden-words", "reason": "customer wording", "path": "/body" },
     { "rule": "text/placeholder", "reason": "whole document" }

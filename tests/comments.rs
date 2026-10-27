@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 const SCHEMA: (&str, &str) = ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
 
-const PAGE: &str = "{\n  \"title\": \"Index\",\n  \"kind\": \"page\",\n  \"body\": [\n    \"Alpha text.\",\n    \"Beta text.\"\n  ]\n}\n";
+const PAGE: &str = "{\n  \"title\": \"Index\",\n  \"kind\": \"page\",\n  \"body\": [\n    \"Alpha text. ^a2a2\",\n    \"Beta text. ^b2b2\"\n  ]\n}\n";
 
 /// apply runs docc comments apply --format json with ops on standard input.
 fn apply(dir: &Path, ops: &Value) -> (i32, Value, String) {
@@ -43,8 +43,11 @@ fn check_schema(name: &str, v: &Value) {
 #[test]
 fn apply_edits_only_comments() {
     let p = project([SCHEMA, ("docs/src/index.json", PAGE), ("docs/src/other.json", "{\"title\":\"Other\",\"kind\":\"page\",\"parent\":\"index\",\"body\":[\"Gamma, see [[index]].\"]}")]);
-    // a comment is no edit of the text: the links to the document stay confirmed (DOC209)
+    // a comment is no edit of the text: the links to the document keep their hash (DOC209)
     p.must_build();
+    let other0 = p.read("docs/src/other.json");
+    let other_code = &other0[other0.find(" ^").unwrap() + 2..][..4];
+    let other_text = &other0[other0.find("Gamma").unwrap()..other0.find(" ^").unwrap()];
     let ops = json!([
         {"op": "add", "doc": "index", "comment": {"at": "/body/1", "fragment": "Beta", "text": "Why beta?", "author": "Ann", "email": "ann@example.com"}},
         {"op": "add", "doc": "docs/src/other.json", "comment": {"id": "c-given", "at": "/body/0", "text": "And this?", "author": "Bob", "created": "2026-10-22T09:00:00Z"}}
@@ -59,12 +62,12 @@ fn apply_edits_only_comments() {
     let head = PAGE.strip_suffix("\n}\n").unwrap();
     assert!(src.starts_with(head), "the members before stay as they were:\n{src}");
     let rest = &src[head.len()..];
-    assert!(rest.starts_with(&format!(",\n  \"$comments\": [\n    {{\"id\": \"{id}\", \"at\": \"/body/1\", \"quote\": \"Beta text.\", \"fragment\": \"Beta\", \"text\": \"Why beta?\", \"author\": \"Ann\", \"email\": \"ann@example.com\", \"created\": \"20")), "{rest}");
+    assert!(rest.starts_with(&format!(",\n  \"$comments\": [\n    {{\"id\": \"{id}\", \"at\": \"^b2b2\", \"quote\": \"Beta text.\", \"fragment\": \"Beta\", \"text\": \"Why beta?\", \"author\": \"Ann\", \"email\": \"ann@example.com\", \"created\": \"20")), "{rest}");
     assert!(rest.ends_with("\"}\n  ]\n}\n"), "the last member, indented like the file:\n{rest}");
     assert_eq!(
         p.read("docs/src/other.json"),
-        "{\"title\":\"Other\",\"kind\":\"page\",\"parent\":\"index\",\"body\":[\"Gamma, see [[index]].\"], \"$comments\": [{\"id\": \"c-given\", \"at\": \"/body/0\", \"quote\": \"Gamma, see [[index]].\", \"text\": \"And this?\", \"author\": \"Bob\", \"created\": \"2026-10-22T09:00:00Z\"}]}",
-        "a file on one line stays on one line"
+        format!("{}, \"$comments\": [{{\"id\": \"c-given\", \"at\": \"^{other_code}\", \"quote\": \"{other_text}\", \"text\": \"And this?\", \"author\": \"Bob\", \"created\": \"2026-10-22T09:00:00Z\"}}]}}", &other0[..other0.len() - 1]),
+        "a file on one line stays on one line; at is the code of the block, the quote its text"
     );
     let (code, out, errs) = p.run(&["validate", "--max-warnings", "0"]);
     assert_eq!(code, 0, "{out} {errs}");
@@ -94,7 +97,7 @@ fn apply_edits_only_comments() {
     let (code, v, errs) = apply(&p.path, &json!([{"op": "rm", "id": id}, {"op": "rm", "id": "c-given"}]));
     assert!(code == 0 && v["removed"] == json!([id, "c-given"]), "{errs}");
     assert_eq!(p.read("docs/src/index.json"), PAGE);
-    assert_eq!(p.read("docs/src/other.json"), "{\"title\":\"Other\",\"kind\":\"page\",\"parent\":\"index\",\"body\":[\"Gamma, see [[index]].\"]}");
+    assert_eq!(p.read("docs/src/other.json"), other0);
     let (_, out, _) = do_in(&p.path, &["schema", "comments-apply"]);
     assert!(out.contains("urn:docc:schema:comments-apply:1"));
 }
@@ -111,14 +114,14 @@ fn compile_and_markdown_show_comments() {
     ]);
     let (code, _, errs) = apply(&p.path, &ops);
     assert_eq!(code, 0, "{errs}");
-    p.write("docs/src/index.json", p.read("docs/src/index.json").replacen("\"Beta text.\"", "\"Beta text, edited.\"", 1));
+    p.write("docs/src/index.json", p.read("docs/src/index.json").replacen("\"Beta text. ^b2b2\"", "\"Beta text, edited. ^b2b2\"", 1));
     let (_, out, _) = p.run(&["compile", "--format", "json"]);
     let v: Value = serde_json::from_str(&out).unwrap();
     check_schema("compile", &v);
     let cs = v["pages"][0]["comments"].as_array().unwrap();
     let places: Vec<&str> = cs.iter().map(|c| c["place"].as_str().unwrap()).collect();
     assert_eq!(places, ["same", "changed", "lost"]);
-    assert!(cs[0].get("email").is_none() && cs[0]["text"] == "Same." && cs[0]["at"] == "/body/0", "{}", cs[0]);
+    assert!(cs[0].get("email").is_none() && cs[0]["text"] == "Same." && cs[0]["at"] == "^a2a2", "{}", cs[0]);
     p.must_build();
     let md = p.read("docs/out/index.md");
     assert!(
@@ -158,7 +161,10 @@ fn import_moves_a_comment_from_an_older_build() {
     git(&p.path, &["add", "-A"]);
     git(&p.path, &["commit", "-q", "-m", "first"]);
     let build = git(&p.path, &["rev-parse", "--short=8", "HEAD"]);
-    p.write("docs/src/index.json", format!(r#"{{"title":"I","kind":"page","body":["Zero.","One.","Two, edited.",{field}]}}"#));
+    let v1 = p.read("docs/src/index.json");
+    let two = v1[v1.find("Two. ^").unwrap() + 6..][..4].to_string();
+    p.write("docs/src/index.json", v1.replace(r#"["One."#, r#"["Zero.","One."#).replace("Two. ^", "Two, edited. ^"));
+    p.run(&["codes"]);
     git(&p.path, &["commit", "-q", "-am", "second"]);
     p.write(
         "export.json",
@@ -178,7 +184,8 @@ fn import_moves_a_comment_from_an_older_build() {
     let list: Value = serde_json::from_str(&out).unwrap();
     let at: Vec<(&str, &str)> = list["comments"].as_array().unwrap().iter().map(|c| (c["at"].as_str().unwrap(), c["place"].as_str().unwrap())).collect();
     // the quote is the text of the block now (apply never keeps a quote it is given), so both read same
-    assert_eq!(at, [("/body/2", "same"), ("/body/3", "same")]);
+    let two = format!("^{two}");
+    assert_eq!(at, [(two.as_str(), "same"), ("/body/3", "same")], "a paragraph stands at its code, an answer at its field");
 }
 
 /// apply_with runs docc comments apply with extra flags; it returns the exit
@@ -197,16 +204,17 @@ fn apply_with(dir: &Path, ops: &Value, flags: &[&str]) -> (i32, String) {
 fn apply_refuses_places_readers_do_not_see() {
     let page = r#"{"title":"Index","kind":"page","body":["Alpha text.",{"$input":"text","id":"when","label":"When?"}],"owner":"Ann","due":"Monday","notes":["INTERNAL: the price is 40k"],"hidden":false,"docIgnore":[{"rule":"DOC353","reason":"x"}]}"#;
     let p = project([SCHEMA, ("docs/src/index.json", page)]);
+    let page = &p.read("docs/src/index.json");
     // the reproduction: no quote given, at points into notes
     let leak = json!([{"op": "add", "doc": "index", "comment": {"at": "/notes/0", "text": "?", "author": "Eve"}}]);
     let (code, out) = apply_with(&p.path, &leak, &[]);
     assert!(code == 2 && out.contains("index.json shows a reader no block at \"/notes/0\""), "{code} {out}");
-    assert_eq!(p.read("docs/src/index.json"), page, "nothing written");
+    assert_eq!(&p.read("docs/src/index.json"), page, "nothing written");
     for at in ["/notes", "/hidden", "/docIgnore/0/reason", "/title", "/kind", "/body", "/body/7", "/$comments/0", "", "/"] {
         let ops = json!([{"op": "add", "doc": "index", "comment": {"at": at, "text": "?", "author": "Eve"}}]);
         let (code, out) = apply_with(&p.path, &ops, &[]);
         assert_eq!(code, 2, "{at}: {out}");
-        assert_eq!(p.read("docs/src/index.json"), page, "{at}: nothing written");
+        assert_eq!(&p.read("docs/src/index.json"), page, "{at}: nothing written");
     }
     // an answer needs the form field with its id at at
     let ops = json!([{"op": "add", "doc": "index", "comment": {"at": "/body/1", "input": "other", "answer": ["x"], "author": "Eve"}}]);
@@ -241,11 +249,12 @@ fn apply_refuses_places_readers_do_not_see() {
 fn hidden_documents_need_the_flag() {
     let secret = r#"{"title":"Secret","kind":"page","parent":"index","hidden":true,"body":["Plans."]}"#;
     let p = project([SCHEMA, ("docs/src/index.json", PAGE), ("docs/src/secret.json", secret)]);
+    let secret = &p.read("docs/src/secret.json");
     for doc in ["secret", "secret.json", "docs/src/secret.json"] {
         let ops = json!([{"op": "add", "doc": doc, "comment": {"at": "/body/0", "text": "?", "author": "Eve"}}]);
         let (code, out) = apply_with(&p.path, &ops, &[]);
         assert!(code == 2 && out.contains("secret.json is a hidden document"), "{doc}: {code} {out}");
-        assert_eq!(p.read("docs/src/secret.json"), secret);
+        assert_eq!(&p.read("docs/src/secret.json"), secret);
     }
     let ops = json!([{"op": "add", "doc": "secret", "comment": {"id": "c-s", "at": "/body/0", "text": "?", "author": "Agent"}}]);
     let (code, out) = apply_with(&p.path, &ops, &["--hidden"]);
@@ -261,7 +270,7 @@ fn hidden_documents_need_the_flag() {
     assert!(code == 2 && errs.contains("hidden document"), "{out} {errs}");
     let (code, out, errs) = p.run(&["comments", "rm", "c-s", "--hidden"]);
     assert!(code == 0, "{out} {errs}");
-    assert_eq!(p.read("docs/src/secret.json"), secret);
+    assert_eq!(&p.read("docs/src/secret.json"), secret);
 }
 
 /// rm and edit of an id that two comments share name neither: refused, nothing written.
@@ -271,6 +280,7 @@ fn shared_ids_are_ambiguous() {
     let a = format!(r#"{{"title":"Index","kind":"page","body":["Alpha text."],"$comments":[{c}]}}"#);
     let b = format!(r#"{{"title":"B","kind":"page","parent":"index","body":["Alpha text."],"$comments":[{c}]}}"#);
     let p = project([SCHEMA, ("docs/src/index.json", a.as_str()), ("docs/src/b.json", b.as_str())]);
+    let (a, b) = (p.read("docs/src/index.json"), p.read("docs/src/b.json"));
     for ops in [json!([{"op": "rm", "id": "c-dup"}]), json!([{"op": "edit", "id": "c-dup", "text": "!"}])] {
         let (code, out) = apply_with(&p.path, &ops, &[]);
         assert!(code == 2 && out.contains("comment id \"c-dup\" is used by 2 comments (in b.json, index.json)"), "{ops}: {code} {out}");
@@ -279,6 +289,7 @@ fn shared_ids_are_ambiguous() {
     // twice in one file is ambiguous too
     let twice = format!(r#"{{"title":"Index","kind":"page","body":["Alpha text."],"$comments":[{c},{c}]}}"#);
     let p = project([SCHEMA, ("docs/src/index.json", twice.as_str())]);
+    let twice = p.read("docs/src/index.json");
     let (code, out) = apply_with(&p.path, &json!([{"op": "rm", "id": "c-dup"}]), &[]);
     assert!(code == 2 && out.contains("is used by 2 comments (in index.json)"), "{code} {out}");
     assert_eq!(p.read("docs/src/index.json"), twice);
@@ -291,6 +302,7 @@ fn import_skips_what_readers_do_not_see() {
     let page = r#"{"title":"Index","kind":"page","body":["Alpha text."],"notes":["INTERNAL"]}"#;
     let secret = r#"{"title":"Secret","kind":"page","parent":"index","hidden":true,"body":["Plans."]}"#;
     let p = project([SCHEMA, ("docs/src/index.json", page), ("docs/src/secret.json", secret)]);
+    let secret = &p.read("docs/src/secret.json");
     p.write(
         "export.json",
         json!({"docc": "comments", "version": 2, "comments": [
@@ -306,7 +318,7 @@ fn import_skips_what_readers_do_not_see() {
             && out == "imported 1 comments into 1 documents (2 not on a block a reader sees (hidden, or gone), not imported: c-no00000001, c-no00000002)\n",
         "{code} {out} {errs}"
     );
-    assert_eq!(p.read("docs/src/secret.json"), secret);
+    assert_eq!(&p.read("docs/src/secret.json"), secret);
     let src = p.read("docs/src/index.json");
     assert!(src.contains(r#""quote": "Alpha text.""#) && !src.contains("forged") && !src.contains("Leak?"), "{src}");
 }
@@ -342,7 +354,8 @@ fn own_answers_and_answers_given_again() {
     assert!(md.contains("answer to «When?»: In a year") && md.contains("answer to «What?»: Docs, Tests"), "{md}");
 
     // the field moves down and its question changes: the answer given again follows it
-    p.write("docs/src/index.json", p.read("docs/src/index.json").replacen("\"Intro.\",", "\"Intro.\", \"More.\",", 1).replacen("When?", "When exactly?", 1));
+    p.write("docs/src/index.json", p.read("docs/src/index.json").replacen("{\"$input\"", "\"More.\", {\"$input\"", 1).replacen("When?", "When exactly?", 1));
+    p.run(&["codes"]);
     assert_eq!(compiled()["pages"][0]["comments"][0]["place"], "lost");
     let (code, v, errs) = apply(&p.path, &json!([{"op": "edit", "id": "c-when", "answer": ["Now"]}]));
     assert!(code == 0 && v["edited"] == json!(["c-when"]), "{errs}");
@@ -437,6 +450,7 @@ fn is_rfc3339_utc(s: &str) -> bool {
 fn edit_sets_edited() {
     let page = "{\n  \"title\": \"Index\",\n  \"kind\": \"page\",\n  \"body\": [\n    \"Alpha text.\",\n    {\"$input\": \"radio\", \"id\": \"when\", \"label\": \"When?\", \"options\": [\"Now\", \"Later\"]}\n  ]\n}\n";
     let p = project([SCHEMA, ("docs/src/index.json", page)]);
+    let page = p.read("docs/src/index.json");
     let ops = json!([
         {"op": "add", "doc": "index", "comment": {"id": "c-text", "at": "/body/0", "text": "Why?", "author": "Ann", "created": "2026-10-22T09:00:00Z"}},
         {"op": "add", "doc": "index", "comment": {"id": "c-when", "at": "/body/1", "input": "when", "answer": ["Now"], "author": "Ann", "created": "2026-10-22T09:00:00Z"}}
@@ -489,7 +503,7 @@ fn edit_sets_edited() {
     assert!(created.contains("DOC112"), "{created}");
 
     // import keeps an "edited" the export gives
-    p.write("docs/src/index.json", page);
+    p.write("docs/src/index.json", &page);
     p.write(
         "export.json",
         json!({"docc": "comments", "version": 1, "comments": [

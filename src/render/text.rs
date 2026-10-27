@@ -393,7 +393,14 @@ impl<'a> Page<'_, 'a> {
     /// marker, and the anchor tag that replaces it ("" for none).
     fn block(&self, n: &Node) -> (String, String) {
         let (text, name) = self.doc.block(n);
-        let tag = if name.is_empty() {
+        // the HTML file finds a block by its code in the data; in Markdown a tag
+        // before a fence, table, footnote, list or heading would break it
+        // a block no link points to needs no tag
+        let tag = if name.is_empty()
+            || self.r.html
+            || !plain_start(text)
+            || !self.r.p.linked.contains(&format!("{}#{name}", self.doc.id))
+        {
             String::new()
         } else if self.r.single {
             self.anchor_tag(name)
@@ -521,4 +528,16 @@ pub(super) fn is_empty(n: &Node) -> bool {
         Kind::Object => n.members.is_empty(),
         _ => false,
     }
+}
+
+/// plain_start reports whether Markdown text starts as a paragraph, so an
+/// anchor tag may stand before it.
+fn plain_start(s: &str) -> bool {
+    let t = s.trim_start_matches(' ');
+    let first = t.chars().next().unwrap_or(' ');
+    !(s.starts_with("    ")
+        || s.starts_with('\t')
+        || matches!(first, '`' | '~' | '|' | '#' | '>' | '<' | '-' | '*' | '+' | '$' | '_' | '=')
+        || t.starts_with("[^")
+        || t.split_once(['.', ')']).is_some_and(|(n, rest)| !n.is_empty() && n.len() <= 9 && n.bytes().all(|b| b.is_ascii_digit()) && rest.starts_with(' ')))
 }

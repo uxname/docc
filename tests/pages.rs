@@ -329,7 +329,10 @@ fn shifted_code_keeps_output() {
     ]);
     let (code, out, errs) = p.run(&["build"]);
     assert_eq!(code, 0, "{out} {errs}");
-    p.write("code/a.go", "package a\n\nimport \"fmt\"\n\n// docc: index\nvar _ = fmt.Sprint\n");
+    let tag = p.read("code/a.go").lines().nth(2).unwrap().to_string();
+    assert!(tag.contains("index@") && tag.contains(" ~"), "migrate gave the tag a hash and a fingerprint: {tag}");
+    p.write("code/a.go", format!("package a\n\nimport \"fmt\"\n\n{tag}\nvar _ = fmt.Sprint\n"));
     let (code, out, errs) = p.run(&["check"]);
-    assert_eq!(code, 0, "moving a tag to another line must not change docs/out: {out} {errs}");
+    // the code changed, so its fingerprint did; docs/out did not
+    assert!(code == 1 && out.contains("DOC402") && !out.contains("DOC501"), "moving a tag to another line must not change docs/out: {out} {errs}");
 }

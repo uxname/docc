@@ -4,19 +4,19 @@
 
 page · draft now · приоритет 2 · x, y
 
-See [3 Item 10](a.md), [3 Item 10](a.md#goals), [3 Item 10](a.md#g1), [3.2.1.1 Sub](sec.md#sub), [3.2.2 Part two](sec.md#part-two), [3.2 Sections](sec.md#deep), [3 Item 10](a.md) and hidden.
+See [3 Item 10](a.md), [3 Item 10](a.md#goals), [3 Item 10](a.md#tk2x), [3.2.1.1 Sub](sec.md#sub), [3.2.2 Part two](sec.md#part-two), [3.2 Sections](sec.md#deep), [3 Item 10](a.md) and hidden.
 
-<a id="intro"></a>![pic](img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](img/p.png "t")
+![pic](img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](img/p.png "t")
 
 <!-- вставка a#goals -->
 
 G1
 
-G2 with [Home page [[b]]](index.md)
+G2 with [Home page [[b@3pc2]]](index.md)
 
 <!-- /вставка -->
 
-Inline <!-- вставка a#short -->short text<!-- /вставка --> and <!-- вставка a#^g1 -->G1<!-- /вставка --> end.
+Inline <!-- вставка a#short -->short text<!-- /вставка --> and <!-- вставка a#^tk2x -->G1<!-- /вставка --> end.
 
 <!-- вставка sec#content/Part two -->
 

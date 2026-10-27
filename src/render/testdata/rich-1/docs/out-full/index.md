@@ -4,19 +4,19 @@
 
 page · draft now · priority 2 · x, y
 
-See [Item 10](a.md), [Item 10](a.md#goals), [Item 10](a.md#g1), [Sub](sec.md#sub), [Part two](sec.md#part-two), [Sections](sec.md#deep), [Item 10](a.md) and hidden.
+See [Item 10](a.md), [Item 10](a.md#goals), [Item 10](a.md#tk2x), [Sub](sec.md#sub), [Part two](sec.md#part-two), [Sections](sec.md#deep), [Item 10](a.md) and hidden.
 
-<a id="intro"></a>![pic](img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](img/p.png "t")
+![pic](img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](img/p.png "t")
 
 <!-- include a#goals -->
 
 G1
 
-G2 with [Home page [[b]]](index.md)
+G2 with [Home page [[b@3pc2]]](index.md)
 
 <!-- /include -->
 
-Inline <!-- include a#short -->short text<!-- /include --> and <!-- include a#^g1 -->G1<!-- /include --> end.
+Inline <!-- include a#short -->short text<!-- /include --> and <!-- include a#^tk2x -->G1<!-- /include --> end.
 
 <!-- include sec#content/Part two -->
 

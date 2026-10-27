@@ -19,7 +19,7 @@
     "line": 11,
     "column": 5,
     "endLine": 11,
-    "endColumn": 106,
+    "endColumn": 104,
     "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
     "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
@@ -31,7 +31,7 @@
     "line": 12,
     "column": 5,
     "endLine": 12,
-    "endColumn": 155,
+    "endColumn": 153,
     "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
     "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
@@ -44,7 +44,7 @@
     "column": 25,
     "endLine": 13,
     "endColumn": 33,
-    "message": "\"at\" of a comment must be the JSON Pointer of a block (\"/body/0\")",
+    "message": "\"at\" of a comment must be the code of its block (\"^k7f2\"), or the JSON Pointer of a block without a code (\"/body/0\")",
     "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
@@ -53,9 +53,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 14,
-    "column": 98,
+    "column": 96,
     "endLine": 14,
-    "endColumn": 110,
+    "endColumn": 108,
     "message": "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")",
     "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },

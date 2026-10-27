@@ -30,11 +30,17 @@
     h = h.replace(/^#/, '');
     try { return decodeURIComponent(h); } catch (e) { return h; }
   }
-  // the page a hash belongs to: a page id, <page id>--<anchor> (a heading or
-  // field) or <page id>/<JSON Pointer> (a paragraph)
+  // the page a hash belongs to: a page id, <page id>--<code>[@hash] (a
+  // paragraph by its code, any case), <page id>--<anchor> (a heading or field)
+  // or <page id>/<JSON Pointer> (a paragraph, the links of before the codes)
   function route(hash) {
     var id = decode(hash);
     if (byId[id]) { return { page: byId[id] }; }
+    var m = /^(.+)--([2-9a-hjkmnp-z]{4})(?:@[2-9a-hjkmnp-z]{4})?$/i.exec(id);
+    if (m && byId[m[1]]) {
+      var code = m[2].toLowerCase(), b = blocksOf(byId[m[1]]).filter(function (x) { return x.c === code; })[0];
+      if (b) { return { page: byId[m[1]], block: b.p }; }
+    }
     var best = null;
     pages.forEach(function (p) {
       if (id.indexOf(p.id + '--') === 0 && (!best || p.id.length > best.id.length)) { best = p; }
@@ -45,6 +51,9 @@
     return { page: pages[0], missing: id && id !== 'main' ? id : null };
   }
   function blockHash(doc, ptr) { return '#' + doc + (ptr || ''); }
+  // the link a reader copies: the page and the code of the paragraph with its
+  // version, which opens the paragraph by its code whatever its place
+  function codeLink(page, b) { return location.href.split('#')[0] + '#' + page.id + '--' + b.c + '@' + b.v; }
   // dates in the language of the file; '' for the working tree, which has none.
   // A formatter is made once per options: making one costs more than the
   // whole list of saves, which used to make thousands of them on every step.
@@ -846,7 +855,16 @@
     var unfold = more[0] || cards.length <= 2 || cards.slice(2).some(function (x) { return x[0].id === props.activeC; });
     var shown = unfold ? cards : cards.slice(0, 2);
     var cls = 'blk' + (props.label ? ' is-prop' : '') + (changed ? (isNew ? ' new' : ' chg') : '') + (props.cur === a ? ' cur' : '') + (cards.length ? ' has-c' : '');
+    var bar = b.c && !past && html`<div class="code-bar">
+      <span class="code" title="{{t:Code of the paragraph}}">${b.c.toUpperCase()}</span>
+      <button type="button" class="link" onClick=${function () {
+        copy(codeLink(page, b)).then(function () { toast('{{t:Link copied.}}'); }, function () { toast(codeLink(page, b)); });
+      }}>{{t:Copy link}}</button>
+      <button type="button" class="link" onClick=${function () {
+        copy(b.c.toUpperCase()).then(function () { toast('{{t:Code copied.}}'); }, function () { toast(b.c.toUpperCase()); });
+      }}>{{t:Copy code}}</button></div>`;
     return html`<div class=${cls} data-p=${ptr} data-a=${a} tabindex="-1">
+      ${bar}
       ${changed && html`<span class="sr">${isNew ? '{{t:new paragraph}}' : '{{t:changed paragraph}}'}</span>`}
       ${whole[0] && html`<details class="old" open=${whole[0] === 'code'}><summary>{{t:Previous text}}</summary><div class="dv"><del>${plain(before)}</del></div></details>`}
       ${inner}
@@ -1684,6 +1702,6 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();

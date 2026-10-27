@@ -186,8 +186,9 @@ fn item_problem(it: &Node) -> Option<Problem> {
     if s("id").unwrap_or_default().trim().is_empty() {
         return bad(it.get("id")?, "the id of a comment is empty".into());
     }
-    if !s("at").unwrap_or_default().starts_with('/') {
-        return bad(it.get("at")?, "\"at\" of a comment must be the JSON Pointer of a block (\"/body/0\")".into());
+    let at = s("at").unwrap_or_default();
+    if !at.starts_with('/') && !at.strip_prefix('^').is_some_and(|c| crate::codes::is_code(&c.to_ascii_lowercase())) {
+        return bad(it.get("at")?, "\"at\" of a comment must be the code of its block (\"^k7f2\"), or the JSON Pointer of a block without a code (\"/body/0\")".into());
     }
     if !RFC3339.is_match(s("created").unwrap_or_default()) {
         return bad(it.get("created")?, "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")".into());
@@ -274,11 +275,39 @@ pub fn blocks(root: &Node) -> Vec<Leaf> {
     history::flatten(root).into_iter().filter(|l| l.ptr != pre && !l.ptr.starts_with(&format!("{pre}/"))).collect()
 }
 
+/// pointer is the JSON Pointer of the block a comment stands at: the block
+/// with the code ("^k7f2", any case), or at itself when it is a pointer;
+/// None when no block has the code.
+pub fn pointer(root: &Node, at: &str) -> Option<String> {
+    let Some(code) = at.strip_prefix('^') else {
+        return Some(at.to_string());
+    };
+    let n = engine::find_code(root, &code.to_ascii_lowercase())?;
+    history::pointers(root).get(&(n as *const Node)).cloned()
+}
+
+/// at_of is what "at" of a comment on the block at the pointer ptr is: the
+/// code of the block when it has one, else the pointer.
+pub fn at_of(root: &Node, ptr: &str) -> String {
+    match schema::resolve_pointer(root, ptr).filter(|n| n.kind == Kind::String).and_then(|n| crate::codes::code_of(&n.str)) {
+        Some(c) => format!("^{c}"),
+        None => ptr.to_string(),
+    }
+}
+
+/// plain is the text of a block without its code: what a quote is compared by.
+fn plain(s: &str) -> &str {
+    engine::split_anchor(s).0
+}
+
 /// place tells where c stands in the document root and returns the current
 /// text of its block ("" when lost); title gives the title of a linked document.
 pub fn place(root: &Node, c: &Comment, title: &dyn Fn(&str) -> Option<String>) -> (Place, String) {
+    let Some(at) = pointer(root, &c.at) else {
+        return (Place::Lost, String::new());
+    };
     if let Some(input) = &c.input {
-        let n = schema::resolve_pointer(root, &c.at)
+        let n = schema::resolve_pointer(root, &at)
             .filter(|n| engine::is_input(n) && n.get("id").is_some_and(|v| v.str == *input));
         return match n {
             Some(n) => {
@@ -288,13 +317,14 @@ pub fn place(root: &Node, c: &Comment, title: &dyn Fn(&str) -> Option<String>) -
             None => (Place::Lost, String::new()),
         };
     }
-    let Some(l) = blocks(root).into_iter().find(|l| l.ptr == c.at) else {
+    let Some(l) = blocks(root).into_iter().find(|l| l.ptr == at) else {
         return (Place::Lost, String::new());
     };
-    if !c.fragment.is_empty() && !squeeze(&readable(&l.text, title)).contains(&squeeze(&c.fragment)) {
-        return (Place::Lost, l.text);
+    if !c.fragment.is_empty() && !squeeze(&readable(&crate::codes::strip_link_hashes(plain(&l.text)), title)).contains(&squeeze(&c.fragment)) {
+        return (Place::Lost, plain(&l.text).to_string());
     }
-    (if l.text == c.quote { Place::Same } else { Place::Changed }, l.text)
+    let same = plain(&l.text) == plain(&c.quote);
+    (if same { Place::Same } else { Place::Changed }, plain(&l.text).to_string())
 }
 
 static LINK: LazyLock<Regex> =

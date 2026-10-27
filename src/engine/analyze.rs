@@ -23,6 +23,8 @@ pub struct RefUse {
     pub notes: bool,
     /// pointer of the string that holds it
     pub ptr: String,
+    /// the version hash written in the link ("@3a9c"), lower case
+    pub hash: Option<String>,
 }
 
 /// IncUse is one {{id#field}} occurrence in body or a free field.
@@ -85,7 +87,7 @@ impl Doc {
 }
 
 /// split_ref splits id#field: (id, field, has_field, ok).
-pub(super) fn split_ref(inner: &str) -> (&str, &str, bool, bool) {
+pub(super) fn split_ref(inner: &str, legacy: bool) -> (&str, &str, bool, bool) {
     let (mut id, mut field, mut has_field) = (inner, "", false);
     if let Some(i) = inner.find('#') {
         (id, field, has_field) = (&inner[..i], &inner[i + 1..], true);
@@ -93,7 +95,7 @@ pub(super) fn split_ref(inner: &str) -> (&str, &str, bool, bool) {
             return (id, field, has_field, false);
         }
         if let Some(name) = field.strip_prefix('^')
-            && !anchor_name(name)
+            && !anchor_name(name, legacy)
         {
             return (id, field, has_field, false);
         }
@@ -110,6 +112,7 @@ impl Project {
             }
             let (mut refs, mut incs) = (Vec::new(), Vec::new());
             let (mut blocks, mut block_of) = (HashMap::new(), HashMap::new());
+            let legacy = d.legacy;
             let strs = d.strings();
             for (i, sn) in strs.iter().enumerate() {
                 let node = sn.node();
@@ -119,7 +122,7 @@ impl Project {
                 }
                 let sc = sn.scan();
                 for r in sc.refs() {
-                    let (id, field, _, ok) = split_ref(&r.inner);
+                    let (id, field, _, ok) = split_ref(&r.inner, legacy);
                     let (a, b) = d.range(node, r.start, r.end);
                     refs.push(RefUse {
                         target: id.to_string(),
@@ -129,6 +132,7 @@ impl Project {
                         end: b,
                         notes: sn.notes,
                         ptr: sn.ptr.clone(),
+                        hash: r.hash,
                         inner: r.inner,
                     });
                 }
@@ -136,7 +140,7 @@ impl Project {
                     continue;
                 }
                 for r in sc.includes() {
-                    let (id, field, has_field, ok) = split_ref(&r.inner);
+                    let (id, field, has_field, ok) = split_ref(&r.inner, legacy);
                     let (a, b) = d.range(node, r.start, r.end);
                     incs.push(IncUse {
                         inner: r.inner.clone(),
@@ -154,6 +158,12 @@ impl Project {
             }
             (d.refs, d.incs, d.blocks, d.block_of) = (refs, incs, blocks, block_of);
         }
+        self.linked = self
+            .docs
+            .iter()
+            .flat_map(|d| &d.refs)
+            .filter_map(|r| r.field.strip_prefix('^').map(|c| format!("{}#{c}", r.target)))
+            .collect();
     }
 }
 

@@ -22,7 +22,7 @@ namesake
 
 l1
 
-<a id="lf"></a>l2
+l2
 
 ### Part two
 
@@ -42,4 +42,4 @@ again
 
 ## Referenced by
 
-- [Home page [[b]]](index.md)
+- [Home page [[b@3pc2]]](index.md)

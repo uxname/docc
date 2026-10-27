@@ -132,7 +132,6 @@ fn golden_json(work: &Path, check: bool) -> Result<(String, Vec<Diagnostic>), St
         if p.cfg.commit_out {
             crate::render::check_fresh(&p, &p.cfg.out, &files, None);
         }
-        p.check_lock_file();
         ds = p.sorted();
     }
     let s = serde_json::to_string_pretty(&ds)
@@ -219,39 +218,9 @@ fn golden_validate() {
     run_golden(cases, false);
 }
 
-/// golden_check runs the `docc check` cases whose output is fresh, so that
-/// render.CheckFresh adds nothing: they test check_lock_file (Go CheckLock).
-#[test]
-fn golden_check() {
-    let cases: Vec<_> = golden_cases(&["check"])
-        .into_iter()
-        .filter(|d| !d.to_string_lossy().contains("DOC501"))
-        .collect();
-    assert_eq!(cases.len(), 2, "testdata DOC503 not found");
-    run_golden(cases, true);
-}
-
 #[test]
 fn golden_check_fresh() {
     run_golden(golden_cases(&["check"]), true);
-}
-
-/// write_lock writes the same docc.lock as Go for testdata/DOC503/green, and
-/// rewrites the red case's lock to it (the missing link to c is added).
-#[test]
-fn write_lock_matches_go() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/DOC503");
-    let want = std::fs::read_to_string(root.join("green/docc.lock")).unwrap();
-    for kind in ["green", "red"] {
-        let work = temp_dir();
-        copy_tree(&root.join(kind), &work);
-        let mut p = load(config::default(&work)).unwrap();
-        p.validate();
-        p.write_lock().unwrap();
-        let got = std::fs::read_to_string(work.join(LOCK_FILE)).unwrap();
-        let _ = std::fs::remove_dir_all(&work);
-        assert_eq!(got, want, "{kind}");
-    }
 }
 
 /// A src folder that is itself a symbolic link is not walked, as

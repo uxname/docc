@@ -4,7 +4,7 @@
 
 page
 
-![up](../img/p.png) <!-- include a#body -->A body with ![sub](../img/p.png).<!-- /include --> [Home page [[b]]](../index.md#short-field) [Home page [[b]]](../index.md#a-b-1)
+![up](../img/p.png) <!-- include a#body -->A body with ![sub](../img/p.png).<!-- /include --> [Home page [[b@3pc2]]](../index.md#short-field) [Home page [[b@3pc2]]](../index.md#a-b-1)
 
 ## Parent
 

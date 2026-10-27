@@ -34,7 +34,7 @@ impl<'a> Renderer<'a> {
         let mut by: HashMap<*const Node, Vec<String>> = HashMap::new();
         let mut lost = Vec::new();
         for (c, pl) in self.comments_of(d) {
-            let n = schema::resolve_pointer(root(d), &c.at);
+            let n = crate::comments::pointer(root(d), &c.at).and_then(|at| schema::resolve_pointer(root(d), &at));
             match n {
                 Some(n) if pl != Place::Lost => by.entry(n as *const Node).or_default().push(self.md_comment(&c, n)),
                 _ => lost.push(format!("> - {}", self.md_comment_line(&c, None).replace('\n', "\n>   "))),

@@ -434,7 +434,8 @@ impl Set {
             .collect()
     }
 
-    /// CheckKind validates a whole document against the schema of its kind
+    /// CheckKind validates a whole document (block codes cut from the
+    /// strings: a value checked by enum, format or pattern carries one too) against the schema of its kind
     /// (DOC106), service fields included, and reports fields a closed kind does
     /// not allow.
     pub fn check_kind(&self, kind_name: &str, root: &Node) -> Vec<Violation> {
@@ -445,7 +446,9 @@ impl Set {
         for m in &root.members {
             // the comments are docc's own (DOC112), allowed under every kind like the title
             if !inst.contains_key(&m.key) && m.key != crate::comments::KEY {
-                inst.insert(m.key.clone(), loader::value(&m.value));
+                let mut v = loader::value(&m.value);
+                strip_codes(&mut v);
+                inst.insert(m.key.clone(), v);
             }
         }
         let mut vs = self.run(&k.schema, &k.url, &Value::Object(inst), root);
@@ -1255,4 +1258,17 @@ pub fn resolve_pointer<'a>(root: &'a Node, ptr: &str) -> Option<&'a Node> {
         n = next?;
     }
     Some(n)
+}
+
+/// strip_codes cuts the block code from the end of every string of v.
+fn strip_codes(v: &mut Value) {
+    match v {
+        Value::String(s) => {
+            let n = crate::codes::strip_code(s).len();
+            s.truncate(n);
+        }
+        Value::Array(a) => a.iter_mut().for_each(strip_codes),
+        Value::Object(o) => o.values_mut().for_each(strip_codes),
+        _ => {}
+    }
 }

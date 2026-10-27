@@ -8,13 +8,13 @@ Requirement body, see [Deep doc](a/deep.md#acceptance-criteria).
 
 ## Statement
 
-<a id="first"></a>First fact.
+<a id="2vh9"></a>First fact.
 
 Second fact.
 
 ## Checks
 
-- <a id="check"></a>Plain check.
+- Plain check.
 - - **name:** n
 
 ## Formula

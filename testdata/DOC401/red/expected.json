@@ -44,8 +44,8 @@
     "column": 5,
     "endLine": 6,
     "endColumn": 5,
-    "message": "bad code tag: document \"index\" has no block anchor \"^nope\"",
-    "hint": "End a paragraph or list item of the target with \" ^nope\", or fix the name."
+    "message": "bad code tag: \"index#^nope\" is not a target",
+    "hint": "Write id, id#field/section or id#^code, each with its @hash, and separate targets with commas."
   },
   {
     "code": "DOC401",

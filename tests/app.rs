@@ -4,8 +4,9 @@ mod common;
 
 use common::*;
 
-/// Blocks carry the JSON Pointer and source text of their element; headings
-/// have none; a block marker written by an agent is dropped like other raw HTML.
+/// Blocks carry the JSON Pointer, source text, code and version hash of their
+/// element; headings have none; a block marker written by an agent is dropped
+/// like other raw HTML.
 #[test]
 fn html_blocks_have_pointers() {
     let p = project([(
@@ -19,7 +20,13 @@ fn html_blocks_have_pointers() {
         .as_array()
         .unwrap()
         .iter()
-        .map(|b| format!("{}={}", s(b, "p"), s(b, "s")))
+        .map(|b| {
+            let t = s(b, "s");
+            // the source text ends in the code of the block, which the data carries apart too
+            let c = s(b, "c");
+            assert!(c.is_empty() || (t.ends_with(&format!(" ^{c}")) && s(b, "v").len() == 4), "{b}");
+            format!("{}={}", s(b, "p"), t.strip_suffix(&format!(" ^{c}")).unwrap_or(t))
+        })
         .collect();
     let want = "/body/0=One. /body/1=<!--b:0--> /body/2=Two. = /field=Free text. = /list=a: x";
     assert_eq!(got.join(" "), want, "blocks");
@@ -48,11 +55,13 @@ fn comments() {
         ("bad.json", r#"{"comments":[]}"#),
     ]);
     let before = p.read("docs/src/index.json");
+    let code_of = |t: &str| before[before.find(t).unwrap() + t.len() + 2..][..4].to_string();
+    let (alpha, beta) = (code_of("Alpha text here."), code_of("Beta text here."));
     let (code, out, errs) = p.run(&["comments", "import", "export.json"]);
     assert!(code == 0 && out == "imported 2 comments into 1 documents\n", "{code} {out} {errs}");
     let after = p.read("docs/src/index.json");
     let head = before.trim_end().strip_suffix('}').unwrap();
-    assert!(after.starts_with(head) && after[head.len()..].starts_with(r#", "$comments": [{"id": "aaaa1111", "at": "/body/1""#), "only $comments is added:\n{after}");
+    assert!(after.starts_with(head) && after[head.len()..].starts_with(&format!(r#", "$comments": [{{"id": "aaaa1111", "at": "^{beta}", "quote": "Beta text here.""#)), "only $comments is added, at the codes of the blocks:\n{after}");
     let (code, out, _) = p.run(&["comments", "import", "export.json"]);
     assert!(code == 0 && out == "imported 0 comments into 0 documents (2 already there)\n", "second import: {code} {out}");
     assert_eq!(p.read("docs/src/index.json"), after, "nothing written the second time");
@@ -60,12 +69,17 @@ fn comments() {
     assert!(code == 2 && errs.contains("not a comments file"), "bad file: {code} {errs}");
     let (code, out, errs) = p.run(&["validate", "--max-warnings", "0"]);
     assert_eq!(code, 0, "imported comments are valid: {out} {errs}");
-    // an agent inserts a paragraph above beta and edits alpha
-    p.write("docs/src/index.json", after.replace(r#""Alpha text here.","Beta text here.""#, r#""Alpha text here, edited.","Inserted.","Beta text here.""#));
+    // an agent edits alpha and replaces beta by another paragraph (a paragraph
+    // inserted above would not move a comment: it stands at a code)
+    p.write(
+        "docs/src/index.json",
+        after.replace(&format!(r#""Alpha text here. ^{alpha}","Beta text here. ^{beta}""#), &format!(r#""Alpha text here, edited. ^{alpha}","Inserted.""#)),
+    );
+    p.run(&["codes"]);
     let (code, out, _) = p.run(&["comments"]);
     for want in [
-        "aaaa1111  index \"I\" /body/1 (lost its place)\n  about: «Beta»\n  C 2026-10-15: Fix beta\n  block when commented: Beta text here.",
-        "bbbb2222  index \"I\" /body/0 (block changed)\n  ",
+        &format!("aaaa1111  index \"I\" ^{beta} (lost its place)\n  about: «Beta»\n  C 2026-10-15: Fix beta\n  block when commented: Beta text here."),
+        &format!("bbbb2222  index \"I\" ^{alpha} (block changed)\n  "),
         "Fix alpha\n  block when commented: Alpha text here.\n  block now: Alpha text here, edited.",
         "2 comments in 1 documents, 1 lost their place",
     ] {
@@ -74,7 +88,7 @@ fn comments() {
     let (code, out, _) = p.run(&["validate", "--format", "json"]);
     let ds = diagnostics_of(&out);
     let lost: Vec<&serde_json::Value> = ds.as_array().unwrap().iter().filter(|d| d["code"] == "DOC215").collect();
-    assert!(code == 0 && lost.len() == 1 && s(lost[0], "message").contains(r#"comment "aaaa1111" lost its place: the words "Beta" are not in the block at "/body/1""#), "{out}");
+    assert!(code == 0 && lost.len() == 1 && s(lost[0], "message").contains(&format!(r#"comment "aaaa1111" lost its place: no block at "^{beta}""#)), "{out}");
     let (_, out, _) = p.run(&["comments", "--format", "json"]);
     let list: serde_json::Value = serde_json::from_str(&out).unwrap_or_else(|e| panic!("{e} {out}"));
     let cs = list["comments"].as_array().unwrap();
@@ -131,7 +145,8 @@ fn form_field_answers() {
     assert_eq!(code, 0, "{out} {errs}");
     assert!(p.read("docs/out/index.md").contains("> 💬 **Ivan**, 2026-10-15, answer to «Export?»: Yes"), "the answer in the Markdown");
     // a paragraph inserted above moves the field away from at
-    p.write("docs/src/index.json", src.replace(r#""Intro.","#, r#""Intro.","Inserted.","#));
+    p.write("docs/src/index.json", src.replace(r#"{"$input""#, r#""Inserted.",{"$input""#));
+    p.run(&["codes"]);
     let (code, out, _) = p.run(&["validate"]);
     assert!(code == 0 && out.contains(r#"comment "ans00001" lost its place: the form field "export" is not at "/body/1""#), "{out}");
     let (code, out, errs) = p.run(&["build", "--html"]);
@@ -256,7 +271,8 @@ fn html_old_versions_rendered() {
         return; // no git here
     }
     assert!(git(&["add", "-A"]) && git(&["commit", "-qm", "one"]));
-    p.write("docs/src/index.json", r#"{"title":"I","body":["Other **bold** text.","Kept."],"kind":"page"}"#);
+    let edited = p.read("docs/src/index.json").replace("Old **bold**.", "Other **bold** text.");
+    p.write("docs/src/index.json", edited);
     assert!(git(&["commit", "-qam", "two"]));
     let (code, out, errs) = p.run(&["build", "--html"]);
     assert_eq!(code, 0, "{out} {errs}");

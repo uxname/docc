@@ -212,7 +212,8 @@ impl Project {
                     continue;
                 }
                 let node = sn.node();
-                let s = node.str.as_str();
+                // the text without its block code
+                let s = if sn.anchor.is_empty() { node.str.as_str() } else { &node.str[..sn.anchor_at] };
                 if on304 && sn.field != "title" && s.trim().is_empty() {
                     self.emit(
                         d,

@@ -2,13 +2,13 @@
   "title": "Index",
   "kind": "page",
   "body": [
-    "Delivery takes five days.",
+    "Delivery takes five days. ^5v78",
     { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] },
     { "$input": "checkbox", "id": "formats", "label": "Formats?", "options": ["CSV", "PDF"] },
     { "$input": "radio", "id": "when", "label": "When now?", "options": ["Now", "Later"] }
   ],
   "$comments": [
-    {"id": "c-aaaaaaaaaa", "at": "/body/0", "quote": "Delivery takes five days.", "fragment": "five days", "prefix": "takes ", "text": "TODO: is it working days? [[nowhere]]", "author": "Ann", "email": "ann@example.com", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-aaaaaaaaaa", "at": "^5v78", "quote": "Delivery takes five days.", "fragment": "five days", "prefix": "takes ", "text": "TODO: is it working days? [[nowhere]]", "author": "Ann", "email": "ann@example.com", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-bbbbbbbbbb", "at": "/body/1", "quote": "$input: radio; id: export; label: Export?; options: Yes\nNo", "input": "export", "answer": ["Yes"], "author": "", "created": "2026-10-22T09:00:00.123+03:00"},
     {"id": "c-cccccccccc", "at": "/body/1", "quote": "$input: radio; id: export; label: Export?; options: Yes\nNo", "input": "export", "answer": ["Only on Fridays"], "author": "Bob", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-dddddddddd", "at": "/body/2", "quote": "$input: checkbox; id: formats; label: Formats?; options: CSV\nPDF", "input": "formats", "answer": ["CSV", "PDF", "XLSX"], "author": "Bob", "created": "2026-10-22T09:00:00Z"},

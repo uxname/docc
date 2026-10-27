@@ -71,6 +71,8 @@
       "description": "A block as docc compile prints it; a property (a one-line field of the list) has k and sec null.",
       "properties": {
         "p": { "type": "string", "description": "JSON Pointer of the value in the source of that side; empty for the footnotes." },
+        "code": { "type": "string", "description": "Block code of a text block, as in docc compile." },
+        "hash": { "type": "string", "description": "Version hash of the block, as in docc compile." },
         "s": { "type": "string" },
         "h": { "type": "string" },
         "sec": { "type": ["string", "null"] },

@@ -2,7 +2,7 @@
 
 Six small tasks that check whether an agent with the `docc` skill does the right thing on a real project, not only whether `docc check` ends green. Each task has a fixture project in `evals/<n>/`, a prompt in Russian (`evals/<n>/prompt.txt`, written as a user would type it) and a pass script (`evals/<n>/check.sh`).
 
-Every fixture except 6 starts clean: `docc check --max-warnings 0` passes, `docs/out` and `docc.lock` are built.
+Every fixture except 6 starts clean: `docc check --max-warnings 0` passes and `docs/out` is built. The fixtures are in the format of block codes and version hashes (`docc migrate` moved them).
 
 ## How to run
 
@@ -33,21 +33,21 @@ The project has no Claude Code hooks: the eval measures what the skill text alon
 
 ### 2. A changed fact behind a referenced anchor
 
-- Setup `evals/2`: `security-policy` has the paragraph «… блокирует вход на 15 минут. ^lockout». `login-screen` links to it and repeats «Вход заблокирован на 15 минут». `code/auth.go` has a region `docc:begin security-policy#^lockout` with `lockoutDuration = 15 * time.Minute`.
+- Setup `evals/2`: `security-policy` has the paragraph «… блокирует вход на 15 минут. ^qd87». `login-screen` links to it and repeats «Вход заблокирован на 15 минут». `code/auth.go` has a region `docc:begin security-policy#^qd87@…` with `lockoutDuration = 15 * time.Minute`.
 - Prompt: «Заказчик поменял правило: после пяти неверных паролей подряд вход теперь блокируется на 30 минут, а не на 15. Обнови документацию проекта.»
-- Pass: the anchored paragraph and `login-screen` say «30 минут», «15 минут» is gone from `docs/src`, the code says `lockoutDuration = 30 * time.Minute` and the region is still there. `docc check` (no DOC209, no DOC402) proves `docc ack` ran after the review.
+- Pass: the paragraph `^qd87` (code kept) and `login-screen` say «30 минут», «15 минут» is gone from `docs/src`, the code says `lockoutDuration = 30 * time.Minute` and the region is still there. `docc check` (no DOC209, no DOC402) proves every hash and fingerprint was rewritten by hand after the review.
 
 ### 3. Link a code function to a requirement paragraph
 
-- Setup `evals/3`: `req-export` with the paragraphs `^csv-format` and `^file-name`; `code/export.go` with `FileName` and `WriteCSV`; `trace.scan` is on, no tags yet.
+- Setup `evals/3`: `req-export` with the paragraphs `^gzyq` (CSV format) and `^42sj` (file name); `code/export.go` with `FileName` and `WriteCSV`; `trace.scan` is on, no tags yet.
 - Prompt: «Свяжи функцию WriteCSV из code/export.go с требованием о формате CSV в документации так, чтобы при изменении кода этой функции docc показывал, что требование надо перепроверить.»
-- Pass: a `docc:begin … req-export#^csv-format` … `docc:end` region contains `func WriteCSV` and not `func FileName`; `docc.lock` has the line `code/export.go req-export#^csv-format <hash> <code hash>`.
+- Pass: a `docc:begin … req-export#^gzyq@<hash> ~<fingerprint>` … `docc:end` region contains `func WriteCSV` and not `func FileName`.
 
 ### 4. Rename a section that others link to
 
 - Setup `evals/4`: `billing` has the field `rules` with `$sections` «Оплата картой» and «Возврат средств». `faq`, `support` and a code tag in `code/refund.go` link to `billing#rules/Возврат средств`.
 - Prompt: «Переименуй в документе «Оплата» раздел «Возврат средств» в «Возврат и отмена заказа».»
-- Pass: «Возврат средств» is gone from `docs/src` and `code`; `billing.json` has the section «Возврат и отмена заказа»; three files (`faq`, `support`, `code/refund.go`) link to `billing#rules/Возврат и отмена заказа`. `docc check` proves there is no DOC312 and no unconfirmed DOC209.
+- Pass: «Возврат средств» is gone from `docs/src` and `code`; `billing.json` has the section «Возврат и отмена заказа»; three files (`faq`, `support`, `code/refund.go`) link to `billing#rules/Возврат и отмена заказа`. `docc check` proves there is no DOC312 and no DOC209 (every hash rewritten after the review).
 
 ### 5. A product spec with numbering: a new page between two others
 
@@ -57,11 +57,11 @@ The project has no Claude Code hooks: the eval measures what the skill text alon
 
 ### 6. Fix a project with several errors
 
-- Setup `evals/6`: a strict kind `requirement` (`additionalProperties: false`, fields `statement`, `priority`, `owner`). `req-login` has `"priorty": "high"` (unknown field, required `priority` missing) and `"owner": "N/A"`; `req-reset` links to `[[req-logn]]`. `docs/out` was built with `owner: N/A` already in place, so the real owner cannot be recovered from the output; the lock is older, so DOC209 also shows up.
+- Setup `evals/6`: a strict kind `requirement` (`additionalProperties: false`, fields `statement`, `priority`, `owner`). `req-login` has `"priorty": "high"` (unknown field, required `priority` missing) and `"owner": "N/A"`; `req-reset` links to `[[req-logn]]`. `docs/out` was built with `owner: N/A` already in place, so the real owner cannot be recovered from the output; two links carry an old version hash, so DOC209 also shows up.
 - Prompt: «docc check падает. Почини документацию.»
 - Pass: `req-login` has `priority: high` and no `priorty`; `req-reset` links to `[[req-login]]` and `req-logn.json` was not created; «N/A» is gone outside `notes` and `req-login` has no `owner` (the owner is unknown, so a guessed value fails; the doubt belongs in `notes`); no `docIgnore`; `requirement.json` is unchanged.
 
-## Results (2026-10-05)
+## Results (2026-10-05, before block codes: the runs used docc.lock and docc ack)
 
 One headless run per task, model `claude-opus-5-5`, Claude Code 2.1.289, docc built from commit `2184fed`. Every run loaded the skill with the `Skill` tool as its first step. Runs took 23 to 51 seconds and 5 to 10 turns.
 

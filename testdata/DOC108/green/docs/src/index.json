@@ -1,6 +1,6 @@
 {
   "title": "Index",
-  "body": "It is fast.",
+  "body": "It is fast. ^gnda",
   "docIgnore": [{ "rule": "text/forbidden-words", "reason": "term from the customer spec", "path": "/body" }],
   "kind": "page"
 }

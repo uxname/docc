@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC304",
+    "rule": "text/empty-field",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 137,
+    "endLine": 1,
+    "endColumn": 141,
+    "message": "the string is empty",
+    "hint": "Fill it in or remove the field."
+  }
+]

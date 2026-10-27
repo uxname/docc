@@ -19,7 +19,7 @@
     "line": 1,
     "column": 49,
     "endLine": 1,
-    "endColumn": 60,
+    "endColumn": 65,
     "message": "\"notes\" is a service field and cannot be an anchor",
     "hint": "Point to a content field such as body or a free field."
   },
@@ -29,11 +29,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 62,
+    "column": 67,
     "endLine": 1,
-    "endColumn": 73,
-    "message": "document \"a\" has no block anchor \"^gone\"",
-    "hint": "End a paragraph or list item of the target with \" ^gone\", or fix the name."
+    "endColumn": 78,
+    "message": "document \"a\" has no block with the code \"^zzzz\"",
+    "hint": "The block was deleted or moved to another document, or the code is mistyped: find the block you mean and link its code (codes are four signs, such as ^k7f2)."
   },
   {
     "code": "DOC312",
@@ -41,9 +41,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 93,
+    "column": 104,
     "endLine": 1,
-    "endColumn": 106,
+    "endColumn": 117,
     "message": "document \"a\" has no field \"missing\"",
     "hint": "Use an existing top-level field or field/section."
   }

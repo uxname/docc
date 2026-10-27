@@ -5,9 +5,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 40,
+    "column": 46,
     "endLine": 1,
-    "endColumn": 41,
+    "endColumn": 47,
     "message": "a heading line inside a field breaks the structure of the output",
     "hint": "Remove the leading # characters; the field name already becomes a heading."
   },
@@ -17,9 +17,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 70,
+    "column": 82,
     "endLine": 1,
-    "endColumn": 72,
+    "endColumn": 84,
     "message": "a heading line inside a field breaks the structure of the output",
     "hint": "Remove the leading # characters; the field name already becomes a heading."
   }

@@ -1,5 +1,5 @@
 package a
 
-// docc:begin req-a#body
+// docc:begin req-a#body@ukwd ~unx5
 func A() {}
 // docc:end

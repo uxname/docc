@@ -125,8 +125,21 @@ fn compile_prints_the_reader_pages_and_writes_nothing() {
             {"id":"later","title":"Later","level":3}
         ])
     );
-    let blocks: Vec<(&str, &str, Value)> =
-        a["blocks"].as_array().unwrap().iter().map(|b| (s(b, "p"), s(b, "s"), b["sec"].clone())).collect();
+    // the source text ends in the code of the block; code and hash stand apart too
+    let blocks: Vec<(&str, &str, Value)> = a["blocks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|b| (s(b, "p"), s(b, "s").split(" ^").next().unwrap(), b["sec"].clone()))
+        .collect();
+    for b in a["blocks"].as_array().unwrap() {
+        let coded = s(b, "s").contains(" ^");
+        assert!(coded == b["code"].is_string() && b["hash"].as_str().is_some_and(|h| h.len() == 4), "code and hash of a block: {b}");
+        if coded {
+            assert!(s(b, "s").ends_with(&format!(" ^{}", s(b, "code"))), "{b}");
+        }
+    }
+    assert!(s(a, "hash").len() == 4, "a page carries the hash of its document");
     assert_eq!(
         blocks,
         [
@@ -218,7 +231,13 @@ fn compile_rev_reads_git_without_checkout() {
     if !git(&p.path, &["init", "-q"]) {
         return; // no git here
     }
-    let w = |rel: &str, s: &str| p.write(&format!("proj/{rel}"), s);
+    let w = |rel: &str, s: &str| {
+        p.write(&format!("proj/{rel}"), s);
+        // the documents get their codes and hashes, as an agent's docc build gives them
+        if rel.ends_with(".json") || rel.starts_with("code/") {
+            do_in(&p.join("proj"), &["migrate"]);
+        }
+    };
     w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
     w("docs/src/index.json", "{\n  \"title\": \"I\",\n  \"kind\": \"page\",\n  \"body\": [\"Old TODO\", \"{{a#summary}}\"]\n}\n");
     w("docs/src/a.json", r#"{"title":"A","kind":"page","parent":"index","summary":"First summary."}"#);
@@ -240,7 +259,7 @@ fn compile_rev_reads_git_without_checkout() {
     assert_eq!(ids(&v), ["index", "a", "gone"], "the documents of the commit");
     assert_eq!(v["project"]["lang"], "en", "no docc.json in that commit: the defaults");
     let home = page(&v, "index");
-    assert_eq!(s(&home["blocks"][0], "s"), "Old TODO");
+    assert_eq!(s(&home["blocks"][0], "s").split(" ^").next(), Some("Old TODO"));
     assert!(s(&home["blocks"][1], "h").contains("First summary."), "the include reads the same commit");
     let d = &v["diagnostics"][0];
     assert_eq!(
@@ -257,7 +276,7 @@ fn compile_rev_reads_git_without_checkout() {
     assert_eq!(v["project"]["lang"], "ru");
     assert!(s(&page(&v, "index")["blocks"][1], "h").contains("Second summary."));
     let (code, v) = compile(&dir, &[]);
-    assert_eq!(s(&page(&v, "index")["blocks"][0], "s"), "Working copy", "without --rev: the disk");
+    assert_eq!(s(&page(&v, "index")["blocks"][0], "s").split(" ^").next(), Some("Working copy"), "without --rev: the disk");
     assert_eq!(code, 0, "the code tag on the disk is fine: {}", v["diagnostics"]);
     let after = listing(&p.path);
     let changed: Vec<&String> = after.keys().chain(before.keys()).filter(|k| after.get(*k) != before.get(*k)).collect();
@@ -339,7 +358,13 @@ fn compile_hidden_with_rev_and_config() {
     if !git(&p.path, &["init", "-q"]) {
         return; // no git here
     }
-    let w = |rel: &str, s: &str| p.write(&format!("proj/{rel}"), s);
+    let w = |rel: &str, s: &str| {
+        p.write(&format!("proj/{rel}"), s);
+        // the documents get their codes and hashes, as an agent's docc build gives them
+        if rel.ends_with(".json") || rel.starts_with("code/") {
+            do_in(&p.join("proj"), &["migrate"]);
+        }
+    };
     w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
     w("docs/src/index.json", r#"{"title":"I","kind":"page"}"#);
     w("docs/src/h.json", r#"{"title":"H","kind":"page","parent":"index","hidden":true,"notes":["secret"]}"#);
@@ -551,7 +576,13 @@ fn build_rev_writes_only_the_html_file() {
     if !git(&p.path, &["init", "-q"]) {
         return; // no git here
     }
-    let w = |rel: &str, s: &str| p.write(&format!("proj/{rel}"), s);
+    let w = |rel: &str, s: &str| {
+        p.write(&format!("proj/{rel}"), s);
+        // the documents get their codes and hashes, as an agent's docc build gives them
+        if rel.ends_with(".json") || rel.starts_with("code/") {
+            do_in(&p.join("proj"), &["migrate"]);
+        }
+    };
     w("docc.json", r#"{"lang":"ru"}"#);
     w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
     w("docs/src/index.json", r#"{"title":"I","kind":"page","body":["One"]}"#);
@@ -569,7 +600,7 @@ fn build_rev_writes_only_the_html_file() {
         std::fs::remove_file(dir.join("out.html")).unwrap();
         v
     };
-    let text = |v: &Value| v["pages"][0]["blocks"][0]["s"].as_str().unwrap().to_string();
+    let text = |v: &Value| v["pages"][0]["blocks"][0]["s"].as_str().unwrap().split(" ^").next().unwrap().to_string();
 
     let (code, out, errs) = do_in(&dir, &["build", "--rev", "HEAD~1", "--html"]);
     assert_eq!(code, 0, "{out} {errs}");
@@ -616,7 +647,13 @@ fn hidden_versions_stay_out_of_the_timeline() {
     if !git(&p.path, &["init", "-q"]) {
         return; // no git here
     }
-    let w = |rel: &str, s: &str| p.write(&format!("proj/{rel}"), s);
+    let w = |rel: &str, s: &str| {
+        p.write(&format!("proj/{rel}"), s);
+        // the documents get their codes and hashes, as an agent's docc build gives them
+        if rel.ends_with(".json") || rel.starts_with("code/") {
+            do_in(&p.join("proj"), &["migrate"]);
+        }
+    };
     let pay = |hidden: bool, text: &str| format!(r#"{{"title":"Pay","kind":"page","parent":"index","hidden":{hidden},"body":["{text}"]}}"#);
     w("docc.json", "{}");
     w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);

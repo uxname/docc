@@ -398,6 +398,12 @@ fn load_valid(dir: &Path) -> Result<engine::Project, String> {
         Ok(data) => config::parse(&data, dir, "docc.json").map_err(|e| e.to_string())?,
         Err(_) => config::default(dir),
     };
+    // a test project is written in the old format, without codes and hashes:
+    // a copy in the temporary folder is moved to them first, with codes fixed by place
+    if dir.starts_with(std::env::temp_dir()) {
+        crate::codes::FIXED.store(true, std::sync::atomic::Ordering::Relaxed);
+        engine::migrate(cfg.clone()).map_err(|e| e.to_string())?;
+    }
     let mut p = engine::load(cfg).map_err(|e| e.to_string())?;
     let ds = p.validate();
     if engine::structural(&ds) {
@@ -760,12 +766,17 @@ fn golden_rich() {
         let want = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("src/render/testdata/rich-{i}"));
         let p = load_valid(&work).unwrap();
         if std::env::var_os("DOCC_GOLDEN_UPDATE").is_some() {
+            // the Rust build is the reference since block codes (the Go build knows none)
             let _ = std::fs::remove_dir_all(&want);
             for full in [false, true] {
-                go_build(&work, full);
+                let r = Renderer::new(&p, full);
                 let rel = if full { &p.cfg.out_full } else { &p.cfg.out };
-                copy_tree(&work.join(rel), &want.join(rel), &[]);
-                std::fs::copy(work.join(format!("{rel}.md")), want.join(format!("{rel}.md"))).unwrap();
+                for (n, b) in r.files() {
+                    let f = want.join(rel).join(n);
+                    std::fs::create_dir_all(f.parent().unwrap()).unwrap();
+                    std::fs::write(f, b).unwrap();
+                }
+                std::fs::write(want.join(format!("{rel}.md")), r.single()).unwrap();
             }
         }
         for full in [false, true] {

@@ -423,6 +423,8 @@ impl Project {
                 }
             }
         }
+        // the first place of every block code in the project: file, line and column
+        let mut codes: HashMap<String, (String, (usize, usize))> = HashMap::new();
         for d in &self.docs {
             let Some(root) = d.root() else {
                 continue;
@@ -437,11 +439,48 @@ impl Project {
                 }
             }
             for (i, sn) in d.strings().iter().enumerate() {
+                if !d.legacy && sn.blk && !sn.notes && sn.anchor.is_empty() && !sn.node().str.trim().is_empty() {
+                    let n = sn.node();
+                    let (msg, hint) = if sn.bad_mark {
+                        let m = crate::codes::ANY_MARK.captures(&n.str).unwrap();
+                        (
+                            format!("the block ends in {}, which is not a block code", go_quote(m.get(0).unwrap().as_str().trim_start())),
+                            "Named anchors are gone: remove the marker and run docc build, which gives the block a code (a project of the old format: run docc migrate). Codes are four lower-case signs such as ^k7f2, given by docc only.".to_string(),
+                        )
+                    } else {
+                        (
+                            "the block has no code".to_string(),
+                            "Run docc build: it gives every block without a code its own. Never write or change a code by hand.".to_string(),
+                        )
+                    };
+                    self.emit(d, "DOC216", n.start, n.end, msg, hint);
+                    continue;
+                }
                 if sn.anchor.is_empty() {
                     continue;
                 }
                 let (a, b) = d.range(sn.node(), sn.anchor_at + 1, sn.node().str.len());
                 let name = go_quote(&format!("^{}", sn.anchor));
+                if !d.legacy {
+                    let here = d.res().src.position(a);
+                    match codes.get(&sn.anchor) {
+                        Some((f, (line, col))) => self.emit(
+                            d,
+                            "DOC212",
+                            a,
+                            b,
+                            format!("block code {name} is used twice: also at {f}:{line}:{col}"),
+                            "One of the two blocks is a copy: delete the code of the copy (keep the code of the block other places link to) and run docc build, which gives it a new one.".into(),
+                        ),
+                        None => {
+                            codes.insert(sn.anchor.clone(), (d.file.clone(), here));
+                        }
+                    }
+                    if heads.contains(&sn.anchor) {
+                        self.emit(d, "DOC212", a, b, format!("block code {name} equals the anchor of a heading on this page"), "Delete the code and run docc build for a new one: a link to it would land on the heading.".into());
+                    }
+                    continue;
+                }
                 if d.blocks.get(&sn.anchor) != Some(&i) {
                     self.emit(
                         d,

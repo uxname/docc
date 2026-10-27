@@ -1,9 +1,9 @@
 {
   "title": "Requirement",
   "parent": "index",
-  "body": "Requirement body, see [[deep#acceptance_criteria]].",
-  "statement": ["First fact. ^first", { "$input": "radio", "id": "agree", "label": "Agree with [[index]]?", "options": ["Yes", "No"] }, "Second fact."],
-  "checks": ["Plain check. ^check", { "name": "n" }],
-  "formula": "x ^2",
+  "body": "Requirement body, see [[deep#acceptance_criteria@jc37]]. ^5tf4",
+  "statement": ["First fact. ^2vh9", { "$input": "radio", "id": "agree", "label": "Agree with [[index@6uq2]]?", "options": ["Yes", "No"] }, "Second fact. ^hn3y"],
+  "checks": ["Plain check. ^zrkt", { "name": "n" }],
+  "formula": "x ^2 ^gh88",
   "kind": "page"
 }

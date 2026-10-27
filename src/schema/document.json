@@ -43,7 +43,7 @@
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string", "minLength": 1 },
-          "at": { "type": "string", "pattern": "^/" },
+          "at": { "type": "string", "pattern": "^(/|\\^[2-9a-hjkmnp-zA-HJKMNP-Z]{4}$)" },
           "quote": { "type": "string" },
           "fragment": { "type": "string" },
           "prefix": { "type": "string" },
