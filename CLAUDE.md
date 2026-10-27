@@ -17,16 +17,18 @@ scripts/release.sh v0.1.0                                 # 5 archives + checksu
 scripts/difftest.sh OLD_BIN NEW_BIN                       # compare two builds on testdata, evals, this repo and o2
 ```
 
-After changing anything in `docs/src` run `docc build` (updates `docs/out` and `docc.lock`). Editing a document that others link to raises DOC209 on the linking documents: read them, then `docc ack <id>`.
+After changing anything in `docs/src` run `docc build` (gives codes to new blocks, updates `docs/out`). Editing a document that others link to raises DOC209 on the linking documents: read each of them, then write the new hash into that link by hand. Never touch a block code ` ^k7f2`.
+
+**Principle.** Documentation and code are written by AI agents; people only read them. People must not keep the links between documents and code in their heads: agents carry that routine, and docc keeps them from getting it wrong. Every link carries the version hash of what it points to. When a paragraph changes, every link to it breaks until an agent opens each place and checks it. When code changes, its fingerprint breaks until an agent checks it against the paragraphs. The build does not pass while any link is unchecked. There is no command that confirms everything at once: nothing can be confirmed without looking.
 
 ## Architecture
 
-Pipeline: `loader` (strict JSON with offsets) → `schema` (built-in document schema + per-kind schemas from `docs/schemas`) → `engine` (reference graph, rules, suppressions, `docc.lock`) → `render` (Markdown folder, single `.md`, single `.html`) → freshness comparison for `check`. `src/cli` is only flag parsing and dispatch (`mod.rs` `dispatch`, one `cmd_x` per command; `flags.rs` copies the behaviour of Go's `flag` package, which the CLI was first written with).
+Pipeline: `loader` (strict JSON with offsets) → `schema` (built-in document schema + per-kind schemas from `docs/schemas`) → `engine` (reference graph, rules, suppressions, block codes and version hashes) → `render` (Markdown folder, single `.md`, single `.html`) → freshness comparison for `check`. `src/cli` is only flag parsing and dispatch (`mod.rs` `dispatch`, one `cmd_x` per command; `flags.rs` copies the behaviour of Go's `flag` package, which the CLI was first written with).
 
 - **Rules** live in `src/rules.rs`; `explain`, `rules`, the skill and docs are derived from it. A new rule needs a registry entry, an `engine` check, a `testdata/<CODE>/` fixture and an `expected.json`. `skill_matches_registry_and_commands` fails if the skill mentions an unknown `DOCxxx` code or `docc <command>`; add new commands to its list in `tests/coverage.rs`.
 - **Rendering**: HTML is built from the same Markdown: comrak parses it, `src/render/html/markdown.rs` writes goldmark-style HTML; `src/render/page.html`, `page.css`, `app.js` and `vendor/` are embedded with `include_str!`; `app_test.js` runs under Node from `cargo test` (skipped without Node). Page labels are written as `{{t:...}}` and need a Russian entry in `src/render/lang.rs` (a test fails on a missing or unused one). The Markdown output is never branded.
 - **Text matching** (custom rules, DOC313) is done in NFC with positions mapped back to the source.
-- **`docc.lock`** stores every link with a hash of its target; this is what DOC209/DOC402/DOC503 are computed from (`src/engine/lock.rs`).
+- **Block codes and version hashes** (`src/codes.rs`): every text block ends with a code ` ^k7f2`, every link carries `@hash` of its target, code tags carry `~fingerprint`s; DOC209/DOC402 compare them (`src/engine/versions.rs`, `src/engine/trace.rs`), DOC212/DOC216 check codes. `docc build`/`docc codes` give missing codes, `docc migrate` (`src/engine/migrate.rs`) moves an old project; `src/engine/lock.rs` only reads an old `docc.lock` for it. Tests write documents in the short old form: `common::project` migrates them (codes fixed by `DOCC_CODE_SEED`), `raw_project`/`coded_project` keep the bytes.
 - Tests are mostly golden: `testdata/<case>/` is a project plus `expected.json`; `tests/*.rs` build throwaway projects with `common::project([(path, content)])` and run the real binary in them (`p.run(&[...])`, `do_in`).
 
 ## Release and self-update

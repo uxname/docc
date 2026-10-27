@@ -28,23 +28,23 @@ Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one 
 
 A long text is an array of paragraphs, one per line of the file. The rules are applied to each element on its own.
 
-A reference can name a section inside a field, `[[id#field/section]]`, or a block anchor, `[[id#^name]]`. DOC312 checks the whole path and reports an unknown field, section or anchor.
+A reference can name a section inside a field, `[[id#field/section@hash]]`, or a block by its code, `[[id#^k7f2@hash]]` (a code is found in any case). DOC312 checks the whole path and reports an unknown field, section or code.
 
 ## Block anchors
 
-A paragraph, a list item or a one-line field that ends with a space and `^name` gets a block anchor; the name starts with a letter. `[[id#^name]]` links to that paragraph and `{{id#^name}}` includes it without the marker. The page gets an HTML anchor at that place.
+Every text block (a paragraph, a list item, the text of a field or section) ends with a space and a permanent code `^k7f2`: four signs of `23456789abcdefghjkmnpqrstuvwxyz`, unique in the project, shown to readers upper case. `docc build` gives one to a block without it; nobody writes or changes a code by hand, and a block keeps its code when it moves. `[[id#^k7f2@hash]]` links to that block and `{{id#^k7f2}}` includes it without the code. A Markdown page gets an HTML anchor before a block that some link points to; the HTML file shows the code with buttons to copy a link and the code.
 
-A name used twice in one document, or equal to the anchor of a field or section heading of the page, is DOC212, a core rule.
+A block without a code, or ending in a named anchor of the old format, is DOC216; a code on two blocks of the project (a copied paragraph), or equal to the anchor of a field or section heading of the page, is DOC212, which names both places. Both are core rules.
 
 ## Change tracking
 
-The file `docc.lock` lies next to `docc.json` and is committed. It holds one line per link, sorted: `<source> <target> <targetHash> [<codeHash>]`. The source is a document id or a code file; spaces in a target are written as `%20`. Links in `notes` and in hidden documents are recorded too.
+Every link carries the version hash of its target: `[[id@hash]]`, `[[id#field@hash]]`, `[[id#^code@hash]]`, and every target of a `docc:` tag in code the same. The hash is four signs from SHA-256 of the target; a missing or old hash is DOC209, a core error. Code tags end with the fingerprint of their code: `~xxxx` on the tag of a file for its lines outside regions, on `docc:begin` for the lines of the region; a missing or old one is DOC402, a core error.
 
-The target hash covers only what the link points to: a block anchor hashes its paragraph, a field or section hashes its value, and a whole document is hashed without `notes`, `docIgnore`, `hidden`, `order`, `parent` and `$comments`, so a reader's comment does not make the links to a document suspect. The code hash exists only for a `docc:begin` region and covers its trimmed text in NFC.
+The hash covers only what the link points to: a block hashes its text, a field or section its value, and a whole document is hashed without `notes`, `docIgnore`, `hidden`, `order`, `parent` and `$comments`, so a reader's comment breaks no link. Block codes and the hashes inside links are left out of every hash, so two documents that link each other never loop. A fingerprint leaves out the hashes and fingerprints of `docc:` lines.
 
-`docc build` without errors records the links that are not in the lock with their hashes, so they count as confirmed, drops the links that are gone and keeps the stored hashes of the rest. Moving a code file confirms nothing: when the file of a region link is gone and, for its target, exactly one region link vanished that way and exactly one appeared, the link that appeared keeps the stored hashes, so a change made along with the move still raises DOC402 (or DOC209); two or more on either side cannot be paired and are recorded with their current hashes. When a target changes after that, DOC209 warns on the source: read it and check that it still agrees. When a code region changes, DOC402 warns: check the document it points to. `docc ack` stores the current hashes of the changed links and clears both warnings; it prints every link it confirms.
+When a target changes, DOC209 on every link to it shows what changed (the old version found in the Git history by its hash, or the text now) and the hash it has now: read it, check that the linking place still agrees, then write that hash by hand. When code changes, DOC402 lists the targets with their text and the fingerprint the code has now: check the code against them, then write it by hand. No command does this in bulk.
 
-`docc check` reports DOC503, a core rule, when `docc.lock` does not match the links in the sources; `docc build` fixes it.
+`docc migrate` moves a project of the old format, which kept the hashes in `docc.lock`, to hashes in the links, once; until then docc refuses the project.
 
 ## Hidden material
 
@@ -76,7 +76,7 @@ The author writes the fields in the sources, by hand or through an agent; reader
 
 The top-level member `$comments` holds the readers' comments of the document as a flat list: `[{"id", "at", "quote", "fragment"?, "prefix"?, "suffix"?, "text", "author", "email"?, "created", "edited"?}]`. `id` is unique in the project (docc gives `c-` and ten characters of a-z and 2-7), `at` is the JSON Pointer of a block the reader sees on the page (never notes, `docIgnore`, `hidden`, the title or `$comments`), `quote` the source text of that block when the comment was written (docc fills it from the block, whatever the caller gives), `fragment`, `prefix` and `suffix` the selected words and a few characters around them, `author` a name (it may be empty), `created` an RFC 3339 time and `edited` the RFC 3339 time of the last edit of the text or the answer (docc comments apply edit sets it; add does not). An answer to a form field has `input` (the field id) and `answer` (an array of strings) instead of `text`, and its `at` points at the field.
 
-There are no statuses and no replies: a handled comment is deleted in the same commit as the fix, and a note meant only for agents goes into `notes`. The member is allowed under every kind like `title`, even by a strict kind schema; text rules do not read it, it is no section of the page and no block of the history, and the hash of a whole document in `docc.lock` leaves it out. Only docc writes it, with `docc comments apply` ([Commands](commands.md)). DOC112 reports a malformed item or an id used twice in the project; DOC215 warns when a comment lost its place: no block at `at` (a paragraph was inserted, moved or removed above it), the selected words are gone from the block, or the answered field is not there.
+There are no statuses and no replies: a handled comment is deleted in the same commit as the fix, and a note meant only for agents goes into `notes`. The member is allowed under every kind like `title`, even by a strict kind schema; text rules do not read it, it is no section of the page and no block of the history, and the version hash of a whole document leaves it out. Only docc writes it, with `docc comments apply` ([Commands](commands.md)). DOC112 reports a malformed item or an id used twice in the project; DOC215 warns when a comment lost its place: no block has the code in `at` (the block was deleted), the selected words are gone from the block, or the answered field is not there.
 
 ## Parent
 

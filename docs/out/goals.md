@@ -14,7 +14,7 @@ Strict checks like a code linter: kind schemas, broken links, orphans, duplicate
 
 Rules with codes and groups, levels error, warn and off, a recommended preset, explain, and JSON output for agents and CI.
 
-Links that notice change: `docc.lock` records what every link and code region pointed to, and a warning appears when the target changes after it was confirmed.
+Links that notice change: every link and code tag carries the version hash of what it points to, and the build fails until someone reads the change and writes the hash of the target as it is now.
 
 Diagnostics that tell an agent how to fix the problem, the command `docc schema` and the skill docc.
 

@@ -2,19 +2,19 @@
   "title": "Goals and non-goals",
   "kind": "spec",
   "parent": "index",
-  "summary": "Data is the source of truth and Markdown is generated output. Invalid documentation never reaches the main branch, in the same way as invalid code.",
+  "summary": "Data is the source of truth and Markdown is generated output. Invalid documentation never reaches the main branch, in the same way as invalid code. ^6v6f",
   "goals": [
-    "Strict checks like a code linter: kind schemas, broken links, orphans, duplicate ids and cycles are errors.",
-    "Rules with codes and groups, levels error, warn and off, a recommended preset, explain, and JSON output for agents and CI.",
-    "Links that notice change: `docc.lock` records what every link and code region pointed to, and a warning appears when the target changes after it was confirmed.",
-    "Diagnostics that tell an agent how to fix the problem, the command `docc schema` and the skill docc.",
-    "Deterministic output and a single static binary for Linux, macOS and Windows."
+    "Strict checks like a code linter: kind schemas, broken links, orphans, duplicate ids and cycles are errors. ^vc44",
+    "Rules with codes and groups, levels error, warn and off, a recommended preset, explain, and JSON output for agents and CI. ^dhgz",
+    "Links that notice change: every link and code tag carries the version hash of what it points to, and the build fails until someone reads the change and writes the hash of the target as it is now. ^b65m",
+    "Diagnostics that tell an agent how to fix the problem, the command `docc schema` and the skill docc. ^928s",
+    "Deterministic output and a single static binary for Linux, macOS and Windows. ^svgu"
   ],
   "non_goals": [
-    "A wiki, an editor, a site generator (a server, one HTML file per page, styling options) or a task tracker. One self-contained HTML file for reading is not a site and is allowed.",
-    "Checking meaning: the core never calls a language model, a human reviewer checks meaning and readability of the Markdown.",
-    "Changing the sources: docc reports problems and has no automatic fixes.",
-    "Output templates: one universal renderer is used, and the single HTML file has one fixed look without custom themes or styles.",
-    "Search commands for agents, renaming, migration of existing Markdown, status transitions, diagrams and glossaries."
+    "A wiki, an editor, a site generator (a server, one HTML file per page, styling options) or a task tracker. One self-contained HTML file for reading is not a site and is allowed. ^kakd",
+    "Checking meaning: the core never calls a language model, a human reviewer checks meaning and readability of the Markdown. ^eupe",
+    "Changing the sources: docc reports problems and has no automatic fixes. ^eq3u",
+    "Output templates: one universal renderer is used, and the single HTML file has one fixed look without custom themes or styles. ^zbgk",
+    "Search commands for agents, renaming, migration of existing Markdown, status transitions, diagrams and glossaries. ^hfhb"
   ]
 }

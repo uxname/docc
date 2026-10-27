@@ -18,7 +18,7 @@ Every document has a kind schema (DOC109 is core) and the check is flat: a docum
 
 A strict kind is closed by docc, not by `unevaluatedProperties`: the schema states a boolean `additionalProperties`, and docc collects the allowed names from the top-level properties, `allOf` branches and local `$ref` targets. This way an unknown field gets one clear message with a suggested name, instead of a validator error about a keyword the author did not write.
 
-`docc build` confirms the links that are not yet in `docc.lock` on its own. A separate confirmation of every added link would be a ritual that people run without reading; the lock only has to notice when a target changes after a link exists.
+Links carry the version hash of their target and code tags the fingerprint of their code, instead of a separate lock file: the confirmation lies next to the place that was checked, a merge shows it in the diff of that line, and nothing can be confirmed for many places at once. A link gets its hash from the agent who wrote it (or from `docc migrate`), after reading the target.
 
 Code gets a hash only inside `docc:begin` and `docc:end` regions. A hash of a whole file would warn on every unrelated edit, and warnings nobody acts on teach people to ignore them.
 
@@ -28,9 +28,9 @@ A link exists only as a reference in the text. A separate list of links would re
 
 docc is a public open source project (MIT) with releases on GitHub, installers, `docc update` and the skill installed by `npx skills add`. The first users are the author's team; there are no sales, plans or support promises.
 
-`docc ack` confirms only links that changed and prints each one, because a command that silently confirms every link on a document lets an agent clear warnings about sources nobody read. `docc init` writes `maxWarnings` 0 so that a stale link (DOC209) stops `docc check`, the pre-commit hook and CI; a warning that blocks nothing is ignored.
+There is no command that confirms links: an agent rewrites each hash by hand after reading the change, because a command that confirms many links at once lets an agent clear errors about places nobody read. A missing or old hash is an error (DOC209, a core rule), so `docc check`, the pre-commit hook and CI stop on it.
 
-DOC209 is one diagnostic per source document and target document, at the first link, so a document that links to two or more parts of one target is not warned more than once. A link to an anchor or a field is warned about only when that part changes, which is why the hint advises it.
+DOC209 is one diagnostic per link, because each place is checked and rewritten on its own. A link to a block or a field breaks only when that part changes; a link to a whole document breaks on any visible change of it.
 
 DOC110 warns about a free field spelled almost like a reserved key (`parnet`, `hiden`) that the kind schema does not declare. The reserved fields are the only ones with a meaning, so a typo would otherwise be silent prose.
 
@@ -52,7 +52,7 @@ A program that shows the pages itself reads `docc compile`, not a file: it print
 
 Blocks are followed through versions by one alignment (`history::ops`): the HTML history, the block counts of `docc log`, the pairs of `docc diff` and the place a comment from an older build moves to on import come from it, so two views of the same change never disagree. Equal texts in an array match in order, the rest of a gap pairs by likeness or as a rewrite, other fields match by pointer. `docc log` counts on the JSON of each version, without compiling it, so a long history stays one `git log` and one `cat-file`; `docc diff` compiles both sides, because a reader sees includes and links resolved.
 
-In folder mode a folder's own page is the document named like the folder inside it, not `index.json`: ids stay the file names, unique in the whole project, so links, `docc.lock` and anchors do not depend on where a file lies.
+In folder mode a folder's own page is the document named like the folder inside it, not `index.json`: ids stay the file names, unique in the whole project, so links and codes do not depend on where a file lies.
 
 The rules are listed in [Rules and diagnostics](rules.md) and the settings in [Configuration](config.md).
 

@@ -3,22 +3,22 @@
   "kind": "spec",
   "parent": "index",
   "body": [
-    "The pipeline is: load the JSON files, check the built-in and kind schemas, build the reference graph, run the rules, render, and compare the output folder and `docc.lock`.",
-    "The code is one Rust crate with a single binary and a small set of modules under `src`.",
-    "The speed targets are in [[performance]]."
+    "The pipeline is: load the JSON files, check the built-in and kind schemas, build the reference graph, run the rules (block codes and the version hashes of links and code tags among them), render, and compare the output folder. ^935f",
+    "The code is one Rust crate with a single binary and a small set of modules under `src`. ^zxkp",
+    "The speed targets are in [[performance@pwkp]]. ^sbry"
   ],
   "packages": [
-    "loader: a strict JSON parser that keeps offsets, positions and duplicate keys.",
-    "config: reads `docc.json` and resolves effective levels.",
-    "schema: compiles JSON Schema (draft 2020-12), restricts references to the schemas folder and maps errors to source positions. `kind.rs` reads a kind schema: whether it is strict, the allowed top-level names, `x-docc-target` and `x-docc-covered`.",
-    "mdscan and text: scanners for code blocks, references, includes, block anchors, words and sentences.",
-    "engine: loads a project and runs all checks, including the graph and the suppressions. `lock.rs` computes the links with their hashes, reads and writes `docc.lock` and reports DOC209, DOC402 and DOC503.",
-    "rules: the registry of all rules; explain, rules and the skill are built from it.",
-    "render: Markdown pages, the tree, the single Markdown file, the HTML application (`app.js` with Preact and htm from `vendor`, fed with a JSON island), numbering and images. `lang.rs` holds the Russian labels for `\"lang\": \"ru\"`.",
-    "history: reads the Git history of the documents (one `git log` and one `git cat-file --batch`) and follows every block through it with the one alignment of blocks, `ops`, which the HTML history, `docc log` and `docc diff` share; changes: the output of `docc log` and `docc diff`; comments: the readers' comments in `$comments`, their shape (DOC112) and place (DOC215), the in-place edit of `docc comments apply` and the export of the HTML file.",
-    "trace and report: `docc:` tags in code files, and the text and JSON reports.",
-    "source: where the files of a project are read from, the disk or the tree of a Git revision (`docc compile --rev`, with `git ls-tree` and one `git cat-file --batch` for many files); config, schema, engine, trace and render read every file through it.",
-    "cli: the command line; its flags behave as those of the Go version, which docc was first written in. The changes of the move to Rust are listed in `docs/rust-port`."
+    "loader: a strict JSON parser that keeps offsets, positions and duplicate keys. ^h959",
+    "config: reads `docc.json` and resolves effective levels. ^rd6w",
+    "schema: compiles JSON Schema (draft 2020-12), restricts references to the schemas folder and maps errors to source positions. `kind.rs` reads a kind schema: whether it is strict, the allowed top-level names, `x-docc-target` and `x-docc-covered`. ^chvu",
+    "mdscan and text: scanners for code blocks, references with their version hashes, includes, block codes, words and sentences. ^z5w2",
+    "engine: loads a project and runs all checks, including the graph and the suppressions. `versions.rs` computes the version hashes of targets and reports DOC209 with the change found in Git, `trace.rs` the fingerprints of code (DOC402), `migrate.rs` gives codes to blocks and moves a project of the old format; `lock.rs` only reads an old `docc.lock` for the move. ^mw2h",
+    "rules: the registry of all rules; explain, rules and the skill are built from it. ^akgk",
+    "render: Markdown pages, the tree, the single Markdown file, the HTML application (`app.js` with Preact and htm from `vendor`, fed with a JSON island), numbering and images. `lang.rs` holds the Russian labels for `\"lang\": \"ru\"`. ^7vhv",
+    "history: reads the Git history of the documents (one `git log` and one `git cat-file --batch`) and follows every block through it with the one alignment of blocks, `ops`, which the HTML history, `docc log` and `docc diff` share; changes: the output of `docc log` and `docc diff`; comments: the readers' comments in `$comments`, their shape (DOC112) and place (DOC215), the in-place edit of `docc comments apply` and the export of the HTML file. ^rhq8",
+    "trace and report: `docc:` tags in code files, and the text and JSON reports. ^sh8z",
+    "source: where the files of a project are read from, the disk or the tree of a Git revision (`docc compile --rev`, with `git ls-tree` and one `git cat-file --batch` for many files); config, schema, engine, trace and render read every file through it. ^enej",
+    "cli: the command line; its flags behave as those of the Go version, which docc was first written in. The changes of the move to Rust are listed in `docs/rust-port`. ^pzty"
   ],
-  "principles": "Golden tests, a pure core with input and output at the edges, and stable codes. The main dependencies are jsonschema, regex, comrak (it parses the Markdown of the single HTML file; docc writes the HTML itself), icu_collator for sorting titles and unicode-normalization."
+  "principles": "Golden tests, a pure core with input and output at the edges, and stable codes. The main dependencies are jsonschema, regex, comrak (it parses the Markdown of the single HTML file; docc writes the HTML itself), icu_collator for sorting titles and unicode-normalization. ^5nnj"
 }
