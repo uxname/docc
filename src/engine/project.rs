@@ -122,6 +122,11 @@ pub struct Project {
     /// the blocks some [[id#^code]] links to, as "id#code": only they get an
     /// anchor tag in the Markdown
     pub linked: std::collections::HashSet<String>,
+    /// the paths of docc check <paths>, project-relative with '/' ("" for
+    /// the root); empty for the whole project. Every check still runs on the
+    /// whole project; the report keeps the diagnostics under these paths
+    /// (in_scope), and DOC404 also looks at the tags they had at HEAD.
+    pub scope: Vec<String>,
 }
 
 /// UsageError is a problem with the environment (exit code 2).
@@ -189,6 +194,7 @@ pub fn load_any(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
         matchers: RefCell::new(HashMap::new()),
         legacy: false,
         linked: Default::default(),
+        scope: Vec::new(),
     };
     p.legacy = p.cfg.source.entry(&p.cfg.abs(super::LOCK_FILE)) == Some(source::Entry::File);
     let src_abs = p.cfg.abs(&p.cfg.src);
@@ -525,6 +531,12 @@ impl Project {
         self.push(dg, lvl);
     }
 
+    /// in_scope reports whether a project-relative file lies under one of the
+    /// paths of scope; every file does when there are none.
+    pub fn in_scope(&self, file: &str) -> bool {
+        self.scope.is_empty() || self.scope.iter().any(|s| under(s, file))
+    }
+
     /// DocByFile returns the document for a project-relative file path.
     pub fn doc_by_file(&self, file: &str) -> Option<&Doc> {
         self.by_file.get(file).map(|&i| &self.docs[i])
@@ -555,4 +567,9 @@ impl Project {
         diag::sort(ds);
         ds.clone()
     }
+}
+
+/// under reports whether the '/' path file is dir or below it ("" is the root).
+pub fn under(dir: &str, file: &str) -> bool {
+    dir.is_empty() || file == dir || file.strip_prefix(dir).is_some_and(|r| r.starts_with('/'))
 }

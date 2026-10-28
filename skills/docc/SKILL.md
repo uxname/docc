@@ -22,6 +22,8 @@ After every change in `docs/src`:
 
 Commit only when the user asks; then commit sources and `docs/out` (unless `docc.json` has `"commitOut": false`) together. CI and the pre-commit hook from `docc init` run `docc check`: it fails on errors, on warnings (`docc init` writes `"maxWarnings": 0`) and when a committed `docs/out` differs from the sources (DOC501; `docc build` fixes it).
 
+`docc check <paths>` (and `docc validate <paths>`) still checks the whole project but reports and fails only on files under those paths (relative to the current folder); `docs/out` is compared only when a path reaches it. A hook of one part of a project, such as a git submodule, runs `cd .. && docc check <its folder>`; the hook of the whole project runs plain `docc check`.
+
 `docc` finds `docc.json` in the current folder or the nearest parent. Exit codes: `0` clean, `1` errors or too many warnings, `2` bad usage or bad `docc.json` / schemas (with `--format json` that is also a report: `diagnostics` with code `config`, `usage` or `error`).
 
 ## Document format

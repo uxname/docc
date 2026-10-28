@@ -5,6 +5,6 @@
     "docc is a compiler and linter for documentation written as JSON. It checks structure, links, content and style, and builds Markdown for people to read. ^qbzq",
     "{{goals#summary}} ^rqv2",
     "Start with [[document-model@76su]] to see what a document looks like, then [[agent-workflow@sf27]] for the loop an agent follows. ^72rr",
-    "The rest of the description: [[goals@bq7u]], [[rules@masz]], [[commands@nmzt]], [[config@sbmf]], [[rendering@67mw]], [[architecture@uq2k]], [[performance@pwkp]] and [[decisions@xc3g]]. ^eju8"
+    "The rest of the description: [[goals@bq7u]], [[rules@masz]], [[commands@q3t6]], [[config@sbmf]], [[rendering@67mw]], [[architecture@uq2k]], [[performance@pwkp]] and [[decisions@xc3g]]. ^eju8"
   ]
 }

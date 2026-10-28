@@ -41,12 +41,12 @@ Usage: docc [flags] <command> [flags]
 
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
-  validate           check sources
+  validate [paths]   check sources (paths: report only the problems in those files and folders)
   build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --since, --page, --rev)
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision, --hidden: with hidden documents)
   log                print the commits that changed the documents, with the files and block counts of each
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
-  check              read-only check for CI: validate + freshness of out/
+  check [paths]      read-only check for CI and hooks: validate + freshness of out/ (paths: as validate)
   codes              give a code to every block that has none (build does it too)
   migrate            move a project of the old format (docc.lock, named anchors) to block codes and version hashes
   explain <code>     describe a rule
@@ -76,13 +76,17 @@ Example:
 "
         }
         "validate" => {
-            "Usage: docc validate [flags]
+            "Usage: docc validate [paths...] [flags]
 
 Checks the sources in docs/src and prints diagnostics. Exit code 1: errors, or more
-warnings than --max-warnings.
+warnings than --max-warnings. Paths (files or folders, relative to the current folder or
+absolute, inside the project) limit the report, the exit code and --max-warnings to the
+diagnostics of files under them, as docc check <paths> does; the whole project is still
+loaded and checked.
 
 Examples:
   docc validate --format json
+  docc validate docs/src/decisions --format json
 "
         }
         "build" => {
@@ -179,14 +183,21 @@ Examples:
 "
         }
         "check" => {
-            "Usage: docc check [flags]
+            "Usage: docc check [paths...] [flags]
 
 Read-only check for CI: validate (a block without a code is DOC216, a link whose version
 hash is missing or old is DOC209), and fail when docs/out (DOC501) differs from the sources. docs/out may be built with or without the comments; with
 \"commitOut\": false in docc.json it is not compared.
+Paths (files or folders, relative to the current folder or absolute, inside the project)
+scope the check to them, for the pre-commit hook of one part of a project (a git submodule):
+the whole project is still loaded and its whole graph built, but the report, the exit code
+and --max-warnings count only the diagnostics of files under the paths, and docs/out is
+compared only when a path is docs/out, inside it or above it.
+Without paths everything is reported.
 
-Example:
+Examples:
   docc check --max-warnings 0
+  cd .. && docc check backend --max-warnings 0   # the hook of the submodule backend/
 "
         }
         "codes" => {
@@ -529,14 +540,43 @@ fn emit(stdout: &mut dyn Write, stderr: &mut dyn Write, c: &Common, p: &Project,
 
 fn cmd_validate(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
     let pos = parse(&mut new_flags("validate", c), args)?;
-    if let Some(a) = pos.first() {
-        return Err(usage_err(format!("unexpected argument {}", config::go_quote(a))));
-    }
     c.check()?;
-    let cfg = load_config(c)?;
-    let mut p = engine::load(cfg)?;
-    let ds = p.validate();
+    let mut p = load_scoped(c, &pos)?;
+    let mut ds = p.sorted();
+    ds.retain(|d| p.in_scope(&d.file));
     emit(stdout, stderr, c, &p, &ds)
+}
+
+/// load_scoped loads and validates the whole project, with the paths of
+/// docc check/validate <paths> as its scope.
+fn load_scoped(c: &Common, paths: &[String]) -> Result<Project, Error> {
+    let cfg = load_config(c)?;
+    let scope = scope(&cfg.root, paths)?;
+    let mut p = engine::load(cfg)?;
+    p.scope = scope;
+    p.validate();
+    Ok(p)
+}
+
+/// scope turns paths (relative to the current folder, or absolute) into
+/// project-relative '/' paths, "" for the root. A path must exist and lie
+/// inside the project; links are resolved, as the project root is found.
+fn scope(root: &Path, paths: &[String]) -> Result<Vec<String>, Error> {
+    if paths.is_empty() {
+        return Ok(Vec::new());
+    }
+    let root = std::fs::canonicalize(root).map_err(|e| go_path_error("open", root, &e))?;
+    paths
+        .iter()
+        .map(|a| {
+            let abs = std::fs::canonicalize(a).map_err(|e| go_path_error("open", Path::new(a), &e))?;
+            let rel = abs.strip_prefix(&root).map_err(|_| {
+                usage_err(format!("{} is outside the project {}", config::go_quote(a), root.display()))
+            })?;
+            let parts: Option<Vec<&str>> = rel.components().map(|c| c.as_os_str().to_str()).collect();
+            parts.map(|p| p.join("/")).ok_or_else(|| usage_err(format!("{} is not a UTF-8 path", config::go_quote(a))))
+        })
+        .collect()
 }
 
 /// cmd_compile prints what the sources compile to as one JSON object on
@@ -894,11 +934,13 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
 
 fn cmd_check(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
     let pos = parse(&mut new_flags("check", c), args)?;
-    no_args(&pos)?;
     c.check()?;
-    let mut p = load_project(c)?;
+    let mut p = load_scoped(c, &pos)?;
+    // docs/out is compared only when the paths reach it
+    let out = p.cfg.out.trim_start_matches("./").trim_end_matches('/').to_string();
+    let fresh = p.scope.is_empty() || p.scope.iter().any(|s| engine::under(s, &out) || engine::under(&out, s));
     // docs/out may be built with or without the readers' comments
-    if !engine::structural(&p.diags()) && p.cfg.commit_out {
+    if fresh && !engine::structural(&p.diags()) && p.cfg.commit_out {
         let r = render::Renderer::new(&p, false);
         let mut bare = render::Renderer::new(&p, false);
         bare.comments = false;
@@ -906,7 +948,8 @@ fn cmd_check(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
         let without = p.docs.iter().any(|d| d.root().is_some_and(|r| r.get(crate::comments::KEY).is_some())).then(|| bare.files());
         render::check_fresh(&p, &p.cfg.out, &with, without.as_ref());
     }
-    let ds = p.sorted();
+    let mut ds = p.sorted();
+    ds.retain(|d| p.in_scope(&d.file));
     emit(stdout, stderr, c, &p, &ds)
 }
 

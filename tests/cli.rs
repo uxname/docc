@@ -628,3 +628,46 @@ fn build_data_is_gone() {
     assert!(code == 0 && !out.contains("out.json") && errs.is_empty(), "{code} {out} {errs}");
     assert_eq!(p.read("docs/out.json"), r#"{"key":"docc:x"}"#);
 }
+
+/// docc check <paths> checks the whole project but reports, counts and fails
+/// only on the files under the paths; docs/out is compared only when a path
+/// reaches it. Paths are relative to the current folder.
+#[test]
+fn check_paths() {
+    let p = project([
+        ("docc.json", r#"{"trace":{"scan":["a/**","b/**"]}}"#),
+        ("docs/src/index.json", r#"{"title":"Index","body":["It will probably work."]}"#),
+        ("b/y.go", "// docc: index\n"),
+    ]);
+    p.must_build();
+    p.write("a/x.go", "// docc: missing\n");
+    p.write("docs/out/index.md", "edited by hand\n");
+    let codes = |args: &[&str], sub: &str| -> (i32, Vec<String>) {
+        let mut all = vec!["check", "--format", "json"];
+        all.extend_from_slice(args);
+        let (code, out, errs) = p.run_in(sub, &all);
+        let ds = diagnostics_of(&out);
+        let got = ds.as_array().unwrap_or_else(|| panic!("{code} {out} {errs}")).iter().map(|d| format!("{} {}", d["code"].as_str().unwrap(), s(d, "file"))).collect();
+        (code, got)
+    };
+    let all = codes(&[], "");
+    assert_eq!(all.0, 1);
+    assert!(all.1.contains(&"DOC401 a/x.go".into()) && all.1.contains(&"DOC501 docs/out/index.md".into()) && all.1.contains(&"DOC352 docs/src/index.json".into()), "{all:?}");
+    let a = vec!["DOC401 a/x.go".to_string(), "DOC402 a/x.go".to_string()];
+    assert_eq!(codes(&["a"], ""), (1, a.clone()));
+    assert_eq!(codes(&["b", "--max-warnings", "0"], ""), (0, vec![]));
+    assert_eq!(codes(&["b/y.go"], ""), (0, vec![]));
+    assert_eq!(codes(&["."], "b"), (0, vec![]), "relative to the current folder");
+    assert_eq!(codes(&["../a"], "b"), (1, a.clone()));
+    assert_eq!(codes(&[&p.join("a").to_string_lossy()], "b").1, a, "absolute");
+    assert_eq!(codes(&["docs/out"], ""), (1, vec!["DOC501 docs/out/index.md".to_string()]));
+    assert_eq!(codes(&["docs/src", "--max-warnings", "0"], ""), (1, vec!["DOC352 docs/src/index.json".to_string()]));
+    assert_eq!(codes(&["docs/src", "b"], "").1, ["DOC352 docs/src/index.json"], "docs/out is not compared");
+    let (code, out, _) = p.run(&["validate", "a", "--format", "json"]);
+    let ds = diagnostics_of(&out);
+    assert!(code == 1 && ds.as_array().unwrap().iter().map(|d| s(d, "file")).eq(["a/x.go", "a/x.go"]), "{out}");
+    for bad in ["nothing", "/"] {
+        let (code, out, errs) = p.run(&["check", bad]);
+        assert!(code == 2 && out.is_empty() && errs.contains(bad), "{bad}: {code} {out} {errs}");
+    }
+}

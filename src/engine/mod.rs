@@ -25,7 +25,7 @@ pub use ignore::Ignore;
 pub use linkrules::fingerprint;
 pub use lock::{LOCK_FILE, Link};
 pub use migrate::{Report as MigrateReport, assign_codes, migrate};
-pub use project::{Doc, MIGRATE, Project, UsageError, load, load_any, valid_id};
+pub use project::{Doc, MIGRATE, Project, UsageError, load, load_any, under, valid_id};
 pub use run::structural;
 pub use versions::{Version, diff, doc_version, find_code, version_in};
 pub use strings::{
