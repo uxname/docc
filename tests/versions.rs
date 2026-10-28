@@ -187,3 +187,60 @@ fn stale_hashes_do_not_stop_the_output() {
     let (code, _, errs) = do_stdin(&p.path, ops.as_bytes(), &["comments", "apply"]);
     assert_eq!(code, 0, "{errs}");
 }
+
+/// docc check <path> reports a block whose last tag under the path this
+/// change removes (DOC404 at the tag's place at HEAD of the path's own
+/// repository, a submodule here), but not a new block nobody tagged yet:
+/// that one only the full check reports.
+#[test]
+fn removed_tag_in_a_submodule() {
+    let p = project([
+        ("docc.json", r#"{"commitOut":false,"trace":{"scan":["sub/**"]}}"#),
+        ("docs/schemas/req.json", r#"{"type":"object","additionalProperties":true,"x-docc-covered":true}"#),
+        ("docs/src/index.json", r#"{"title":"Index","body":["See [[r]]."]}"#),
+        ("docs/src/r.json", r#"{"title":"R","kind":"req","parent":"index","body":["Five attempts. ^k7f2"]}"#),
+        ("sub/a.go", "package a\n\n// docc:begin r#^k7f2\nconst limit = 5\n// docc:end\n"),
+    ]);
+    let sub = p.join("sub");
+    if !git(&sub, &["init", "-q"]) || !git(&sub, &["add", "-A"]) || !git(&sub, &["commit", "-qm", "sub"]) {
+        return; // no git here
+    }
+    assert!(git(&p.path, &["init", "-q"]) && git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "outer"]));
+    // the hook of the submodule: git's variables name the submodule, docc runs from the root
+    let hook = |args: &[&str]| {
+        let out = Command::new(env!("CARGO_BIN_EXE_docc"))
+            .args(args)
+            .args(["--format", "json", "--max-warnings", "0"])
+            .current_dir(&p.path)
+            .env("GIT_DIR", sub.join(".git"))
+            .env("GIT_INDEX_FILE", sub.join(".git/index"))
+            .output()
+            .unwrap();
+        let ds = diagnostics_of(&String::from_utf8_lossy(&out.stdout));
+        (out.status.code().unwrap(), ds.as_array().unwrap().clone())
+    };
+    assert_eq!(hook(&["check", "sub"]), (0, vec![]));
+    let committed = p.read("sub/a.go");
+    p.write("sub/a.go", "package a\n\nconst limit = 5\n");
+    for path in ["sub", "sub/a.go"] {
+        let (code, ds) = hook(&["check", path]);
+        assert!(
+            code == 1
+                && ds.len() == 1
+                && ds[0]["code"] == "DOC404"
+                && s(&ds[0], "file") == "sub/a.go"
+                && ds[0]["line"] == 3
+                && s(&ds[0], "message").starts_with(r#"this change removes the last tag of "r#^k7f2""#),
+            "{path}: {ds:?}"
+        );
+    }
+    // a new block nobody has tagged: not this change's doing
+    p.write("sub/a.go", &committed);
+    p.write("docs/src/r.json", p.read("docs/src/r.json").replace(r#"^k7f2""#, r#"^k7f2", "Unlock after an hour.""#));
+    assert_eq!(hook(&["check", "sub"]), (0, vec![]), "a new requirement is not the submodule's");
+    let (code, ds) = hook(&["check"]);
+    assert!(
+        code == 1 && ds.iter().any(|d| d["code"] == "DOC404" && s(d, "file") == "docs/src/r.json"),
+        "the full check reports it: {ds:?}"
+    );
+}

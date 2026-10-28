@@ -234,7 +234,7 @@ impl Rev {
         }
     }
 
-    fn read(&self, p: &Path) -> io::Result<Vec<u8>> {
+    pub(crate) fn read(&self, p: &Path) -> io::Result<Vec<u8>> {
         let missing = || io::Error::new(io::ErrorKind::NotFound, "no such file in the revision");
         let rel = self.rel(p).ok_or_else(missing)?;
         match self.files.get(&rel) {

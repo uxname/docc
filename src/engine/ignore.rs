@@ -208,6 +208,15 @@ impl Project {
     }
 }
 
+impl Project {
+    /// ignored reports whether a docIgnore entry of d would suppress a
+    /// diagnostic of the rule code at the byte offset start.
+    pub(super) fn ignored(&self, d: &Doc, code: &str, start: usize) -> bool {
+        let dg = Diagnostic { code: code.to_string(), start, ..Default::default() };
+        d.ignores.iter().any(|ig| ig.covers(&dg))
+    }
+}
+
 impl Ignore {
     /// covers reports whether the entry suppresses the diagnostic.
     fn covers(&self, dg: &Diagnostic) -> bool {

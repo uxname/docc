@@ -10,7 +10,7 @@ use std::path::{Component, Path, PathBuf};
 use sha2::{Digest, Sha256};
 
 use crate::config::{Glob, match_any};
-use crate::source::Source;
+use crate::source::{Rev, Source};
 use crate::text;
 
 const MAX_FILE_SIZE: u64 = 1 << 20;
@@ -89,24 +89,8 @@ pub fn hashes(tags: &[Tag]) -> HashMap<Key, String> {
 /// symbolic links, files over 1 MB and files with a NUL byte.
 pub fn scan(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf], src: &Source) -> io::Result<Vec<Tag>> {
     if let Source::Rev(rev) = src {
-        // the files of the revision; there is nothing untracked or ignored in it
         // ponytail: a submodule's code is not read at a revision (only its commit is in the tree); read its own history if --rev ever needs it
-        let under = |rel: &str| skip_dirs.iter().any(|d| inside(d, &root.join(rel)));
-        let paths: Vec<&str> = rev
-            .files("")
-            .filter(|(rel, b)| !b.link && b.size <= MAX_FILE_SIZE && match_any(masks, rel) && !under(rel))
-            .map(|(rel, _)| rel)
-            .collect();
-        rev.prefetch(paths.iter().copied());
-        let mut tags = Vec::new();
-        for rel in paths {
-            if let Ok(data) = src.read(&root.join(rel))
-                && !data.contains(&0)
-            {
-                tags.extend(scan_file(rel, data.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&data)));
-            }
-        }
-        return Ok(tags);
+        return Ok(rev_tags(root, "", rev, masks, skip_dirs));
     }
     let paths = list(root, skip_dirs)?;
     let mut tags = Vec::new();
@@ -126,6 +110,39 @@ pub fn scan(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf], src: &Source) ->
         tags.extend(scan_file(rel, data.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&data)));
     }
     Ok(tags)
+}
+
+/// scan_head reads the tags of the files below the project-relative folder
+/// dir ("" for the root) as they are at HEAD of the Git repository that holds
+/// dir: the project's, or a submodule's own. None when dir is not in a Git
+/// work tree or the repository has no commit yet.
+pub fn scan_head(root: &Path, dir: &str, masks: &[Glob], skip_dirs: &[PathBuf]) -> Option<Vec<Tag>> {
+    let rev = Rev::open(&root.join(dir), "HEAD").ok()?;
+    Some(rev_tags(root, dir, &rev, masks, skip_dirs))
+}
+
+/// rev_tags scans the files of a revision opened at the project-relative
+/// folder pre; there is nothing untracked or ignored in it. Tags are named
+/// by their project-relative path, as on the disk.
+fn rev_tags(root: &Path, pre: &str, rev: &Rev, masks: &[Glob], skip_dirs: &[PathBuf]) -> Vec<Tag> {
+    let proj = |rel: &str| if pre.is_empty() { rel.to_string() } else { format!("{pre}/{rel}") };
+    let under = |rel: &str| skip_dirs.iter().any(|d| inside(d, &root.join(rel)));
+    let paths: Vec<(&str, String)> = rev
+        .files("")
+        .map(|(rel, b)| (rel, b, proj(rel)))
+        .filter(|(_, b, p)| !b.link && b.size <= MAX_FILE_SIZE && match_any(masks, p) && !under(p))
+        .map(|(rel, _, p)| (rel, p))
+        .collect();
+    rev.prefetch(paths.iter().map(|(rel, _)| *rel));
+    let mut tags = Vec::new();
+    for (_, p) in paths {
+        if let Ok(data) = rev.read(&root.join(&p))
+            && !data.contains(&0)
+        {
+            tags.extend(scan_file(&p, data.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&data)));
+        }
+    }
+    tags
 }
 
 /// files are the code files on the disk that scan reads: under masks, not

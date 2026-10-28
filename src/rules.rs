@@ -435,7 +435,7 @@ static ALL: [Rule; 44] = [
         "trace",
         W,
         false,
-        "A block of a visible document has no docc: tag that names it (id#^code), and its kind schema wants one: \"x-docc-covered\": true on a property means every block of that field, at the top level with no property marked every block of the document. A tag on the whole document or on a field does not cover a block. Works only when trace.scan is set.",
+        "A block of a visible document has no docc: tag that names it (id#^code), and its kind schema wants one: \"x-docc-covered\": true on a property means every block of that field, at the top level with no property marked every block of the document. A tag on the whole document or on a field does not cover a block. docc check <paths> also reports a block that a tag under those paths named at HEAD (of the path's own Git repository) and that no tag names now, at the place of the removed tag; a block nobody has tagged yet is left to the full check. Works only when trace.scan is set.",
         r#""statement": "Lock after 5 failures. ^k7f2"  (no // docc: req-x#^k7f2 in code)"#,
         "// docc: req-x#^k7f2@3a9c ~e91d",
     ),

@@ -192,7 +192,10 @@ Paths (files or folders, relative to the current folder or absolute, inside the 
 scope the check to them, for the pre-commit hook of one part of a project (a git submodule):
 the whole project is still loaded and its whole graph built, but the report, the exit code
 and --max-warnings count only the diagnostics of files under the paths, and docs/out is
-compared only when a path is docs/out, inside it or above it.
+compared only when a path is docs/out, inside it or above it. DOC404 then also reports a
+block whose tag stood under a path at HEAD of that path's own Git repository (a submodule's
+own) and that no tag names now: this change removed its last tag. It is reported at the
+place of the removed tag; a block nobody has tagged yet is left to the full check.
 Without paths everything is reported.
 
 Examples:

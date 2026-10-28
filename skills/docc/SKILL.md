@@ -109,7 +109,7 @@ With `"trace": {"scan": ["code/**"]}` in `docc.json`, the first comment of a fil
 - DOC402: the code changed (inside a region: that region's fingerprint; outside: the file's), or a tag has no fingerprint. The message lists the targets with their text and the new fingerprint. Read the code against them, fix the code or the documents, then write the new fingerprint by hand.
 - DOC209 on a tag: a target changed. Read it, update the code if it holds the old value (unless the user said not to touch code; then name the open DOC209 in your answer), then write the new hash.
 - DOC401: a target does not resolve or a region is broken.
-- DOC404: a block of a covered kind has no tag `id#^code`. Tag the code that implements it (the hint gives the target with its hash); if no code implements it yet, say so to the user instead of tagging unrelated code.
+- DOC404: a block of a covered kind has no tag `id#^code`. Tag the code that implements it (the hint gives the target with its hash); if no code implements it yet, say so to the user instead of tagging unrelated code. Under `docc check <paths>` it stands at the place of a tag that existed at HEAD: your change removed the last tag of that block, so put a tag back on the code that implements it.
 - A reference such as `<Req to="i4#^k7f2">` in code carries no hash: the hash lives in the file's tag.
 
 ## Reading diagnostics

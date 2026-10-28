@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 
 use super::analyze::split_ref;
 use super::mdrules::fragment_problem;
@@ -151,7 +152,7 @@ impl Project {
                 );
             }
         }
-        self.check_block_coverage(&tagged);
+        self.check_block_coverage(&tagged, &skip);
     }
 
     /// check_block_coverage is DOC404: every block that the kind schema wants
@@ -159,10 +160,12 @@ impl Project {
     /// marked fields) needs a tag that names it, id#^code. A tag on the whole
     /// document or on a field is not one: it does not say which code
     /// implements the block.
-    fn check_block_coverage(&self, tagged: &HashSet<String>) {
+    fn check_block_coverage(&self, tagged: &HashSet<String>, skip: &[PathBuf]) {
         if self.off("DOC404") {
             return;
         }
+        // the uncovered blocks no docIgnore excuses -> their kind
+        let mut uncovered: HashMap<String, &str> = HashMap::new();
         for d in &self.docs {
             let Some((kind, blocks)) = self.covered_blocks(d) else {
                 continue;
@@ -175,6 +178,9 @@ impl Project {
                 let n = sn.node();
                 let (start, end) = d.range(n, sn.anchor_at, n.str.len());
                 let hash = self.version(&target).map(|v| format!("@{}", v.hash)).unwrap_or_default();
+                if !self.ignored(d, "DOC404", start) {
+                    uncovered.insert(target.clone(), kind);
+                }
                 self.emit(
                     d,
                     "DOC404",
@@ -188,6 +194,55 @@ impl Project {
                     ),
                     format!("Add // docc: {target}{hash} to the code that implements this block."),
                 );
+            }
+        }
+        if !self.scope.is_empty() && !uncovered.is_empty() {
+            self.check_removed_tags(&uncovered, skip);
+        }
+    }
+
+    /// check_removed_tags is DOC404 of docc check <paths>: a block reported
+    /// above whose tag stood under a path at HEAD (of the repository that
+    /// holds the path, a submodule's own) lost it in this change. It is
+    /// reported where that tag was, so it is under the path; a block nobody
+    /// tagged yet is not this change's doing and stays with the full check.
+    fn check_removed_tags(&self, uncovered: &HashMap<String, &str>, skip: &[PathBuf]) {
+        let mut seen = HashSet::new();
+        for s in &self.scope {
+            let dir = if self.cfg.root.join(s).is_dir() { s.as_str() } else { s.rsplit_once('/').map_or("", |(d, _)| d) };
+            let Some(tags) = trace::scan_head(&self.cfg.root, dir, &self.cfg.trace_scan, skip) else {
+                continue; // not in a Git work tree
+            };
+            for t in tags.iter().filter(|t| t.err.is_empty() && super::under(s, &t.file)) {
+                for g in &t.targets {
+                    let (id, field, _, ok) = split_ref(g, self.legacy);
+                    let (Some(code), Some(d)) = (field.strip_prefix('^').filter(|_| ok), self.doc(id)) else {
+                        continue;
+                    };
+                    let target = format!("{}#^{code}", d.id);
+                    let Some(kind) = uncovered.get(&target) else {
+                        continue;
+                    };
+                    if !seen.insert(target.clone()) {
+                        continue;
+                    }
+                    let hash = self.version(&target).map(|v| format!("@{}", v.hash)).unwrap_or_default();
+                    self.emit_file(
+                        &t.file,
+                        "DOC404",
+                        t.line,
+                        t.col,
+                        format!(
+                            "this change removes the last tag of {}, and kind {} expects one on {}",
+                            go_quote(&target),
+                            go_quote(kind),
+                            self.which_blocks(kind),
+                        ),
+                        format!(
+                            "The tag stood here at HEAD. Put // docc: {target}{hash} back on the code that implements the block, or on the code that implements it now."
+                        ),
+                    );
+                }
             }
         }
     }
