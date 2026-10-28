@@ -156,9 +156,10 @@ fn list(root: &Path, skip_dirs: &[PathBuf]) -> io::Result<Vec<String>> {
                 && !under(&root.join(p))
             {
                 // a submodule, or a repository nested in the tree, is one entry
-                // here: its files are listed by its own git, with its own ignores
+                // here: its files are listed by its own git, with its own ignores.
+                // Only a real folder: a link is never followed (one to "." loops)
                 let p = p.trim_end_matches('/');
-                if root.join(p).join(".git").exists() {
+                if std::fs::symlink_metadata(root.join(p)).is_ok_and(|m| m.is_dir()) && root.join(p).join(".git").exists() {
                     paths.extend(list(&root.join(p), skip_dirs)?.into_iter().map(|q| format!("{p}/{q}")));
                 } else {
                     paths.push(p.to_string());
@@ -548,6 +549,27 @@ mod tests {
         let out = Command::new("git").arg("-C").arg(&repo).args(["init", "-q"]).output().unwrap();
         assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
         assert_eq!(files(&repo), ["a.go", "vendor/v.go"], "git");
+        std::fs::remove_dir_all(&repo).unwrap();
+    }
+
+    // A committed link to a folder that holds .git (here the root itself) is
+    // not a nested repository: following it read loop/loop/... until ELOOP.
+    #[cfg(unix)]
+    #[test]
+    fn symlink_to_a_repository_is_not_followed() {
+        if Command::new("git").arg("--version").output().is_err() {
+            return; // no git
+        }
+        let repo = temp_dir();
+        std::fs::write(repo.join("a.go"), "// docc: x\n").unwrap();
+        std::os::unix::fs::symlink(".", repo.join("loop")).unwrap();
+        let git = |args: &[&str]| {
+            let out = Command::new("git").arg("-C").arg(&repo).args(args).output().unwrap();
+            assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        };
+        git(&["init", "-q"]);
+        git(&["add", "a.go", "loop"]);
+        assert_eq!(list(&repo, &[]).unwrap(), ["a.go", "loop"]);
         std::fs::remove_dir_all(&repo).unwrap();
     }
 }
