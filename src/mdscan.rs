@@ -83,6 +83,10 @@ impl Scan {
     /// skip includes, the inserted text is checked in its own document.
     fn cut_includes(&mut self) {
         self.includes = self.delimited("{{", "}}");
+        // a block code in an include is matched in any case, as in a link
+        for r in &mut self.includes {
+            r.inner = crate::codes::split_hash(&r.inner).0;
+        }
         self.plain = without(&self.plain, &self.includes);
     }
 
@@ -175,7 +179,7 @@ impl Scan {
 
     /// Refs returns [[...]] occurrences outside code; the version hash of a
     /// link ("@3a9c" at its end) is cut from inner into hash, a block code in
-    /// it is lower-cased.
+    /// it is upper-cased (one of the old format lower-cased).
     pub fn refs(&self) -> Vec<Ref> {
         let mut rs = self.delimited("[[", "]]");
         for r in &mut rs {

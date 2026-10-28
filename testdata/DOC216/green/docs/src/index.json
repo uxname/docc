@@ -1,1 +1,1 @@
-{ "title": "Index", "kind": "page", "body": ["A paragraph written later. ^m2pq", "React ^18 and x ^2 are text.\n^n3pq", "Coded. ^k7f2", "  "], "statement": "Short. ^p4pq", "notes": ["Notes have no codes."] }
+{ "title": "Index", "kind": "page", "key": "IND", "body": ["A paragraph written later. ^IND-1", "React ^18 and x ^2 are text.\n^IND-2", "Coded. ^IND-3", "  "], "statement": "Short. ^IND-4", "notes": ["Notes have no codes."] }

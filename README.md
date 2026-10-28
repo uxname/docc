@@ -61,18 +61,19 @@ A document is one JSON file in `docs/src`; its id is the file name (`docs/src/si
 {
   "title": "Sign-in",
   "kind": "page",
+  "key": "SIGN",
   "parent": "index",
-  "body": ["After five wrong passwords sign-in locks for 15 minutes. ^k7f2"]
+  "body": ["After five wrong passwords sign-in locks for 15 minutes. ^SIGN-1"]
 }
 ```
 
 Pictures (`png`, `jpg`, `jpeg`, `gif`, `svg`, `webp`) lie inside `docs/src` and are linked by a path relative to the document: `![Plan](img/plan.svg)`. A fenced ```` ```mermaid ```` block is drawn as a diagram in the HTML file, offline. A form field (`{"$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"]}`) asks the readers of the HTML file; radio and checkbox fields also take an own answer.
 
-Every document needs a `kind` and a schema `docs/schemas/<kind>.json` (rule DOC109). The project defines its own kinds; a schema sets `"additionalProperties"` to `true` (any extra field) or `false` (only the listed fields). Every text block ends with a permanent code, ` ^k7f2` (four signs of `23456789abcdefghjkmnpqrstuvwxyz`, unique in the project, shown to readers as `K7F2`). `docc build` gives one to a block written without it; nobody writes or changes codes by hand. Other documents link with `[[sign-in@9b1e]]`, to a field with `[[sign-in#field@77aa]]` or to one paragraph with `[[sign-in#^k7f2@3a9c]]`: the part after `@` is the version hash of the target. When the target changes, the link is an error (DOC209) whose message shows what changed (the old version is found in Git by its hash) and the new hash; an agent reads the change, checks the place and writes the new hash by hand. A project of the old format (a `docc.lock`, named anchors) is refused until `docc migrate` has moved it.
+Every document needs a `kind` and a schema `docs/schemas/<kind>.json` (rule DOC109). The project defines its own kinds; a schema sets `"additionalProperties"` to `true` (any extra field) or `false` (only the listed fields). Every text block ends with a permanent code, ` ^SIGN-1`: the `key` of its document, a dash and a number, short enough to say aloud or cite from code. `docc build` gives a block written without it the next number of its document (and writes `key` into a new document); nobody writes or changes codes by hand. Two branches that gave the same number are caught when merged (DOC212), and an agent decides which block keeps it. Other documents link with `[[sign-in@9b1e]]`, to a field with `[[sign-in#field@77aa]]` or to one paragraph with `[[sign-in#^SIGN-1@3a9c]]`: the part after `@` is the version hash of the target. When the target changes, the link is an error (DOC209) whose message shows what changed (the old version is found in Git by its hash) and the new hash; an agent reads the change, checks the place and writes the new hash by hand. A project of an old format (codes such as `^k7f2`, or a `docc.lock` with named anchors) fails with DOC216 or is refused until `docc migrate` has moved it.
 
-With `"trace": {"scan": ["src/**"]}` in `docc.json`, the tag `// docc: sign-in#^k7f2@3a9c ~e91d` links a code file to a paragraph; `~e91d` is the fingerprint of the file's code outside its regions, and a `// docc:begin sign-in#^k7f2@3a9c ~0c4f` … `// docc:end` region has its own. Any change of the code breaks its fingerprint (DOC402) until it is checked against the paragraphs and rewritten by hand.
+With `"trace": {"scan": ["src/**"]}` in `docc.json`, the tag `// docc: sign-in#^SIGN-1@3a9c ~e91d` links a code file to a paragraph; `~e91d` is the fingerprint of the file's code outside its regions, and a `// docc:begin sign-in#^SIGN-1@3a9c ~0c4f` … `// docc:end` region has its own. Any change of the code breaks its fingerprint (DOC402) until it is checked against the paragraphs and rewritten by hand.
 
-In the HTML file a paragraph shows its code on hover with the buttons «Copy link» (`#sign-in--k7f2@3a9c`) and «Copy code».
+In the HTML file every paragraph shows its code beside it, and on hover the buttons «Copy link» (`#sign-in--SIGN-1@3a9c`) and «Copy code».
 
 A problem is reported with the position, the rule and a hint:
 

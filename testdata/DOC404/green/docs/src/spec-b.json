@@ -2,7 +2,8 @@
   "title": "Spec B",
   "parent": "index",
   "kind": "spec",
-  "body": "One. ^c4c4",
-  "extra": "Two. ^d5d5",
+  "key": "SB",
+  "body": "One. ^SB-1",
+  "extra": "Two. ^SB-2",
   "notes": ["A note needs no tag. ^e6e6"]
 }

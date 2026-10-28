@@ -3,13 +3,13 @@
     "code": "DOC212",
     "rule": "graph/duplicate-anchor",
     "level": "error",
-    "file": "docs/src/index.json",
+    "file": "docs/src/b.json",
     "line": 1,
-    "column": 54,
+    "column": 140,
     "endLine": 1,
-    "endColumn": 59,
-    "message": "block code \"^k7f2\" is used twice: also at docs/src/b.json:1:85",
-    "hint": "One of the two blocks is a copy: delete the code of the copy (keep the code of the block other places link to) and run docc build, which gives it a new one."
+    "endColumn": 146,
+    "message": "block code \"^IND-4\" is used twice: also at docs/src/b.json:1:104",
+    "hint": "Two blocks got the same code: a block was copied, or two branches gave the same number and were merged. Decide which block keeps it: the one that had it first (in the history of the branch merged into) and that links point to. Delete the code of the other and run docc build: it gets the next free number. A link written to the old number for the other block now fails its hash (DOC209): point it at the new code."
   },
   {
     "code": "DOC212",
@@ -17,11 +17,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 79,
+    "column": 44,
     "endLine": 1,
-    "endColumn": 84,
-    "message": "block code \"^k7f2\" is used twice: also at docs/src/b.json:1:85",
-    "hint": "One of the two blocks is a copy: delete the code of the copy (keep the code of the block other places link to) and run docc build, which gives it a new one."
+    "endColumn": 49,
+    "message": "key \"IND\" is the key of docs/src/b.json too",
+    "hint": "Two documents cannot share a key: their codes would repeat. Choose another key for the newer document; its blocks then need new codes: delete them and run docc build."
   },
   {
     "code": "DOC212",
@@ -29,10 +29,22 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 95,
+    "column": 94,
     "endLine": 1,
     "endColumn": 100,
-    "message": "block code \"^m2pq\" equals the anchor of a heading on this page",
+    "message": "block code \"^IND-1\" is used twice: also at docs/src/index.json:1:68",
+    "hint": "Two blocks got the same code: a block was copied, or two branches gave the same number and were merged. Decide which block keeps it: the one that had it first (in the history of the branch merged into) and that links point to. Delete the code of the other and run docc build: it gets the next free number. A link written to the old number for the other block now fails its hash (DOC209): point it at the new code."
+  },
+  {
+    "code": "DOC212",
+    "rule": "graph/duplicate-anchor",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 133,
+    "endLine": 1,
+    "endColumn": 139,
+    "message": "block code \"^IND-3\" equals the anchor of a heading on this page",
     "hint": "Delete the code and run docc build for a new one: a link to it would land on the heading."
   }
 ]

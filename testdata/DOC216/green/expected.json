@@ -5,9 +5,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 137,
+    "column": 154,
     "endLine": 1,
-    "endColumn": 141,
+    "endColumn": 158,
     "message": "the string is empty",
     "hint": "Fill it in or remove the field."
   }

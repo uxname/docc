@@ -1,7 +1,8 @@
 {
   "title": "Req",
   "kind": "requirement",
+  "key": "REQ",
   "parent": "goal-a",
-  "why": "Serves [[goal-a@c5vf]]. ^x8vn",
-  "body": "Unlike [[note-a@xsmh]], any kind here. ^5tf4"
+  "why": "Serves [[goal-a@c5vf]]. ^REQ-1",
+  "body": "Unlike [[note-a@xsmh]], any kind here. ^REQ-2"
 }

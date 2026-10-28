@@ -1,5 +1,6 @@
 {
   "title": "Требования к входу",
   "kind": "page",
-  "body": ["Требования: [[req-login@e4gc]], [[req-reset@8vxa]]. ^mmey"]
+  "key": "IND",
+  "body": ["Требования: [[req-login@e4gc]], [[req-reset@8vxa]]. ^IND-1"]
 }

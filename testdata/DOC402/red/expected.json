@@ -9,6 +9,6 @@
     "endLine": 3,
     "endColumn": 4,
     "message": "the region of this docc:begin changed: its fingerprint is ~wxts now, not ~t63k",
-    "hint": "Check that the code agrees with what it points to (fix the code or the documents if not), then write ~wxts at the end of the tag line by hand. The targets read now:\n    index#^5v78: Five attempts per minute."
+    "hint": "Check that the code agrees with what it points to (fix the code or the documents if not), then write ~wxts at the end of the tag line by hand. The targets read now:\n    index#^IND-1: Five attempts per minute."
   }
 ]

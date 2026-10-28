@@ -17,9 +17,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 60,
+    "column": 61,
     "endLine": 1,
-    "endColumn": 65,
+    "endColumn": 66,
     "message": "time-bound word \"Новая\"",
     "hint": "Say what is true regardless of the moment, or give a date."
   },
@@ -29,9 +29,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 80,
+    "column": 81,
     "endLine": 1,
-    "endColumn": 87,
+    "endColumn": 88,
     "message": "time-bound word \"недавно\"",
     "hint": "Say what is true regardless of the moment, or give a date."
   }

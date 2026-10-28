@@ -28,6 +28,7 @@ pub(super) fn reserved(k: &str) -> bool {
             | "hidden"
             | "docIgnore"
             | "order"
+            | "key"
             | "$comments"
     )
 }

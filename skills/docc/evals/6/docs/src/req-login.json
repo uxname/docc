@@ -1,8 +1,9 @@
 {
   "title": "Вход по почте",
   "kind": "requirement",
+  "key": "RL",
   "parent": "index",
-  "statement": "Пользователь входит по адресу почты и паролю. ^qf6q",
-  "priorty": "high ^4ate",
-  "owner": "N/A ^83nf"
+  "statement": "Пользователь входит по адресу почты и паролю. ^RL-1",
+  "priorty": "high ^RL-2",
+  "owner": "N/A ^RL-3"
 }

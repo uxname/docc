@@ -1,5 +1,6 @@
 {
   "title": "Index",
-  "body": ["See [[a@f5rj]] and [[b@fmgb]]. ^5v78", "{{a}} ^muum", "{{missing#body}} ^h5yw", "{{a#nope}} ^jta5", "{{a#notes}} ^xnp7", "{{a#count}} ^xpme", "{{b#body}} ^c2qp"],
-  "kind": "page"
+  "body": ["See [[a@f5rj]] and [[b@fmgb]]. ^IND-1", "{{a}} ^IND-2", "{{missing#body}} ^IND-3", "{{a#nope}} ^IND-4", "{{a#notes}} ^IND-5", "{{a#count}} ^IND-6", "{{b#body}} ^IND-7"],
+  "kind": "page",
+  "key": "IND"
 }

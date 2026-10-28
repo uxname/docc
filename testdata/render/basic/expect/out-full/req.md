@@ -8,7 +8,7 @@ Requirement body, see [Deep doc](a/deep.md#acceptance-criteria).
 
 ## Statement
 
-<a id="2vh9"></a>First fact.
+<a id="REQ-2"></a>First fact.
 
 Second fact.
 

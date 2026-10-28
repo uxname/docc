@@ -1000,8 +1000,8 @@ impl Set {
 const DEFAULT_HINT: &str = "Change the value so that it matches the schema.";
 
 /// builtinFields are the fields the built-in schema is applied to (DOC105).
-pub(crate) const BUILTIN_FIELDS: [&str; 9] = [
-    "title", "kind", "status", "parent", "tags", "body", "notes", "hidden", "order",
+pub(crate) const BUILTIN_FIELDS: [&str; 10] = [
+    "title", "kind", "status", "parent", "tags", "body", "notes", "hidden", "order", "key",
 ];
 
 /// Origin is where the errors collect gets come from: the schema the

@@ -2,6 +2,7 @@
   "title": "Spec C",
   "parent": "index",
   "kind": "spec",
-  "body": "Not built yet. ^f7f7",
+  "key": "SC",
+  "body": "Not built yet. ^SC-1",
   "docIgnore": [{ "rule": "trace/uncovered-block", "path": "/body", "reason": "planned for the next release" }]
 }

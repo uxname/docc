@@ -425,10 +425,32 @@ impl Project {
         }
         // the first place of every block code in the project: file, line and column
         let mut codes: HashMap<String, (String, (usize, usize))> = HashMap::new();
+        // the first document of every key
+        let mut keys: HashMap<String, String> = HashMap::new();
         for d in &self.docs {
             let Some(root) = d.root() else {
                 continue;
             };
+            let key = root.get("key").filter(|k| k.kind == Kind::String && crate::codes::is_key(&k.str));
+            if !d.legacy
+                && let Some(k) = key
+            {
+                match keys.get(&k.str) {
+                    Some(f) => self.emit(
+                        d,
+                        "DOC212",
+                        k.start,
+                        k.end,
+                        format!("key {} is the key of {f} too", go_quote(&k.str)),
+                        "Two documents cannot share a key: their codes would repeat. Choose another key for the newer document; its blocks then need new codes: delete them and run docc build.".into(),
+                    ),
+                    None => {
+                        keys.insert(k.str.clone(), d.file.clone());
+                    }
+                }
+            }
+            let key = key.map(|k| k.str.as_str());
+            let mut keyless = false;
             let mut heads = HashSet::new();
             for m in &root.members {
                 if !reserved_key(&m.key) {
@@ -445,7 +467,7 @@ impl Project {
                         let m = crate::codes::ANY_MARK.captures(&n.str).unwrap();
                         (
                             format!("the block ends in {}, which is not a block code", go_quote(m.get(0).unwrap().as_str().trim_start())),
-                            "Named anchors are gone: remove the marker and run docc build, which gives the block a code (a project of the old format: run docc migrate). Codes are four lower-case signs such as ^k7f2, given by docc only.".to_string(),
+                            "Codes of the old format (^k7f2) and named anchors are gone: run docc migrate, which moves every block, link, comment and code tag to codes such as ^PAY-14. A single stray marker: remove it and run docc build. Codes are given by docc only.".to_string(),
                         )
                     } else {
                         (
@@ -462,6 +484,21 @@ impl Project {
                 let (a, b) = d.range(sn.node(), sn.anchor_at + 1, sn.node().str.len());
                 let name = go_quote(&format!("^{}", sn.anchor));
                 if !d.legacy {
+                    match key {
+                        None if !keyless => {
+                            keyless = true;
+                            self.emit(d, "DOC216", a, b, "the document has no \"key\" for its block codes".into(), "Run docc build: it writes the key its codes carry. Never write or change a code by hand.".into());
+                        }
+                        Some(k) if crate::codes::key_of(&sn.anchor) != k => self.emit(
+                            d,
+                            "DOC216",
+                            a,
+                            b,
+                            format!("block code {name} is not of this document, whose key is {}", go_quote(k)),
+                            "The block was copied or moved here from another document: delete its code and run docc build, which gives it a code of this document. Then fix the links to the old code (DOC202).".into(),
+                        ),
+                        _ => {}
+                    }
                     let here = d.res().src.position(a);
                     match codes.get(&sn.anchor) {
                         Some((f, (line, col))) => self.emit(
@@ -470,13 +507,13 @@ impl Project {
                             a,
                             b,
                             format!("block code {name} is used twice: also at {f}:{line}:{col}"),
-                            "One of the two blocks is a copy: delete the code of the copy (keep the code of the block other places link to) and run docc build, which gives it a new one.".into(),
+                            "Two blocks got the same code: a block was copied, or two branches gave the same number and were merged. Decide which block keeps it: the one that had it first (in the history of the branch merged into) and that links point to. Delete the code of the other and run docc build: it gets the next free number. A link written to the old number for the other block now fails its hash (DOC209): point it at the new code.".into(),
                         ),
                         None => {
                             codes.insert(sn.anchor.clone(), (d.file.clone(), here));
                         }
                     }
-                    if heads.contains(&sn.anchor) {
+                    if heads.contains(&sn.anchor.to_lowercase()) {
                         self.emit(d, "DOC212", a, b, format!("block code {name} equals the anchor of a heading on this page"), "Delete the code and run docc build for a new one: a link to it would land on the heading.".into());
                     }
                     continue;

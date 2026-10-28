@@ -53,42 +53,120 @@ fn write_doc(p: &Project, d: &Doc, data: &[u8]) -> Res<()> {
     std::fs::write(&abs, out).map_err(|e| go_path_error("open", &abs, &e).into())
 }
 
-/// all_codes are the codes at the end of any string of the project.
-fn all_codes(p: &Project) -> HashSet<String> {
-    let mut used = HashSet::new();
+/// key_in is the key the document says it has.
+fn key_in(d: &Doc) -> Option<String> {
+    d.root()?.get("key").filter(|k| k.kind == Kind::String && codes::is_key(&k.str)).map(|k| k.str.clone())
+}
+
+/// numbers notes every code of the project.
+fn numbers(p: &Project) -> codes::Numbers {
+    let mut n = codes::Numbers::default();
     for d in &p.docs {
         for sn in d.strings() {
             if let Some(c) = codes::code_of(&sn.node().str) {
-                used.insert(c.to_string());
+                n.note(c);
             }
         }
     }
-    used
+    n
+}
+
+/// Keys gives each document its key: the one it says it has, else the one
+/// most of its codes carry, else one made from its id that no other
+/// document has.
+struct Keys(HashSet<String>);
+
+impl Keys {
+    fn of(p: &Project) -> Keys {
+        let mut taken: HashSet<String> = p.docs.iter().filter_map(key_in).collect();
+        for d in &p.docs {
+            for sn in d.strings() {
+                if let Some(c) = codes::code_of(&sn.node().str) {
+                    taken.insert(codes::key_of(c).to_string());
+                }
+            }
+        }
+        Keys(taken)
+    }
+
+    /// pick is the key of d and whether the file still has to say it.
+    fn pick(&mut self, d: &Doc, codes_there: &[&str]) -> (String, bool) {
+        if let Some(k) = key_in(d) {
+            return (k, false);
+        }
+        let mut count: HashMap<&str, usize> = HashMap::new();
+        for c in codes_there {
+            *count.entry(codes::key_of(c)).or_default() += 1;
+        }
+        let k = match count.into_iter().max_by(|a, b| a.1.cmp(&b.1).then(b.0.cmp(a.0))) {
+            Some((k, _)) => k.to_string(),
+            None => codes::propose_key(&d.id, &|k| self.0.contains(k)),
+        };
+        self.0.insert(k.clone());
+        (k, true)
+    }
+}
+
+/// key_edit inserts "key" after "kind" (else after "title", else first),
+/// on a line of its own indented like that member when the file has lines.
+fn key_edit(d: &Doc, key: &str) -> Option<(usize, usize, String)> {
+    let root = d.root()?;
+    let data = &d.res().src.data;
+    let Some(m) = ["kind", "title"].iter().find_map(|k| root.members.iter().find(|m| m.key == *k)) else {
+        let lit = format!("\"key\": {}", json(key));
+        let at = root.start + 1;
+        return Some((at, at, if root.members.is_empty() { lit } else { format!("{lit}, ") }));
+    };
+    // the colon written like that member's
+    let colon = String::from_utf8_lossy(&data[m.key_end..m.value.start]);
+    let lit = format!("\"key\"{colon}{}", json(key));
+    let ls = data[..m.key_start].iter().rposition(|&b| b == b'\n').map_or(0, |i| i + 1);
+    let indent = &data[ls..m.key_start];
+    let sep = if ls > 0 && indent.iter().all(|b| *b == b' ' || *b == b'\t') {
+        format!("\n{}", String::from_utf8_lossy(indent))
+    } else {
+        " ".to_string()
+    };
+    Some((m.value.end, m.value.end, format!(",{sep}{lit}")))
 }
 
 /// assign_codes gives a new code to every block of the project that has
-/// none (docc build, docc codes) and returns how many it gave. It never
-/// touches a code that is there or a hash. A block that ends in a marker
-/// which is not a code (DOC216) is left alone.
+/// none (docc build, docc codes): the key of its document, a dash and the
+/// largest number of that key plus one; a document without "key" gets one.
+/// It returns how many codes it gave and never touches a code that is
+/// there or a hash. A block that ends in a marker which is not a code
+/// (DOC216) is left alone.
 pub fn assign_codes(p: &Project) -> Res<usize> {
     if p.legacy {
         return Ok(0);
     }
-    let mut used = all_codes(p);
+    let mut nums = numbers(p);
+    let mut keys = Keys::of(p);
     let mut n = 0;
     for d in &p.docs {
-        let mut edits = Vec::new();
-        for sn in d.strings() {
-            let s = &sn.node().str;
-            if sn.blk && !sn.notes && sn.anchor.is_empty() && !sn.bad_mark && !s.trim().is_empty() {
-                let add = codes::with_code(s, &codes::new_code(&mut used, &format!("{}\0{s}", d.rel)))[s.len()..].to_string();
-                let lit = json(&add);
-                let end = sn.node().end - 1; // before the closing quote
-                edits.push((end, end, lit[1..lit.len() - 1].to_string()));
-            }
+        let strs = d.strings();
+        let need: Vec<_> = strs
+            .iter()
+            .filter(|sn| sn.blk && !sn.notes && sn.anchor.is_empty() && !sn.bad_mark && !sn.node().str.trim().is_empty())
+            .collect();
+        let there: Vec<&str> = strs.iter().filter(|sn| !sn.notes).filter_map(|sn| codes::code_of(&sn.node().str)).collect();
+        if need.is_empty() && (there.is_empty() || key_in(d).is_some()) {
+            continue;
         }
+        let (key, write) = keys.pick(d, &there);
+        let mut edits = Vec::new();
+        if write {
+            edits.extend(key_edit(d, &key));
+        }
+        for sn in &need {
+            let s = &sn.node().str;
+            let add = codes::with_code(s, &nums.next(&key))[s.len()..].to_string();
+            let lit = json(&add);
+            let end = sn.node().end - 1; // before the closing quote
+            edits.push((end, end, lit[1..lit.len() - 1].to_string()));
+        }
+        n += need.len();
         if !edits.is_empty() {
-            n += edits.len();
             write_doc(p, d, &splice(&d.res().src.data, edits))?;
         }
     }
@@ -109,6 +187,10 @@ pub struct Report {
     pub links_rewritten: usize,
     /// version hashes written into links
     pub hashes_added: usize,
+    /// hashes rewritten because the codes inside their targets moved: a link
+    /// that matched its target before matches it after, one that did not
+    /// still does not
+    pub hashes_moved: usize,
     /// comments whose "at" became a code
     pub comments_moved: usize,
     /// code files written
@@ -119,6 +201,9 @@ pub struct Report {
     pub tag_hashes_added: usize,
     /// fingerprints written on docc: tags
     pub prints_added: usize,
+    /// fingerprints rewritten because the codes in their lines moved, kept
+    /// matching or not matching as before
+    pub prints_moved: usize,
     /// links and regions that docc.lock held unconfirmed: they got a hash that
     /// does not match, so docc check asks for a review of each
     pub unconfirmed: usize,
@@ -126,8 +211,8 @@ pub struct Report {
     pub lock_removed: bool,
 }
 
-/// OLD_REF is id#^name in a code file.
-static OLD_REF: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([a-z0-9][a-z0-9-]*)#\^([a-z][a-z0-9-]*)").unwrap());
+/// OLD_REF is id#^name in a code file: a named anchor, a code of either format.
+static OLD_REF: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)([a-z0-9][a-z0-9-]*)#\^([a-z0-9][a-z0-9-]*)").unwrap());
 
 /// placeholder is a hash other than h: the version of a link docc.lock held
 /// unconfirmed, so the link stays to be checked.
@@ -166,16 +251,31 @@ pub fn migrate(cfg: Config) -> Res<Report> {
     let mut rep = Report::default();
     let (stale_t, stale_c) = if p.legacy { p.stale_links() } else { Default::default() };
 
-    // 1. codes: the codes there keep their blocks (the first one in path order
-    // when copied), named anchors and blocks without a marker get new ones
-    let mut used: HashSet<String> = HashSet::new();
-    let mut dup: HashSet<*const Node> = HashSet::new();
+    // 1. codes: a code of its own document keeps its block (the first one in
+    // path order when copied); codes of the old format, named anchors, codes
+    // of another document and blocks without a marker get new ones: the key
+    // of the document and the next number of it
+    let mut keys = Keys::of(&p);
+    let mut key_of: HashMap<String, (String, bool)> = HashMap::new(); // id -> key, to be written
     for d in &p.docs {
+        let strs = d.strings();
+        let there: Vec<&str> = strs.iter().filter(|sn| !sn.notes).filter_map(|sn| codes::code_of(&sn.node().str)).collect();
+        if d.root().is_some() && strs.iter().any(|sn| sn.blk && !sn.notes && !sn.node().str.trim().is_empty()) {
+            key_of.insert(d.id.clone(), keys.pick(d, &there));
+        }
+    }
+    let mut used: HashSet<String> = HashSet::new();
+    let mut keep: HashSet<*const Node> = HashSet::new();
+    let mut nums = codes::Numbers::default();
+    for d in &p.docs {
+        let Some((key, _)) = key_of.get(&d.id) else { continue };
         for sn in d.strings().iter().filter(|sn| sn.blk && !sn.notes) {
             if let Some(c) = codes::code_of(&sn.node().str)
-                && !used.insert(c.to_string())
+                && codes::key_of(c) == key
+                && used.insert(c.to_string())
             {
-                dup.insert(sn.node());
+                keep.insert(sn.node());
+                nums.note(c);
             }
         }
     }
@@ -183,32 +283,23 @@ pub fn migrate(cfg: Config) -> Res<Report> {
     let mut text: HashMap<*const Node, String> = HashMap::new(); // new text of a string
     let mut code_at: HashMap<*const Node, String> = HashMap::new(); // the code of a block
     for d in &p.docs {
+        let Some((key, _)) = key_of.get(&d.id) else { continue };
         for sn in d.strings().iter().filter(|sn| sn.blk && !sn.notes) {
             let n = sn.node();
             let s = &n.str;
-            let salt = format!("{}\0{s}", d.rel);
-            if let Some(m) = codes::CODE_MARK.captures(s) {
-                let c = m[1].to_string();
-                if dup.contains(&(n as *const Node)) {
-                    let new = codes::new_code(&mut used, &salt);
-                    let at = m.get(1).unwrap().start();
-                    text.insert(n, format!("{}{new}", &s[..at]));
-                    map.entry((d.id.clone(), c)).or_insert_with(|| new.clone());
-                    code_at.insert(n, new);
-                    rep.anchors_replaced += 1;
-                } else {
-                    map.entry((d.id.clone(), c.clone())).or_insert_with(|| c.clone());
-                    code_at.insert(n, c);
-                }
-            } else if let Some(m) = codes::NAMED_MARK.captures(s) {
-                let new = codes::new_code(&mut used, &salt);
+            if keep.contains(&(n as *const Node)) {
+                let c = codes::code_of(s).unwrap().to_string();
+                map.entry((d.id.clone(), c.clone())).or_insert_with(|| c.clone());
+                code_at.insert(n, c);
+            } else if let Some(m) = codes::ANY_MARK.captures(s) {
+                let new = nums.next(key);
                 let at = m.get(1).unwrap().start();
                 text.insert(n, format!("{}{new}", &s[..at]));
-                map.entry((d.id.clone(), m[1].to_string())).or_insert_with(|| new.clone());
+                map.entry((d.id.clone(), codes::canon(&m[1]))).or_insert_with(|| new.clone());
                 code_at.insert(n, new);
                 rep.anchors_replaced += 1;
             } else if !s.trim().is_empty() {
-                let new = codes::new_code(&mut used, &salt);
+                let new = nums.next(key);
                 text.insert(n, codes::with_code(s, &new));
                 code_at.insert(n, new);
                 rep.codes_given += 1;
@@ -217,12 +308,26 @@ pub fn migrate(cfg: Config) -> Res<Report> {
     }
     let rename = |target: &str| -> Option<String> {
         let (id, name) = target.split_once("#^")?;
-        let c = map.get(&(id.to_string(), name.to_string()))?;
-        (c != name).then(|| format!("{id}#^{c}"))
+        let c = map.get(&(id.to_string(), codes::canon(name)))?;
+        (name != c.as_str()).then(|| format!("{id}#^{c}"))
+    };
+    // a link or tag whose hash matched its target before keeps matching after
+    // (its target's text changed only by the codes); one that did not keeps
+    // not matching: the move confirms nothing
+    let old_hash = |target: &str| -> Option<String> {
+        let (t, _) = codes::split_hash(target);
+        let (id, field, _, ok) = split_ref(&t, p.legacy);
+        if !ok {
+            return None;
+        }
+        let d = &p.docs[*p.graph.get(id)?];
+        Some(version_in(d.root()?, field)?.hash)
     };
 
     // 2. links follow the codes, comments point at codes
     let mut stale_new: HashSet<(String, String)> = HashSet::new();
+    // (document, link as written after the move, its hash) that matched before
+    let mut held: HashSet<(String, String, String)> = HashSet::new();
     let mut data: Vec<Option<Vec<u8>>> = Vec::new(); // new text of each document
     for d in &p.docs {
         let Some(root) = d.root() else {
@@ -241,6 +346,11 @@ pub fn migrate(cfg: Config) -> Res<Report> {
                 let inner = new.clone().unwrap_or_else(|| r.inner.clone());
                 if stale_t.contains(&(d.id.clone(), r.inner.clone())) {
                     stale_new.insert((d.id.clone(), inner.clone()));
+                }
+                if let Some(h) = &r.hash
+                    && old_hash(&r.inner).as_ref() == Some(h)
+                {
+                    held.insert((d.id.clone(), inner.clone(), h.clone()));
                 }
                 if new.is_some() {
                     out.push_str(&cur[last..r.start]);
@@ -267,8 +377,21 @@ pub fn migrate(cfg: Config) -> Res<Report> {
                 edits.push((n.start, n.end, json(&out)));
             }
         }
+        if let Some((k, true)) = key_of.get(&d.id) {
+            edits.extend(key_edit(d, k));
+        }
         if let Some(cs) = root.get(comments::KEY).filter(|c| c.kind == Kind::Array) {
             for it in &cs.items {
+                // a comment at a code that moved follows it
+                if let Some(at) = it.get("at").filter(|a| a.kind == Kind::String)
+                    && let Some(old) = at.str.strip_prefix('^')
+                {
+                    if let Some(c) = map.get(&(d.id.clone(), codes::canon(old))).filter(|c| **c != old) {
+                        edits.push((at.start, at.end, json(&format!("^{c}"))));
+                        rep.comments_moved += 1;
+                    }
+                    continue;
+                }
                 // an answer stays at its form field, which has no code
                 let Some(at) = it.get("at").filter(|a| a.kind == Kind::String && a.str.starts_with('/') && it.get("input").is_none()) else {
                     continue;
@@ -315,7 +438,23 @@ pub fn migrate(cfg: Config) -> Res<Report> {
             let mut out = String::new();
             let mut last = 0;
             for rf in mdscan::new(&n.str).refs() {
-                if rf.hash.is_some() {
+                if let Some(h) = &rf.hash {
+                    let Some(now) = hash_of(&rf.inner) else { continue };
+                    let new = if held.contains(&(d.id.clone(), rf.inner.clone(), h.clone())) {
+                        now
+                    } else if now == *h {
+                        rep.unconfirmed += 1;
+                        placeholder(&now)
+                    } else {
+                        continue;
+                    };
+                    if new != *h {
+                        // the hash is the last four signs before "]]"
+                        out.push_str(&n.str[last..rf.end - 6]);
+                        out.push_str(&new);
+                        last = rf.end - 2;
+                        rep.hashes_moved += 1;
+                    }
                     continue;
                 }
                 let Some(mut h) = hash_of(&rf.inner) else {
@@ -353,7 +492,7 @@ pub fn migrate(cfg: Config) -> Res<Report> {
             if old.contains('\0') {
                 continue;
             }
-            let new = migrate_code(&rel, &old, &rename, &hash_of, &stale_t, &stale_c, &mut rep);
+            let new = migrate_code(&rel, &old, &rename, &hash_of, &old_hash, &stale_t, &stale_c, &mut rep);
             if new != old {
                 std::fs::write(&abs, new).map_err(|e| go_path_error("open", &abs, &e))?;
                 rep.code_files += 1;
@@ -370,20 +509,49 @@ pub fn migrate(cfg: Config) -> Res<Report> {
     Ok(rep)
 }
 
+/// moved is the hash a migration writes where h was: the target's hash now
+/// when h matched the target before, h when it did not and still does not,
+/// and one that does not match when it did not but now would.
+fn moved(held: bool, h: &str, now: &str, rep: &mut Report) -> String {
+    if held {
+        now.to_string()
+    } else if h == now {
+        rep.unconfirmed += 1;
+        placeholder(now)
+    } else {
+        h.to_string()
+    }
+}
+
 /// migrate_code rewrites one code file: id#^anchor becomes id#^code, every
-/// target of a docc: tag gets its hash and every tag its fingerprint.
+/// target of a docc: tag gets its hash and every tag its fingerprint. A hash
+/// or fingerprint that matched before matches after; one that did not, not.
+#[allow(clippy::too_many_arguments)]
 fn migrate_code(
     rel: &str,
     old: &str,
     rename: &dyn Fn(&str) -> Option<String>,
     hash_of: &dyn Fn(&str) -> Option<String>,
+    old_hash: &dyn Fn(&str) -> Option<String>,
     stale_t: &HashSet<(String, String)>,
     stale_c: &HashSet<(String, String)>,
     rep: &mut Report,
 ) -> String {
-    // what docc.lock held unconfirmed, by the targets as they will be written
+    // what docc.lock held unconfirmed, by the targets as they will be written;
+    // the hashes and fingerprints that matched before
     let (mut st, mut sc) = (HashSet::new(), HashSet::new());
+    let (mut held_t, mut held_p) = (HashSet::new(), HashSet::new());
     for t in trace::scan_file(rel, old.as_bytes()) {
+        if t.print.is_some() && t.print.as_deref() == Some(t.want.as_str()) {
+            held_p.insert(t.line);
+        }
+        for (g, h) in t.targets.iter().zip(&t.hashes) {
+            if let Some(h) = h
+                && old_hash(g).as_deref() == Some(h.as_str())
+            {
+                held_t.insert((rename(g).unwrap_or_else(|| g.clone()), h.clone()));
+            }
+        }
         for g in &t.targets {
             let n = rename(g).unwrap_or_else(|| g.clone());
             if stale_t.contains(&(rel.to_string(), g.clone())) {
@@ -418,6 +586,17 @@ fn migrate_code(
         let mut pieces: Vec<String> = Vec::new();
         for piece in body.split(',') {
             let core = piece.trim();
+            if let (t, Some(h)) = codes::split_hash(core)
+                && let Some(now) = hash_of(&t)
+            {
+                let new = moved(held_t.contains(&(t.clone(), h.clone())), &h, &now, rep);
+                if new != h {
+                    let at = core.rfind('@').expect("a hash");
+                    pieces.push(piece.replacen(core, &format!("{}@{new}", &core[..at]), 1));
+                    rep.hashes_moved += 1;
+                    continue;
+                }
+            }
             if core.is_empty() || codes::split_hash(core).1.is_some() {
                 pieces.push(piece.to_string());
                 continue;
@@ -442,7 +621,18 @@ fn migrate_code(
     let tags = trace::scan_file(rel, s.as_bytes());
     let mut lines: Vec<String> = s.split('\n').map(str::to_string).collect();
     for t in tags {
-        if t.print.is_some() || t.targets.is_empty() || !t.err.is_empty() {
+        if let Some(p) = &t.print {
+            let new = moved(held_p.contains(&t.line), p, &t.want, rep);
+            let line = &mut lines[t.line - 1];
+            if new != *p
+                && let Some(at) = line.to_ascii_lowercase().rfind(&format!("~{p}"))
+            {
+                line.replace_range(at + 1..at + 1 + p.len(), &new);
+                rep.prints_moved += 1;
+            }
+            continue;
+        }
+        if t.targets.is_empty() || !t.err.is_empty() {
             continue;
         }
         let mut want = t.want.clone();

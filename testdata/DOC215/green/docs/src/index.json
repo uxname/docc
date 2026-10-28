@@ -1,14 +1,15 @@
 {
   "title": "Index",
   "kind": "page",
+  "key": "IND",
   "body": [
-    "The **owner** of [[other@adjw]] signs it. ^5v78",
+    "The **owner** of [[other@adjw]] signs it. ^IND-1",
     { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] }
   ],
-  "owner": "Ann ^x77w",
+  "owner": "Ann ^IND-2",
   "$comments": [
-    {"id": "c-1", "at": "^5v78", "quote": "The owner of [[other]] signs it.", "fragment": "owner of Other page", "text": "Who is it?", "author": "Bob", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-1", "at": "^IND-1", "quote": "The owner of [[other]] signs it.", "fragment": "owner of Other page", "text": "Who is it?", "author": "Bob", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-2", "at": "/body/1", "quote": "", "input": "export", "answer": ["No"], "author": "Bob", "created": "2026-10-22T09:00:00Z"},
-    {"id": "c-3", "at": "^x77w", "quote": "Ann", "text": "Since when?", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
+    {"id": "c-3", "at": "^IND-2", "quote": "Ann", "text": "Since when?", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
   ]
 }

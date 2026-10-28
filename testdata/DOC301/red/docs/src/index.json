@@ -1,5 +1,6 @@
 {
   "title": "Index",
-  "body": ["The app is fast and easy, etc. ^5v78", "Работает быстро и удобно, и т.д. ^muum", "Нужно срочно. ^h5yw"],
-  "kind": "page"
+  "body": ["The app is fast and easy, etc. ^IND-1", "Работает быстро и удобно, и т.д. ^IND-2", "Нужно срочно. ^IND-3"],
+  "kind": "page",
+  "key": "IND"
 }

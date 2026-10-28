@@ -5,9 +5,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 3,
-    "column": 39,
+    "column": 40,
     "endLine": 3,
-    "endColumn": 43,
+    "endColumn": 44,
     "message": "forbidden word or phrase \"fast\"",
     "hint": "Replace it with a specific, measurable statement."
   },

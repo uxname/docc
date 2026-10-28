@@ -54,6 +54,8 @@ Blocks are followed through versions by one alignment (`history::ops`): the HTML
 
 In folder mode a folder's own page is the document named like the folder inside it, not `index.json`: ids stay the file names, unique in the whole project, so links and codes do not depend on where a file lies.
 
+A block code is the key of its document and a number (`^PAY-14`), not four random signs: people cite a point aloud, in chats and in code. The number is flat, not a section path like 3.2, which would lie about its place once the block moved. The next number is the largest of the document plus one, read from the files, so docc keeps no counter that two branches would conflict on; the price is that two branches can give the same number, which DOC212 reports after the merge and an agent settles, and that a deleted number can come back, which the hash of every link to it catches.
+
 The rules are listed in [Rules and diagnostics](rules.md) and the settings in [Configuration](config.md).
 
 ## Not verified

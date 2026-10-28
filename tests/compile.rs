@@ -239,7 +239,7 @@ fn compile_rev_reads_git_without_checkout() {
         }
     };
     w("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
-    w("docs/src/index.json", "{\n  \"title\": \"I\",\n  \"kind\": \"page\",\n  \"body\": [\"Old TODO\", \"{{a#summary}}\"]\n}\n");
+    w("docs/src/index.json", "{\n  \"title\": \"I\",\n  \"kind\": \"page\",\n  \"body\": [\"Old TODO\", \"{{a#summary}}\"],\n  \"key\": \"IND\"\n}\n");
     w("docs/src/a.json", r#"{"title":"A","kind":"page","parent":"index","summary":"First summary."}"#);
     w("docs/src/gone.json", r#"{"title":"Gone","kind":"page","parent":"index"}"#);
     assert!(git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "one"]));

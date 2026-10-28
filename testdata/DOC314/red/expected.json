@@ -28,9 +28,9 @@
     "rule": "style/manual-number",
     "level": "warn",
     "file": "docs/src/scope.json",
-    "line": 6,
+    "line": 7,
     "column": 32,
-    "endLine": 6,
+    "endLine": 7,
     "endColumn": 42,
     "message": "the number is added by docc; remove it from the title",
     "hint": "Set the position with the order field; docc numbers pages and sections itself."
@@ -40,9 +40,9 @@
     "rule": "style/manual-number",
     "level": "warn",
     "file": "docs/src/scope.json",
-    "line": 6,
+    "line": 7,
     "column": 65,
-    "endLine": 6,
+    "endLine": 7,
     "endColumn": 75,
     "message": "the number is added by docc; remove it from the title",
     "hint": "Set the position with the order field; docc numbers pages and sections itself."

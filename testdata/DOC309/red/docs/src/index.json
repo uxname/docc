@@ -1,1 +1,1 @@
-{ "title": "Index", "body": ["Intro ^5v78", "# Not a heading here ^muum", "text\n## Nor here ^h5yw"], "kind": "page" }
+{ "title": "Index", "body": ["Intro ^IND-1", "# Not a heading here ^IND-2", "text\n## Nor here ^IND-3"], "kind": "page", "key": "IND" }

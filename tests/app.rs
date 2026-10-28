@@ -55,7 +55,7 @@ fn comments() {
         ("bad.json", r#"{"comments":[]}"#),
     ]);
     let before = p.read("docs/src/index.json");
-    let code_of = |t: &str| before[before.find(t).unwrap() + t.len() + 2..][..4].to_string();
+    let code_of = |t: &str| before[before.find(t).unwrap() + t.len() + 2..].split('"').next().unwrap().to_string();
     let (alpha, beta) = (code_of("Alpha text here."), code_of("Beta text here."));
     let (code, out, errs) = p.run(&["comments", "import", "export.json"]);
     assert!(code == 0 && out == "imported 2 comments into 1 documents\n", "{code} {out} {errs}");
@@ -70,7 +70,8 @@ fn comments() {
     let (code, out, errs) = p.run(&["validate", "--max-warnings", "0"]);
     assert_eq!(code, 0, "imported comments are valid: {out} {errs}");
     // an agent edits alpha and replaces beta by another paragraph (a paragraph
-    // inserted above would not move a comment: it stands at a code)
+    // inserted above would not move a comment: it stands at a code); the new
+    // paragraph gets the number beta had, and the words of the comment are not in it
     p.write(
         "docs/src/index.json",
         after.replace(&format!(r#""Alpha text here. ^{alpha}","Beta text here. ^{beta}""#), &format!(r#""Alpha text here, edited. ^{alpha}","Inserted.""#)),
@@ -88,7 +89,7 @@ fn comments() {
     let (code, out, _) = p.run(&["validate", "--format", "json"]);
     let ds = diagnostics_of(&out);
     let lost: Vec<&serde_json::Value> = ds.as_array().unwrap().iter().filter(|d| d["code"] == "DOC215").collect();
-    assert!(code == 0 && lost.len() == 1 && s(lost[0], "message").contains(&format!(r#"comment "aaaa1111" lost its place: no block at "^{beta}""#)), "{out}");
+    assert!(code == 0 && lost.len() == 1 && s(lost[0], "message").contains(&format!(r#"comment "aaaa1111" lost its place: the words "Beta" are not in the block at "^{beta}""#)), "{out}");
     let (_, out, _) = p.run(&["comments", "--format", "json"]);
     let list: serde_json::Value = serde_json::from_str(&out).unwrap_or_else(|e| panic!("{e} {out}"));
     let cs = list["comments"].as_array().unwrap();

@@ -207,8 +207,9 @@ Examples:
             "Usage: docc codes [flags]
 
 Gives a code to every block of the documents that has none (a new paragraph, a list item, the
-text of a field) and prints how many it gave: the source files get \" ^k7f2\" at the end of
-those blocks, nothing else changes. It never touches a code that is there, never writes a
+text of a field) and prints how many it gave: the source files get \" ^PAY-14\" at the end of
+those blocks (the key of the document, a dash and its largest number plus one), and a document
+without \"key\" gets one; nothing else changes. It never touches a code that is there, never writes a
 version hash and checks nothing; docc build does the same before it builds. For a program
 that writes documents (Docspace) and needs the codes in at once.
 
@@ -220,15 +221,17 @@ Examples:
         "migrate" => {
             "Usage: docc migrate [flags]
 
-Moves a project of the old format (docc.lock, named anchors ^name, links without version
-hashes) to block codes and version hashes, once, without asking anything:
-every block gets a code and a named anchor becomes one; every link in the documents and every
-id#^anchor in the code files of trace.scan (a docc: tag, <Req to=\"i4#^i4-3\">) follows;
-links and the targets of docc: tags get the version hash of their target, docc: tags the
-fingerprint of their code; \"at\" of the readers' comments points at the code of its block;
-docc.lock is deleted. A link or region docc.lock held unconfirmed gets a hash that does not
-match, so docc check still asks to review it. Running it again changes nothing. Then run
-docc build and commit.
+Moves a project of an old format to block codes ^PAY-14 and version hashes, once, without
+asking anything. The old formats: codes of four signs (^k7f2, docc 0.5 to 0.7), or a docc.lock
+with named anchors ^name and links without version hashes. Every document with blocks gets a
+\"key\" and every block a code of it (an old code or named anchor becomes one); every link in
+the documents and every id#^code in the code files of trace.scan (a docc: tag,
+<Req to=\"pay#^PAY-14\">) follows; \"at\" of the readers' comments follows its block. Links
+and the targets of docc: tags get the version hash of their target, docc: tags the
+fingerprint of their code. A hash or fingerprint that matched before still matches (only the
+codes in its target changed), one that did not still does not: nothing is confirmed by the
+move. docc.lock is deleted; a link or region it held unconfirmed gets a hash that does not
+match. Running it again changes nothing. Then run docc build and commit.
 
 Examples:
   docc migrate
@@ -987,9 +990,10 @@ fn cmd_migrate(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Resul
     say(
         stdout,
         &format!(
-            "codes given: {}, named anchors replaced: {}, links rewritten: {}, link hashes added: {}, comments moved: {}\n\
-             code files written: {}, id#^anchor rewritten in code: {}, tag hashes added: {}, fingerprints added: {}\n\
-             unconfirmed in docc.lock (left to review): {}, documents written: {}, docc.lock removed: {}\n\
+            "codes given: {}, old codes and anchors replaced: {}, links rewritten: {}, link hashes added: {}, comments moved: {}\n\
+             code files written: {}, id#^code rewritten in code: {}, tag hashes added: {}, fingerprints added: {}\n\
+             hashes kept matching: {}, fingerprints kept matching: {}\n\
+             left to review (unconfirmed before): {}, documents written: {}, docc.lock removed: {}\n\
              Next: docc build, docc check, then commit.\n",
             r.codes_given,
             r.anchors_replaced,
@@ -1000,6 +1004,8 @@ fn cmd_migrate(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Resul
             r.code_refs_rewritten,
             r.tag_hashes_added,
             r.prints_added,
+            r.hashes_moved,
+            r.prints_moved,
             r.unconfirmed,
             r.documents,
             if r.lock_removed { "yes" } else { "no" },

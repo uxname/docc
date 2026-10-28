@@ -1,1 +1,1 @@
-{ "title": "B", "kind": "page", "parent": "index", "body": ["Copied from the index. ^k7f2"] }
+{ "title": "B", "kind": "page", "key": "IND", "parent": "index", "body": ["Merged from another branch. ^IND-4", "Also numbered four there. ^IND-4"] }

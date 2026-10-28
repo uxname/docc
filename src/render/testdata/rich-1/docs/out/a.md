@@ -8,7 +8,7 @@ A body with ![sub](img/p.png).
 
 ## Goals
 
-<a id="tk2x"></a>G1
+<a id="DOC-2"></a>G1
 
 G2 with [Home page [[b@3pc2]]](index.md)
 

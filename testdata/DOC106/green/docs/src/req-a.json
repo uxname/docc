@@ -1,1 +1,1 @@
-{ "title": "Fine", "kind": "requirement", "status": "accepted", "statement": "A long enough statement. ^udug", "notes": ["service fields are ignored by kind schemas"] }
+{ "title": "Fine", "kind": "requirement", "key": "RA", "status": "accepted", "statement": "A long enough statement. ^RA-1", "notes": ["service fields are ignored by kind schemas"] }

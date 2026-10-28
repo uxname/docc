@@ -6,7 +6,7 @@ spec
 
 A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected.
 
-The built-in schema requires only `title`. The reserved fields are `title`, `kind`, `status`, `parent`, `order`, `tags`, `body`, `notes`, `hidden`, `docIgnore` and `$comments`. Every other field is free and holds prose. `order` is a number that sorts a document among its siblings.
+The built-in schema requires only `title`. The reserved fields are `title`, `kind`, `status`, `parent`, `order`, `tags`, `body`, `notes`, `hidden`, `docIgnore`, `key` (the key of the block codes) and `$comments`. Every other field is free and holds prose. `order` is a number that sorts a document among its siblings.
 
 The checks are listed in [Rules and diagnostics](rules.md) and the generated pages in [Rendering](rendering.md).
 
@@ -28,23 +28,23 @@ Inside any string, `[[id]]` links to a document and `[[id#field]]` links to one 
 
 A long text is an array of paragraphs, one per line of the file. The rules are applied to each element on its own.
 
-A reference can name a section inside a field, `[[id#field/section@hash]]`, or a block by its code, `[[id#^k7f2@hash]]` (a code is found in any case). DOC312 checks the whole path and reports an unknown field, section or code.
+A reference can name a section inside a field, `[[id#field/section@hash]]`, or a block by its code, `[[id#^PAY-14@hash]]` (a code is found in any case). DOC312 checks the whole path and reports an unknown field, section or code.
 
 ## Block anchors
 
-Every text block (a paragraph, a list item, the text of a field or section) ends with a space and a permanent code `^k7f2`: four signs of `23456789abcdefghjkmnpqrstuvwxyz`, unique in the project, shown to readers upper case. `docc build` gives one to a block without it; nobody writes or changes a code by hand, and a block keeps its code when it moves. `[[id#^k7f2@hash]]` links to that block and `{{id#^k7f2}}` includes it without the code. A Markdown page gets an HTML anchor before a block that some link points to; the HTML file shows the code with buttons to copy a link and the code.
+Every text block (a paragraph, a list item, the text of a field or section) ends with a space and a permanent code `^PAY-14`: the key of its document, a dash and a number, short enough for people to say aloud and for code to cite. The key is the reserved field `key`, two to five capital Latin letters and digits, a letter first, unique in the project; docc writes it when it gives a document its first code, proposing it from the id (`open-questions` gets `OQ`, `payments` gets `PAY`), and it never changes. `docc build` gives a block without a code the largest number of its key plus one; a number freed by a deleted block may be given again. Nobody writes or changes a code or a key by hand, and a block keeps its code when it moves inside its document. `[[id#^PAY-14@hash]]` links to that block (in any case) and `{{id#^PAY-14}}` includes it without the code. A Markdown page gets an HTML anchor before a block that some link points to; the HTML file shows the code beside every block, with buttons to copy a link and the code.
 
-A block without a code, or ending in a named anchor of the old format, is DOC216; a code on two blocks of the project (a copied paragraph), or equal to the anchor of a field or section heading of the page, is DOC212, which names both places. Both are core rules.
+A block without a code, ending in a code of the old format (`^k7f2`) or a named anchor, or with a code of another document, and a document with codes and no `key`, are DOC216. A code on two blocks, a key on two documents, or a code equal to the anchor of a field or section heading of the page is DOC212, which names both places. Two blocks get one code when two branches each gave the same next number and were merged, which Git does not see as a conflict; docc does not choose which keeps it: the agent keeps it on the block that had it first and that links point to, deletes the other's and runs docc build. Both are core rules.
 
 ## Change tracking
 
 Every link carries the version hash of its target: `[[id@hash]]`, `[[id#field@hash]]`, `[[id#^code@hash]]`, and every target of a `docc:` tag in code the same. The hash is four signs from SHA-256 of the target; a missing or old hash is DOC209, a core error. Code tags end with the fingerprint of their code: `~xxxx` on the tag of a file for its lines outside regions, on `docc:begin` for the lines of the region; a missing or old one is DOC402, a core error.
 
-The hash covers only what the link points to: a block hashes its text, a field or section its value, and a whole document is hashed without `notes`, `docIgnore`, `hidden`, `order`, `parent` and `$comments`, so a reader's comment breaks no link. Block codes and the hashes inside links are left out of every hash, so two documents that link each other never loop. A fingerprint leaves out the hashes and fingerprints of `docc:` lines.
+The hash covers only what the link points to: a block hashes its text, a field or section its value, and a whole document is hashed without `notes`, `docIgnore`, `hidden`, `order`, `parent`, `key` and `$comments`, so a reader's comment breaks no link. Block codes and the hashes inside links are left out of every hash, so two documents that link each other never loop. A fingerprint leaves out the hashes and fingerprints of `docc:` lines.
 
 When a target changes, DOC209 on every link to it shows what changed (the old version found in the Git history by its hash, or the text now) and the hash it has now: read it, check that the linking place still agrees, then write that hash by hand. When code changes, DOC402 lists the targets with their text and the fingerprint the code has now: check the code against them, then write it by hand. No command does this in bulk.
 
-`docc migrate` moves a project of the old format, which kept the hashes in `docc.lock`, to hashes in the links, once; until then docc refuses the project.
+`docc migrate` moves a project of an old format once: codes of four signs (`^k7f2`, docc 0.5 to 0.7) become codes of the document's key, and a project that kept its hashes in `docc.lock` gets them in the links (docc refuses such a project until then). A hash or fingerprint that matched before still matches after the move, one that did not still does not: the move confirms nothing.
 
 ## Hidden material
 

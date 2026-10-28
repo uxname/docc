@@ -25,15 +25,17 @@ pub(super) fn reserved_key(k: &str) -> bool {
             | "hidden"
             | "docIgnore"
             | "order"
+            | "key"
             | "$comments"
     )
 }
 
 /// reservedKeys sorted, for typo suggestions.
-pub(super) const RESERVED_KEYS: [&str; 10] = [
+pub(super) const RESERVED_KEYS: [&str; 11] = [
     "body",
     "docIgnore",
     "hidden",
+    "key",
     "kind",
     "notes",
     "order",
@@ -65,7 +67,7 @@ pub struct StrNode {
     pub path: String,
     /// inside notes: hidden from readers, text rules do not apply
     pub notes: bool,
-    /// Anchor is the block code of a trailing " ^k7f2", "" for none;
+    /// Anchor is the block code of a trailing " ^PAY-14", "" for none;
     /// the marker starts at anchor_at.
     pub anchor: String,
     pub anchor_at: usize,
@@ -91,13 +93,14 @@ impl StrNode {
     }
 }
 
-/// AnchorName reports whether s is a block code (an old named anchor in a
-/// project of the old format, which only docc migrate reads).
+/// AnchorName reports whether s is a block code, in any case (an old named
+/// anchor in a project with a docc.lock, a code of the old format in one
+/// without, which only docc migrate reads).
 pub fn anchor_name(s: &str, legacy: bool) -> bool {
     if legacy {
         codes::NAMED_MARK.is_match(&format!(" ^{s}"))
     } else {
-        codes::is_code(s)
+        codes::is_code(&s.to_ascii_uppercase()) || codes::is_hash(s)
     }
 }
 

@@ -1,8 +1,9 @@
 {
   "title": "Index",
   "kind": "page",
+  "key": "IND",
   "body": [
-    "Text. ^5v78",
+    "Text. ^IND-1",
     { "$input": "radio", "label": "No id", "options": ["Yes", "No"] },
     { "$input": "select", "id": "kind", "label": "Unknown kind" },
     { "$input": "radio", "id": "one", "label": "One option", "options": ["Yes"] },

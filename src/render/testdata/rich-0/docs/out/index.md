@@ -4,7 +4,7 @@
 
 page · draft now · приоритет 2 · x, y
 
-See [3 Item 10](a.md), [3 Item 10](a.md#goals), [3 Item 10](a.md#tk2x), [3.2.1.1 Sub](sec.md#sub), [3.2.2 Part two](sec.md#part-two), [3.2 Sections](sec.md#deep), [3 Item 10](a.md) and hidden.
+See [3 Item 10](a.md), [3 Item 10](a.md#goals), [3 Item 10](a.md#DOC-2), [3.2.1.1 Sub](sec.md#sub), [3.2.2 Part two](sec.md#part-two), [3.2 Sections](sec.md#deep), [3 Item 10](a.md) and hidden.
 
 ![pic](img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](img/p.png "t")
 

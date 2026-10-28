@@ -1,1 +1,1 @@
-{ "title": "Req A", "parent": "index", "kind": "requirement", "body": "Text. ^q632" }
+{ "title": "Req A", "parent": "index", "kind": "requirement", "key": "RA", "body": "Text. ^RA-1" }

@@ -1,11 +1,12 @@
 {
   "title": "Performance",
   "kind": "spec",
+  "key": "PER",
   "parent": "index",
   "body": [
-    "The target is a docc check and a docc build on 1000 documents in under 300 ms each. It is measured with a generated project of 1000 files with 5 to 20 KB of Russian text each (about 7 MB), with links, a parent tree and a kind schema. ^at39",
-    "On Linux (Intel Core i7-1165G7) the whole check takes about 0.25 seconds: loading 20 ms, rules and the version hashes of the links 140 ms, rendering 45 ms and comparing the output folder 10 ms; a build takes the same. ^rf5v",
-    "The measurement is repeatable with DOCC_SCALE set to 1 and the command cargo test --release --test scale -- --nocapture. Windows with a virus scanner and macOS have not been measured. ^7qt2"
+    "The target is a docc check and a docc build on 1000 documents in under 300 ms each. It is measured with a generated project of 1000 files with 5 to 20 KB of Russian text each (about 7 MB), with links, a parent tree and a kind schema. ^PER-1",
+    "On Linux (Intel Core i7-1165G7) the whole check takes about 0.25 seconds: loading 20 ms, rules and the version hashes of the links 140 ms, rendering 45 ms and comparing the output folder 10 ms; a build takes the same. ^PER-2",
+    "The measurement is repeatable with DOCC_SCALE set to 1 and the command cargo test --release --test scale -- --nocapture. Windows with a virus scanner and macOS have not been measured. ^PER-3"
   ],
-  "history": "The first measurement was 1.66 seconds. The word lists were matched with case-insensitive regular expressions, which took most of the time; a lower-cased search with word boundary checks brought it to 0.31 seconds. Matching in NFC and the hashes of the link lock (now the version hashes of the links) raised it to 1.58 seconds; an NFC test that skips the norm tables for Cyrillic and Latin text, one lower-cased copy shared by the word lists and one hash per link target brought it to 0.67 seconds. The rewrite in Rust brought check and build to 0.25 seconds. ^47ns"
+  "history": "The first measurement was 1.66 seconds. The word lists were matched with case-insensitive regular expressions, which took most of the time; a lower-cased search with word boundary checks brought it to 0.31 seconds. Matching in NFC and the hashes of the link lock (now the version hashes of the links) raised it to 1.58 seconds; an NFC test that skips the norm tables for Cyrillic and Latin text, one lower-cased copy shared by the word lists and one hash per link target brought it to 0.67 seconds. The rewrite in Rust brought check and build to 0.25 seconds. ^PER-4"
 }

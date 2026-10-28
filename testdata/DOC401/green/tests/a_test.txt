@@ -1,5 +1,5 @@
-// docc: real@mmqa ~837j
-/* docc: index#body@45qe, real#^n9fp@zkex ~837j */
+// docc: real@mmqa ~ks8t
+/* docc: index#body@45qe, real#^REA-1@zkex ~ks8t */
 fmt.Println("docc: ghost")
 # docc:begin real@mmqa ~qmrq
   code  

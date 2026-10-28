@@ -41,9 +41,9 @@
     "level": "error",
     "file": "docs/src/req-b.json",
     "line": 1,
-    "column": 61,
+    "column": 74,
     "endLine": 1,
-    "endColumn": 74,
+    "endColumn": 87,
     "message": "document violates the schema of kind \"requirement\": /statement: minLength: got 5, want 10",
     "hint": "Change the value so that it matches the schema."
   }

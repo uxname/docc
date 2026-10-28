@@ -160,9 +160,8 @@ fn load_valid(dir: &Path) -> Result<crate::engine::Project, String> {
         Err(_) => config::default(dir),
     };
     // a test project is written in the old format, without codes and hashes:
-    // a copy in the temporary folder is moved to them first, with codes fixed by place
+    // a copy in the temporary folder is moved to them first (codes are numbers in order)
     if dir.starts_with(std::env::temp_dir()) {
-        crate::codes::FIXED.store(true, std::sync::atomic::Ordering::Relaxed);
         crate::engine::migrate(cfg.clone()).map_err(|e| e.to_string())?;
     }
     let mut p = crate::engine::load(cfg).map_err(|e| e.to_string())?;
@@ -594,7 +593,7 @@ fn html_blocks_have_pointers() {
         .collect();
     assert_eq!(
         got.join(" "),
-        "/body/0=One. ^4xh7 /body/1=<!--b:0--> ^6935 /body/2=Two. ^at73 = /field=Free text. ^d7gd = /list=a: x"
+        "/body/0=One. ^IND-1 /body/1=<!--b:0--> ^IND-2 /body/2=Two. ^IND-3 = /field=Free text. ^IND-4 = /list=a: x"
     );
     let b = blocks_html(&data);
     assert!(

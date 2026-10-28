@@ -11,7 +11,7 @@ const data = {
   comments: [{ id: 'ok', doc: 'p', path: '/body/1', quote: 'Beta', text: 'Why?' }, { id: 'lost', doc: 'p', path: '/body/0', quote: 'Old', fragment: 'Old words', text: 'x', lost: true },
     { id: 'rm', doc: 'p', path: '/body/7', quote: 'Old', text: 'y' }, { id: 'q', doc: 'q48', path: '/options/0', quote: 'A) yes', text: 'z' }],
   pages: [{ id: 'p', title: 'P', file: 'p.json', blocks: [
-    { p: '/body/0', s: 'Alpha ^k7f2', c: 'k7f2', v: '3a9c' }, { p: '/body/1', s: 'Beta now' }, { p: '/body/2', s: 'Gamma' }] },
+    { p: '/body/0', s: 'Alpha ^PA-1', c: 'PA-1', v: '3a9c' }, { p: '/body/1', s: 'Beta now' }, { p: '/body/2', s: 'Gamma' }] },
   { id: 'n', title: 'N', file: 'n.json', blocks: [{ s: '', h: '<h2>Only a heading</h2>' }] },
   // a form field, moved down by a paragraph inserted above it
   { id: 'f', title: 'F', file: 'f.json', blocks: [{ p: '/body/0', s: 'New.', h: '<p>New.</p>' },
@@ -33,12 +33,12 @@ new Function(fs.readFileSync(process.argv[2], 'utf8'))();
 assert.ok(T, 'app.js did not hand over its parts');
 
 // a paragraph is found by its code in any case, with or without its version; old pointer links still work
-for (const h of ['#p--k7f2@3a9c', '#p--K7F2', '#p--k7f2@zzzz']) {
+for (const h of ['#p--PA-1@3a9c', '#p--pa-1', '#p--PA-1@zzzz']) {
   const r = T.route(h);
   assert.ok(r.page.id === 'p' && r.block === '/body/0', h + ': ' + JSON.stringify(r));
 }
 assert.strictEqual(T.route('#p/body/2').block, '/body/2');
-assert.strictEqual(T.route('#p--m2pq').block, undefined, 'an unknown code is no paragraph');
+assert.strictEqual(T.route('#p--PA-7').block, undefined, 'an unknown code is no paragraph');
 
 // an edit keeps the words that stayed, marks the added ones and puts the removed ones before the next word
 const w = (s) => s.split(' ');

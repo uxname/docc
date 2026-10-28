@@ -1,1 +1,1 @@
-{ "title": "Index", "kind": "page", "body": ["See ![A](img/missing.png). ^5v78", "Outside ![B](../x.png). ^muum", "Code `![C](nope.png)` and ![D](https://x.org/d.png). ^h5yw"] }
+{ "title": "Index", "kind": "page", "key": "IND", "body": ["See ![A](img/missing.png). ^IND-1", "Outside ![B](../x.png). ^IND-2", "Code `![C](nope.png)` and ![D](https://x.org/d.png). ^IND-3"] }

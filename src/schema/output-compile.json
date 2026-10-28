@@ -139,7 +139,7 @@
             "properties": {
               "k": { "type": "string", "description": "Field name as a heading." },
               "id": { "type": "string", "description": "Anchor of the field." },
-              "code": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Block code of the value (lower case; shown upper case to readers); absent when it has none." },
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,4}-[1-9][0-9]{0,5}$", "description": "Block code of the value: the key of the document, a dash and a number (PAY-14); absent when it has none." },
               "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the value: what [[id#^code@hash]] carries." },
               "p": { "type": "string", "description": "JSON Pointer of the value." },
               "s": { "type": "string", "description": "Source text." },
@@ -170,7 +170,7 @@
             "required": ["p", "s", "h", "sec"],
             "properties": {
               "p": { "type": "string", "description": "JSON Pointer of the value in the source; empty for the footnotes of the page. Old links by pointer still resolve with it." },
-              "code": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Block code of a text block (lower case; links take it in any case, readers see it upper case); absent for a block without one (a table, a list of objects, a form field, the footnotes)." },
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,4}-[1-9][0-9]{0,5}$", "description": "Block code of a text block: the key of the document, a dash and a number (PAY-14; links take it in any case); absent for a block without one (a table, a list of objects, a form field, the footnotes)." },
               "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the block: what [[page#^code@hash]] carries; for a block without a code, the hash of the value at p. Absent for the footnotes." },
               "s": { "type": "string", "description": "Source text (lists and tables flattened), with the code at its end." },
               "h": { "type": "string", "description": "HTML. Links to pages are #<id>, to fields #<id>--<anchor>; images are data: URIs." },
@@ -199,7 +199,7 @@
             "required": ["id", "at", "quote", "author", "created", "place"],
             "properties": {
               "id": { "type": "string", "description": "Unique in the project." },
-              "at": { "type": "string", "description": "The block: its code \"^k7f2\" (code of a block or a prop, any case), or the JSON Pointer of a block without a code (p); for an answer, the pointer of the form field." },
+              "at": { "type": "string", "description": "The block: its code \"^PAY-14\" (code of a block or a prop, any case), or the JSON Pointer of a block without a code (p); for an answer, the pointer of the form field." },
               "quote": { "type": "string", "description": "The text of the block when the comment was written." },
               "fragment": { "type": "string", "description": "The words the reader selected; absent for a comment on the whole block." },
               "prefix": { "type": "string", "description": "A few characters before the fragment, to tell one occurrence from another." },

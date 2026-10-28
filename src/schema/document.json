@@ -20,6 +20,7 @@
     "notes": { "type": "array", "items": { "type": "string" }, "description": "Hidden notes for agents; printed only by the audit build (build --full)." },
     "hidden": { "type": "boolean", "description": "true: checked but not printed to out/." },
     "order": { "type": "number", "description": "Position among siblings." },
+    "key": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,4}$", "description": "The key of the document's block codes (PAY in ^PAY-14): two to five capital Latin letters and digits, a letter first, unique in the project, written by docc when it gives the first code; it never changes." },
     "docIgnore": {
       "type": "array",
       "items": {
@@ -43,7 +44,7 @@
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string", "minLength": 1 },
-          "at": { "type": "string", "pattern": "^(/|\\^[2-9a-hjkmnp-zA-HJKMNP-Z]{4}$)" },
+          "at": { "type": "string", "pattern": "^(/|\\^([A-Za-z][A-Za-z0-9]{1,4}-[1-9][0-9]{0,5}|[2-9a-hjkmnp-zA-HJKMNP-Z]{4})$)" },
           "quote": { "type": "string" },
           "fragment": { "type": "string" },
           "prefix": { "type": "string" },

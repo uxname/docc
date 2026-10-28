@@ -1,5 +1,6 @@
 {
   "title": "Магазин",
   "kind": "page",
-  "body": ["Оплата: [[billing@7xn8]]. Частые вопросы: [[faq@ww6x]]. Поддержка: [[support@kdbg]]. ^tgjs"]
+  "key": "IND",
+  "body": ["Оплата: [[billing@7xn8]]. Частые вопросы: [[faq@ww6x]]. Поддержка: [[support@kdbg]]. ^IND-1"]
 }

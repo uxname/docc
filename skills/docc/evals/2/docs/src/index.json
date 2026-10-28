@@ -1,7 +1,8 @@
 {
   "title": "Личный кабинет",
   "kind": "page",
+  "key": "IND",
   "body": [
-    "Правила безопасности: [[security-policy@d7a6]]. Экран входа: [[login-screen@6csj]]. ^qckd"
+    "Правила безопасности: [[security-policy@d7a6]]. Экран входа: [[login-screen@pmeu]]. ^IND-1"
   ]
 }

@@ -1,9 +1,10 @@
 {
   "title": "Scope",
   "kind": "page",
+  "key": "SCO",
   "parent": "index",
   "order": 1,
-  "body": "3 items, see item 3 of article 152. ^bjpx",
-  "spec": { "$sections": true, "Limits": { "$sections": true, "Size": "Up to 5 files. ^2t8w" }, "2024": "12 people. ^qgsh" },
-  "3 notes": "A free field key is not a section. ^j5k4"
+  "body": "3 items, see item 3 of article 152. ^SCO-1",
+  "spec": { "$sections": true, "Limits": { "$sections": true, "Size": "Up to 5 files. ^SCO-2" }, "2024": "12 people. ^SCO-3" },
+  "3 notes": "A free field key is not a section. ^SCO-4"
 }

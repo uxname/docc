@@ -214,6 +214,8 @@ blockquote p{margin:0}
 .blk:hover>.code-bar,.blk:focus-within>.code-bar,.blk.cur>.code-bar{display:flex}
 .code-bar .code{font-family:ui-monospace,monospace;letter-spacing:.05em;color:var(--muted)}
 @media print{.code-bar{display:none!important}}
+.num{display:block;font:.7rem/1.6 ui-monospace,monospace;letter-spacing:.03em;color:var(--muted);white-space:nowrap}
+@container main (min-width:900px){.num{position:absolute;right:100%;top:.2rem;margin-right:.75rem}}
 .blk-body>:last-child{margin-bottom:0}
 .blk.flash>.blk-body,.ghost.flash{background:var(--accent-bg);transition:background .6s}
 @container main (min-width:900px){

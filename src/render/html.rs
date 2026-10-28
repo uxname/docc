@@ -507,7 +507,7 @@ struct BlockData {
     #[serde(skip_serializing_if = "String::is_empty")]
     s: String,
     h: String,
-    /// the code of a text block ("k7f2"), shown on the page and in links to it
+    /// the code of a text block ("PAY-14"), shown on the page and in links to it
     #[serde(skip_serializing_if = "String::is_empty")]
     c: String,
     /// the version hash of the block (of its value when it has no code)

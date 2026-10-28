@@ -1,7 +1,8 @@
 {
   "title": "Deep doc",
   "parent": "index",
-  "acceptance_criteria": ["Given X. ^6gwh", "Then Y with [[req#statement@wbrm]] and [[req#^2vh9@c868]]. ^u33s"],
-  "body": "Back to [[index@6uq2]] and [[index#owner_name@9m9p]]. ^xr8p",
-  "kind": "page"
+  "acceptance_criteria": ["Given X. ^DEE-1", "Then Y with [[req#statement@wbrm]] and [[req#^REQ-2@c868]]. ^DEE-2"],
+  "body": "Back to [[index@4jgr]] and [[index#owner_name@9m9p]]. ^DEE-3",
+  "kind": "page",
+  "key": "DEE"
 }

@@ -29,7 +29,7 @@
 
 page · draft now · приоритет 2 · x, y
 
-See [3 Item 10](#a), [3 Item 10](#a--goals), [3 Item 10](#a--tk2x), [3.2.1.1 Sub](#sec--sub), [3.2.2 Part two](#sec--part-two), [3.2 Sections](#sec--deep), [3 Item 10](#a) and hidden.
+See [3 Item 10](#a), [3 Item 10](#a--goals), [3 Item 10](#a--DOC-2), [3.2.1.1 Sub](#sec--sub), [3.2.2 Part two](#sec--part-two), [3.2 Sections](#sec--deep), [3 Item 10](#a) and hidden.
 
 ![pic](out/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out/img/p.png "t")
 
@@ -166,7 +166,7 @@ A body with ![sub](out/img/p.png).
 
 ## Goals
 
-<a id="a--tk2x"></a>G1
+<a id="a--DOC-2"></a>G1
 
 G2 with [Home page [[b@3pc2]]](#index)
 

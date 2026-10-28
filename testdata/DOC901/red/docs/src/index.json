@@ -1,11 +1,12 @@
 {
   "title": "Index",
-  "body": ["It is fast. ^5v78", "Also fast. ^muum"],
+  "body": ["It is fast. ^IND-1", "Also fast. ^IND-2"],
   "docIgnore": [
     { "rule": "text/forbidden-words", "reason": "first paragraph only", "path": "/body/0" },
     { "rule": "text/placeholder", "reason": "nothing to suppress here" },
     { "rule": "text/forbidden-words", "reason": "wrong path", "path": "/nope" },
     { "rule": "style/hedging", "reason": "this rule is off here" }
   ],
-  "kind": "page"
+  "kind": "page",
+  "key": "IND"
 }

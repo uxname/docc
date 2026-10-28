@@ -33,7 +33,7 @@
     "endLine": 1,
     "endColumn": 78,
     "message": "document \"a\" has no block with the code \"^zzzz\"",
-    "hint": "The block was deleted or moved to another document, or the code is mistyped: find the block you mean and link its code (codes are four signs, such as ^k7f2)."
+    "hint": "The block was deleted or moved to another document, or the code is mistyped: find the block you mean and link its code (a code is the key of its document and a number, such as ^PAY-14)."
   },
   {
     "code": "DOC312",
@@ -41,9 +41,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 104,
+    "column": 105,
     "endLine": 1,
-    "endColumn": 117,
+    "endColumn": 118,
     "message": "document \"a\" has no field \"missing\"",
     "hint": "Use an existing top-level field or field/section."
   }

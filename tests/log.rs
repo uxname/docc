@@ -97,8 +97,9 @@ fn history() -> Option<(Repo, HashMap<&'static str, String>)> {
     }
     r.git(&["init", "-q"]);
     let mut sha = HashMap::new();
+    // a is rewritten whole in every commit: its blocks keep their codes, as an agent keeps them
     let a = |owner: &str, body: &str, extra: &str| {
-        format!(r#"{{"title":"A","kind":"page","body":[{body}],"notes":["{owner} note"],"owner":"{owner}","team":"Core"{extra}}}"#)
+        format!(r#"{{"title":"A","kind":"page","key":"AA","body":[{body}],"notes":["{owner} note"],"owner":"{owner} ^AA-8","team":"Core ^AA-9"{extra}}}"#)
     };
     sha.insert(
         "first",
@@ -107,7 +108,7 @@ fn history() -> Option<(Repo, HashMap<&'static str, String>)> {
             &[
                 ("docc.json", r#"{"roots":["a"]}"#),
                 ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#),
-                ("docs/src/a.json", &a("Ann", r#""One.","Two.","Three.""#, "")),
+                ("docs/src/a.json", &a("Ann", r#""One. ^AA-1","Two. ^AA-2","Three. ^AA-3""#, "")),
                 ("docs/src/b.json", r#"{"title":"B","kind":"page","parent":"a","summary":"Bee summary."}"#),
                 ("docs/src/c.json", r#"{"title":"C","kind":"page","parent":"a","body":["Owner: {{a#owner}}."]}"#),
                 ("docs/src/pic.png", "png 1"),
@@ -120,7 +121,7 @@ fn history() -> Option<(Repo, HashMap<&'static str, String>)> {
     r.git(&["mv", "docs/src/b.json", "docs/src/b2.json"]);
     std::fs::create_dir_all(r.d.join("docs/src/sub")).unwrap();
     r.git(&["mv", "docs/src/b2.json", "docs/src/sub/b.json"]);
-    let a2 = a("Bob", r#""One.","New one.","Two edited.","Three.""#, "").replace(r#""title":"A""#, r#""title":"A2""#);
+    let a2 = a("Bob", r#""One. ^AA-1","New one. ^AA-10","Two edited. ^AA-2","Three. ^AA-3""#, "").replace(r#""title":"A""#, r#""title":"A2""#);
     sha.insert(
         "second",
         r.commit(
@@ -129,17 +130,17 @@ fn history() -> Option<(Repo, HashMap<&'static str, String>)> {
         ),
     );
     // only the comments of a change (and its layout)
-    let commented = a2.replace(r#""team":"Core""#, "\n  \"team\": \"Core\",\n  \"$comments\": [{\"id\": \"c1\", \"at\": \"/body/0\", \"quote\": \"One.\", \"text\": \"Hi\", \"author\": \"Ann\", \"created\": \"2026-10-01T10:00:00Z\"}]");
+    let commented = a2.replace(r#""team":"Core ^AA-9""#, "\n  \"team\": \"Core ^AA-9\",\n  \"$comments\": [{\"id\": \"c1\", \"at\": \"/body/0\", \"quote\": \"One.\", \"text\": \"Hi\", \"author\": \"Ann\", \"created\": \"2026-10-01T10:00:00Z\"}]");
     sha.insert("comments", r.commit("comments", &[("docs/src/a.json", &commented)]));
     sha.insert("broken", r.commit("broken", &[("docs/src/a.json", "{")]));
     // a fixed against its last good version; b deleted
-    let a5 = a("Bob", r#""One.","Two edited.""#, "").replace(r#""title":"A""#, r#""title":"A2""#);
+    let a5 = a("Bob", r#""One. ^AA-1","Two edited. ^AA-2""#, "").replace(r#""title":"A""#, r#""title":"A2""#);
     sha.insert("fix", r.commit("fix", &[("docs/src/a.json", &a5), ("docs/src/sub/b.json", "")]));
     sha.insert("pic", r.commit("pic", &[("docs/src/pic.png", "png 2")]));
     r.commit("outside", &[("README.md", "readme 2")]);
     // a branch merged into main: one change on the first-parent line
     r.git(&["checkout", "-q", "-b", "feat"]);
-    let a6 = a("Bob", r#""One.","Two edited.","Four.""#, "").replace(r#""title":"A""#, r#""title":"A2""#);
+    let a6 = a("Bob", r#""One. ^AA-1","Two edited. ^AA-2","Four.""#, "").replace(r#""title":"A""#, r#""title":"A2""#);
     sha.insert("feat", r.commit("feat", &[("docs/src/a.json", &a6)]));
     r.git(&["checkout", "-q", "main"]);
     r.commit("main side", &[("README.md", "readme 3")]);

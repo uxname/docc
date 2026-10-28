@@ -5,9 +5,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 56,
+    "column": 70,
     "endLine": 1,
-    "endColumn": 71,
+    "endColumn": 85,
     "message": "the image file does not exist: docs/src/img/missing.png",
     "hint": "Put the image under docs/src and write its path relative to the folder of this document."
   },
@@ -17,9 +17,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 96,
+    "column": 111,
     "endLine": 1,
-    "endColumn": 104,
+    "endColumn": 119,
     "message": "the image path leaves docs/src",
     "hint": "Put the image under docs/src and write its path relative to the folder of this document."
   }

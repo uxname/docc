@@ -1,1 +1,1 @@
-{ "title": "B", "kind": "requirement", "statement": "Handles one request. ^z45x" }
+{ "title": "B", "kind": "requirement", "key": "RB", "statement": "Handles one request. ^RB-1" }

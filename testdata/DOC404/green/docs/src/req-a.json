@@ -2,6 +2,7 @@
   "title": "Req A",
   "parent": "index",
   "kind": "req",
-  "body": "Why it matters. ^b2b2",
-  "statement": ["Lock after five failures. ^k7f2", "Unlock after an hour. ^m3m3"]
+  "key": "RA",
+  "body": "Why it matters. ^RA-1",
+  "statement": ["Lock after five failures. ^RA-2", "Unlock after an hour. ^RA-3"]
 }

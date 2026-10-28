@@ -116,7 +116,7 @@ pub(super) fn fragment_problem(t: &Doc, id: &str, field: &str) -> (String, Strin
             }
             return (
                 format!("document {} has no block with the code {}", go_quote(id), go_quote(&format!("^{name}"))),
-                "The block was deleted or moved to another document, or the code is mistyped: find the block you mean and link its code (codes are four signs, such as ^k7f2).".into(),
+                "The block was deleted or moved to another document, or the code is mistyped: find the block you mean and link its code (a code is the key of its document and a number, such as ^PAY-14).".into(),
             );
         }
     } else if service_field(field) {

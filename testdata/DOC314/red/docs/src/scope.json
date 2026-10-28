@@ -1,7 +1,8 @@
 {
   "title": "2.1. Scope",
   "kind": "page",
+  "key": "SCO",
   "parent": "index",
-  "body": "See item 3 of article 152. ^bjpx",
-  "spec": { "$sections": true, "3 Limits": { "$sections": true, "3.1 Size": "Up to 5 files. ^au8f" }, "Users": "12 people. ^m549" }
+  "body": "See item 3 of article 152. ^SCO-1",
+  "spec": { "$sections": true, "3 Limits": { "$sections": true, "3.1 Size": "Up to 5 files. ^SCO-2" }, "Users": "12 people. ^SCO-3" }
 }

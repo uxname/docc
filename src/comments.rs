@@ -187,8 +187,8 @@ fn item_problem(it: &Node) -> Option<Problem> {
         return bad(it.get("id")?, "the id of a comment is empty".into());
     }
     let at = s("at").unwrap_or_default();
-    if !at.starts_with('/') && !at.strip_prefix('^').is_some_and(|c| crate::codes::is_code(&c.to_ascii_lowercase())) {
-        return bad(it.get("at")?, "\"at\" of a comment must be the code of its block (\"^k7f2\"), or the JSON Pointer of a block without a code (\"/body/0\")".into());
+    if !at.starts_with('/') && !at.strip_prefix('^').is_some_and(|c| crate::codes::is_code(&c.to_ascii_uppercase()) || crate::codes::is_hash(&c.to_ascii_lowercase())) {
+        return bad(it.get("at")?, "\"at\" of a comment must be the code of its block (\"^PAY-14\"), or the JSON Pointer of a block without a code (\"/body/0\")".into());
     }
     if !RFC3339.is_match(s("created").unwrap_or_default()) {
         return bad(it.get("created")?, "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")".into());
@@ -276,13 +276,13 @@ pub fn blocks(root: &Node) -> Vec<Leaf> {
 }
 
 /// pointer is the JSON Pointer of the block a comment stands at: the block
-/// with the code ("^k7f2", any case), or at itself when it is a pointer;
+/// with the code ("^PAY-14", any case), or at itself when it is a pointer;
 /// None when no block has the code.
 pub fn pointer(root: &Node, at: &str) -> Option<String> {
     let Some(code) = at.strip_prefix('^') else {
         return Some(at.to_string());
     };
-    let n = engine::find_code(root, &code.to_ascii_lowercase())?;
+    let n = engine::find_code(root, &crate::codes::canon(code))?;
     history::pointers(root).get(&(n as *const Node)).cloned()
 }
 

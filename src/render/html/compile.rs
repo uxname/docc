@@ -120,7 +120,7 @@ pub struct CComment {
 pub struct CProp {
     pub(crate) k: String,
     id: String,
-    /// the block code of the value ("k7f2"), absent when it has none
+    /// the block code of the value ("PAY-14"), absent when it has none
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) code: Option<String>,
     /// the version hash of the value
@@ -143,7 +143,7 @@ pub struct Section {
 pub struct CBlock {
     /// JSON Pointer of the value in the source; "" for the footnotes of the page
     pub(crate) p: String,
-    /// the block code ("k7f2", lower case: links take it in any case), absent
+    /// the block code ("PAY-14", upper case: links take it in any case), absent
     /// when the block has none (a table, a list of objects, a heading, footnotes)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) code: Option<String>,

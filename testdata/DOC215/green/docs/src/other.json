@@ -1,1 +1,1 @@
-{ "title": "Other page", "kind": "page", "parent": "index", "body": ["Text. ^sdfk"] }
+{ "title": "Other page", "kind": "page", "key": "OTH", "parent": "index", "body": ["Text. ^OTH-1"] }

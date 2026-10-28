@@ -17,9 +17,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 66,
+    "column": 67,
     "endLine": 1,
-    "endColumn": 69,
+    "endColumn": 70,
     "message": "the word \"в\" is repeated",
     "hint": "Remove the repeated word."
   },
@@ -29,9 +29,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 87,
+    "column": 89,
     "endLine": 1,
-    "endColumn": 96,
+    "endColumn": 98,
     "message": "the word \"Done\" is repeated",
     "hint": "Remove the repeated word."
   }

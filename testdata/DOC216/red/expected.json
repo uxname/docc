@@ -5,9 +5,9 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 46,
+    "column": 60,
     "endLine": 1,
-    "endColumn": 74,
+    "endColumn": 88,
     "message": "the block has no code",
     "hint": "Run docc build: it gives every block without a code its own. Never write or change a code by hand."
   },
@@ -17,11 +17,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 76,
+    "column": 90,
     "endLine": 1,
-    "endColumn": 113,
+    "endColumn": 130,
     "message": "the block ends in \"^limit\", which is not a block code",
-    "hint": "Named anchors are gone: remove the marker and run docc build, which gives the block a code (a project of the old format: run docc migrate). Codes are four lower-case signs such as ^k7f2, given by docc only."
+    "hint": "Codes of the old format (^k7f2) and named anchors are gone: run docc migrate, which moves every block, link, comment and code tag to codes such as ^PAY-14. A single stray marker: remove it and run docc build. Codes are given by docc only."
   },
   {
     "code": "DOC216",
@@ -29,10 +29,46 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 145,
+    "column": 132,
     "endLine": 1,
-    "endColumn": 153,
+    "endColumn": 165,
+    "message": "the block ends in \"^k7f2\", which is not a block code",
+    "hint": "Codes of the old format (^k7f2) and named anchors are gone: run docc migrate, which moves every block, link, comment and code tag to codes such as ^PAY-14. A single stray marker: remove it and run docc build. Codes are given by docc only."
+  },
+  {
+    "code": "DOC216",
+    "rule": "graph/missing-code",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 197,
+    "endLine": 1,
+    "endColumn": 203,
+    "message": "block code \"^OTH-2\" is not of this document, whose key is \"IND\"",
+    "hint": "The block was copied or moved here from another document: delete its code and run docc build, which gives it a code of this document. Then fix the links to the old code (DOC202)."
+  },
+  {
+    "code": "DOC216",
+    "rule": "graph/missing-code",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 237,
+    "endLine": 1,
+    "endColumn": 245,
     "message": "the block has no code",
     "hint": "Run docc build: it gives every block without a code its own. Never write or change a code by hand."
+  },
+  {
+    "code": "DOC216",
+    "rule": "graph/missing-code",
+    "level": "error",
+    "file": "docs/src/nokey.json",
+    "line": 1,
+    "column": 74,
+    "endLine": 1,
+    "endColumn": 79,
+    "message": "the document has no \"key\" for its block codes",
+    "hint": "Run docc build: it writes the key its codes carry. Never write or change a code by hand."
   }
 ]

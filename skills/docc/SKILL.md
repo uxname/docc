@@ -34,22 +34,24 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 {
   "title": "Sign-in",
   "kind": "page",
+  "key": "LOCK",
   "parent": "index",
   "order": 2,
   "body": [
-    "After five wrong passwords in a row the system locks sign-in for 15 minutes. ^k7f2",
-    "The limit comes from [[security-policy#^m2pq@3a9c]]. ^n4pq"
+    "After five wrong passwords in a row the system locks sign-in for 15 minutes. ^LOCK-1",
+    "The limit comes from [[security-policy#^SEC-3@3a9c]]. ^LOCK-2"
   ]
 }
 ```
 
-- Reserved fields: `title` (required), `kind` (required), `status`, `parent` (one id), `order` (number), `tags`, `body`, `notes`, `hidden`, `docIgnore`. Any other field must be allowed by the schema of the kind and holds prose. A free field spelled almost like a reserved one (`parnet`, `hiden`) is DOC110: rename it.
+- Reserved fields: `title` (required), `kind` (required), `status`, `parent` (one id), `order` (number), `key` (the key of the block codes, written by docc), `tags`, `body`, `notes`, `hidden`, `docIgnore`. Any other field must be allowed by the schema of the kind and holds prose. A free field spelled almost like a reserved one (`parnet`, `hiden`) is DOC110: rename it.
 - Write long text as an array of paragraphs, one paragraph per line: `"body": ["One.", "Two."]`. A line break inside a paragraph is `\n`.
 - Link with `[[id@hash]]`, `[[id#field@hash]]`, `[[id#field/section@hash]]` or `[[id#^code@hash]]`; the target must exist. The reference in the text is the link: there is no separate list. Includes `{{id#field}}` and `{{id#^code}}` carry no hash.
-- **Block codes.** Every text block (a paragraph, a list item, the text of a field or section) ends with a permanent code ` ^k7f2`: four signs of `23456789abcdefghjkmnpqrstuvwxyz`, unique in the project, shown to readers upper case (`K7F2`), matched in any case. Tables, lists of objects and numbers have none; they are addressed by field. Rules:
-  - Never write, change or move a code by hand, not when the meaning changes and not when a block moves to another document. Write a new block **without** a code; `docc build` (or `docc codes`) gives it one. A deleted code is gone: links to it fail (DOC312).
-  - DOC216: a block has no code (run `docc build`) or ends in an old named anchor (remove it, then build).
-  - DOC212: one code on two blocks (a copied paragraph); the message names both places. Delete the code of the copy, keep the one that others link to, run `docc build`.
+- **Block codes.** Every text block (a paragraph, a list item, the text of a field or section) ends with a permanent code ` ^PAY-14`: the `key` of its document (two to five capital Latin letters and digits, a letter first, unique in the project, such as `PAY` or `Q52`), a dash and a number. People cite it aloud and in chats, code cites it in tags. Links match it in any case. Tables, lists of objects and numbers have none; they are addressed by field. Rules:
+  - Never write, change or move a code by hand, not when the meaning changes and not when a block moves to another document. Write a new block **without** a code; `docc build` (or `docc codes`) gives it the next number of its document (the largest there plus one) and writes `key` into a document that has none. A deleted number may be given again to a new block; links to the deleted block then fail (DOC312) or, if the number came back, fail their hash (DOC209).
+  - Never change `key` once its document has codes: every code and link of it would break.
+  - DOC216: a block has no code (run `docc build`); ends in a code of the old format `^k7f2` or a named anchor (a whole project: `docc migrate`; one stray marker: remove it, then build); has a code of another document (it was copied or moved here: delete the code, build, fix the links to the old code); or the document has codes and no `key` (build writes it).
+  - DOC212: one code on two blocks, or one key on two documents. Usually two branches were merged and both gave the same next number, or a block was copied. docc does not choose: keep the code on the block that had it first (in the history of the branch merged into) and that links point to, delete the code of the other, run `docc build`. A link or tag written to that number for the other block now fails its hash (DOC209): point it at the new code.
 - **Version hashes.** The `@hash` of a link is four signs from the target's current text (the code and the hashes inside links do not count, so links between two documents never loop; `$comments` do not count). A missing or old hash is DOC209, an error that fails `validate` and `check` (build, compile and comments still run, so a draft stays readable): the message shows what changed in the target (the old version found in Git by the hash, or the current text) and the new hash. Read the change, check the place that links to it, fix that place if it no longer agrees, then write the new hash by hand into **that** link. Update each link separately after reading it; never replace hashes in bulk (no `sed` over all files, no script): that is the check the hash exists for.
 - Every visible document must be reachable from a root (default: `index`) through `parent` or `[[id]]`. Link a document where a reader would look for it, not only to silence the error.
 - With `"tree": "folders"` in `docc.json` the document tree is the folders of `docs/src` instead: put a document in the folder where a reader looks for it. A folder's own page is the document named like the folder inside it (`decisions/decisions.json`); without one the folder shows its name. An own page with no text (no `body`, no free fields) only names and orders the folder and gets no page in the output, so put the folder's text into an ordinary document of the folder. `roots`, DOC203 and DOC205 do not apply; `parent` still gives the breadcrumbs. Ids stay unique across all folders.
@@ -92,7 +94,7 @@ Every document has a `kind`, and `docs/schemas/<kind>.json` (JSON Schema 2020-12
 
 ## Review comments
 
-Readers' comments live in the documents themselves, in the top-level member `"$comments"`: a flat list `[{"id", "at", "quote", "fragment"?, "prefix"?, "suffix"?, "text", "author", "email"?, "created", "edited"?}]`. `at` is the code of the block the comment is about (`"^k7f2"`; the JSON Pointer for a block without a code, such as a table or a form field), `quote` the text of that block when the comment was written, `fragment` the selected words, `edited` the time of the last `docc comments apply` edit. An answer to a form field has `input` (the field id) and `answer` (an array of strings) instead of `text`. There are no statuses and no replies.
+Readers' comments live in the documents themselves, in the top-level member `"$comments"`: a flat list `[{"id", "at", "quote", "fragment"?, "prefix"?, "suffix"?, "text", "author", "email"?, "created", "edited"?}]`. `at` is the code of the block the comment is about (`"^LOCK-1"`; the JSON Pointer for a block without a code, such as a table or a form field), `quote` the text of that block when the comment was written, `fragment` the selected words, `edited` the time of the last `docc comments apply` edit. An answer to a form field has `input` (the field id) and `answer` (an array of strings) instead of `text`. There are no statuses and no replies.
 
 - Read `$comments` with the document (or list all of them with `docc comments --format json`: each has its document, the current text of its block and `place`: `same`, `changed`, or `lost`). A comment is a request, not an order: agree the change with the person before you edit.
 - Handle a comment by fixing the text, then delete the comment **in the same commit as the fix**: `docc comments rm <id>`. A comment you did not handle stays. A note for agents only goes into `notes`, not into `$comments`.
@@ -104,13 +106,13 @@ To ask the readers something, put a form field into an array of paragraphs (`bod
 
 ## Code tags
 
-With `"trace": {"scan": ["code/**"]}` in `docc.json`, the first comment of a file `// docc: req-lockout#^k7f2@3a9c, scenario-login@77aa ~e91d` links the file to documents; each target carries its version hash and the tag ends with the fingerprint `~e91d` of the file's lines outside its regions. `// docc:begin req-lockout#^k7f2@3a9c ~0c4f` … `// docc:end` marks a region with the fingerprint of its lines; regions do not nest. Fingerprints leave out the hashes and fingerprints themselves. Any comment syntax works (`//`, `#`, `--`, `/* */`, `<!-- -->`, `;`, `%`, `'`).
+With `"trace": {"scan": ["code/**"]}` in `docc.json`, the first comment of a file `// docc: req-lockout#^LOCK-1@3a9c, scenario-login@77aa ~e91d` links the file to documents; each target carries its version hash and the tag ends with the fingerprint `~e91d` of the file's lines outside its regions. `// docc:begin req-lockout#^LOCK-1@3a9c ~0c4f` … `// docc:end` marks a region with the fingerprint of its lines; regions do not nest. Fingerprints leave out the hashes and fingerprints themselves. Any comment syntax works (`//`, `#`, `--`, `/* */`, `<!-- -->`, `;`, `%`, `'`).
 
 - DOC402: the code changed (inside a region: that region's fingerprint; outside: the file's), or a tag has no fingerprint. The message lists the targets with their text and the new fingerprint. Read the code against them, fix the code or the documents, then write the new fingerprint by hand.
 - DOC209 on a tag: a target changed. Read it, update the code if it holds the old value (unless the user said not to touch code; then name the open DOC209 in your answer), then write the new hash.
 - DOC401: a target does not resolve or a region is broken.
 - DOC404: a block of a covered kind has no tag `id#^code`. Tag the code that implements it (the hint gives the target with its hash); if no code implements it yet, say so to the user instead of tagging unrelated code. Under `docc check <paths>` it stands at the place of a tag that existed at HEAD: your change removed the last tag of that block, so put a tag back on the code that implements it.
-- A reference such as `<Req to="i4#^k7f2">` in code carries no hash: the hash lives in the file's tag.
+- A reference such as `<Req to="req-lockout#^LOCK-1">` in code carries no hash: the hash lives in the file's tag.
 
 ## Reading diagnostics
 

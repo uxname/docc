@@ -25,7 +25,7 @@ pub struct Version {
 pub fn find_code<'a>(root: &'a Node, code: &str) -> Option<&'a Node> {
     fn walk<'a>(n: &'a Node, top: bool, code: &str) -> Option<&'a Node> {
         match n.kind {
-            Kind::String => (codes::code_of(&n.str) == Some(code)).then_some(n),
+            Kind::String => (codes::any_code_of(&n.str) == Some(code)).then_some(n),
             Kind::Array => n.items.iter().find_map(|it| walk(it, false, code)),
             Kind::Object => n
                 .members
@@ -242,15 +242,15 @@ mod tests {
 
     #[test]
     fn versions() {
-        let r = loader::parse(br#"{"title": "T", "body": ["One [[b#^m2pq@3a9c]]. ^k7f2", "Two. ^m3pq"], "f": {"$sections": true, "S": "x ^n4pq"}}"#);
+        let r = loader::parse(br#"{"title": "T", "body": ["One [[b#^BB-2@3a9c]]. ^TT-1", "Two. ^TT-2"], "f": {"$sections": true, "S": "x ^TT-3"}}"#);
         let root = r.root.unwrap();
-        let v = version_in(&root, "^k7f2").unwrap();
-        assert_eq!(v.text, "One [[b#^m2pq]].");
-        let r2 = loader::parse(br#"{"title": "T", "body": ["One [[b#^m2pq@zzzz]]. ^k7f2", "Two. ^m3pq"], "notes": ["n"]}"#);
+        let v = version_in(&root, "^TT-1").unwrap();
+        assert_eq!(v.text, "One [[b#^BB-2]].");
+        let r2 = loader::parse(br#"{"title": "T", "body": ["One [[b#^BB-2@zzzz]]. ^TT-1", "Two. ^TT-2"], "notes": ["n"]}"#);
         let root2 = r2.root.unwrap();
         // the hashes of links, the codes and the notes are not part of a version
-        assert_eq!(version_in(&root2, "^k7f2").unwrap().hash, v.hash);
-        assert!(version_in(&root, "f/S").is_some() && version_in(&root, "^zzzz").is_none());
+        assert_eq!(version_in(&root2, "^TT-1").unwrap().hash, v.hash);
+        assert!(version_in(&root, "f/S").is_some() && version_in(&root, "^TT-9").is_none());
         assert_ne!(version_in(&root, "").unwrap().hash, version_in(&root2, "").unwrap().hash);
     }
 }

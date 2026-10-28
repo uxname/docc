@@ -1,9 +1,10 @@
 {
   "title": "Other",
   "kind": "page",
+  "key": "OTH",
   "parent": "index",
-  "body": ["Gamma. ^sdfk"],
+  "body": ["Gamma. ^OTH-1"],
   "$comments": [
-    {"id": "c-2", "at": "^sdfk", "quote": "Gamma.", "text": "Same id as in index.", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
+    {"id": "c-2", "at": "^OTH-1", "quote": "Gamma.", "text": "Same id as in index.", "author": "Bob", "created": "2026-10-22T09:00:00Z"}
   ]
 }

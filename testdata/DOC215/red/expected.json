@@ -4,24 +4,12 @@
     "rule": "graph/comment-lost",
     "level": "warn",
     "file": "docs/src/index.json",
-    "line": 10,
-    "column": 25,
-    "endLine": 10,
-    "endColumn": 32,
-    "message": "comment \"c-1\" lost its place: the words \"owner\" are not in the block at \"^5v78\"",
-    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
-  },
-  {
-    "code": "DOC215",
-    "rule": "graph/comment-lost",
-    "level": "warn",
-    "file": "docs/src/index.json",
     "line": 11,
     "column": 25,
     "endLine": 11,
-    "endColumn": 34,
-    "message": "comment \"c-2\" lost its place: the form field \"export\" is not at \"/body/1\"",
-    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
+    "endColumn": 33,
+    "message": "comment \"c-1\" lost its place: the words \"owner\" are not in the block at \"^IND-1\"",
+    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^PAY-14\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
   },
   {
     "code": "DOC215",
@@ -32,7 +20,19 @@
     "column": 25,
     "endLine": 12,
     "endColumn": 34,
+    "message": "comment \"c-2\" lost its place: the form field \"export\" is not at \"/body/1\"",
+    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^PAY-14\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
+  },
+  {
+    "code": "DOC215",
+    "rule": "graph/comment-lost",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 13,
+    "column": 25,
+    "endLine": 13,
+    "endColumn": 34,
     "message": "comment \"c-3\" lost its place: no block at \"/body/9\"",
-    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
+    "hint": "Move it: set \"at\" to the code of the block it is about now (\"^PAY-14\"); or delete it if it is handled (docc comments rm \u003cid\u003e)."
   }
 ]

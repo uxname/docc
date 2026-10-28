@@ -1,1 +1,1 @@
-{ "title": "D", "kind": "requirement", "statement": "It must work. ^u8rx", "acceptance": ["Given a doc, maybe it works. ^33za", "Fine. ^qedk", "Also maybe. ^vs3k"] }
+{ "title": "D", "kind": "requirement", "key": "RD", "statement": "It must work. ^RD-1", "acceptance": ["Given a doc, maybe it works. ^RD-2", "Fine. ^RD-3", "Also maybe. ^RD-4"] }

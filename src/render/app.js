@@ -36,9 +36,9 @@
   function route(hash) {
     var id = decode(hash);
     if (byId[id]) { return { page: byId[id] }; }
-    var m = /^(.+)--([2-9a-hjkmnp-z]{4})(?:@[2-9a-hjkmnp-z]{4})?$/i.exec(id);
+    var m = /^(.+)--([a-z][a-z0-9]{1,4}-[1-9][0-9]{0,5})(?:@[2-9a-hjkmnp-z]{4})?$/i.exec(id);
     if (m && byId[m[1]]) {
-      var code = m[2].toLowerCase(), b = blocksOf(byId[m[1]]).filter(function (x) { return x.c === code; })[0];
+      var code = m[2].toUpperCase(), b = blocksOf(byId[m[1]]).filter(function (x) { return x.c === code; })[0];
       if (b) { return { page: byId[m[1]], block: b.p }; }
     }
     var best = null;
@@ -856,15 +856,16 @@
     var shown = unfold ? cards : cards.slice(0, 2);
     var cls = 'blk' + (props.label ? ' is-prop' : '') + (changed ? (isNew ? ' new' : ' chg') : '') + (props.cur === a ? ' cur' : '') + (cards.length ? ' has-c' : '');
     var bar = b.c && !past && html`<div class="code-bar">
-      <span class="code" title="{{t:Code of the paragraph}}">${b.c.toUpperCase()}</span>
+      <span class="code" title="{{t:Code of the paragraph}}">${b.c}</span>
       <button type="button" class="link" onClick=${function () {
         copy(codeLink(page, b)).then(function () { toast('{{t:Link copied.}}'); }, function () { toast(codeLink(page, b)); });
       }}>{{t:Copy link}}</button>
       <button type="button" class="link" onClick=${function () {
-        copy(b.c.toUpperCase()).then(function () { toast('{{t:Code copied.}}'); }, function () { toast(b.c.toUpperCase()); });
+        copy(b.c).then(function () { toast('{{t:Code copied.}}'); }, function () { toast(b.c); });
       }}>{{t:Copy code}}</button></div>`;
     return html`<div class=${cls} data-p=${ptr} data-a=${a} tabindex="-1">
       ${bar}
+      ${b.c && html`<span class="num" aria-hidden="true">${b.c}</span>`}
       ${changed && html`<span class="sr">${isNew ? '{{t:new paragraph}}' : '{{t:changed paragraph}}'}</span>`}
       ${whole[0] && html`<details class="old" open=${whole[0] === 'code'}><summary>{{t:Previous text}}</summary><div class="dv"><del>${plain(before)}</del></div></details>`}
       ${inner}

@@ -399,9 +399,8 @@ fn load_valid(dir: &Path) -> Result<engine::Project, String> {
         Err(_) => config::default(dir),
     };
     // a test project is written in the old format, without codes and hashes:
-    // a copy in the temporary folder is moved to them first, with codes fixed by place
+    // a copy in the temporary folder is moved to them first (codes are numbers in order)
     if dir.starts_with(std::env::temp_dir()) {
-        crate::codes::FIXED.store(true, std::sync::atomic::Ordering::Relaxed);
         engine::migrate(cfg.clone()).map_err(|e| e.to_string())?;
     }
     let mut p = engine::load(cfg).map_err(|e| e.to_string())?;

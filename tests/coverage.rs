@@ -24,7 +24,7 @@ fn every_rule_has_golden_cases() {
 fn positions_with_escapes_and_newlines() {
     let bs = "\\";
     // body: "line1" LF "line2 fast" with an escaped cyrillic letter before the word
-    let doc = format!(r#"{{"title":"I","body":"Первая строка{bs}nвторая {bs}u0430 fast{bs}n{bs}ttail ^k7f2"}}"#);
+    let doc = format!(r#"{{"title":"I","key":"IND","body":"Первая строка{bs}nвторая {bs}u0430 fast{bs}n{bs}ttail ^IND-1"}}"#);
     let p = coded_project([("docs/src/index.json", doc.as_str())]);
     let (_, out, _) = p.run(&["validate", "--format", "json"]);
     let ds = diagnostics_of(&out);
@@ -45,13 +45,13 @@ fn positions_with_escapes_and_newlines() {
         want + 4
     );
     // a pretty-printed file: the diagnostic is on line 3
-    let pretty = "{\n  \"title\": \"I\",\n  \"body\": \"x fast ^k7f2\"\n}\n";
+    let pretty = "{\n  \"title\": \"I\",\n  \"body\": \"x fast ^IND-1\",\n  \"key\": \"IND\"\n}\n";
     let p = coded_project([("docs/src/index.json", pretty)]);
     let (_, out, _) = p.run(&["validate", "--format", "json"]);
     let ds = diagnostics_of(&out);
     assert!(ds[0]["line"] == 3 && ds[0]["column"] == 14, "{ds}");
     // a diagnostic that spans lines: a match across escaped newlines
-    let multi = format!("{{\n  \"title\": \"I\",\n  \"body\": \"one two three{bs}nfour five six ^k7f2\"\n}}\n");
+    let multi = format!("{{\n  \"title\": \"I\",\n  \"body\": \"one two three{bs}nfour five six ^IND-1\",\n  \"key\": \"IND\"\n}}\n");
     let p = coded_project([
         ("docs/src/index.json", multi.as_str()),
         (

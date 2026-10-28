@@ -67,7 +67,7 @@ impl Project {
                     at.start,
                     at.end,
                     format!("comment {} lost its place: {why}", go_quote(&c.id)),
-                    "Move it: set \"at\" to the code of the block it is about now (\"^k7f2\"); or delete it if it is handled (docc comments rm <id>).".into(),
+                    "Move it: set \"at\" to the code of the block it is about now (\"^PAY-14\"); or delete it if it is handled (docc comments rm <id>).".into(),
                 );
             }
         }

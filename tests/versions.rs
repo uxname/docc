@@ -29,15 +29,15 @@ fn hash_in(s: &str, target: &str) -> String {
 fn a_changed_target_breaks_its_links() {
     let p = project([
         ("docc.json", r#"{"commitOut":false}"#),
-        ("docs/src/index.json", r#"{"title":"Index","body":["The limit is in [[b#^k7f2]]."]}"#),
-        ("docs/src/b.json", r#"{"title":"B","parent":"index","body":["Ten attempts per minute. ^k7f2"]}"#),
+        ("docs/src/index.json", r#"{"title":"Index","body":["The limit is in [[b#^BB-1]]."]}"#),
+        ("docs/src/b.json", r#"{"title":"B","key":"BB","parent":"index","body":["Ten attempts per minute. ^BB-1"]}"#),
     ]);
     assert_eq!(p.run(&["check"]).0, 0, "migrate wrote the hashes");
     if !git(&p.path, &["init", "-q"]) || !git(&p.path, &["add", "-A"]) || !git(&p.path, &["commit", "-qm", "one"]) {
         return; // no git here
     }
     let index = p.read("docs/src/index.json");
-    let old = hash_in(&index, "b#^k7f2");
+    let old = hash_in(&index, "b#^BB-1");
     p.write("docs/src/b.json", p.read("docs/src/b.json").replace("Ten", "Five"));
     let (code, out, _) = p.run(&["check"]);
     assert_eq!(code, 1, "{out}");
@@ -45,7 +45,7 @@ fn a_changed_target_breaks_its_links() {
     let d = &diagnostics_of(&json)[0];
     let new = s(d, "message").rsplit('@').next().unwrap().to_string();
     assert!(
-        d["code"] == "DOC209" && s(d, "message").contains(&format!("[[b#^k7f2@{old}]]")) && new.len() == 4 && new != old,
+        d["code"] == "DOC209" && s(d, "message").contains(&format!("[[b#^BB-1@{old}]]")) && new.len() == 4 && new != old,
         "{d}"
     );
     assert!(
@@ -97,16 +97,16 @@ fn hashes_do_not_depend_on_hashes() {
 fn code_fingerprints() {
     let p = project([
         ("docc.json", r#"{"commitOut":false,"trace":{"scan":["code/**"]}}"#),
-        ("docs/src/index.json", r#"{"title":"Index","body":["Five attempts. ^k7f2","Other. ^m2pq"]}"#),
-        ("code/a.go", "// docc: index#^m2pq\npackage a\n\n// docc:begin index#^k7f2\nconst limit = 5\n// docc:end\n\nfunc f() {}\n"),
+        ("docs/src/index.json", r#"{"title":"Index","key":"IND","body":["Five attempts. ^IND-1","Other. ^IND-2"]}"#),
+        ("code/a.go", "// docc: index#^IND-2\npackage a\n\n// docc:begin index#^IND-1\nconst limit = 5\n// docc:end\n\nfunc f() {}\n"),
     ]);
     let src = p.read("code/a.go");
-    assert!(src.starts_with("// docc: index#^m2pq@") && src.contains("// docc:begin index#^k7f2@"), "{src}");
+    assert!(src.starts_with("// docc: index#^IND-2@") && src.contains("// docc:begin index#^IND-1@"), "{src}");
     assert_eq!(p.run(&["check"]).0, 0, "{src}");
     // inside the region
     p.write("code/a.go", src.replace("limit = 5", "limit = 6"));
     let (code, out, _) = p.run(&["check"]);
-    assert!(code == 1 && out.matches("DOC402").count() == 1 && out.contains("code/a.go:4:") && out.contains("index#^k7f2: Five attempts."), "{out}");
+    assert!(code == 1 && out.matches("DOC402").count() == 1 && out.contains("code/a.go:4:") && out.contains("index#^IND-1: Five attempts."), "{out}");
     // outside
     p.write("code/a.go", src.replace("func f() {}", "func g() {}"));
     let (code, out, _) = p.run(&["check"]);
@@ -131,8 +131,8 @@ fn code_fingerprints() {
 fn code_in_a_submodule() {
     let p = project([
         ("docc.json", r#"{"commitOut":false,"trace":{"scan":["sub/**"]}}"#),
-        ("docs/src/index.json", r#"{"title":"Index","body":["Five attempts. ^k7f2"]}"#),
-        ("sub/a.go", "package a\n\n// docc:begin index#^k7f2\nconst limit = 5\n// docc:end\n"),
+        ("docs/src/index.json", r#"{"title":"Index","key":"IND","body":["Five attempts. ^IND-1"]}"#),
+        ("sub/a.go", "package a\n\n// docc:begin index#^IND-1\nconst limit = 5\n// docc:end\n"),
     ]);
     let sub = p.join("sub");
     if !git(&sub, &["init", "-q"]) || !git(&sub, &["add", "-A"]) || !git(&sub, &["commit", "-qm", "sub"]) {
@@ -198,8 +198,8 @@ fn removed_tag_in_a_submodule() {
         ("docc.json", r#"{"commitOut":false,"trace":{"scan":["sub/**"]}}"#),
         ("docs/schemas/req.json", r#"{"type":"object","additionalProperties":true,"x-docc-covered":true}"#),
         ("docs/src/index.json", r#"{"title":"Index","body":["See [[r]]."]}"#),
-        ("docs/src/r.json", r#"{"title":"R","kind":"req","parent":"index","body":["Five attempts. ^k7f2"]}"#),
-        ("sub/a.go", "package a\n\n// docc:begin r#^k7f2\nconst limit = 5\n// docc:end\n"),
+        ("docs/src/r.json", r#"{"title":"R","kind":"req","parent":"index","key":"RR","body":["Five attempts. ^RR-1"]}"#),
+        ("sub/a.go", "package a\n\n// docc:begin r#^RR-1\nconst limit = 5\n// docc:end\n"),
     ]);
     let sub = p.join("sub");
     if !git(&sub, &["init", "-q"]) || !git(&sub, &["add", "-A"]) || !git(&sub, &["commit", "-qm", "sub"]) {
@@ -230,13 +230,13 @@ fn removed_tag_in_a_submodule() {
                 && ds[0]["code"] == "DOC404"
                 && s(&ds[0], "file") == "sub/a.go"
                 && ds[0]["line"] == 3
-                && s(&ds[0], "message").starts_with(r#"this change removes the last tag of "r#^k7f2""#),
+                && s(&ds[0], "message").starts_with(r#"this change removes the last tag of "r#^RR-1""#),
             "{path}: {ds:?}"
         );
     }
     // a new block nobody has tagged: not this change's doing
     p.write("sub/a.go", &committed);
-    p.write("docs/src/r.json", p.read("docs/src/r.json").replace(r#"^k7f2""#, r#"^k7f2", "Unlock after an hour.""#));
+    p.write("docs/src/r.json", p.read("docs/src/r.json").replace(r#"^RR-1""#, r#"^RR-1", "Unlock after an hour.""#));
     assert_eq!(hook(&["check", "sub"]), (0, vec![]), "a new requirement is not the submodule's");
     let (code, ds) = hook(&["check"]);
     assert!(

@@ -29,7 +29,7 @@
 
 page · draft now · priority 2 · x, y
 
-See [Item 10](#a), [Item 10](#a--goals), [Item 10](#a--tk2x), [Sub](#sec--sub), [Part two](#sec--part-two), [Sections](#sec--deep), [Item 10](#a) and hidden.
+See [Item 10](#a), [Item 10](#a--goals), [Item 10](#a--DOC-2), [Sub](#sec--sub), [Part two](#sec--part-two), [Sections](#sec--deep), [Item 10](#a) and hidden.
 
 ![pic](out-full/img/p.png) ![web](https://x.org/a.png) `[[a]]` ![c](out-full/img/p.png "t")
 
@@ -41,7 +41,7 @@ G2 with [Home page [[b@3pc2]]](#index)
 
 <!-- /include -->
 
-Inline <!-- include a#short -->short text<!-- /include --> and <!-- include a#^tk2x -->G1<!-- /include --> end.
+Inline <!-- include a#short -->short text<!-- /include --> and <!-- include a#^DOC-2 -->G1<!-- /include --> end.
 
 <!-- include sec#content/Part two -->
 
@@ -189,7 +189,7 @@ A body with ![sub](out-full/img/p.png).
 
 ## Goals
 
-<a id="a--tk2x"></a>G1
+<a id="a--DOC-2"></a>G1
 
 G2 with [Home page [[b@3pc2]]](#index)
 

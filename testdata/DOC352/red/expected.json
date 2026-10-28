@@ -17,9 +17,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 63,
+    "column": 64,
     "endLine": 1,
-    "endColumn": 71,
+    "endColumn": 72,
     "message": "hedging word \"Возможно\"",
     "hint": "State the fact plainly, or say exactly when it holds."
   },
@@ -29,9 +29,9 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 1,
-    "column": 82,
+    "column": 83,
     "endLine": 1,
-    "endColumn": 93,
+    "endColumn": 94,
     "message": "hedging word \"как правило\"",
     "hint": "State the fact plainly, or say exactly when it holds."
   }

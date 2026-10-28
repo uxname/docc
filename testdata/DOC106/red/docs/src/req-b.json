@@ -1,1 +1,1 @@
-{ "title": "Too short", "kind": "requirement", "statement": "short ^z45x" }
+{ "title": "Too short", "kind": "requirement", "key": "RB", "statement": "short ^RB-1" }

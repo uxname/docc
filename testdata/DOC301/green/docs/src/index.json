@@ -1,5 +1,6 @@
 {
   "title": "Index",
-  "body": ["Answers in 200 ms. ^5v78", "Use `fast` in code. ^muum", "быстро-быстро ^h5yw"],
-  "kind": "page"
+  "body": ["Answers in 200 ms. ^IND-1", "Use `fast` in code. ^IND-2", "быстро-быстро ^IND-3"],
+  "kind": "page",
+  "key": "IND"
 }

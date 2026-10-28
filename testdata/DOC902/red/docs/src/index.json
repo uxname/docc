@@ -1,6 +1,7 @@
 {
   "title": "Index",
-  "body": ["It is fast. ^5v78"],
+  "body": ["It is fast. ^IND-1"],
   "docIgnore": [{ "rule": "DOC301", "reason": "the customer's word" }],
-  "kind": "page"
+  "kind": "page",
+  "key": "IND"
 }

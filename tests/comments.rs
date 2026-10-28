@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 const SCHEMA: (&str, &str) = ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#);
 
-const PAGE: &str = "{\n  \"title\": \"Index\",\n  \"kind\": \"page\",\n  \"body\": [\n    \"Alpha text. ^a2a2\",\n    \"Beta text. ^b2b2\"\n  ]\n}\n";
+const PAGE: &str = "{\n  \"title\": \"Index\",\n  \"kind\": \"page\",\n  \"key\": \"IND\",\n  \"body\": [\n    \"Alpha text. ^IND-1\",\n    \"Beta text. ^IND-2\"\n  ]\n}\n";
 
 /// apply runs docc comments apply --format json with ops on standard input.
 fn apply(dir: &Path, ops: &Value) -> (i32, Value, String) {
@@ -46,7 +46,7 @@ fn apply_edits_only_comments() {
     // a comment is no edit of the text: the links to the document keep their hash (DOC209)
     p.must_build();
     let other0 = p.read("docs/src/other.json");
-    let other_code = &other0[other0.find(" ^").unwrap() + 2..][..4];
+    let other_code = other0[other0.find(" ^").unwrap() + 2..].split('"').next().unwrap();
     let other_text = &other0[other0.find("Gamma").unwrap()..other0.find(" ^").unwrap()];
     let ops = json!([
         {"op": "add", "doc": "index", "comment": {"at": "/body/1", "fragment": "Beta", "text": "Why beta?", "author": "Ann", "email": "ann@example.com"}},
@@ -62,7 +62,7 @@ fn apply_edits_only_comments() {
     let head = PAGE.strip_suffix("\n}\n").unwrap();
     assert!(src.starts_with(head), "the members before stay as they were:\n{src}");
     let rest = &src[head.len()..];
-    assert!(rest.starts_with(&format!(",\n  \"$comments\": [\n    {{\"id\": \"{id}\", \"at\": \"^b2b2\", \"quote\": \"Beta text.\", \"fragment\": \"Beta\", \"text\": \"Why beta?\", \"author\": \"Ann\", \"email\": \"ann@example.com\", \"created\": \"20")), "{rest}");
+    assert!(rest.starts_with(&format!(",\n  \"$comments\": [\n    {{\"id\": \"{id}\", \"at\": \"^IND-2\", \"quote\": \"Beta text.\", \"fragment\": \"Beta\", \"text\": \"Why beta?\", \"author\": \"Ann\", \"email\": \"ann@example.com\", \"created\": \"20")), "{rest}");
     assert!(rest.ends_with("\"}\n  ]\n}\n"), "the last member, indented like the file:\n{rest}");
     assert_eq!(
         p.read("docs/src/other.json"),
@@ -114,14 +114,14 @@ fn compile_and_markdown_show_comments() {
     ]);
     let (code, _, errs) = apply(&p.path, &ops);
     assert_eq!(code, 0, "{errs}");
-    p.write("docs/src/index.json", p.read("docs/src/index.json").replacen("\"Beta text. ^b2b2\"", "\"Beta text, edited. ^b2b2\"", 1));
+    p.write("docs/src/index.json", p.read("docs/src/index.json").replacen("\"Beta text. ^IND-2\"", "\"Beta text, edited. ^IND-2\"", 1));
     let (_, out, _) = p.run(&["compile", "--format", "json"]);
     let v: Value = serde_json::from_str(&out).unwrap();
     check_schema("compile", &v);
     let cs = v["pages"][0]["comments"].as_array().unwrap();
     let places: Vec<&str> = cs.iter().map(|c| c["place"].as_str().unwrap()).collect();
     assert_eq!(places, ["same", "changed", "lost"]);
-    assert!(cs[0].get("email").is_none() && cs[0]["text"] == "Same." && cs[0]["at"] == "^a2a2", "{}", cs[0]);
+    assert!(cs[0].get("email").is_none() && cs[0]["text"] == "Same." && cs[0]["at"] == "^IND-1", "{}", cs[0]);
     p.must_build();
     let md = p.read("docs/out/index.md");
     assert!(
@@ -162,7 +162,7 @@ fn import_moves_a_comment_from_an_older_build() {
     git(&p.path, &["commit", "-q", "-m", "first"]);
     let build = git(&p.path, &["rev-parse", "--short=8", "HEAD"]);
     let v1 = p.read("docs/src/index.json");
-    let two = v1[v1.find("Two. ^").unwrap() + 6..][..4].to_string();
+    let two = v1[v1.find("Two. ^").unwrap() + 6..].split('"').next().unwrap().to_string();
     p.write("docs/src/index.json", v1.replace(r#"["One."#, r#"["Zero.","One."#).replace("Two. ^", "Two, edited. ^"));
     p.run(&["codes"]);
     git(&p.path, &["commit", "-q", "-am", "second"]);

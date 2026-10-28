@@ -1,14 +1,15 @@
 {
   "title": "Index",
   "kind": "note",
+  "key": "IND",
   "status": "accepted",
   "tags": ["draft", "x"],
   "body": [
-    "Welcome. See [[deep#acceptance_criteria@jc37]], [[req#body@h7ss]] and [[req@a4gs]]. ^5v78",
-    "{{req#statement}} ^muum",
-    "Quote: {{req#^2vh9}} ^h5yw"
+    "Welcome. See [[deep#acceptance_criteria@bq7u]], [[req#body@h7ss]] and [[req@a4gs]]. ^IND-1",
+    "{{req#statement}} ^IND-2",
+    "Quote: {{req#^REQ-2}} ^IND-3"
   ],
-  "owner_name": "Team ^57c3",
+  "owner_name": "Team ^IND-4",
   "count": 3,
   "flag": true,
   "empty": "",
@@ -16,7 +17,7 @@
   "none": [],
   "meta": { "a": "x", "nested": { "k": "v", "list": ["p", "q"] }, "multi": "line1\nline2", "skip": "" },
   "steps": [{ "name": "one", "done": true }, { "name": "two", "items": ["a", "b"] }],
-  "inline": "Text {{req#title}} here and `{{literal}}` code and [[deep@6cfr]]. ^5sy3",
+  "inline": "Text {{req#title}} here and `{{literal}}` code and [[deep@pn9t]]. ^IND-5",
   "numbers": [1, 2.50],
-  "notes": ["note about [[deep@6cfr]] stays hidden"]
+  "notes": ["note about [[deep@pn9t]] stays hidden"]
 }
