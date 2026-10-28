@@ -6,7 +6,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Write as _;
-use std::process::Command;
 
 use super::project::{Doc, Project};
 use super::strings::{SECTIONS_KEY, resolve};
@@ -146,7 +145,7 @@ impl Project {
         let (id, field) = target.split_once('#').unwrap_or((target, ""));
         let file = &self.doc(id)?.file;
         let git = |args: &[&str]| {
-            Command::new("git").args(args).current_dir(&self.cfg.root).output().ok().filter(|o| o.status.success()).map(|o| o.stdout)
+            crate::git().args(args).current_dir(&self.cfg.root).output().ok().filter(|o| o.status.success()).map(|o| o.stdout)
         };
         let log = git(&["log", "--format=%H", "-n", "200", "--", file])?;
         for sha in String::from_utf8_lossy(&log).lines() {

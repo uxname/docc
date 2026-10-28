@@ -8,7 +8,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::io;
 use std::path::{Component, Path, PathBuf};
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use crate::history::cat_files;
@@ -102,7 +101,7 @@ pub struct Rev {
 /// git runs git in dir and returns its standard output, or the first line of
 /// its error output.
 fn git(dir: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
-    let out = Command::new("git")
+    let out = crate::git()
         .args(args)
         .current_dir(dir)
         .output()

@@ -5,7 +5,6 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use serde::Serialize;
 use serde_json::Value;
@@ -24,7 +23,7 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 /// git runs git in dir: its standard output, or the first line of its error.
 fn git(dir: &Path, args: &[&str]) -> Result<String, String> {
-    let out = Command::new("git").args(args).current_dir(dir).output().map_err(|e| format!("cannot run git: {e}"))?;
+    let out = crate::git().args(args).current_dir(dir).output().map_err(|e| format!("cannot run git: {e}"))?;
     if !out.status.success() {
         let err = String::from_utf8_lossy(&out.stderr);
         return Err(err.lines().next().unwrap_or("git failed").trim().to_string());

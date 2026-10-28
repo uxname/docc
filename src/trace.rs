@@ -6,7 +6,6 @@
 use std::collections::HashMap;
 use std::io;
 use std::path::{Component, Path, PathBuf};
-use std::process::Command;
 
 use sha2::{Digest, Sha256};
 
@@ -83,13 +82,15 @@ pub fn hashes(tags: &[Tag]) -> HashMap<Key, String> {
 }
 
 /// Scan searches the files that match masks (relative to root). Inside a git
-/// work tree the files are those of `git ls-files -co --exclude-standard`;
-/// otherwise the tree is walked without .git, node_modules and vendor.
+/// work tree the files are those of `git ls-files -co --exclude-standard`,
+/// and of each submodule by its own git; otherwise the tree is walked without
+/// .git, node_modules and vendor.
 /// Skipped always: the given directories (docc's own src, out and outFull),
 /// symbolic links, files over 1 MB and files with a NUL byte.
 pub fn scan(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf], src: &Source) -> io::Result<Vec<Tag>> {
     if let Source::Rev(rev) = src {
         // the files of the revision; there is nothing untracked or ignored in it
+        // ponytail: a submodule's code is not read at a revision (only its commit is in the tree); read its own history if --rev ever needs it
         let under = |rel: &str| skip_dirs.iter().any(|d| inside(d, &root.join(rel)));
         let paths: Vec<&str> = rev
             .files("")
@@ -144,7 +145,7 @@ pub fn files(root: &Path, masks: &[Glob], skip_dirs: &[PathBuf]) -> io::Result<V
 fn list(root: &Path, skip_dirs: &[PathBuf]) -> io::Result<Vec<String>> {
     let under = |abs: &Path| skip_dirs.iter().any(|d| inside(d, abs));
     let mut paths = Vec::new();
-    let out = Command::new("git")
+    let out = crate::git()
         .args(["ls-files", "-co", "--exclude-standard", "-z"])
         .current_dir(root)
         .output();
@@ -154,7 +155,14 @@ fn list(root: &Path, skip_dirs: &[PathBuf]) -> io::Result<Vec<String>> {
                 && !p.is_empty()
                 && !under(&root.join(p))
             {
-                paths.push(p.to_string());
+                // a submodule, or a repository nested in the tree, is one entry
+                // here: its files are listed by its own git, with its own ignores
+                let p = p.trim_end_matches('/');
+                if root.join(p).join(".git").exists() {
+                    paths.extend(list(&root.join(p), skip_dirs)?.into_iter().map(|q| format!("{p}/{q}")));
+                } else {
+                    paths.push(p.to_string());
+                }
             }
         }
         paths.sort();
@@ -423,6 +431,7 @@ fn index_space(s: &[u8]) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::process::Command;
     use crate::config::compile_glob;
     use std::sync::atomic::{AtomicUsize, Ordering};
 

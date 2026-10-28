@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 use serde::{Serialize, Serializer};
 
@@ -794,7 +794,7 @@ pub(crate) fn locate_git(folder: &Path) -> Result<(std::path::PathBuf, String), 
 /// git runs git in dir and returns its standard output; an error when git is
 /// missing or fails.
 fn git(dir: &Path, args: &[&str]) -> std::io::Result<Vec<u8>> {
-    let out = Command::new("git").args(args).current_dir(dir).output()?;
+    let out = crate::git().args(args).current_dir(dir).output()?;
     if !out.status.success() {
         return Err(std::io::Error::other(format!("git: {}", out.status)));
     }
@@ -804,7 +804,7 @@ fn git(dir: &Path, args: &[&str]) -> std::io::Result<Vec<u8>> {
 /// catFiles returns the contents of the objects named one per line in req, in
 /// order; None for a missing one.
 pub(crate) fn cat_files(dir: &Path, req: Vec<u8>) -> std::io::Result<Vec<Option<Vec<u8>>>> {
-    let mut cmd = Command::new("git")
+    let mut cmd = crate::git()
         .args(["cat-file", "--batch"])
         .current_dir(dir)
         .stdin(Stdio::piped())
@@ -851,6 +851,7 @@ pub(crate) fn cat_files(dir: &Path, req: Vec<u8>) -> std::io::Result<Vec<Option<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::process::Command;
     use std::path::PathBuf;
 
     fn no_git() -> bool {

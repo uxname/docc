@@ -124,6 +124,44 @@ fn code_fingerprints() {
     assert!(code == 1 && out.contains("code/a.go:4:") && out.contains("DOC209") && !out.contains("DOC402"), "{out}");
 }
 
+/// Code in a git submodule is scanned like any other code: its files are
+/// listed by its own git, and a Git hook's environment (GIT_DIR,
+/// GIT_INDEX_FILE of the repository the hook runs for) changes nothing.
+#[test]
+fn code_in_a_submodule() {
+    let p = project([
+        ("docc.json", r#"{"commitOut":false,"trace":{"scan":["sub/**"]}}"#),
+        ("docs/src/index.json", r#"{"title":"Index","body":["Five attempts. ^k7f2"]}"#),
+        ("sub/a.go", "package a\n\n// docc:begin index#^k7f2\nconst limit = 5\n// docc:end\n"),
+    ]);
+    let sub = p.join("sub");
+    if !git(&sub, &["init", "-q"]) || !git(&sub, &["add", "-A"]) || !git(&sub, &["commit", "-qm", "sub"]) {
+        return; // no git here
+    }
+    // the inner repository becomes a gitlink of the outer one, as a submodule is
+    assert!(git(&p.path, &["init", "-q"]) && git(&p.path, &["add", "-A"]) && git(&p.path, &["commit", "-qm", "outer"]));
+    assert_eq!(p.run(&["check"]).0, 0);
+    p.write("sub/a.go", p.read("sub/a.go").replace("limit = 5", "limit = 6"));
+    let (code, out, _) = p.run(&["check"]);
+    assert!(code == 1 && out.matches("DOC402").count() == 1 && out.contains("sub/a.go:3:"), "{out}");
+    // inside a hook of the submodule git points GIT_DIR and GIT_INDEX_FILE at
+    // the submodule; docc still reads the project's history for the old text
+    p.write("sub/a.go", p.read("sub/a.go").replace("limit = 6", "limit = 5"));
+    p.write("docs/src/index.json", p.read("docs/src/index.json").replace("Five", "Six"));
+    let hook = Command::new(env!("CARGO_BIN_EXE_docc"))
+        .args(["check", "--format", "json"])
+        .current_dir(&p.path)
+        .env("GIT_DIR", sub.join(".git"))
+        .env("GIT_INDEX_FILE", sub.join(".git/index"))
+        .output()
+        .unwrap();
+    let d = &diagnostics_of(&String::from_utf8_lossy(&hook.stdout))[0];
+    assert!(
+        d["code"] == "DOC209" && s(d, "file") == "sub/a.go" && s(d, "hint").contains("- Five attempts."),
+        "the old text from the project's history, not the submodule's: {d}"
+    );
+}
+
 /// An old hash fails validate and check, but the pages still render and take
 /// comments: a draft stays readable while an agent checks the links. The hint
 /// of a whole-document link shows at most 30 lines.
