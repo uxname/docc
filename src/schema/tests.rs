@@ -213,6 +213,13 @@ fn test_unknown_field_suggestion() {
         s.kind("req").unwrap().covered && !s.kind("open").unwrap().covered,
         "x-docc-covered"
     );
+    let f = load_files(&[(
+        "f.json",
+        r#"{"properties":{"a":{"x-docc-covered":true},"b":{"x-docc-covered":false},"c":{}},"additionalProperties":true}"#,
+    )])
+    .unwrap();
+    let k = f.kind("f").unwrap();
+    assert!(!k.covered && k.covered_fields.iter().eq(["a"]), "covered fields: {:?}", k.covered_fields);
     let r = parse(r#"{"title":"T","statment":"x","zzzzzzzz":1,"parnt":"p"}"#);
     let vs = s.check_kind("req", root(&r));
     let joined = messages(&vs);
@@ -270,12 +277,16 @@ fn test_additional_properties_required() {
             "bad covered",
             r#"{"x-docc-covered":"yes","additionalProperties":true}"#,
         ),
+        (
+            "bad field covered",
+            r#"{"properties":{"p":{"x-docc-covered":1}},"additionalProperties":true}"#,
+        ),
     ];
     for (name, content) in cases {
         let Err(err) = load_files(&[("a.json", content)]) else {
             panic!("{name}: expected error");
         };
-        if name != "bad target" && name != "bad covered" {
+        if !name.starts_with("bad ") {
             assert!(
                 err.to_string().contains("additionalProperties"),
                 "{name}: {err}"

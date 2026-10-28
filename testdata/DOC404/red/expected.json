@@ -1,0 +1,26 @@
+[
+  {
+    "code": "DOC404",
+    "rule": "trace/uncovered-block",
+    "level": "warn",
+    "file": "docs/src/req-a.json",
+    "line": 6,
+    "column": 74,
+    "endLine": 6,
+    "endColumn": 80,
+    "message": "no code tag points to block \"req-a#^m3m3\", and kind \"req\" expects one on every block of field \"statement\"",
+    "hint": "Add // docc: req-a#^m3m3@2hqb to the code that implements this block."
+  },
+  {
+    "code": "DOC404",
+    "rule": "trace/uncovered-block",
+    "level": "warn",
+    "file": "docs/src/spec-b.json",
+    "line": 6,
+    "column": 17,
+    "endLine": 6,
+    "endColumn": 23,
+    "message": "no code tag points to block \"spec-b#^d5d5\", and kind \"spec\" expects one on every block",
+    "hint": "Add // docc: spec-b#^d5d5@3pdx to the code that implements this block."
+  }
+]

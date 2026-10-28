@@ -61,7 +61,7 @@ Every document has a `kind`, and `docs/schemas/<kind>.json` (JSON Schema 2020-12
 
 - Reuse a kind from `docs/schemas`. Create a new one (like a new type in code) only when several documents need the same checkable fields; use the project's words and tell the user.
 - The top level must set a boolean `additionalProperties`. `true`: extra fields are allowed. `false`: only reserved fields and those listed in `properties`, in top-level `allOf` and in local `$ref` targets (not in `if`/`then`); an unknown field is DOC106 with a "did you mean" hint.
-- `"x-docc-target": ["kind"]` on a property (also `parent`) limits the kinds a reference may point to (DOC214). `"x-docc-covered": true` requires a `docc:` tag in code for every visible document of the kind (DOC403, with `trace.scan`). `$ref` may only point to files inside the schemas folder.
+- `"x-docc-target": ["kind"]` on a property (also `parent`) limits the kinds a reference may point to (DOC214). `"x-docc-covered": true` requires a `docc:` tag in code for every visible document of the kind (DOC403, with `trace.scan`) and one naming each of its blocks, `id#^code` (DOC404); on a property it asks that only for the blocks of that field. A tag on the whole document or a field covers no block. `$ref` may only point to files inside the schemas folder.
 
 ```json
 {
@@ -107,6 +107,7 @@ With `"trace": {"scan": ["code/**"]}` in `docc.json`, the first comment of a fil
 - DOC402: the code changed (inside a region: that region's fingerprint; outside: the file's), or a tag has no fingerprint. The message lists the targets with their text and the new fingerprint. Read the code against them, fix the code or the documents, then write the new fingerprint by hand.
 - DOC209 on a tag: a target changed. Read it, update the code if it holds the old value (unless the user said not to touch code; then name the open DOC209 in your answer), then write the new hash.
 - DOC401: a target does not resolve or a region is broken.
+- DOC404: a block of a covered kind has no tag `id#^code`. Tag the code that implements it (the hint gives the target with its hash); if no code implements it yet, say so to the user instead of tagging unrelated code.
 - A reference such as `<Req to="i4#^k7f2">` in code carries no hash: the hash lives in the file's tag.
 
 ## Reading diagnostics

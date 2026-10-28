@@ -18,7 +18,7 @@ DOC209 graph/suspect-link reports a link whose version hash is missing or no lon
 
 DOC212 graph/duplicate-anchor reports a block code on two blocks of the project or equal to a heading anchor of its page; DOC216 graph/missing-code a block without a code. DOC213 graph/broken-file reports an image path that names no file in the sources, lies outside them or is not a png, jpg, jpeg, gif, svg or webp file. DOC214 graph/wrong-target-kind reports a reference whose target kind is not allowed by `x-docc-target`.
 
-DOC314 style/manual-number warns when `numbering` is on and a title or a section key starts with its own number. DOC403 trace/uncovered warns when a document of a kind with `x-docc-covered` has no code tag. DOC303 also catches `N/A`, a lone dash, `see above` and `works correctly`, and their Russian forms.
+DOC314 style/manual-number warns when `numbering` is on and a title or a section key starts with its own number. DOC403 trace/uncovered warns when a document of a kind with `x-docc-covered` has no code tag; DOC404 trace/uncovered-block warns about each block such a kind wants covered that no tag names as `id#^code` (a tag on the whole document or a field does not count). DOC303 also catches `N/A`, a lone dash, `see above` and `works correctly`, and their Russian forms.
 
 ## Diagnostic format
 

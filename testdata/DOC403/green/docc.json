@@ -1,1 +1,1 @@
-{ "trace": { "scan": ["code/**"] } }
+{ "trace": { "scan": ["code/**"] }, "rules": { "trace/uncovered-block": "off" } }

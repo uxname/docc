@@ -5,13 +5,13 @@
   "body": [
     "A document is one JSON file in the sources folder. The id is the file name without the extension: lowercase letters, digits and hyphens, not starting or ending with a hyphen. Folder names follow the same rules, and the reserved Windows names are rejected. ^fsh5",
     "The built-in schema requires only `title`. The reserved fields are `title`, `kind`, `status`, `parent`, `order`, `tags`, `body`, `notes`, `hidden`, `docIgnore` and `$comments`. Every other field is free and holds prose. `order` is a number that sorts a document among its siblings. ^eqdv",
-    "The checks are listed in [[rules@hb79]] and the generated pages in [[rendering@67mw]]. ^u4pc"
+    "The checks are listed in [[rules@masz]] and the generated pages in [[rendering@67mw]]. ^u4pc"
   ],
   "typing": [
     "Every document has a `kind`, and the folder of schemas holds `<kind>.json` for it. A document without a kind, or with a kind that has no schema, is reported as DOC109, a core rule that cannot be switched off. ^dfgy",
     "A kind schema must set a boolean `additionalProperties` at the top level: `true` makes the kind flexible, `false` makes it strict. Without it the schema does not load and docc exits with code 2. For a strict kind docc checks the field names itself: the allowed names are the reserved fields, the top-level `properties` and the `properties` of the top-level `allOf` branches and of local `$ref` targets; names under `if` and `then` are not counted. An unknown field is DOC106 with the message `unknown field X` and a suggestion of the closest allowed name. ^e9ea",
     "The kind schema sees the whole document, reserved fields included, so it can require `parent` or limit the values of `status`. ^c4ya",
-    "`\"x-docc-target\": [\"goal\"]` on a property, `parent` included, limits the kinds of the documents its references point to; a reference to another kind is DOC214. `\"x-docc-covered\": true` at the top level of a kind schema means that every visible document of the kind needs a `docc:` tag in code, otherwise DOC403 warns when `trace.scan` is set. ^7wum",
+    "`\"x-docc-target\": [\"goal\"]` on a property, `parent` included, limits the kinds of the documents its references point to; a reference to another kind is DOC214. `\"x-docc-covered\": true` at the top level of a kind schema means that every visible document of the kind needs a `docc:` tag in code, otherwise DOC403 warns when `trace.scan` is set; each of its blocks also needs a tag that names it, `id#^code`, otherwise DOC404 warns. On a property it asks that only for the blocks of that field; when any property is marked, the top-level mark no longer covers the other fields. A tag on the whole document or on a field covers no block: it does not say which code implements which paragraph. ^7wum",
     "`docc init` writes `page.json` with `\"additionalProperties\": true`. ^tb3n"
   ],
   "references": [

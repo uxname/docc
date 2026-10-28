@@ -1,0 +1,1 @@
+{ "type": "object", "additionalProperties": true, "properties": { "statement": { "type": "array", "x-docc-covered": true } } }

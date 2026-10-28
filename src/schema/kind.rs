@@ -19,6 +19,7 @@ impl Kind {
             allowed: BTreeSet::new(),
             targets: HashMap::new(),
             covered: false,
+            covered_fields: BTreeSet::new(),
         };
         if let Some(c) = root.get("x-docc-covered") {
             if c.kind != loader::Kind::Bool {
@@ -48,6 +49,17 @@ impl Kind {
             // the map iterates its keys sorted
             for (name, pm) in props {
                 self.allowed.insert(name.clone());
+                match pm.get("x-docc-covered") {
+                    None => {}
+                    Some(Value::Bool(c)) => {
+                        if *c {
+                            self.covered_fields.insert(name.clone());
+                        }
+                    }
+                    Some(_) => {
+                        return Err(format!(r#""x-docc-covered" of property {} must be true or false"#, go_quote(name)));
+                    }
+                }
                 let Some(t) = pm.get("x-docc-target") else {
                     continue;
                 };

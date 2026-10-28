@@ -38,7 +38,7 @@ const fn rule(
     Rule { code, name, group, default, core, desc, bad, good }
 }
 
-static ALL: [Rule; 43] = [
+static ALL: [Rule; 44] = [
     rule(
         "DOC101",
         "syntax/invalid-json",
@@ -430,6 +430,16 @@ static ALL: [Rule; 43] = [
         "// docc: req-x@3a9c ~0c4f  (after checking the code against req-x)",
     ),
     rule(
+        "DOC404",
+        "trace/uncovered-block",
+        "trace",
+        W,
+        false,
+        "A block of a visible document has no docc: tag that names it (id#^code), and its kind schema wants one: \"x-docc-covered\": true on a property means every block of that field, at the top level with no property marked every block of the document. A tag on the whole document or on a field does not cover a block. Works only when trace.scan is set.",
+        r#""statement": "Lock after 5 failures. ^k7f2"  (no // docc: req-x#^k7f2 in code)"#,
+        "// docc: req-x#^k7f2@3a9c ~e91d",
+    ),
+    rule(
         "DOC501",
         "build/stale-output",
         "build",
@@ -532,7 +542,7 @@ mod tests {
     #[test]
     fn registry() {
         let n = all().len();
-        assert_eq!(n, 43, "want 43 rules, got {n}");
+        assert_eq!(n, 44, "want 44 rules, got {n}");
         let mut core = 0;
         for r in all() {
             assert!(

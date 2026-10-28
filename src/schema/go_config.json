@@ -272,6 +272,8 @@
               "trace/uncovered",
               "DOC402",
               "trace/code-changed",
+              "DOC404",
+              "trace/uncovered-block",
               "DOC501",
               "build/stale-output",
               "DOC800",

@@ -18,7 +18,7 @@ A kind schema must set a boolean `additionalProperties` at the top level: `true`
 
 The kind schema sees the whole document, reserved fields included, so it can require `parent` or limit the values of `status`.
 
-`"x-docc-target": ["goal"]` on a property, `parent` included, limits the kinds of the documents its references point to; a reference to another kind is DOC214. `"x-docc-covered": true` at the top level of a kind schema means that every visible document of the kind needs a `docc:` tag in code, otherwise DOC403 warns when `trace.scan` is set.
+`"x-docc-target": ["goal"]` on a property, `parent` included, limits the kinds of the documents its references point to; a reference to another kind is DOC214. `"x-docc-covered": true` at the top level of a kind schema means that every visible document of the kind needs a `docc:` tag in code, otherwise DOC403 warns when `trace.scan` is set; each of its blocks also needs a tag that names it, `id#^code`, otherwise DOC404 warns. On a property it asks that only for the blocks of that field; when any property is marked, the top-level mark no longer covers the other fields. A tag on the whole document or on a field covers no block: it does not say which code implements which paragraph.
 
 `docc init` writes `page.json` with `"additionalProperties": true`.
 

@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::analyze::split_ref;
 use super::mdrules::fragment_problem;
 use super::project::{Doc, Project};
+use super::strings::StrNode;
 use crate::config::go_quote;
 use crate::loader::Kind;
 use crate::trace::{self, Key, Tag};
@@ -10,7 +11,8 @@ use crate::trace::{self, Key, Tag};
 impl Project {
     /// checkTrace reads the docc: tags in code: DOC401 for a malformed tag or
     /// region and for a target that does not resolve, DOC403 for a document of a
-    /// covered kind that no tag points to. It runs only when trace.scan is set.
+    /// covered kind that no tag points to, DOC404 for a block of one that no
+    /// tag names. It runs only when trace.scan is set.
     pub(super) fn check_trace(&mut self) {
         if self.cfg.trace_scan.is_empty() {
             return;
@@ -24,6 +26,8 @@ impl Project {
             return;
         };
         let mut covers: HashMap<String, Vec<String>> = HashMap::new();
+        // the blocks a tag names as id#^code, the id as resolved (DOC404)
+        let mut tagged: HashSet<String> = HashSet::new();
         let (mut code, mut code_at) = (HashMap::new(), HashMap::new());
         let bad = |t: &Tag, msg: String, hint: String| {
             self.emit_file(
@@ -79,6 +83,9 @@ impl Project {
                         bad(t, msg, hint);
                         continue;
                     }
+                }
+                if let Some(code) = field.strip_prefix('^') {
+                    tagged.insert(format!("{}#^{code}", d.id));
                 }
                 if !self.legacy
                     && let Some(v) = self.version(g)
@@ -142,6 +149,79 @@ impl Project {
                     ),
                     format!("Add // docc: {} to the code that implements it.", d.id),
                 );
+            }
+        }
+        self.check_block_coverage(&tagged);
+    }
+
+    /// check_block_coverage is DOC404: every block that the kind schema wants
+    /// covered (all blocks of a kind marked "x-docc-covered", or those of its
+    /// marked fields) needs a tag that names it, id#^code. A tag on the whole
+    /// document or on a field is not one: it does not say which code
+    /// implements the block.
+    fn check_block_coverage(&self, tagged: &HashSet<String>) {
+        if self.off("DOC404") {
+            return;
+        }
+        for d in &self.docs {
+            let Some((kind, blocks)) = self.covered_blocks(d) else {
+                continue;
+            };
+            for sn in blocks {
+                let target = format!("{}#^{}", d.id, sn.anchor);
+                if tagged.contains(&target) {
+                    continue;
+                }
+                let n = sn.node();
+                let (start, end) = d.range(n, sn.anchor_at, n.str.len());
+                let hash = self.version(&target).map(|v| format!("@{}", v.hash)).unwrap_or_default();
+                self.emit(
+                    d,
+                    "DOC404",
+                    start,
+                    end,
+                    format!(
+                        "no code tag points to block {}, and kind {} expects one on {}",
+                        go_quote(&target),
+                        go_quote(kind),
+                        self.which_blocks(kind),
+                    ),
+                    format!("Add // docc: {target}{hash} to the code that implements this block."),
+                );
+            }
+        }
+    }
+
+    /// covered_blocks are the blocks of d that DOC404 wants a tag on, with
+    /// the kind: none for a hidden document, one outside the graph or of a
+    /// kind that asks for no coverage.
+    pub(super) fn covered_blocks<'d>(&self, d: &'d Doc) -> Option<(&'d str, Vec<&'d StrNode>)> {
+        if !d.parsed() || !self.in_graph(d) || d.hidden {
+            return None;
+        }
+        let k = d.r().get("kind").filter(|k| k.kind == Kind::String)?;
+        let kd = self.schemas.kind(&k.str)?;
+        if !kd.covered && kd.covered_fields.is_empty() {
+            return None;
+        }
+        let blocks = d
+            .strings()
+            .iter()
+            .filter(|sn| sn.blk && !sn.notes && !sn.anchor.is_empty())
+            .filter(|sn| kd.covered_fields.is_empty() || kd.covered_fields.contains(&sn.field))
+            .collect();
+        Some((&k.str, blocks))
+    }
+
+    /// which_blocks words the blocks a kind wants covered: "every block", or
+    /// "every block of field \"statement\"".
+    fn which_blocks(&self, kind: &str) -> String {
+        let fields = self.schemas.kind(kind).map(|kd| &kd.covered_fields);
+        match fields.filter(|f| !f.is_empty()) {
+            None => "every block".into(),
+            Some(f) => {
+                let names: Vec<String> = f.iter().map(|x| go_quote(x)).collect();
+                format!("every block of {} {}", if f.len() == 1 { "field" } else { "fields" }, names.join(", "))
             }
         }
     }

@@ -18,7 +18,7 @@ Paths: `src`, `out`, `schemas` and `outFull`. The folder `out` is owned by docc:
 
 `branding` (name, url, logo, accent, accentLight, header) dresses the single HTML file for a company, as described in [Rendering](rendering.md); `name` is required, the logo is a file inside the project and must exist.
 
-`trace.scan` lists masks of code files, from the project root, that are searched for `docc:` tags; without it DOC401, DOC402 and DOC403 do not run. Masks reach into git submodules: the files of a submodule are listed by its own git, with its own ignores, and a Git hook's environment (GIT_DIR and the like) does not change which repository is read. A mask that matches nothing is no error.
+`trace.scan` lists masks of code files, from the project root, that are searched for `docc:` tags; without it DOC401 to DOC404 do not run. Masks reach into git submodules: the files of a submodule are listed by its own git, with its own ignores, and a Git hook's environment (GIT_DIR and the like) does not change which repository is read. A mask that matches nothing is no error.
 
 ## Parent
 

@@ -56,7 +56,7 @@ pub struct Set {
 /// Kind is a compiled kind schema with what docc reads from its raw JSON:
 /// the top-level "additionalProperties" (checked by docc, not by the
 /// validator), the names it allows, "x-docc-target" of properties and
-/// "x-docc-covered".
+/// "x-docc-covered" of the kind and of its properties.
 pub struct Kind {
     schema: Validator,
     url: String,
@@ -64,6 +64,9 @@ pub struct Kind {
     allowed: BTreeSet<String>,
     targets: HashMap<String, Vec<String>>,
     pub covered: bool,
+    /// the properties marked "x-docc-covered": true: only their blocks need
+    /// a tag each (DOC404); empty with covered: every block does
+    pub covered_fields: BTreeSet<String>,
 }
 
 /// LoadError is what Load fails with: a config error that points at a
