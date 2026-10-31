@@ -75,6 +75,7 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("Answer saved.", "Ответ сохранён."),
     ("Own answer", "Свой ответ"),
     ("The diagram has an error:", "В диаграмме ошибка:"),
+    ("Illustration", "Иллюстрация"),
     ("Answers", "Ответы"),
     ("to an earlier question", "на прежний вопрос"),
     ("in this browser", "в этом браузере"),

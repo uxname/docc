@@ -185,6 +185,7 @@ pre{position:relative;padding:.9rem 1rem;overflow-x:auto;background:var(--code);
 pre code{padding:0;background:none}
 .mmd{margin:0 0 1rem;overflow-x:auto}
 .mmd svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.hblk{display:block;width:100%;height:0;margin:0 0 1rem;border:0}
 .mmd-err{margin:-.5rem 0 1rem;color:var(--rem);white-space:pre-wrap}
 .copy{position:absolute;top:.4rem;right:.4rem;padding:.15rem .55rem;font:inherit;font-size:.75rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;opacity:0}
 pre:hover .copy,pre:focus-within .copy,.copy:focus{opacity:1}
@@ -399,6 +400,7 @@ main{padding:0}
 .blk.chg>.blk-body::before,.blk.new>.blk-body::before{display:none}
 .blk.chg>.blk-body,.blk.new>.blk-body{border-left:4px solid #888;padding-left:8px}
 .card{break-inside:avoid;margin:.3rem 0 .8rem}
+.hblk{break-inside:avoid}
 a{color:inherit;text-decoration:none}
 }
 .proj a{color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis}
@@ -1227,6 +1229,39 @@ a{color:inherit;text-decoration:none}
     });
   }
 
+  // ---- HTML blocks: a ```html block is shown in a frame that runs no script (docc_spec, "HTML-блоки") ----
+  // the variables are the contract of an HTML block; Docspace sets the same names. No allow-scripts:
+  // beside allow-same-origin (kept so the page can size the frame) a script could leave the sandbox.
+  var FRAME_SANDBOX = 'allow-same-origin allow-popups allow-popups-to-escape-sandbox';
+  var FRAME_CSS = ':root{color-scheme:light;--bg:#fff;--fg:#171717;--muted:#6b6b6b;--line:#e5e5e5;--surface:#f6f6f6;--blue:#1d4ed8;--blue-soft:#eff4ff;--amber:#a16207;--amber-soft:#fef8e7;--red:#c0262d;--red-soft:#fdf0f0;--green:#15803d;--green-soft:#eefbf2;--violet:#6d28d9;--violet-soft:#f4f1fe;--gray:#525252;--gray-soft:#ececec;--font:"Geist Variable",ui-sans-serif,system-ui,sans-serif;--mono:"Geist Mono Variable",ui-monospace,monospace}:root[data-theme=dark]{color-scheme:dark;--bg:#1c1c1c;--fg:#f2f2f2;--muted:#a8a8a8;--line:#333;--surface:#262626;--blue:#7aa7ff;--blue-soft:#18243f;--amber:#f0b84a;--amber-soft:#33280f;--red:#ff8a8a;--red-soft:#3a1818;--green:#6fd08f;--green-soft:#142e1d;--violet:#b49cff;--violet-soft:#261d42;--gray:#b5b5b5;--gray-soft:#2e2e2e}html{overflow:hidden}*,::before,::after{box-sizing:border-box}body{margin:0;display:flow-root;overflow-x:auto;background:transparent;color:var(--fg);font:15px/1.5 var(--font)}svg,img{max-width:100%;height:auto}.flow{--cols:1;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:0 12px;align-content:start;width:min(100%,calc(var(--cols)*230px));margin:0 auto}.row{display:flex;flex-wrap:wrap;gap:10px}.row>*{flex:1 1 110px}.row>.g{flex-basis:auto}.span{grid-column:1/-1}.n{--h:var(--gray);--s:var(--bg);display:flex;flex-direction:column;justify-content:center;padding:9px 12px;border:1px solid color-mix(in srgb,var(--h) 45%,transparent);border-radius:10px;background:var(--s);font-size:14px;line-height:1.35;text-align:center;overflow-wrap:anywhere}.n b{font-weight:600}@media (width<480px){.n{padding:8px 6px;font-size:13px}.flow{gap:0 6px}}.n small{color:var(--muted);font-size:12.5px}.blue{--h:var(--blue);--s:var(--blue-soft)}.amber{--h:var(--amber);--s:var(--amber-soft)}.red{--h:var(--red);--s:var(--red-soft)}.green{--h:var(--green);--s:var(--green-soft)}.violet{--h:var(--violet);--s:var(--violet-soft)}.gray{--h:var(--gray);--s:var(--gray-soft)}.ar{display:flex;flex-direction:column;align-items:center;min-height:34px;color:var(--muted);font-size:12px;line-height:1.3;text-align:center}.ar::before{content:"";flex:1 0 10px;border-left:1.5px solid}.ar::after{content:"";border:5px solid transparent;border-top:7px solid;border-bottom:0}.ar.dash::before{border-left-style:dashed}.g{padding:10px 12px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}.g>h4{margin:0 0 8px;color:var(--muted);font-size:12.5px;font-weight:600}';
+  function frameDoc(src, theme) {
+    return '<!doctype html><html data-theme="' + theme + '"><head><meta charset="utf-8"><base target="_blank"><style>' +
+      FRAME_CSS + '</style></head><body>' + src + '</body></html>';
+  }
+  function fitFrame(f) {
+    var b = f.contentDocument && f.contentDocument.body;
+    if (b) { f.style.height = Math.ceil(b.getBoundingClientRect().height) + 'px'; }
+  }
+  function drawHtml(el) {
+    var theme = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    Array.prototype.forEach.call(el.querySelectorAll('pre > code.language-html'), function (code) {
+      var pre = code.parentNode, f = document.createElement('iframe');
+      f.className = 'hblk';
+      f.title = 'Illustration';
+      f.setAttribute('sandbox', FRAME_SANDBOX);
+      // the frame's scheme matches its page's, else the browser paints it opaque
+      f.style.colorScheme = theme;
+      f.srcdoc = frameDoc(code.textContent, theme);
+      f.addEventListener('load', function () {
+        fitFrame(f);
+        var b = f.contentDocument && f.contentDocument.body;
+        // a <details> opened, the column narrowed: the content changed height
+        if (b && window.ResizeObserver) { new ResizeObserver(function () { fitFrame(f); }).observe(b); }
+      });
+      pre.parentNode.replaceChild(f, pre);
+    });
+  }
+
   // ---- one block: its HTML at T, the edits since S drawn into it, its comments ----
   function Block(props) {
     var b = props.b, page = props.page, ptr = b.p, s = props.s, t = props.t, past = t < last, a = page.id + (ptr || '');
@@ -1259,7 +1294,7 @@ a{color:inherit;text-decoration:none}
       });
       lost[1](gone);
       // a block that shows its edits keeps the source of its diagrams, marked
-      if (!(changed && !isNew)) { drawDiagrams(el); }
+      if (!(changed && !isNew)) { drawDiagrams(el); drawHtml(el); }
     }, [key]);
     var inner = field ? html`<div class="blk-body" key=${key} id=${props.id}><${Field} f=${b.i} page=${page} ptr=${ptr} quote=${b.s} comments=${props.comments} past=${past} /></div>`
       : html`<div class="blk-body" key=${key} ref=${body} id=${props.id} dangerouslySetInnerHTML=${{ __html: h }}></div>`;
@@ -2118,7 +2153,7 @@ a{color:inherit;text-decoration:none}
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
   render(html`<${App} />`, document.getElementById('app'));
 })();
 

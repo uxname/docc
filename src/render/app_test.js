@@ -155,3 +155,10 @@ assert.deepStrictEqual(T.joinAnswer(box, [], ''), []);
 // a table row reads as its cells in the lists
 assert.strictEqual(T.snip('| Module | Owner |\n|---|---|', 60), 'Module Owner');
 console.log('ok');
+
+// an HTML block: its source as the frame's body, in the page's theme, and a frame that runs no script
+const fd = T.frameDoc('<b>Hi</b>', 'dark');
+assert.ok(fd.startsWith('<!doctype html><html data-theme="dark">'), fd.slice(0, 60));
+assert.ok(fd.endsWith('<body><b>Hi</b></body></html>'));
+assert.ok(fd.includes('<base target="_blank">') && fd.includes('--blue-soft:'));
+assert.ok(!T.FRAME_SANDBOX.includes('allow-scripts') && !T.FRAME_SANDBOX.includes('allow-top-navigation'), T.FRAME_SANDBOX);

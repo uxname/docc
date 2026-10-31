@@ -58,6 +58,7 @@ One document is one `*.json` file in `docs/src` (any folder depth). **The id is 
 - Siblings sort by `order`, then title. With `"numbering": true` docc numbers pages itself; never type a number into a title (DOC314). Put a page between 2 and 3 with `order` `2.5`.
 - Images: `![alt](img/plan.png)`, a path relative to the document's folder, the file inside `docs/src` (DOC213 if missing): `png`, `jpg`, `jpeg`, `gif`, `svg` or `webp`.
 - Diagrams: a fenced code block ```` ```mermaid ```` with Mermaid source. The HTML file draws it (a syntax error shows the source and the error); Markdown and `docc compile` keep it as code.
+- HTML blocks: a fenced code block ```` ```html ```` for boxes and arrows, groups, card layouts and tables Markdown draws badly; shown in a sandboxed frame without scripts. Before writing or changing one, read [html-blocks.md](html-blocks.md): the kit of classes, layout and the check.
 
 ## Kinds and schemas
 

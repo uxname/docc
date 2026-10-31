@@ -179,6 +179,7 @@ pre{position:relative;padding:.9rem 1rem;overflow-x:auto;background:var(--code);
 pre code{padding:0;background:none}
 .mmd{margin:0 0 1rem;overflow-x:auto}
 .mmd svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.hblk{display:block;width:100%;height:0;margin:0 0 1rem;border:0}
 .mmd-err{margin:-.5rem 0 1rem;color:var(--rem);white-space:pre-wrap}
 .copy{position:absolute;top:.4rem;right:.4rem;padding:.15rem .55rem;font:inherit;font-size:.75rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;opacity:0}
 pre:hover .copy,pre:focus-within .copy,.copy:focus{opacity:1}
@@ -393,6 +394,7 @@ main{padding:0}
 .blk.chg>.blk-body::before,.blk.new>.blk-body::before{display:none}
 .blk.chg>.blk-body,.blk.new>.blk-body{border-left:4px solid #888;padding-left:8px}
 .card{break-inside:avoid;margin:.3rem 0 .8rem}
+.hblk{break-inside:avoid}
 a{color:inherit;text-decoration:none}
 }
 .proj a{color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis}
