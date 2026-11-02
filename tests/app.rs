@@ -172,7 +172,7 @@ fn rich_questions() {
     assert_eq!(code, 0, "{out} {errs}");
     let md = p.read("docs/out/index.md");
     assert!(
-        md.contains("**Which **plan**?**\n\n- Small — One `server`, &lt;b>cheap&lt;/b>\n- Big (рекомендую)\n\n**Rate** (Нравится / Не уверен / Не нравится)\n\n- Dark\n- Export — PDF"),
+        md.contains("Which **plan**?\n\n- Small — One `server`, &lt;b>cheap&lt;/b>\n- Big (рекомендую)\n\n**Rate** (Нравится / Не уверен / Не нравится)\n\n- Dark\n- Export — PDF"),
         "{md}"
     );
     let a = read_app(&p, "docs/out.html");

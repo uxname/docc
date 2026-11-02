@@ -386,12 +386,16 @@ impl<'a> Page<'_, 'a> {
         out
     }
 
-    /// field is a form field in the Markdown: the question in bold, then its
-    /// options as a list, each with its description and "(recommended)"; a
-    /// rating names its three ratings after the question.
+    /// field is a form field in the Markdown: the question in bold (as written
+    /// when it has bold of its own), then its options as a list, each with its
+    /// description and "(recommended)"; a rating names its three ratings after
+    /// the question.
     fn field(&self, n: &Node) -> Vec<String> {
         let md = |s: &str| self.refs(&escape_html_outside_code(s));
-        let mut q = format!("**{}**", md(n.get("label").map_or("", |l| l.str.as_str()).trim()));
+        let label = md(n.get("label").map_or("", |l| l.str.as_str()).trim());
+        // a label with its own bold stays as written: "**Pay **how**?**" nests
+        // the markers and breaks both
+        let mut q = if label.contains("**") || label.contains("__") { label } else { format!("**{label}**") };
         let kind = n.get(engine::INPUT_KEY).map_or("", |k| k.str.as_str());
         if kind == "rating" {
             let names = match n.get("labels").filter(|l| l.items.len() == 3) {
