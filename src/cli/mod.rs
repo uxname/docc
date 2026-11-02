@@ -4,6 +4,7 @@ mod comments;
 mod flags;
 mod rulescmd;
 mod update;
+mod watch;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -24,16 +25,12 @@ use comments::cmd_comments;
 use flags::{FlagError, FlagSet};
 use rulescmd::{cmd_explain, cmd_rules, write_json};
 use update::cmd_update;
+use watch::cmd_watch;
 
 /// Error is any error a command fails with; run tells them apart by type.
 pub(crate) type Error = Box<dyn std::error::Error + Send + Sync>;
 
-/// VERSION is the release version, set at build time with DOCC_VERSION
-/// (Go: -X main.version).
-const VERSION: &str = match option_env!("DOCC_VERSION") {
-    Some(v) => v,
-    None => "dev",
-};
+use crate::VERSION;
 
 const USAGE: &str = r#"docc - compiler and linter for JSON documentation
 
@@ -43,6 +40,7 @@ Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate [paths]   check sources (paths: report only the problems in those files and folders)
   build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --since, --page, --rev)
+  watch              build again whenever a source is saved and serve the HTML page, which reloads itself (--full, --no-comments)
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision, --hidden: with hidden documents)
   log                print the commits that changed the documents, with the files and block counts of each
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
@@ -201,6 +199,30 @@ Without paths everything is reported.
 Examples:
   docc check --max-warnings 0
   cd .. && docc check backend --max-warnings 0   # the hook of the submodule backend/
+"
+        }
+        "watch" => {
+            "Usage: docc watch [flags]
+
+For reading the documents while an agent writes them. Builds as docc build does (the
+Markdown, docs/out.html and an existing docs/out.md), waits for a source to be saved
+again, builds again, and serves docs/out.html at http://127.0.0.1:<port>: the page in the
+browser reloads itself when a build changed it. It keeps the place of reading, and waits
+while a comment with text is open.
+
+Watched: the sources, the schemas and docc.json. A build starts when they have been
+still for a second. Blocks without a code get one as in docc build, but only if the file
+was not saved since docc read it (otherwise nothing is written and the next build tries
+again). With errors that stop the build the page stays as it was and the terminal says why.
+
+The port is taken from the path of the project, so it is the same every time and other
+projects get other ports; if it is busy, docc watch says so and stops. The server listens
+on 127.0.0.1 only and answers nothing but the page.
+The readers' comments are kept by the browser for each address: those written in the file
+docs/out.html are not seen at http://127.0.0.1:<port>, and the other way round.
+
+Example:
+  docc watch
 "
         }
         "codes" => {
@@ -400,6 +422,7 @@ fn dispatch(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         "init" => cmd_init(c, rest, stdout, stderr),
         "rules" => cmd_rules(c, rest, stdout),
         "codes" => cmd_codes(c, rest, stdout),
+        "watch" => cmd_watch(c, rest, stdout, stderr),
         "migrate" => cmd_migrate(c, rest, stdout),
         "explain" => cmd_explain(c, rest, stdout),
         "schema" => cmd_schema(rest, stdout).map(|_| 0),
@@ -800,6 +823,8 @@ struct Built {
     n: usize,
     extra: Vec<String>,
     html_err: Option<Error>,
+    /// the one-file HTML written by this build (docc watch serves it)
+    html_file: Option<PathBuf>,
 }
 
 /// build validates, and when there are no errors of groups 1xx-2xx writes the
@@ -807,7 +832,7 @@ struct Built {
 /// and html, or when that file is already there, it also writes the one-file
 /// Markdown and HTML next to the directory and returns their paths in extra.
 fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool, o: &BuildOpts) -> Result<Built, Error> {
-    let mut b = Built { n: 0, extra: Vec::new(), html_err: None };
+    let mut b = Built { n: 0, extra: Vec::new(), html_err: None, html_file: None };
     if engine::structural(&p.diags()) {
         return Ok(b);
     }
@@ -866,6 +891,9 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     for (ext, content) in &one {
         render::write_file(&paths[ext], content.as_bytes())?;
         b.extra.push(format!("{dir}{ext}"));
+        if *ext == ".html" {
+            b.html_file = Some(paths[ext].clone());
+        }
     }
     b.n = files.len();
     Ok(b)
@@ -889,6 +917,24 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
     let pos = pos?;
     no_args(&pos)?;
     c.check()?;
+    run_build(c, full, single, html, &page, &rev, o, stdout, stderr).map(|r| r.0)
+}
+
+/// run_build is docc build after its flags are read: it gives the codes, builds
+/// and prints. It returns the exit code and the one-file HTML it wrote, if any
+/// (docc watch serves that file).
+#[allow(clippy::too_many_arguments)]
+fn run_build(
+    c: &Common,
+    full: bool,
+    single: bool,
+    html: bool,
+    page: &str,
+    rev: &str,
+    mut o: BuildOpts,
+    stdout: &mut dyn Write,
+    stderr: &mut dyn Write,
+) -> Result<(i32, Option<PathBuf>), Error> {
     if !o.since.is_empty() && o.since.trim().is_empty() {
         return Err(usage_err("--since must name a Git revision"));
     }
@@ -900,10 +946,10 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
         // blocks without a code get one first; the project is read again below
         engine::assign_codes(&engine::load(load_config(c)?)?)?;
     }
-    let mut p = engine::load(load_config_at(c, &rev)?)?;
+    let mut p = engine::load(load_config_at(c, rev)?)?;
     p.validate();
     if !page.is_empty() {
-        o.page = render::Renderer::new(&p, full).page_id(&page).ok_or_else(|| {
+        o.page = render::Renderer::new(&p, full).page_id(page).ok_or_else(|| {
             usage_err(format!(
                 "--page {}: no such page; give its path relative to {} as docc compile shows it (decisions/monolith.json) or its id{}",
                 config::go_quote(&page),
@@ -922,7 +968,7 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
         code = code.max(2);
     }
     if res.is_err() || c.format != "text" {
-        return res.map(|_| code);
+        return res.map(|_| (code, b.html_file));
     }
     let dir = if full { &p.cfg.out_full } else { &p.cfg.out };
     if b.n > 0 {
@@ -935,7 +981,7 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
         let (errs, _) = report::counts(&p.diags());
         say(stdout, &format!("build skipped: {errs} errors, {dir} not changed\n"));
     }
-    Ok(code)
+    Ok((code, b.html_file))
 }
 
 fn cmd_check(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {

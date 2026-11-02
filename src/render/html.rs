@@ -53,6 +53,7 @@ impl<'a> Renderer<'a> {
             lang: s.p.cfg.lang.clone(),
             full: s.full,
             key: format!("docc:{}", base_name(&s.p.cfg.root.to_string_lossy())),
+            version: crate::VERSION.to_string(),
             ..Default::default()
         };
         let nav = |es: &[super::page::Entry<'_>]| -> Vec<NavEntry> {
@@ -383,6 +384,8 @@ struct AppData {
     full: bool,
     /// localStorage key of the comments
     key: String,
+    /// the version of docc that built the page, shown at the foot of the side column
+    version: String,
     nav: NavData,
     pages: Option<Vec<PageData>>,
     hist: Option<history::History>,

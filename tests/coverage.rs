@@ -79,7 +79,7 @@ fn skill_matches_registry_and_commands() {
     }
     for cmd in Regex::new("`docc ([a-z]+)").unwrap().captures_iter(&text) {
         match &cmd[1] {
-            "validate" | "build" | "check" | "explain" | "rules" | "schema" | "init" | "codes" | "migrate" | "update" | "comments"
+            "validate" | "build" | "check" | "explain" | "rules" | "schema" | "init" | "codes" | "migrate" | "update" | "watch" | "comments"
             | "compile" | "log" | "diff" => {}
             other => errs.push(format!("skill mentions unknown command docc {other}")),
         }

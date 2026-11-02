@@ -150,3 +150,45 @@ fn old_projects_are_refused_until_migrated() {
     p.run(&["migrate"]);
     assert_eq!(once, (p.read("docs/src/index.json"), p.read("docs/src/a.json"), p.read("code/x.ts")), "migrate twice changes nothing");
 }
+
+/// A source that somebody saved after docc read it is not written over: the
+/// edit of an agent next to `docc watch` must not be lost.
+#[test]
+fn codes_do_not_overwrite_a_file_saved_meanwhile() {
+    let p = raw_project([
+        ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#),
+        ("docs/src/index.json", r#"{"title":"Index","kind":"page","key":"IND","body":["New."]}"#),
+    ]);
+    let cfg = docc::config::load(p.join("docc.json").to_str().unwrap(), false).unwrap();
+    let project = docc::engine::load(cfg).unwrap();
+    // the agent saves between the reading and the writing
+    let agent = r#"{"title":"Index","kind":"page","key":"IND","body":["New.","Written by the agent."]}"#;
+    p.write("docs/src/index.json", agent);
+    let err = docc::engine::assign_codes(&project).unwrap_err().to_string();
+    assert!(err.contains("was changed while docc read it"), "{err}");
+    assert_eq!(p.read("docs/src/index.json"), agent);
+    assert!(!p.join("docs/src/index.json.docc-tmp").exists());
+    // the next reading sees the new file and writes
+    let project = docc::engine::load(docc::config::load(p.join("docc.json").to_str().unwrap(), false).unwrap()).unwrap();
+    assert_eq!(docc::engine::assign_codes(&project).unwrap(), 2);
+}
+
+/// A read-only source is refused, as a plain write would refuse it (a rename over it would not).
+#[cfg(unix)]
+#[test]
+fn codes_do_not_replace_a_read_only_file() {
+    use std::os::unix::fs::PermissionsExt;
+    let p = raw_project([
+        ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#),
+        ("docs/src/index.json", r#"{"title":"Index","kind":"page","key":"IND","body":["New."]}"#),
+    ]);
+    let file = p.join("docs/src/index.json");
+    std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o444)).unwrap();
+    let project = docc::engine::load(docc::config::load(p.join("docc.json").to_str().unwrap(), false).unwrap()).unwrap();
+    // root ignores the mode: the test is meaningful only for an ordinary user
+    if std::fs::OpenOptions::new().append(true).open(&file).is_ok() {
+        return;
+    }
+    assert!(docc::engine::assign_codes(&project).is_err());
+    assert_eq!(p.read("docs/src/index.json"), r#"{"title":"Index","kind":"page","key":"IND","body":["New."]}"#);
+}

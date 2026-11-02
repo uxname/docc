@@ -43,14 +43,40 @@ fn json(s: &str) -> String {
 }
 
 /// write_doc writes the new text of the source file of d, with its BOM if it had one.
+/// It writes only if the file is still what docc read: somebody else (an agent in
+/// the middle of an edit, docc watch next to it) may have saved it since, and a
+/// write over that would lose the edit. The text goes to a temporary file that
+/// is renamed over the source, so nobody ever sees a half-written document. The
+/// check narrows the window to the time between it and the rename; it does not
+/// close it (that needs a lock, which an agent's editor would not honour anyway).
 fn write_doc(p: &Project, d: &Doc, data: &[u8]) -> Res<()> {
     let abs = p.cfg.abs(&d.file);
-    let mut out = Vec::new();
-    if std::fs::read(&abs).is_ok_and(|b| b.starts_with(b"\xEF\xBB\xBF")) {
-        out.extend_from_slice(b"\xEF\xBB\xBF");
+    let src = &d.res().src;
+    let bom: &[u8] = if src.bom { b"\xEF\xBB\xBF" } else { b"" };
+    // a symlinked source stays a link: the temporary file lies next to the target
+    let abs = std::fs::canonicalize(&abs).unwrap_or(abs);
+    let now = std::fs::read(&abs).map_err(|e| go_path_error("open", &abs, &e))?;
+    if now != [bom, &src.data].concat() {
+        return Err(format!("{} was changed while docc read it: nothing is written, run docc again", d.file).into());
     }
-    out.extend_from_slice(data);
-    std::fs::write(&abs, out).map_err(|e| go_path_error("open", &abs, &e).into())
+    let out = [bom, data].concat();
+    // a read-only file is refused as before: a rename would replace it
+    if std::fs::metadata(&abs).is_ok_and(|m| m.permissions().readonly()) {
+        std::fs::write(&abs, &out).map_err(|e| go_path_error("open", &abs, &e))?;
+        return Ok(());
+    }
+    let mut tmp = abs.clone().into_os_string();
+    tmp.push(".docc-tmp");
+    let tmp = std::path::PathBuf::from(tmp);
+    let written = std::fs::write(&tmp, &out)
+        .and_then(|_| std::fs::set_permissions(&tmp, std::fs::metadata(&abs)?.permissions()))
+        .and_then(|_| std::fs::rename(&tmp, &abs));
+    if written.is_err() {
+        // ponytail: a place where rename over the file fails (an open file on Windows) gets the plain write; the check above still guards it
+        let _ = std::fs::remove_file(&tmp);
+        std::fs::write(&abs, &out).map_err(|e| go_path_error("open", &abs, &e))?;
+    }
+    Ok(())
 }
 
 /// key_in is the key the document says it has.

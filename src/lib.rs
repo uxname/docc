@@ -19,6 +19,13 @@ pub mod source;
 pub mod text;
 pub mod trace;
 
+/// VERSION is the release version, set at build time with DOCC_VERSION
+/// (Go: -X main.version); a plain cargo build is "dev". The HTML page shows it.
+pub const VERSION: &str = match option_env!("DOCC_VERSION") {
+    Some(v) => v,
+    None => "dev",
+};
+
 /// git is a git command that reads the repository it is run in, whatever the
 /// environment names: inside a Git hook GIT_DIR, GIT_INDEX_FILE and the rest
 /// point at the repository the hook runs for (a submodule, say), not at the

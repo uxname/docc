@@ -1464,6 +1464,7 @@
           <${Tree} cur=${props.page.id} toc=${props.toc} spy=${props.spy} picked=${props.picked} marks=${pageMarks(props.changes.list, props.s, props.t)} />`}
         ${tab === 'comments' && html`<${CommentsTab} comments=${props.comments} picked=${props.picked} show=${function (c) { props.picked(); props.showComment(c); }} />`}
       </div>
+      ${D.version && html`<p class="ver">docc ${D.version}</p>`}
     </div>`;
   }
 

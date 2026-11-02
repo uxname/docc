@@ -73,6 +73,7 @@ main{min-width:0;padding:2rem 1.5rem 6rem;outline:0;container:main/inline-size}
 .tabs [role=tab]{flex:auto;min-width:0;min-height:var(--tgt);padding:.2rem .1rem;font-size:.78rem;font-weight:600;line-height:1.2;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .tabs [role=tab][aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
 .panel{flex:1;min-height:0;overflow:hidden auto;padding:.5rem .5rem 2rem}
+.ver{margin:0;padding:.5rem .9rem;border-top:1px solid var(--line);font-size:.75rem;color:var(--muted)}
 .pad{padding:.4rem .4rem}
 /* search */
 .search{position:relative}

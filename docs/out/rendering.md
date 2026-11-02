@@ -34,6 +34,8 @@ The `branding` section of `docc.json` dresses the HTML file for a company: `name
 
 The output is deterministic: stable sorting, no timestamps, line feeds only, UTF-8 without a byte order mark. Carriage returns and byte order marks in input files and in the output folder are normalized when reading and comparing.
 
+The HTML file shows the version of docc that built it (`docc v0.9.0`, `docc dev` for a plain `cargo build`) in small grey text at the foot of the left column, under the tree of pages; the data island holds it as `version`. Markdown carries no version. The bytes of the HTML file are the same only for the same version of docc; `docc check` does not compare the single files, so a newer docc does not make a committed project stale.
+
 The source format is in [Document model](document-model.md).
 
 ## Audit build

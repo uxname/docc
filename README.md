@@ -53,6 +53,7 @@ Update it with `npx skills update`. The skill needs the `docc` binary from above
     docc comments    # the readers' comments in "$comments" of the documents: list, apply (edits from stdin), import <file|->, rm <id>
     docc check       # for CI: validate + docs/out is up to date (unless commitOut is false); docc check backend reports only backend/
     docc codes       # give a code to every block that has none, nothing else (build does it too)
+    docc watch       # build again whenever a source is saved and serve the HTML page on 127.0.0.1; it reloads itself (for reading while an agent writes)
     docc migrate     # once: move a project of the old format (docc.lock, named anchors) to codes and hashes
 
 A document is one JSON file in `docs/src`; its id is the file name (`docs/src/sign-in.json` is `sign-in`):
