@@ -377,22 +377,68 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px solid var(--
 .editor textarea{display:block;width:100%;min-height:5rem;max-height:40vh;max-height:40dvh;margin-bottom:8px;padding:6px 8px;resize:vertical;overflow:auto}
 .editor textarea,.editor .who,.fld textarea,.fld .who,.fld .own-t,.name-d .who{font:inherit;font-size:14px;color:var(--foreground);background:var(--background);border:1px solid var(--input-border);border-radius:var(--r)}
 @media (pointer:coarse){.editor textarea,.editor .who,.fld textarea,.fld .who,.fld .own-t,.name-d .who{font-size:16px}}
-/* form fields: the question, its options as rows (ready to be cards), the answers given */
-.fld{margin:0 0 1.2rem;padding:12px 16px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:15px}
-.fld legend{padding:0 4px;font-weight:600}
-.fld .opts{display:flex;flex-direction:column;gap:2px;margin:4px -8px 0}
-.fld .opt{display:flex;align-items:center;gap:10px;min-height:var(--tgt);padding:4px 8px;border:1px solid transparent;border-radius:var(--r);line-height:1.4;cursor:pointer}
-.fld .opt:hover{background:var(--accent)}
-.fld .opt:has(>input:checked){background:var(--secondary)}
-.fld .opt input{flex:none;width:16px;height:16px;margin:0;accent-color:var(--primary)}
-.fld textarea{display:block;width:100%;min-height:4.5rem;max-height:40vh;max-height:40dvh;margin:6px 0 8px;padding:6px 8px;resize:vertical}
-.fld .who,.fld .own-t{flex:1;min-width:0;min-height:var(--tgt);padding:2px 8px}
-.fld .own .own-t{flex:1;width:auto;height:auto;margin:0}
-.fld .who-l{margin:8px 0 0}
-.fld .row{margin-top:8px}
-.fld .fans{margin:10px 0 0;padding:8px 0 0;list-style:none;border-top:1px solid var(--border);font-size:13px}
-.fld .fans li{margin:2px 0;padding:0}
-.fld:disabled .opt{cursor:default}
+/* form fields, as the reader's: the question, the options as full-width cards (the recommended one badged),
+   an own answer, the note, «Stuck ▾» and Save; a rating is rows with a three-way switch */
+.fld{margin:0 0 1.2rem;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:15px;min-width:0}
+.fld legend{padding:0 4px;margin-left:-4px;font-size:16px;font-weight:600}
+.fld legend code,.fld .ot code,.fld .od code{font-size:.88em}
+.fld .opts,.fld .rrows{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.fld .rrows{container-type:inline-size}
+.fld .opt{display:grid;grid-template-columns:16px minmax(0,1fr);column-gap:12px;align-items:start;min-height:var(--tgt);padding:11px 14px;border:1px solid var(--border);border-radius:8px;line-height:1.45;cursor:pointer}
+.fld .opt:hover{background:var(--muted)}
+.fld .opt:has(>input:checked){border-color:var(--hue);background:color-mix(in oklab,var(--hue) 6%,transparent);box-shadow:inset 0 0 0 1px var(--hue)}
+.fld .opt:has(>input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.fld .opt>input:not(.own-t){width:16px;height:16px;margin:3px 0 0;accent-color:var(--primary)}
+.fld .ot{font-weight:500}
+.fld .od{grid-column:2;display:block;margin-top:2px;font-size:14px;line-height:1.5;color:var(--muted-foreground)}
+.fld .rec{display:inline-block;margin-left:6px;padding:0 6px;font-size:12px;font-weight:500;line-height:18px;vertical-align:1px;color:var(--hue);background:var(--hue-bg);border-radius:4px}
+.fld .opt.own{grid-template-columns:16px auto minmax(0,1fr);align-items:center}
+.fld .opt.own>input:first-child{margin:0}
+.fld .own-t{flex:1;min-width:0;width:100%;min-height:var(--tgt);padding:2px 8px}
+.fld textarea{display:block;width:100%;min-height:4rem;max-height:40vh;max-height:40dvh;margin:6px 0 0;padding:6px 10px;resize:vertical}
+.fld .nl{display:block;margin-top:14px;font-size:14px;font-weight:500}
+.fld .nl span{color:var(--muted-foreground);font-weight:400}
+.fld .nl textarea{font-weight:400}
+.fld .fhint{margin:10px 0 0;font-size:14px;color:var(--muted-foreground)}
+.fld .who-l{margin:10px 0 0}
+.ffoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:14px}
+.ffoot .btn{min-height:max(36px,var(--tgt))}
+.stk{position:relative}
+.stk-b{border-style:dashed;border-color:var(--input-border);font-weight:400}
+.stk-b.on{border-style:solid;border-color:var(--foreground);background:var(--secondary)}
+.stk-m{position:absolute;left:0;top:calc(100% + 4px);z-index:20;min-width:250px;padding:4px;background:var(--popover);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow)}
+.stk-m button{display:block;width:100%;min-height:var(--tgt);padding:7px 10px;text-align:left;font-size:14px;background:none;border:0;border-radius:var(--r)}
+.stk-m button:hover,.stk-m button:focus-visible{background:var(--accent)}
+.stk-m button[aria-checked=true]{background:var(--secondary);font-weight:500}
+.stk-m small{display:block;font-size:12px;font-weight:400;color:var(--muted-foreground)}
+.rrow{padding:10px 12px;border:1px solid var(--border);border-radius:var(--r)}
+.rr-m{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}
+.rrow .ot{display:block}
+.rseg{display:inline-flex;flex:none;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.rseg label{position:relative;display:flex;align-items:center;justify-content:center;min-width:6rem;min-height:max(34px,var(--tgt));padding:0 12px;font-size:14px;color:var(--muted-foreground);cursor:pointer;white-space:nowrap}
+.rseg label+label{border-left:1px solid var(--border)}
+.rseg label:hover{background:var(--accent)}
+.rseg input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.rseg label:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:-2px}
+.rseg .r-like:has(input:checked){background:color-mix(in oklab,var(--success) 14%,transparent);color:var(--success);font-weight:600}
+.rseg .r-unsure:has(input:checked){background:color-mix(in oklab,var(--warning) 20%,transparent);color:var(--foreground);font-weight:600}
+.rseg .r-dislike:has(input:checked){background:color-mix(in oklab,var(--destructive) 13%,transparent);color:var(--destructive);font-weight:600}
+.rnote{display:block;margin-top:8px;font-size:13px;color:var(--muted-foreground)}
+.rnote .own-t{display:block;margin-top:4px}
+@container (max-width:36rem){.rr-m{flex-direction:column;gap:8px}.rseg{display:flex;width:100%}.rseg label{flex:1;min-width:0;padding:0 4px}}
+@media (max-width:640px){.ffoot>.btn.pri{flex:1 1 100%}}
+.fld:disabled .opt,.fld:disabled .rseg label{cursor:default}
+/* answer cards: the choice, the flag, the ratings, the note */
+.card.ans .ak{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:12px;color:var(--muted-foreground)}
+.card.ans .ak .ic svg{width:12px;height:12px}
+.card.ans .aa{font-weight:500}
+.card.ans .an{color:var(--muted-foreground)}
+.card.ans .an i{font-style:normal;color:var(--foreground)}
+.stuck{display:inline-block;padding:0 6px;font-size:13px;font-weight:400;color:var(--muted-foreground);border:1px dashed var(--input-border);border-radius:4px}
+.arl{margin:0;padding:0;list-style:none}
+.arl li{margin:2px 0}
+.dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;vertical-align:1px}
+.dot.r-like{background:var(--success)}.dot.r-unsure{background:var(--warning)}.dot.r-dislike{background:var(--destructive)}
 .mic-w{display:flex;align-items:center;gap:8px}
 .mic.on{background:var(--destructive);border-color:var(--destructive);color:var(--destructive-foreground)}
 .err{color:var(--destructive)}
@@ -501,7 +547,7 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px solid var(--
 .td{background:CanvasText}
 }
 @media print{
-.top,#side,#edits,#outline,.bbar,.drawer,.nav,.fragb,.skip,.copy,.pn,.toast-w,.notice,.pop,.editor,.fld .row,.fld .who-l{display:none!important}
+.top,#side,#edits,#outline,.bbar,.drawer,.nav,.fragb,.skip,.copy,.pn,.toast-w,.notice,.pop,.editor,.ffoot,.fld .who-l{display:none!important}
 body{padding:0}
 .shell{display:block}
 main{padding:0}

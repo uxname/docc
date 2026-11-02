@@ -151,7 +151,7 @@
   // label: Q; options: A\nB»): «Q — A / B»
   function fieldWords(s) {
     var o = {};
-    s.split(/; (?=(?:\$input|id|label|options): )/).forEach(function (p) { var k = p.indexOf(': '); o[p.slice(0, k)] = p.slice(k + 2); });
+    s.split(/; (?=(?:\$input|id|label|options|labels): )/).forEach(function (p) { var k = p.indexOf(': '); o[p.slice(0, k)] = p.slice(k + 2); });
     return (o.label || '') + (o.options ? ' — ' + o.options.split('\n').join(' / ') : '');
   }
   function snip(s, n) {
@@ -523,8 +523,8 @@
     return s[0];
   }
   function exportJSON() {
-    // version 2 has answers to form fields: an older docc refuses it rather than lose them
-    var v = local.some(function (c) { return c.input; }) ? 2 : 1;
+    // version 3 has notes, flags and ratings, 2 answers to form fields: an older docc refuses them rather than lose them
+    var v = local.some(function (c) { return c.note || c.flag || c.ratings; }) ? 3 : local.some(function (c) { return c.input; }) ? 2 : 1;
     return JSON.stringify({ docc: 'comments', version: v, comments: local.map(function (c) {
       var o = Object.assign({}, c); delete o.sent; return o;
     }) }, null, 2) + '\n';
@@ -758,63 +758,176 @@
     if (f.t === 'text') { return [(v[0] || '').trim()]; }
     return f.t === 'radio' && own ? [own] : v.concat(own ? [own] : []);
   }
-  // a text box, radio buttons or check boxes in the text; the answers given
-  // so far below it, with their authors. Radio buttons and check boxes end
-  // with an own answer: a text that is none of the options (radio: instead
-  // of them, checkbox: besides them).
+  // A rich answer (ADR-0040 of Docspace): a field may be left with a flag, the
+  // four «stuck» buttons, instead of a choice; radio buttons and check boxes
+  // take a note; a rating field rates every option like, unsure or dislike.
+  var FLAGS = [['not_understood', '{{t:I do not understand the question}}', '{{t:Explain it more simply}}'],
+    ['help_choose', '{{t:Help me choose}}', '{{t:Ask me a couple of questions}}'],
+    ['decide_for_me', '{{t:Decide for me}}', '{{t:I trust the author of the document}}'],
+    ['more_options', '{{t:Suggest other options}}', '{{t:None of them fits}}']];
+  var RATES = ['like', 'unsure', 'dislike'], NOTE_MAX = 2000;
+  function flagName(f) { var x = FLAGS.filter(function (y) { return y[0] === f; })[0]; return x ? x[1] : f; }
+  function rateNames(f) { return f.labels && f.labels.length === 3 ? f.labels : ['{{t:Like}}', '{{t:Not sure}}', '{{t:Dislike}}']; }
+  function clip(n) { return (n || '').trim().slice(0, NOTE_MAX); }
+  // fieldAnswer is what a field holds as it would be saved: the flag, the
+  // ratings (every option rated so far, notes only on unsure and dislike) or
+  // the answer, and the note of radio buttons and check boxes. st: {v, own:
+  // [ticked, text], note, flag, rates: {option: [rating, note]}}
+  function fieldAnswer(f, st) {
+    var o = {};
+    if (st.flag) { o.flag = st.flag; }
+    else if (f.t === 'rating') {
+      o.ratings = f.options.filter(function (x) { return st.rates[x]; }).map(function (x) {
+        var r = { option: x, rating: st.rates[x][0] }, n = clip(st.rates[x][1]);
+        if (n && r.rating !== 'like') { r.note = n; }
+        return r;
+      });
+    } else { o.answer = joinAnswer(f, st.v, st.own[0] ? st.own[1] : ''); }
+    var n = clip(st.note);
+    if (n && (f.t === 'radio' || f.t === 'checkbox')) { o.note = n; }
+    return o;
+  }
+  // answerOk: a flag always, a rating with every option rated, a text, one option or more
+  function answerOk(f, o) {
+    if (o.flag) { return true; }
+    if (o.ratings) { return o.ratings.length === f.options.length; }
+    return f.t === 'text' ? !!o.answer[0] : o.answer.length > 0;
+  }
+  // answerWords is the answer in words, the text every exported answer carries:
+  // «Month — a note», «Stuck: Decide for me», «A: Like; B: Not sure — why»
+  function answerWords(f, o) {
+    var names = rateNames(f), w = o.flag ? '{{t:Stuck:}} ' + flagName(o.flag) : o.ratings ? o.ratings.map(function (r) {
+      return r.option + ': ' + names[RATES.indexOf(r.rating)] + (r.note ? ' — ' + r.note : '');
+    }).join('; ') : o.answer.join(', ');
+    return w + (o.note ? ' — ' + o.note : '');
+  }
+  // the state of a field from an answer given before
+  function fieldState(f, c) {
+    var parts = splitAnswer(f, c && c.answer || []), rates = {};
+    (c && c.ratings || []).forEach(function (r) { rates[r.option] = [r.rating, r.note || '']; });
+    return { v: parts[0], own: [!!parts[1], parts[1]], note: c && c.note || '', flag: c && c.flag || '', rates: rates };
+  }
+  function Html(props) { return html`<span class=${props.cls} id=${props.id} dangerouslySetInnerHTML=${{ __html: props.h }}></span>`; }
+
+  // «Stuck ▾»: a menu of the four flags; the chosen one is pressed, pressing it again takes it back
+  function Stuck(props) {
+    var open = useState(false), root = useRef(null);
+    useEffect(function () {
+      if (!open[0]) { return; }
+      var first = root.current.querySelector('.stk-m button');
+      if (first) { first.focus(); }
+      function out(e) { if (!root.current.contains(e.target)) { open[1](false); } }
+      document.addEventListener('pointerdown', out);
+      return function () { document.removeEventListener('pointerdown', out); };
+    }, [open[0]]);
+    function close() { open[1](false); var b = root.current.querySelector('.stk-b'); if (b) { b.focus(); } }
+    function key(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') { return; }
+      var bs = [].slice.call(root.current.querySelectorAll('.stk-m button')), k = bs.indexOf(document.activeElement);
+      e.preventDefault();
+      bs[(k + (e.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length].focus();
+    }
+    return html`<div class="stk" ref=${root} onKeyDown=${open[0] ? key : undefined}>
+      <button type="button" class=${'btn sm stk-b' + (props.flag ? ' on' : '')} aria-haspopup="menu" aria-expanded=${open[0] ? 'true' : 'false'}
+        onClick=${function () { open[1](!open[0]); }}>${props.flag ? '{{t:Stuck:}} ' + flagName(props.flag) : '{{t:Stuck}}'} ▾</button>
+      ${open[0] && html`<div class="stk-m" role="menu">${FLAGS.map(function (x) {
+        return html`<button type="button" role="menuitemradio" aria-checked=${props.flag === x[0] ? 'true' : 'false'}
+          onClick=${function () { props.set(props.flag === x[0] ? '' : x[0]); close(); }}>${x[1]}<small>${x[2]}</small></button>`;
+      })}</div>`}
+    </div>`;
+  }
+
+  // A text box, option cards (radio buttons or check boxes) or rating rows in
+  // the text, then the note, «Stuck ▾» and Save. Radio buttons and check boxes
+  // end with an own answer: a text that is none of the options (radio: instead
+  // of them, checkbox: besides them). The answers given stand as cards beside it.
   function Field(props) {
     var f = props.f, doc = props.page.id, me = store('author') || '';
     var given = answersFor(imported.concat(props.comments), doc, f.id);
     // what this reader answered: in this browser, else imported under their name
     var own = props.comments.filter(function (c) { return c.doc === doc && c.input === f.id; })[0] ||
       (me && given.filter(function (c) { return c.author === me; })[0]);
-    var parts = splitAnswer(f, own && own.answer || []), start = parts[0], startX = parts[1];
-    // x is the own answer: [ticked, its text]
-    var val = useState(start), x = useState([!!startX, startX]), who = useState(me), v = val[0];
-    function reset() { val[1](start); x[1]([!!startX, startX]); }
+    var start = fieldState(f, own), st = useState(start), who = useState(me), v = st[0];
+    function reset() { st[1](fieldState(f, own)); }
     useEffect(reset, [own ? own.id : '']);
-    var a = joinAnswer(f, v, x[0][0] ? x[0][1] : '');
-    var dirty = f.t === 'text' ? JSON.stringify(v) !== JSON.stringify(start) : JSON.stringify(a) !== JSON.stringify(joinAnswer(f, start, startX));
-    var ok = f.t === 'text' ? !!a[0] : a.length > 0;
-    var label = plain(f.label), name = 'f-' + doc + '-' + f.id;
-    function pick(o, on) {
-      val[1](f.t === 'radio' ? [o] : f.options.filter(function (y) { return y === o ? on : v.indexOf(y) >= 0; }));
-      if (f.t === 'radio') { x[1]([false, x[0][1]]); }
+    function set(ch) { st[1](Object.assign({}, v, ch)); }
+    var o = fieldAnswer(f, v), dirty = JSON.stringify(o) !== JSON.stringify(fieldAnswer(f, start)), ok = answerOk(f, o);
+    var name = 'f-' + doc + '-' + f.id, opts = f.options || [], rec = f.recommended || [], desc = f.descriptions || [];
+    // a choice takes back the flag, a flag takes back the choice
+    function pick(x, on) {
+      set({ flag: '', v: f.t === 'radio' ? [x] : opts.filter(function (y) { return y === x ? on : v.v.indexOf(y) >= 0; }),
+        own: f.t === 'radio' ? [false, v.own[1]] : v.own });
     }
-    function pickOwn(on, text) {
-      if (on && f.t === 'radio') { val[1]([]); }
-      x[1]([on, text]);
-    }
+    function pickOwn(on, text) { set({ flag: '', own: [on, text], v: on && f.t === 'radio' ? [] : v.v }); }
+    function rate(x, r) { var rs = Object.assign({}, v.rates); rs[x] = [r, (v.rates[x] || [])[1] || '']; set({ flag: '', rates: rs }); }
+    function rateNote(x, n) { var rs = Object.assign({}, v.rates); rs[x] = [rs[x][0], n]; set({ rates: rs }); }
+    function flag(fl) { set(fl ? { flag: fl, v: [], own: [false, v.own[1]], rates: {} } : { flag: '' }); }
     function save() {
       var w = who[0].trim(), first = !local.length;
       if (w) { store('author', w); }
-      var c = { id: uuid(), doc: doc, path: props.ptr, quote: props.quote, text: a.join(', '), input: f.id, answer: a,
-        author: w, created: new Date().toISOString(), build: H.head || '' };
+      var c = Object.assign({ id: uuid(), doc: doc, path: props.ptr, quote: props.quote, text: answerWords(f, o), input: f.id }, o,
+        { author: w, created: new Date().toISOString(), build: H.head || '' });
       // one answer of this browser per field: a new one takes its place
       setLocal(local.filter(function (x) { return !(x.doc === doc && x.input === f.id); }).concat([c]));
       toast(first ? '{{t:Saved in this browser only. Pass your comments on with the button at the top.}}' : '{{t:Answer saved.}}');
     }
-    return html`<fieldset class="fld" disabled=${props.past}>
-      <legend>${label}</legend>
-      ${f.t === 'text' ? html`<textarea rows="3" aria-label=${label} value=${v[0] || ''} onInput=${function (e) { val[1]([e.target.value]); }}></textarea>`
-        : html`<div class="opts">${f.options.map(function (o) {
-          return html`<label class="opt"><input type=${f.t} name=${name} checked=${v.indexOf(o) >= 0}
-            onChange=${function (e) { pick(o, e.target.checked); }} /> ${plain(o)}</label>`;
-        }).concat([html`<div class="opt own"><input type=${f.t} name=${name} checked=${x[0][0]} aria-label="{{t:Own answer}}"
-            onChange=${function (e) { pickOwn(e.target.checked, x[0][1]); }} />
-          <input type="text" class="own-t" placeholder="{{t:Own answer}}" aria-label="{{t:Own answer}}" value=${x[0][1]}
-            onInput=${function (e) { pickOwn(true, e.target.value); }} /></div>`])}</div>`}
+    var names = rateNames(f), rated = Object.keys(v.rates).filter(function (x) { return opts.indexOf(x) >= 0; }).length;
+    var recd = rec.map(function (k) { return opts[k]; }).filter(Boolean);
+    function card(x, k) {
+      return html`<label class="opt"><input type=${f.t} name=${name} checked=${v.v.indexOf(x) >= 0}
+          onChange=${function (e) { pick(x, e.target.checked); }} />
+        <span class="ot"><${Html} h=${(f.optionsHtml || [])[k] || esc(x)} />${rec.indexOf(k) >= 0 && html`<span class="rec">{{t:Recommended}}</span>`}</span>
+        ${desc[k] && html`<${Html} cls="od" h=${desc[k]} />`}</label>`;
+    }
+    function row(x, k) {
+      var r = (v.rates[x] || [])[0], tid = name + '-t' + k;
+      return html`<div class="rrow"><div class="rr-m"><div><${Html} cls="ot" id=${tid} h=${(f.optionsHtml || [])[k] || esc(x)} />${desc[k] && html`<${Html} cls="od" h=${desc[k]} />`}</div>
+        <div class="rseg" role="radiogroup" aria-labelledby=${tid}>${RATES.map(function (y, i) {
+          return html`<label class=${'r-' + y}><input type="radio" name=${name + '-' + k} value=${y} checked=${r === y} onChange=${function () { rate(x, y); }} />${names[i]}</label>`;
+        })}</div></div>
+        ${r && r !== 'like' && html`<label class="rnote">${r === 'unsure' ? '{{t:What is unclear?}}' : '{{t:Why?}}'}
+          <input type="text" class="own-t" maxlength=${NOTE_MAX} placeholder="{{t:Optional}}" value=${v.rates[x][1]} onInput=${function (e) { rateNote(x, e.target.value); }} /></label>`}</div>`;
+    }
+    return html`<fieldset class=${'fld fld-' + f.t} disabled=${props.past}>
+      <legend><${Html} h=${f.labelHtml || esc(plain(f.label))} /></legend>
+      ${f.t === 'text' ? html`<textarea rows="3" aria-label=${plain(f.label)} value=${v.v[0] || ''} onInput=${function (e) { set({ flag: '', v: [e.target.value] }); }}></textarea>`
+        : f.t === 'rating' ? html`<div class="rrows">${opts.map(row)}</div>`
+        : html`<div class="opts">${opts.map(card)}
+          <label class="opt own"><input type=${f.t} name=${name} checked=${v.own[0]} aria-label="{{t:Own answer}}"
+            onChange=${function (e) { pickOwn(e.target.checked, v.own[1]); }} />
+            <span class="ot">{{t:Own answer}}</span>
+            <input type="text" class="own-t" placeholder="{{t:Your option}}" aria-label="{{t:Own answer}}" value=${v.own[1]}
+              onInput=${function (e) { pickOwn(true, e.target.value); }} /></label></div>
+          <label class="nl">{{t:Comment on the answer}} <span>{{t:(optional)}}</span>
+            <textarea rows="2" maxlength=${NOTE_MAX} placeholder="{{t:A reservation, a wish, the reason for the choice}}" value=${v.note}
+              onInput=${function (e) { set({ note: e.target.value }); }}></textarea></label>`}
+      ${v.flag === 'decide_for_me' && recd.length > 0 && html`<p class="fhint">{{t:The recommended one will be chosen:}} «${recd.map(plain).join('», «')}»</p>`}
       ${!me && html`<label class="who-l">{{t:From}} <input class="who" autocomplete="name" placeholder="{{t:Your name}}" value=${who[0]}
         onInput=${function (e) { who[1](e.target.value); }} /></label>`}
-      ${!props.past && html`<div class="row"><span class="sp"></span>
+      ${!props.past && html`<div class="ffoot"><${Stuck} flag=${v.flag} set=${flag} />
+        ${f.t === 'rating' && html`<span class="muted">{{t:Rated}} ${rated} {{t:of}} ${opts.length}</span>`}<span class="sp"></span>
+        ${dirty && html`<span class="muted">{{t:Not saved}}</span>`}
         ${dirty && own && html`<button type="button" class="btn" onClick=${reset}>{{t:Cancel}}</button>`}
         <button type="button" class="btn pri" disabled=${!dirty || !ok} onClick=${save}>{{t:Save}}</button></div>`}
-      ${given.length > 0 && html`<ul class="fans" aria-label="{{t:Answers}}">${given.map(function (c) {
-        return html`<li><b>${c.author || '{{t:Anonymous}}'}</b> — ${c.text}
-          ${c.quote !== props.quote && html` <span class="chip">{{t:to an earlier question}}</span>`}
-          ${!inRepo[c.id] && html` <span class="muted">· {{t:in this browser}} · </span><button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button>`}</li>`;
-      })}</ul>`}
     </fieldset>`;
+  }
+  // one answer as a card beside its field: the choice, the flag or the ratings, the note, who and when
+  function AnswerCard(props) {
+    var c = props.c, f = props.f, names = rateNames(f);
+    return html`<aside class="card ans" aria-label="{{t:Answer}}" data-c=${c.id} tabindex="-1">
+      <div class="ak"><${Icon} name="requirement" />{{t:Answer}}</div>
+      ${c.quote !== props.quote && html`<div class="fq">{{t:to an earlier question}}: ${snip(fieldWords(c.quote), 60)}</div>`}
+      ${c.flag ? html`<div class="aa"><span class="stuck">${flagName(c.flag)}</span></div>`
+        : c.ratings ? html`<ul class="arl">${c.ratings.map(function (r) {
+          var k = (f.options || []).indexOf(r.option), h = k >= 0 && f.optionsHtml ? f.optionsHtml[k] : esc(r.option);
+          return html`<li><span class=${'dot r-' + r.rating}></span><${Html} h=${h} /> — ${names[RATES.indexOf(r.rating)] || r.rating}${r.note && html`<span class="an">: ${r.note}</span>`}</li>`;
+        })}</ul>`
+        : html`<div class="aa">${(c.answer || [c.text]).join(', ')}</div>`}
+      ${c.note && html`<div class="an">{{t:Comment}}: <i>${c.note}</i></div>`}
+      <div class="meta"><b>${c.author || '{{t:Anonymous}}'}</b><small>${when(c.created)}</small>
+        ${!inRepo[c.id] && html`<span class="acts"><button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button></span>`}</div>
+    </aside>`;
   }
 
   // ---- diagrams: a ```mermaid block is drawn by mermaid, embedded only when a page has one ----
@@ -917,6 +1030,8 @@
     if (props.label) { inner = html`<div class="blk-body prop" key=${key} id=${props.id}><div class="pk">${props.label}</div><div ref=${body} dangerouslySetInnerHTML=${{ __html: h }}></div></div>`; }
     if (!ptr) { return html`<div class=${'blk' + (props.label ? ' is-prop' : '')}>${inner}</div>`; }
     var cards = repo.map(function (c) { return [c, true]; }).concat(mine.map(function (c) { return [c, false]; }));
+    // the answers to a field stand beside it as cards, the latest of each author
+    var answers = field && !past ? answersFor(imported.concat(props.comments), page.id, b.i.id) : [];
     // a comment opened from the list is never folded away
     var unfold = more[0] || cards.length <= 2 || cards.slice(2).some(function (x) { return x[0].id === props.activeC; });
     var shown = unfold ? cards : cards.slice(0, 2);
@@ -936,6 +1051,7 @@
       ${whole[0] && html`<details class="old" open=${whole[0] === 'code'}><summary>{{t:Previous text}}</summary><div class="dv"><del>${plain(before)}</del></div></details>`}
       ${inner}
       <div class="blk-side">
+        ${answers.map(function (c) { return html`<${AnswerCard} key=${c.id} c=${c} f=${b.i} quote=${b.s} />`; })}
         ${shown.map(function (x) { return html`<${Card} key=${x[0].id} c=${x[0]} repo=${x[1]} lost=${lost[0][x[0].id]} active=${props.activeC === x[0].id} />`; })}
         ${!unfold && html`<button type="button" class="link" onClick=${function () { more[1](true); }}>{{t:More comments:}} ${cards.length - 2}</button>`}
         ${props.editor && props.editor.ptr === ptr && props.editor.page === page && html`<${Editor} page=${page} ptr=${ptr} quote=${b.s} frag=${props.editor.frag} close=${props.closeEditor} />`}
@@ -1813,7 +1929,7 @@
     var eds = wide[0] && edits[0];
     var curA = all.list[cur[0]] ? all.list[cur[0]].a : null;
     // the margin for the cards opens only when the page has comments or an editor
-    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id && !c.input && !c.lost; }));
+    var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id && (c.input || !c.lost); }));
     var title = page !== pages[0] && page.title;
     return html`
       <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>{{t:Skip to content}}</a>
@@ -1851,7 +1967,8 @@
 
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
-    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
+    saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer,
+    fieldAnswer: fieldAnswer, answerOk: answerOk, answerWords: answerWords, fieldState: fieldState, exportJSON: exportJSON, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
   applyTheme(store('theme'));
   render(html`<${App} />`, document.getElementById('app'));
 })();

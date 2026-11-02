@@ -353,3 +353,66 @@ fn html_old_versions_rendered() {
     assert_eq!(s(&vs[1], "h"), "", "the current version is the block itself");
     assert_eq!(s(&b["/body/1"][0], "h"), "", "an unchanged block needs no old HTML");
 }
+
+/// What the HTML file exports is what `docc comments import` takes: app.js
+/// (in Node, as app_test.js runs it) answers the fields of a built page with a
+/// note, a flag and ratings, exports the file, and the import writes it.
+#[test]
+fn html_export_imports() {
+    let radio = r#"{"$input":"radio","id":"plan","label":"Which plan?","options":[{"label":"Small","description":"One server"},{"label":"Big","recommended":true}]}"#;
+    let boxes = r#"{"$input":"checkbox","id":"os","label":"Which systems?","options":["Linux","Mac"]}"#;
+    let rating = r#"{"$input":"rating","id":"ideas","label":"Rate","options":["Dark","Export"]}"#;
+    let p = project([("docs/src/index.json", format!(r#"{{"title":"I","body":["Intro.",{radio},{boxes},{rating}]}}"#).as_str())]);
+    let (code, out, errs) = p.run(&["build", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let a = read_app(&p, "docs/out.html");
+    p.write("data.json", a.data.to_string());
+    let app = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/render/app.js");
+    p.write(
+        "export.js",
+        r#"'use strict';
+const fs = require('fs');
+const data = fs.readFileSync('data.json', 'utf8');
+let kept = null, T;
+const noop = () => {};
+global.window = global;
+global.htmPreact = { html: () => null, render: noop, useState: (v) => [v, noop], useEffect: noop, useRef: (v) => ({ current: v }) };
+global.document = { getElementById: () => ({ textContent: data }), createElement: () => ({}) };
+global.localStorage = { getItem: (k) => (k.endsWith(':comments') ? kept : null), setItem: noop };
+global.addEventListener = noop;
+global.doccTest = (t) => { T = t; };
+const load = () => new Function(fs.readFileSync(process.argv[2], 'utf8'))();
+load();
+const st = (o) => Object.assign({ v: [], own: [false, ''], note: '', flag: '', rates: {} }, o);
+const blocks = JSON.parse(data).pages[0].blocks.filter((b) => b.i);
+const given = [st({ v: ['Big'], note: ' Growth ' }), st({ flag: 'more_options' }), st({ rates: { Dark: ['like', ''], Export: ['dislike', 'Nobody prints'] } })];
+kept = JSON.stringify(blocks.map((b, k) => {
+  const o = T.fieldAnswer(b.i, given[k]);
+  if (!T.answerOk(b.i, o)) { throw new Error('not ready: ' + b.i.id); }
+  return Object.assign({ id: 'c-exportaaa' + k, doc: 'index', path: b.p, quote: b.s, text: T.answerWords(b.i, o), input: b.i.id }, o,
+    { author: 'Ivan', created: '2026-11-02T10:00:00Z', build: '' });
+}));
+load();
+process.stdout.write(T.exportJSON());
+"#,
+    );
+    let out = match std::process::Command::new("node").arg("export.js").arg(&app).current_dir(&p.path).output() {
+        Ok(o) => o,
+        Err(_) => {
+            eprintln!("node is not installed");
+            return;
+        }
+    };
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let file = String::from_utf8(out.stdout).unwrap();
+    assert!(file.contains(r#""version": 3"#), "{file}");
+    p.write("export.json", &file);
+    let (code, out, errs) = p.run(&["comments", "import", "export.json"]);
+    assert!(code == 0 && out == "imported 3 comments into 1 documents\n", "{code} {out} {errs}\n{file}");
+    let src = p.read("docs/src/index.json");
+    for want in [r#""answer": ["Big"], "note": "Growth""#, r#""flag": "more_options""#, r#""note":"Nobody prints""#, r#""rating":"dislike""#] {
+        assert!(src.contains(want), "lacks {want}:\n{src}");
+    }
+    let (code, out, _) = p.run(&["validate"]);
+    assert_eq!(code, 0, "{out}");
+}

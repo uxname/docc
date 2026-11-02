@@ -25,7 +25,9 @@ const noop = () => {};
 global.window = global;
 global.htmPreact = { html: () => null, render: noop, useState: (v) => [v, noop], useEffect: noop, useRef: (v) => ({ current: v }) };
 global.document = { getElementById: () => ({ textContent: JSON.stringify(data) }), createElement: () => ({}) };
-global.localStorage = { getItem: () => null, setItem: noop };
+// the browser holds one rich answer: a flag with a note
+const kept = [{ id: 'c-local00001', doc: 'f', path: '/body/1', quote: 'q', input: 'export', flag: 'decide_for_me', note: 'You know best', text: 'Stuck: Decide for me — You know best', author: 'A', created: '2026-11-02T10:00:00Z' }];
+global.localStorage = { getItem: (k) => (k === 'test:comments' ? JSON.stringify(kept) : null), setItem: noop };
 global.addEventListener = noop;
 let T;
 global.doccTest = (t) => { T = t; };
@@ -162,3 +164,27 @@ assert.ok(fd.startsWith('<!doctype html><html data-theme="dark">'), fd.slice(0, 
 assert.ok(fd.endsWith('<body><b>Hi</b></body></html>'));
 assert.ok(fd.includes('<base target="_blank">') && fd.includes('--blue-soft:'));
 assert.ok(!T.FRAME_SANDBOX.includes('allow-scripts') && !T.FRAME_SANDBOX.includes('allow-top-navigation'), T.FRAME_SANDBOX);
+
+// rich answers: a flag takes the place of the choice, a rating needs every item, the note goes with radio and checkbox only
+const rf = { t: 'radio', id: 'q', options: ['Month', 'Year'], recommended: [0] };
+const st = (o) => Object.assign({ v: [], own: [false, ''], note: '', flag: '', rates: {} }, o);
+assert.deepStrictEqual(T.fieldAnswer(rf, st({ v: ['Year'], note: '  holidays  ' })), { answer: ['Year'], note: 'holidays' });
+assert.deepStrictEqual(T.fieldAnswer(rf, st({ v: ['Year'], flag: 'help_choose' })), { flag: 'help_choose' }, 'a flag carries no answer');
+assert.ok(T.answerOk(rf, { flag: 'more_options' }) && !T.answerOk(rf, { answer: [] }));
+assert.strictEqual(T.fieldAnswer(rf, st({ note: 'x'.repeat(2100), v: ['Month'] })).note.length, 2000, 'a note is at most 2000 characters');
+assert.deepStrictEqual(T.fieldAnswer({ t: 'text', id: 't' }, st({ v: ['Free'], note: 'n' })), { answer: ['Free'] }, 'a text field takes no note');
+const rt = { t: 'rating', id: 'r', options: ['A', 'B'] };
+const half = T.fieldAnswer(rt, st({ rates: { A: ['like', 'ignored'] } }));
+assert.deepStrictEqual(half, { ratings: [{ option: 'A', rating: 'like' }] }, 'a note only on unsure and dislike');
+assert.ok(!T.answerOk(rt, half), 'a rating needs every item rated');
+const full = T.fieldAnswer(rt, st({ rates: { A: ['like', ''], B: ['unsure', ' which one? '] } }));
+assert.ok(T.answerOk(rt, full));
+const en = (x) => x.replace(/\{\{t:([^}]+)\}\}/g, '$1'); // the labels as the English build writes them
+assert.strictEqual(en(T.answerWords(rt, full)), 'A: Like; B: Not sure — which one?');
+assert.strictEqual(en(T.answerWords(rf, { flag: 'decide_for_me', note: 'ok' })), 'Stuck: Decide for me — ok');
+assert.deepStrictEqual(T.fieldState(rt, { ratings: full.ratings }).rates, { A: ['like', ''], B: ['unsure', 'which one?'] });
+assert.strictEqual(T.fieldState(rf, { flag: 'help_choose' }).flag, 'help_choose');
+// the export: version 3 with a flag, a note or ratings; every item has its text
+const ex = JSON.parse(T.exportJSON());
+assert.strictEqual(ex.version, 3, 'a flag or a note makes version 3');
+assert.ok(ex.comments[0].flag === 'decide_for_me' && ex.comments[0].note && ex.comments[0].text, JSON.stringify(ex));
