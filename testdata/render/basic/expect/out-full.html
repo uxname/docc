@@ -1385,8 +1385,30 @@ a{color:inherit;text-decoration:none}
   // the name an answer is saved with: the one kept now (the dialog may have
   // asked for it after the field was drawn), else the one typed into From
   function authorNow(typed) { return (store('author') || typed || '').trim(); }
-  // the fields with a choice not saved, by name: closing the tab asks first
+  // the fields with a choice not saved, by name ({save} or null): closing the tab or leaving the page asks first
   var dirtyFields = {};
+  function dirtyList() { return Object.keys(dirtyFields).map(function (k) { return dirtyFields[k]; }).filter(Boolean); }
+  // leaveChoice is what the dialog on leaving a page offers: '' nothing to ask,
+  // 'save' (Save / Don't save) or 'discard' when a field cannot be saved (Don't save / Stay)
+  function leaveChoice() {
+    var l = dirtyList();
+    return !l.length ? '' : l.every(function (x) { return x.save; }) ? 'save' : 'discard';
+  }
+  // The dialog «You have an unsaved answer» on moving to another page; Esc stays
+  function LeaveDialog(props) {
+    var d = useRef(null), can = props.kind === 'save';
+    useEffect(function () { var el = d.current; if (el.showModal && !el.open) { el.showModal(); } }, []);
+    function done(how) { d.current.close(); props.done(how); }
+    return html`<dialog ref=${d} class="name-d" aria-labelledby="leave-h" onCancel=${function (e) { e.preventDefault(); done('stay'); }}>
+      <h2 id="leave-h">You have an unsaved answer</h2>
+      ${!can && html`<p class="muted">It cannot be saved yet: the line beside «Save» says why.</p>`}
+      <div class="row"><span class="sp"></span>
+        ${can ? html`<button type="button" class="btn" onClick=${function () { done('discard'); }}>Don\'t save</button>
+          <button type="button" class="btn pri" autofocus onClick=${function () { done('save'); }}>Save</button>`
+        : html`<button type="button" class="btn" onClick=${function () { done('discard'); }}>Don\'t save</button>
+          <button type="button" class="btn pri" autofocus onClick=${function () { done('stay'); }}>Stay</button>`}</div>
+    </dialog>`;
+  }
   // a counter under a text from 1800 characters, «1850 / 2000», red over the limit
   function Count(props) {
     var n = (props.s || '').length;
@@ -1481,7 +1503,6 @@ a{color:inherit;text-decoration:none}
     var o = fieldAnswer(f, v), dirty = JSON.stringify(o) !== JSON.stringify(fieldAnswer(f, start)) ||
       (!v.flag && v.own[0] !== start.own[0]), why = fieldProblem(f, v, o);
     var name = 'f-' + doc + '-' + f.id, opts = f.options || [], rec = f.recommended || [], desc = f.descriptions || [];
-    dirtyFields[name] = dirty && !props.past;
     useEffect(function () { return function () { delete dirtyFields[name]; }; }, [name]);
     // a choice takes back the flag, a flag takes back the choice
     function pick(x, on) {
@@ -1502,6 +1523,8 @@ a{color:inherit;text-decoration:none}
       setLocal(local.filter(function (x) { return !(x.doc === doc && x.input === f.id); }).concat([c]));
       toast(first ? 'Answer saved. It is kept in this browser only: pass it on with the button at the top.' : 'Answer saved.');
     }
+    // what leaving the page may do with this field: save it, or nothing when it cannot be saved
+    dirtyFields[name] = dirty && !props.past ? { save: why ? null : save } : null;
     var names = rateNames(f);
     var recd = rec.map(function (k) { return opts[k]; }).filter(Boolean);
     function card(x, k) {
@@ -2387,6 +2410,17 @@ a{color:inherit;text-decoration:none}
     var toc = useState([]), spy = useState(null), frag = useState(null), activeC = useState(null);
     var comments = useComments(), pending = useRef(null), dr = useRef(null), askName = useState(store('author') == null && !store('asked'));
     var page = r[0].page, t = atK[0], s = -1, past = t < last;
+    var leaving = useState(null), pageRef = useRef(page), here = useRef(location.hash), leaveOk = useRef(false);
+    pageRef.current = page;
+    function leaveDone(how) {
+      var to = leaving[0].to;
+      leaving[1](null);
+      if (how === 'stay') { return; }
+      if (how === 'save') { dirtyList().forEach(function (x) { x.save(); }); }
+      // the fields stay drawn until the page changes: the next hashchange goes without asking
+      leaveOk.current = true;
+      location.hash = to;
+    }
     if (sinceHash[0] === 'now') { s = last; } else { commits.forEach(function (c, k) { if (c.h && c.h === sinceHash[0]) { s = k; } }); }
     if (s < 0) { s = H.base ? 0 : last; }
     s = Math.min(s, t);
@@ -2447,7 +2481,17 @@ a{color:inherit;text-decoration:none}
     }
 
     useEffect(function () {
-      function on() { r[1](route(location.hash)); }
+      // another page while a field has a choice not saved: the address goes back and the dialog asks
+      function on() {
+        var nr = route(location.hash), k = leaveChoice();
+        if (k && nr.page !== pageRef.current && !leaveOk.current) {
+          leaving[1]({ to: location.hash, kind: k });
+          // ponytail: the entry of the target is rewritten to this page; Back after «Stay» may show it twice
+          try { history.replaceState(history.state, '', here.current || location.pathname + location.search); } catch (e) { /* not allowed */ }
+          return;
+        }
+        leaveOk.current = false; here.current = location.hash; r[1](nr);
+      }
       window.addEventListener('hashchange', on);
       // the place of reading goes into the history entry, so Back returns to it
       var t;
@@ -2590,6 +2634,7 @@ a{color:inherit;text-decoration:none}
       ${frag[0] && !coarse && html`<button type="button" class="btn pri fragb" style=${'left:' + Math.min(frag[0].x, window.innerWidth - 220) + 'px;top:' + (frag[0].y + 8) + 'px'}
         onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}><${Icon} name="comment" />Comment on the selection</button>`}
       ${finding[0] && html`<${SearchDialog} q=${q} close=${function () { finding[1](false); }} go=${function (h) { r[1](route(h)); }} />`}
+      ${leaving[0] && html`<${LeaveDialog} kind=${leaving[0].kind} done=${leaveDone} />`}
       ${askName[0] && html`<${NameDialog} close=${function () { askName[1](false); }} />`}
       <${Toast} />`;
   }
@@ -2597,7 +2642,7 @@ a{color:inherit;text-decoration:none}
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
     saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer,
-    fieldAnswer: fieldAnswer, answerOk: answerOk, fieldProblem: fieldProblem, authorNow: authorNow, store: store, dirtyFields: dirtyFields, leave: leave, markPassed: markPassed, answerWords: answerWords, fieldState: fieldState, exportJSON: exportJSON, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
+    fieldAnswer: fieldAnswer, answerOk: answerOk, fieldProblem: fieldProblem, leaveChoice: leaveChoice, authorNow: authorNow, store: store, dirtyFields: dirtyFields, leave: leave, markPassed: markPassed, answerWords: answerWords, fieldState: fieldState, exportJSON: exportJSON, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
   applyTheme(store('theme'));
   render(html`<${App} />`, document.getElementById('app'));
 })();

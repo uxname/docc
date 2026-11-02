@@ -223,6 +223,13 @@ const ev = () => ({ preventDefault() { this.asked = true; } });
 let e1 = ev(); T.leave(e1); assert.ok(e1.asked, 'a comment not passed on');
 T.markPassed();
 e1 = ev(); T.leave(e1); assert.ok(!e1.asked, 'everything passed on, nothing to save');
-T.dirtyFields['f-f-export'] = true;
+assert.strictEqual(T.leaveChoice(), '', 'no field changed: another page opens without asking');
+T.dirtyFields['f-f-export'] = { save: noop };
 e1 = ev(); T.leave(e1); assert.ok(e1.asked && e1.returnValue === '', 'a choice not saved');
+// moving to another page asks: Save / Don't save, or Don't save / Stay when a field cannot be saved
+assert.strictEqual(T.leaveChoice(), 'save');
+T.dirtyFields['f-f-other'] = { save: null };
+assert.strictEqual(T.leaveChoice(), 'discard');
+T.dirtyFields['f-f-other'] = null;
+assert.strictEqual(T.leaveChoice(), 'save', 'a field back as saved does not count');
 console.log('ok fields');
