@@ -250,7 +250,7 @@ impl<'a> Renderer<'a> {
             let h = self.to_html(d, &pg.refs(&super::text::escape_html_outside_code(s)), &marker);
             match h.trim().strip_prefix("<p>").and_then(|h| h.strip_suffix("</p>")) {
                 Some(x) if !x.contains("<p>") => x.to_string(),
-                _ => html_escape(s),
+                _ => esc(s),
             }
         };
         let mut add = |n: Option<&Node>, h: &str, head: Option<&(usize, String)>| {
@@ -617,7 +617,7 @@ impl InputData {
             options,
             descriptions,
             recommended: (0..opts.len())
-                .filter(|&i| opts[i].get("recommended").is_some_and(|r| r.kind == Kind::Bool && r.str == "true"))
+                .filter(|&i| crate::comments::recommended(&opts[i]))
                 .collect(),
             labels: n
                 .get("labels")
@@ -649,11 +649,6 @@ struct PropData {
     p: String,
     s: String,
     h: String,
-}
-
-/// html_escape is s as HTML text.
-fn html_escape(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
 
 /// scriptJSON encodes v for a <script type="application/json"> element: every

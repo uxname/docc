@@ -93,14 +93,11 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    /// flag is the flag of an answer in words.
+    /// flag is the flag of an answer in words; an unknown flag as itself.
     fn flag(&self, f: &str) -> String {
-        match f {
-            "not_understood" => self.t("I do not understand the question"),
-            "help_choose" => self.t("Help me choose"),
-            "decide_for_me" => self.t("Decide for me"),
-            "more_options" => self.t("Suggest other options"),
-            _ => f.to_string(),
+        match crate::comments::flag_words(f) {
+            "" => f.to_string(),
+            w => self.t(w),
         }
     }
 

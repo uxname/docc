@@ -401,13 +401,13 @@ impl<'a> Page<'_, 'a> {
             q += &format!(" ({})", names.join(" / "));
         }
         let mut list = Vec::new();
-        for o in n.get("options").map_or(&[][..], |o| &o.items[..]) {
-            let label = if o.kind == Kind::Object { o.get("label").map_or("", |l| l.str.as_str()) } else { o.str.as_str() };
+        let opts = n.get("options").map_or(&[][..], |o| &o.items[..]);
+        for (o, label) in opts.iter().zip(crate::comments::options(n)) {
             let mut line = format!("- {}", md(label));
             if let Some(d) = o.get("description").filter(|d| d.kind == Kind::String) {
                 line += &format!(" — {}", md(&d.str));
             }
-            if o.get("recommended").is_some_and(|r| r.kind == Kind::Bool && r.str == "true") {
+            if crate::comments::recommended(o) {
                 line += &format!(" ({})", self.r.t("recommended"));
             }
             list.push(line);

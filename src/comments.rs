@@ -350,6 +350,11 @@ pub fn options(n: &Node) -> Vec<&str> {
     n.get("options").map(|o| o.items.iter().map(label).collect()).unwrap_or_default()
 }
 
+/// recommended tells whether the option o of a form field is recommended.
+pub fn recommended(o: &Node) -> bool {
+    o.get("recommended").is_some_and(|r| r.kind == Kind::Bool && r.str == "true")
+}
+
 /// field_text is what an answer quotes of its form field and is compared by
 /// (place): the field as history::text writes it, with only the labels of
 /// its options. A new description or recommendation leaves it as it was, so
