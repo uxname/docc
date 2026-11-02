@@ -182,7 +182,13 @@ fn html_build() {
     for bad in ["<script>alert", "onclick", "evil", ".md\"", "<h2 id=\"req--owner\""] {
         assert!(!a.blocks.contains(bad), "blocks contain {bad:?}");
     }
-    let page = p.read("docs/out.html");
+    // the base64 of the embedded fonts may hold any three letters
+    let page: String = p
+        .read("docs/out.html")
+        .split("url(data:font/woff2;base64,")
+        .enumerate()
+        .map(|(i, x)| if i == 0 { x } else { x.split_once(')').map_or(x, |(_, r)| r) })
+        .collect();
     for bad in ["Secret", "Hid", "<script src", "<link", "</script>alert", "<script>alert"] {
         assert!(!page.contains(bad), "out.html contains {bad:?}");
     }

@@ -29,6 +29,31 @@ static VENDOR_JS: &str = include_str!("vendor/htm-preact-standalone.js");
 /// ```mermaid blocks; a file gets it only when a page has one (5.5 MB).
 static MERMAID_JS: &str = include_str!("vendor/mermaid.min.js");
 
+/// FONTS_CSS is the @font-face rules of Geist and Geist Mono (vendor/fonts,
+/// SIL OFL 1.1); each url(<file>) becomes a data: URL of FONT_FILES (about 170 KB).
+static FONTS_CSS: &str = include_str!("vendor/fonts/fonts.css");
+static FONT_FILES: &[(&str, &[u8])] = &[
+    ("geist-latin-wght-normal.woff2", include_bytes!("vendor/fonts/geist-latin-wght-normal.woff2")),
+    ("geist-latin-ext-wght-normal.woff2", include_bytes!("vendor/fonts/geist-latin-ext-wght-normal.woff2")),
+    ("geist-cyrillic-wght-normal.woff2", include_bytes!("vendor/fonts/geist-cyrillic-wght-normal.woff2")),
+    ("geist-cyrillic-ext-wght-normal.woff2", include_bytes!("vendor/fonts/geist-cyrillic-ext-wght-normal.woff2")),
+    ("geist-mono-latin-wght-normal.woff2", include_bytes!("vendor/fonts/geist-mono-latin-wght-normal.woff2")),
+    ("geist-mono-latin-ext-wght-normal.woff2", include_bytes!("vendor/fonts/geist-mono-latin-ext-wght-normal.woff2")),
+    ("geist-mono-cyrillic-wght-normal.woff2", include_bytes!("vendor/fonts/geist-mono-cyrillic-wght-normal.woff2")),
+    ("geist-mono-cyrillic-ext-wght-normal.woff2", include_bytes!("vendor/fonts/geist-mono-cyrillic-ext-wght-normal.woff2")),
+];
+
+/// fonts_css is FONTS_CSS with the font files in it.
+fn fonts_css() -> String {
+    use base64::Engine as _;
+    let mut css = FONTS_CSS.to_string();
+    for (name, data) in FONT_FILES {
+        let url = format!("url(data:font/woff2;base64,{})", base64::engine::general_purpose::STANDARD.encode(data));
+        css = css.replace(&format!("url({name})"), &url);
+    }
+    css
+}
+
 impl<'a> Renderer<'a> {
     /// HTML returns the single-page application: one self-contained HTML file
     /// whose script (Preact, embedded) draws the pages from a JSON island. Go
@@ -301,7 +326,7 @@ impl<'a> Renderer<'a> {
         } else {
             data.title.clone()
         };
-        let css = HTML_CSS.to_string() + &brand_css;
+        let css = fonts_css() + HTML_CSS + &brand_css;
         let json = script_json(data);
         let js = s.labels(HTML_JS, true);
         // the class markdown.rs gives a ```mermaid block, as the JSON island writes it
