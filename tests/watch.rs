@@ -88,6 +88,9 @@ fn builds_serves_and_reloads() {
     assert!(p.join("docs/out.html").exists() && p.join("docs/out/index.md").exists());
     // the script goes only into what is served
     assert!(!p.read("docs/out.html").contains("/__docc/wait"));
+    // and after the whole page: the code of the app holds the text "</body>", a script put there breaks the page (seen in a real browser)
+    let body = page.split_once("\r\n\r\n").map_or("", |x| x.1);
+    assert!(body.starts_with(&p.read("docs/out.html")) && body.trim_end().ends_with("})();</script>"), "the script must follow the page");
 
     // only the page and the channel: no file by a path, no other site's name, no POST
     assert!(get(w.port, "/docs/src/index.json", &host).starts_with("HTTP/1.1 404"));

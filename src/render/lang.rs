@@ -141,6 +141,15 @@ pub(super) const RU: &[(&str, &str)] = &[
         "Не удалось скопировать: скачайте файл.",
     ),
     ("Download as a file", "Скачать файлом"),
+    ("Downloaded comments:", "Скачано комментариев:"),
+    ("Copied comments:", "Скопировано комментариев:"),
+    (
+        "Remove them from this browser, so that next time only the new comments are passed on?",
+        "Убрать их из этого браузера, чтобы в следующий раз передать только новые?",
+    ),
+    ("Remove from this browser", "Убрать из браузера"),
+    ("Keep", "Оставить"),
+    ("Comments removed from this browser.", "Комментарии убраны из этого браузера."),
     ("Navigation", "Навигация"),
     // timeline, comments, reset
     ("Back to now", "Вернуться к сейчас"),

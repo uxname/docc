@@ -28,7 +28,7 @@ const MAX_CONNECTIONS: usize = 64;
 
 const WAITING: &str = "<!doctype html><meta charset=\"utf-8\"><title>docc</title><body style=\"font:16px system-ui;margin:3rem\"><p>docc: waiting for a build without errors. The reasons are in the terminal where docc watch runs; this page opens the documents as soon as it can.</p></body>";
 
-/// The script put before </body> of the page as it is served (never into the
+/// The script put at the end of the page as it is served (never into the
 /// file on disk). It asks for news; a new version means reload, but not while the
 /// reader has typed text into the page (a comment, an answer): the words must not be lost.
 const RELOAD: &str = "<script>(function(){var v=@V@;function busy(){return [].some.call(document.querySelectorAll('main textarea,main input[type=text],main input:not([type])'),function(e){return !!e.value.trim();});}function go(){if(busy()){setTimeout(go,1000);}else{location.reload();}}function wait(){fetch('/__docc/wait?v='+v,{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){if(t.trim()===String(v)){wait();}else{go();}}).catch(function(){setTimeout(wait,1000);});}wait();})();</script>";
@@ -241,8 +241,8 @@ fn handle(mut s: TcpStream, port: u16, shared: &Shared) -> std::io::Result<()> {
             let (html, v) = shared.page.lock().unwrap_or_else(|e| e.into_inner()).clone();
             let mut html = String::from_utf8_lossy(&html).into_owned();
             let script = RELOAD.replace("@V@", &v.to_string());
-            let at = html.rfind("</body>").unwrap_or(html.len());
-            html.insert_str(at, &script);
+            // at the very end: the page has no closing body tag, and the code of the app holds the text "</body>"
+            html.push_str(&script);
             reply(&mut s, "200 OK", "text/html; charset=utf-8", html.as_bytes())
         }
         "/__docc/wait" => {

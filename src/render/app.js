@@ -533,12 +533,23 @@
     lines.push('docc-comments:' + b64(exportJSON()));
     return lines.join('\n') + '\n';
   }
-  function sendCopy() {
-    copy(exportText()).then(function () { toast('{{t:Copied. Paste it into a message.}}'); },
+  // done(kind, ids) is told which comments went out, so the tab can offer to clear them
+  function sendCopy(done) {
+    var ids = local.map(function (c) { return c.id; });
+    copy(exportText()).then(function () { toast('{{t:Copied. Paste it into a message.}}'); done('copy', ids); },
       function () { toast('{{t:Could not copy: download the file instead.}}'); });
   }
-  function sendFile() {
+  function sendFile(done) {
+    var ids = local.map(function (c) { return c.id; });
     save('comments-' + new Date().toISOString().slice(0, 10) + '.json', 'application/json', exportJSON());
+    done('file', ids);
+  }
+  // Only the comments that went out are cleared, not the ones written since. The
+  // browser cannot tell whether the file was saved, so the reader decides, and Undo brings them back.
+  function clearSent(ids) {
+    var gone = local.filter(function (c) { return ids.indexOf(c.id) >= 0; });
+    setLocal(local.filter(function (c) { return ids.indexOf(c.id) < 0; }));
+    toast('{{t:Comments removed from this browser.}}', '{{t:Undo}}', function () { setLocal(gone.concat(local)); });
   }
   function removeComment(c) {
     var at = local.indexOf(c);
@@ -1384,6 +1395,7 @@
   }
   function CommentsTab(props) {
     var list = props.comments, rows = [];
+    var out = useState(null), left = out[0] ? list.filter(function (c) { return out[0].ids.indexOf(c.id) >= 0; }) : [];
     list.forEach(function (c) { rows.push([c, false]); });
     imported.forEach(function (c) { rows.push([c, true]); });
     function row(x) {
@@ -1402,8 +1414,13 @@
     return html`<div class="pad">
       ${list.length > 0 && html`<div class="send" id="send">
         <p>{{t:Your comments are kept only in this browser. Copy them or download a file and pass it to whoever keeps the documentation.}}</p>
-        <div class="row"><button type="button" class="btn pri" onClick=${sendCopy}>📋 {{t:Copy comments}}</button>
-          <button type="button" class="btn" onClick=${sendFile}>{{t:Download as a file}}</button></div>
+        <div class="row"><button type="button" class="btn pri" onClick=${function () { sendCopy(function (kind, ids) { out[1]({ kind: kind, ids: ids }); }); }}>📋 {{t:Copy comments}}</button>
+          <button type="button" class="btn" onClick=${function () { sendFile(function (kind, ids) { out[1]({ kind: kind, ids: ids }); }); }}>{{t:Download as a file}}</button></div>
+      </div>`}
+      ${left.length > 0 && html`<div class="send" role="status">
+        <p>${out[0].kind === 'file' ? '{{t:Downloaded comments:}}' : '{{t:Copied comments:}}'} ${left.length}. {{t:Remove them from this browser, so that next time only the new comments are passed on?}}</p>
+        <div class="row"><button type="button" class="btn pri" onClick=${function () { out[1](null); clearSent(out[0].ids); }}>{{t:Remove from this browser}}</button>
+          <button type="button" class="btn" onClick=${function () { out[1](null); }}>{{t:Keep}}</button></div>
       </div>`}
       ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text on the page to comment on it.}}</p>`}
       <ul class="clist">${rows.map(row)}</ul>
