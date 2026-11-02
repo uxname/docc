@@ -374,7 +374,13 @@ impl Side {
             .map(|b| Leaf {
                 ptr: b.p.clone(),
                 parent: parents.get(&b.p).cloned().unwrap_or_default(),
-                text: if b.p.is_empty() { b.h.clone() } else { b.s.clone() },
+                // a form field quotes only what changes the question (s); its
+                // descriptions and recommendation still make a change
+                text: match &b.i {
+                    _ if b.p.is_empty() => b.h.clone(),
+                    Some(i) => format!("{}\n{}", b.s, serde_json::to_string(i).unwrap_or_default()),
+                    None => b.s.clone(),
+                },
             })
             .collect();
         (bs, leaves, pg.sections.clone())

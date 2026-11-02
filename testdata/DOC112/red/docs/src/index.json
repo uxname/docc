@@ -5,7 +5,8 @@
   "body": ["Alpha. ^IND-1", "Beta. ^IND-2",
     {"$input": "radio", "id": "r", "label": "R?", "options": ["A", "B"]},
     {"$input": "checkbox", "id": "c", "label": "C?", "options": ["A", "B"]},
-    {"$input": "text", "id": "t", "label": "T?"}
+    {"$input": "text", "id": "t", "label": "T?"},
+    {"$input": "rating", "id": "g", "label": "G?", "options": ["A", {"label": "B", "description": "d"}]}
   ],
   "$comments": [
     {"id": "c-1", "text": "Why?", "status": "done"},
@@ -21,6 +22,12 @@
     {"id": "c-9", "at": "/body/4", "quote": "$input: text; id: t; label: T?", "input": "t", "answer": ["One", "Two"], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-10", "at": "/body/3", "quote": "$input: checkbox; id: c; label: C?; options: A\nB", "input": "c", "answer": [], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-11", "at": "/body/3", "quote": "$input: checkbox; id: c; label: C?; options: A\nB", "input": "c", "answer": ["A", "  "], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
-    {"id": "c-12", "at": "/body/3", "quote": "$input: checkbox; id: c; label: C?; options: A\nB", "input": "c", "answer": ["A", "A"], "author": "Ann", "created": "2026-10-22T09:00:00Z"}
+    {"id": "c-12", "at": "/body/3", "quote": "$input: checkbox; id: c; label: C?; options: A\nB", "input": "c", "answer": ["A", "A"], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-13", "at": "/body/5", "quote": "$input: rating; id: g; label: G?; options: A\nB", "input": "g", "ratings": [{"option": "A", "rating": "like"}], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-14", "at": "/body/5", "quote": "$input: rating; id: g; label: G?; options: A\nB", "input": "g", "answer": ["A"], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-15", "at": "/body/2", "quote": "$input: radio; id: r; label: R?; options: A\nB", "input": "r", "ratings": [{"option": "A", "rating": "like"}], "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-16", "at": "/body/2", "quote": "$input: radio; id: r; label: R?; options: A\nB", "input": "r", "flag": "later", "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-17", "at": "/body/2", "quote": "$input: radio; id: r; label: R?; options: A\nB", "input": "r", "answer": ["A"], "flag": "help_choose", "author": "Ann", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-18", "at": "/body/2", "quote": "$input: radio; id: r; label: R?; options: A\nB", "input": "r", "answer": ["A"], "note": "  ", "author": "Ann", "created": "2026-10-22T09:00:00Z"}
   ]
 }

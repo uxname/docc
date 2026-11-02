@@ -20,8 +20,8 @@
     "column": 5,
     "endLine": 8,
     "endColumn": 66,
-    "message": "form field kind must be \"text\", \"radio\" or \"checkbox\"",
-    "hint": "A form field is {\"$input\": \"radio\", \"id\": \"export\", \"label\": \"Export?\", \"options\": [\"Yes\", \"No\"]}; $input is text, radio or checkbox."
+    "message": "form field kind must be \"text\", \"radio\", \"checkbox\" or \"rating\"",
+    "hint": "A form field is {\"$input\": \"radio\", \"id\": \"export\", \"label\": \"Export?\", \"options\": [\"Yes\", {\"label\": \"No\", \"description\": \"Why not\", \"recommended\": true}]}; $input is text, radio, checkbox or rating."
   },
   {
     "code": "DOC111",
@@ -44,8 +44,8 @@
     "column": 5,
     "endLine": 10,
     "endColumn": 91,
-    "message": "form field options must be distinct non-empty strings",
-    "hint": "Every option is a string of its own."
+    "message": "form field options must have distinct non-empty labels",
+    "hint": "An option is a string or {\"label\": \"No\", \"description\": \"Why not\", \"recommended\": true}: a label of its own, the other two optional."
   },
   {
     "code": "DOC111",
@@ -93,7 +93,19 @@
     "endLine": 14,
     "endColumn": 71,
     "message": "form field has an unknown member \"hint\"",
-    "hint": "A form field is {\"$input\": \"radio\", \"id\": \"export\", \"label\": \"Export?\", \"options\": [\"Yes\", \"No\"]}; $input is text, radio or checkbox."
+    "hint": "A form field is {\"$input\": \"radio\", \"id\": \"export\", \"label\": \"Export?\", \"options\": [\"Yes\", {\"label\": \"No\", \"description\": \"Why not\", \"recommended\": true}]}; $input is text, radio, checkbox or rating."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 15,
+    "column": 5,
+    "endLine": 15,
+    "endColumn": 114,
+    "message": "a rating field recommends nothing",
+    "hint": "Remove \"recommended\": every item of a rating is rated."
   },
   {
     "code": "DOC111",
@@ -101,8 +113,104 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 16,
-    "column": 12,
+    "column": 5,
     "endLine": 16,
+    "endColumn": 150,
+    "message": "a radio field recommends at most one option, it recommends 2",
+    "hint": "Keep \"recommended\": true on the one option you advise; a checkbox field may recommend several."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 17,
+    "column": 5,
+    "endLine": 17,
+    "endColumn": 111,
+    "message": "only a rating field has \"labels\"",
+    "hint": "Remove \"labels\", or make the field \"rating\"."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 18,
+    "column": 5,
+    "endLine": 18,
+    "endColumn": 110,
+    "message": "\"labels\" of a rating field are 3 non-empty strings",
+    "hint": "Name the three ratings, good to bad: \"labels\": [\"Like\", \"Not sure\", \"Dislike\"]; or leave them out for these."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 19,
+    "column": 5,
+    "endLine": 19,
+    "endColumn": 105,
+    "message": "an option has an unknown member \"why\"",
+    "hint": "An option is a string or {\"label\": \"No\", \"description\": \"Why not\", \"recommended\": true}: a label of its own, the other two optional."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 20,
+    "column": 5,
+    "endLine": 20,
+    "endColumn": 105,
+    "message": "an option needs a label",
+    "hint": "An option is a string or {\"label\": \"No\", \"description\": \"Why not\", \"recommended\": true}: a label of its own, the other two optional."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 21,
+    "column": 5,
+    "endLine": 21,
+    "endColumn": 147,
+    "message": "the description of an option has a picture",
+    "hint": "A label or a description is inline Markdown: bold, italic, code and links; put a picture in a paragraph above the field."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 22,
+    "column": 5,
+    "endLine": 22,
+    "endColumn": 99,
+    "message": "form field options must have distinct non-empty labels",
+    "hint": "An option is a string or {\"label\": \"No\", \"description\": \"Why not\", \"recommended\": true}: a label of its own, the other two optional."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 23,
+    "column": 5,
+    "endLine": 23,
+    "endColumn": 125,
+    "message": "\"recommended\" of an option is true or false",
+    "hint": "An option is a string or {\"label\": \"No\", \"description\": \"Why not\", \"recommended\": true}: a label of its own, the other two optional."
+  },
+  {
+    "code": "DOC111",
+    "rule": "syntax/invalid-input",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 25,
+    "column": 12,
+    "endLine": 25,
     "endColumn": 75,
     "message": "a form field stands only as an item of an array of paragraphs",
     "hint": "Put it into the array of paragraphs of body, a free field or a section: \"body\": [\"Text.\", {\"$input\": ...}]."
@@ -112,9 +220,9 @@
     "rule": "syntax/invalid-input",
     "level": "error",
     "file": "docs/src/index.json",
-    "line": 17,
+    "line": 26,
     "column": 29,
-    "endLine": 17,
+    "endLine": 26,
     "endColumn": 88,
     "message": "a form field stands only as an item of an array of paragraphs",
     "hint": "Put it into the array of paragraphs of body, a free field or a section: \"body\": [\"Text.\", {\"$input\": ...}]."

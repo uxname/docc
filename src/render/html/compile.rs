@@ -244,7 +244,7 @@ impl<'a> Renderer<'a> {
     pub fn seen(&self, d: &'a engine::Doc) -> Vec<Seen> {
         let pd = self.variant(true, false, true).build_page(d).pd;
         let props = pd.props.into_iter().map(|p| Seen { p: p.p, s: p.s, input: None });
-        let blocks = pd.blocks.into_iter().filter(|b| b.head.is_none()).map(|b| Seen { p: b.p, s: b.s, input: b.i.map(|i| i.id) });
+        let blocks = pd.blocks.into_iter().filter(|b| b.head.is_none()).map(|b| Seen { p: b.p, s: b.s, input: b.i.map(|i| i.id().to_string()) });
         props.chain(blocks).filter(|v| !v.p.is_empty()).collect()
     }
 

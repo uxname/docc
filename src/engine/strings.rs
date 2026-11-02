@@ -177,8 +177,9 @@ pub fn is_input(n: &Node) -> bool {
     n.kind == Kind::Object && n.get(INPUT_KEY).is_some()
 }
 
-/// INPUT_PROSE are the members of a form field read as prose; its kind and id are not.
-pub const INPUT_PROSE: [&str; 2] = ["label", "options"];
+/// INPUT_PROSE are the members of a form field read as prose (an option
+/// object gives its label and description); its kind and id are not.
+pub const INPUT_PROSE: [&str; 3] = ["label", "options", "labels"];
 
 /// Resolve finds a free field or a section by path: "field" or "field/section/...".
 /// A key may itself contain "/", so every split is tried. Only sections are entered.

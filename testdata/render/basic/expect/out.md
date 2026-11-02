@@ -127,6 +127,11 @@ Requirement body, see [Deep doc](#deep--acceptance-criteria).
 
 <a id="req--REQ-2"></a>First fact.
 
+**Agree with [Index](#index)?**
+
+- Yes
+- No
+
 Second fact.
 
 <a id="req--checks"></a>

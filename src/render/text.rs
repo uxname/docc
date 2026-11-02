@@ -346,7 +346,7 @@ impl<'a> Page<'_, 'a> {
     /// paragraphs renders the string values of a field as paragraphs; a block
     /// anchor marker turns into an anchor tag before its paragraph. A form
     /// field is only a marker in the HTML file (the page script draws it) and
-    /// is left out of the Markdown.
+    /// the question with its options in the Markdown.
     pub fn paragraphs(&mut self, v: &'a Node, includes: bool) -> Vec<String> {
         let elems: Vec<&'a Node> = match v.kind {
             Kind::String => vec![v],
@@ -358,8 +358,10 @@ impl<'a> Page<'_, 'a> {
             if n.kind != Kind::String {
                 if self.r.html {
                     out.push(self.mark(Some(n)).trim_end().to_string());
-                } else if let Some(note) = self.notes.get(&(n as *const Node)) {
-                    // the field is not in the Markdown, its answers are
+                    continue;
+                }
+                out.extend(self.field(n));
+                if let Some(note) = self.notes.get(&(n as *const Node)) {
                     out.push(note.clone());
                 }
                 continue;
@@ -382,6 +384,35 @@ impl<'a> Page<'_, 'a> {
             }
         }
         out
+    }
+
+    /// field is a form field in the Markdown: the question in bold, then its
+    /// options as a list, each with its description and "(recommended)"; a
+    /// rating names its three ratings after the question.
+    fn field(&self, n: &Node) -> Vec<String> {
+        let md = |s: &str| self.refs(&escape_html_outside_code(s));
+        let mut q = format!("**{}**", md(n.get("label").map_or("", |l| l.str.as_str()).trim()));
+        let kind = n.get(engine::INPUT_KEY).map_or("", |k| k.str.as_str());
+        if kind == "rating" {
+            let names = match n.get("labels").filter(|l| l.items.len() == 3) {
+                Some(l) => l.items.iter().map(|i| md(&i.str)).collect(),
+                None => vec![self.r.t("Like"), self.r.t("Not sure"), self.r.t("Dislike")],
+            };
+            q += &format!(" ({})", names.join(" / "));
+        }
+        let mut list = Vec::new();
+        for o in n.get("options").map_or(&[][..], |o| &o.items[..]) {
+            let label = if o.kind == Kind::Object { o.get("label").map_or("", |l| l.str.as_str()) } else { o.str.as_str() };
+            let mut line = format!("- {}", md(label));
+            if let Some(d) = o.get("description").filter(|d| d.kind == Kind::String) {
+                line += &format!(" — {}", md(&d.str));
+            }
+            if o.get("recommended").is_some_and(|r| r.kind == Kind::Bool && r.str == "true") {
+                line += &format!(" ({})", self.r.t("recommended"));
+            }
+            list.push(line);
+        }
+        if list.is_empty() { vec![q] } else { vec![q, list.join("\n")] }
     }
 
     /// note is the comments under the block of n, after a blank line; "" for none.
@@ -540,4 +571,20 @@ fn plain_start(s: &str) -> bool {
         || matches!(first, '`' | '~' | '|' | '#' | '>' | '<' | '-' | '*' | '+' | '$' | '_' | '=')
         || t.starts_with("[^")
         || t.split_once(['.', ')']).is_some_and(|(n, rest)| !n.is_empty() && n.len() <= 9 && n.bytes().all(|b| b.is_ascii_digit()) && rest.starts_with(' ')))
+}
+
+/// escape_html_outside_code writes "<" and "&" of s as entities outside
+/// code spans and blocks: raw HTML in a form field is shown as text, while
+/// the code shows its characters anyway.
+pub(super) fn escape_html_outside_code(s: &str) -> String {
+    let sc = crate::mdscan::new(s);
+    let mut b = String::new();
+    let mut last = 0;
+    for sp in &sc.plain {
+        b.push_str(&s[last..sp.start]);
+        b.push_str(&s[sp.start..sp.end].replace('&', "&amp;").replace('<', "&lt;"));
+        last = sp.end;
+    }
+    b.push_str(&s[last..]);
+    b
 }

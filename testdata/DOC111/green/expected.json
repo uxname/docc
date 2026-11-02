@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "code": "DOC352",
+    "rule": "style/hedging",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 13,
+    "column": 98,
+    "endLine": 13,
+    "endColumn": 103,
+    "message": "hedging word \"Maybe\"",
+    "hint": "State the fact plainly, or say exactly when it holds."
+  }
+]

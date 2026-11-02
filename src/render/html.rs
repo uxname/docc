@@ -219,8 +219,17 @@ impl<'a> Renderer<'a> {
         // string blocks: [pointer, current text, is a prop]; their old versions get HTML
         let mut strs: Vec<(String, String, bool)> = Vec::new();
         // cut the page at the block markers; footnotes become a block of their own
+        // inline Markdown of a form field: links resolved, raw HTML shown as text;
+        // what is not one paragraph (a heading, a list) is shown as text
+        let inline = |s: &str| {
+            let h = self.to_html(d, &pg.refs(&super::text::escape_html_outside_code(s)), &marker);
+            match h.trim().strip_prefix("<p>").and_then(|h| h.strip_suffix("</p>")) {
+                Some(x) if !x.contains("<p>") => x.to_string(),
+                _ => html_escape(s),
+            }
+        };
         let mut add = |n: Option<&Node>, h: &str, head: Option<&(usize, String)>| {
-            let input = n.filter(|n| engine::is_input(n)).map(InputData::of);
+            let input = n.filter(|n| engine::is_input(n)).map(|n| InputData::of(n, &inline));
             if h.trim().is_empty() && input.is_none() {
                 return;
             }
@@ -232,7 +241,8 @@ impl<'a> Renderer<'a> {
             };
             if let Some(n) = n {
                 b.p = ptr(n);
-                b.s = history::text(n);
+                // a form field is quoted by its answers as comments::field_text writes it
+                b.s = if b.i.is_some() { crate::comments::field_text(n) } else { history::text(n) };
                 (b.c, b.v) = code_hash(n);
                 if n.kind == Kind::String {
                     strs.push((b.p.clone(), b.s.clone(), false));
@@ -421,6 +431,12 @@ fn app_comment<S: serde::Serializer>(c: &Comment, s: S) -> Result<S::Ok, S::Erro
         input: &'a Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         answer: &'a Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ratings: &'a Option<Vec<crate::comments::Rating>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        flag: &'a Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        note: &'a Option<String>,
         #[serde(skip_serializing_if = "str::is_empty")]
         author: &'a str,
         created: &'a str,
@@ -436,6 +452,9 @@ fn app_comment<S: serde::Serializer>(c: &Comment, s: S) -> Result<S::Ok, S::Erro
         suffix: &c.suffix,
         input: &c.input,
         answer: &c.answer,
+        ratings: &c.ratings,
+        flag: &c.flag,
+        note: &c.note,
         author: &c.author,
         created: &c.created,
         edited: &c.edited,
@@ -524,26 +543,67 @@ struct BlockData {
     head: Option<(usize, String)>,
 }
 
-/// inputData is a form field: its kind (text, radio, checkbox), id, question
-/// and choices, as written (DOC111 checks them).
+/// inputData is a form field: its kind (text, radio, checkbox, rating), id,
+/// question and choices, as written (DOC111 checks them), and the same as
+/// inline HTML. label and options stay the source text: Docspace and the
+/// answers compare by them.
 #[derive(Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct InputData {
     t: String,
     id: String,
     label: String,
+    label_html: String,
+    /// the labels of the options
     #[serde(skip_serializing_if = "Vec::is_empty")]
     options: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    options_html: Vec<String>,
+    /// the description of each option as inline HTML, "" for none; absent
+    /// when no option has one
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    descriptions: Vec<String>,
+    /// the indexes of the recommended options
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    recommended: Vec<usize>,
+    /// a rating field: the names of its three ratings, when the source gives them
+    #[serde(skip_serializing_if = "Option::is_none")]
+    labels: Option<Vec<String>>,
 }
 
 impl InputData {
-    fn of(n: &Node) -> InputData {
+    /// of reads the form field n; html turns inline Markdown into HTML.
+    pub(super) fn of(n: &Node, html: &dyn Fn(&str) -> String) -> InputData {
         let s = |k: &str| n.get(k).filter(|v| v.kind == Kind::String).map(|v| v.str.clone()).unwrap_or_default();
+        let opts: &[Node] = n.get("options").filter(|o| o.kind == Kind::Array).map_or(&[], |o| &o.items);
+        let options: Vec<String> = crate::comments::options(n).into_iter().map(str::to_string).collect();
+        let desc = |o: &Node| o.get("description").filter(|d| d.kind == Kind::String).map(|d| html(&d.str)).unwrap_or_default();
+        let mut descriptions: Vec<String> = opts.iter().map(desc).collect();
+        if descriptions.iter().all(String::is_empty) {
+            descriptions.clear();
+        }
+        let label = s("label");
         InputData {
             t: s(engine::INPUT_KEY),
             id: s("id"),
-            label: s("label"),
-            options: engine::string_list(n.get("options")).into_iter().map(|o| o.str.clone()).collect(),
+            label_html: html(&label),
+            label,
+            options_html: options.iter().map(|o| html(o)).collect(),
+            options,
+            descriptions,
+            recommended: (0..opts.len())
+                .filter(|&i| opts[i].get("recommended").is_some_and(|r| r.kind == Kind::Bool && r.str == "true"))
+                .collect(),
+            labels: n
+                .get("labels")
+                .filter(|l| l.kind == Kind::Array)
+                .map(|l| l.items.iter().map(|i| i.str.clone()).collect()),
         }
+    }
+
+    /// id is the id of the field.
+    pub(super) fn id(&self) -> &str {
+        &self.id
     }
 }
 
@@ -564,6 +624,11 @@ struct PropData {
     p: String,
     s: String,
     h: String,
+}
+
+/// html_escape is s as HTML text.
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
 
 /// scriptJSON encodes v for a <script type="application/json"> element: every

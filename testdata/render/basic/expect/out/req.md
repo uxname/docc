@@ -10,6 +10,11 @@ Requirement body, see [Deep doc](a/deep.md#acceptance-criteria).
 
 <a id="REQ-2"></a>First fact.
 
+**Agree with [Index](index.md)?**
+
+- Yes
+- No
+
 Second fact.
 
 ## Checks

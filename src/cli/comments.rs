@@ -21,9 +21,9 @@ pub(super) const APPLY_SCHEMA_ID: &str = "urn:docc:schema:comments-apply:1";
 pub(super) const COMMENTS_USAGE: &str = "Usage: docc comments [list] | apply | import <file|->... | rm <id>...
 
 The readers' comments live in the documents themselves, in the top-level member
-\"$comments\": [{id, at, quote, fragment?, prefix?, suffix?, text | input+answer, author,
+\"$comments\": [{id, at, quote, fragment?, prefix?, suffix?, text | input+answer|ratings|flag+note?, author,
 email?, created, edited?}]. A comment is about the block at the JSON Pointer at; an answer to a form
-field ({\"$input\": ...}) has the field id in input and the answer in answer instead of text.
+field ({\"$input\": ...}) has the field id in input and the answer in answer (ratings, flag) instead of text.
 There are no statuses and no replies: a handled comment is deleted, in the same commit as
 the fix.
 
@@ -35,11 +35,15 @@ last member of the document. The operations:
   {\"op\": \"add\", \"doc\": <id or path>, \"comment\": {...}}   id and created are filled in when left out
   {\"op\": \"rm\", \"id\": <id>}
   {\"op\": \"edit\", \"id\": <id>, \"text\": <new text>}
-  {\"op\": \"edit\", \"id\": <id>, \"answer\": [<new answer>]}   an answer to the same form field, quoting it as it is now
+  {\"op\": \"edit\", \"id\": <id>, \"answer\": [<new answer>], \"note\": <note>?}   an answer given anew to the same
+      form field, quoting it as it is now; \"ratings\" or \"flag\" in place of \"answer\"; what is left out goes
 An edit keeps created and sets edited to the time now (RFC 3339, UTC); add never sets it.
-An answer must fit its field, on add and edit: a text field and radio buttons take one
+An answer has answer, ratings ([{option, rating: like|unsure|dislike, note?}]) or flag
+(not_understood, help_choose, decide_for_me, more_options: no choice made), and an optional
+note. It must fit its field, on add and edit: a text field and radio buttons take one
 value (radio: an option or an own answer), check boxes at most one value that is none of
-the options; no value blank or twice. Values that are not options are trimmed.
+the options, a rating field ratings with every option rated once; no value blank or twice.
+Values that are not options and notes are trimmed.
 A comment stands only where a reader looks: at must be the pointer of a block, a property
 or (for an answer) the form field that docc compile shows on the page of the document;
 notes, docIgnore, hidden, the title and \"$comments\" are refused. quote is always the
@@ -121,8 +125,16 @@ pub(super) fn cmd_comments(c: &mut Common, args: &[String], stdout: &mut dyn Wri
 pub(super) enum Op {
     Add { doc: String, comment: serde_json::Value },
     Rm { id: String },
-    /// a comment gets a new text, an answer a new answer (one of the two)
-    Edit { id: String, text: Option<String>, answer: Option<Vec<String>> },
+    /// a comment gets a new text, or an answer is given anew (answer,
+    /// ratings or flag, and note)
+    Edit {
+        id: String,
+        text: Option<String>,
+        answer: Option<Vec<String>>,
+        ratings: Option<Vec<comments::Rating>>,
+        flag: Option<String>,
+        note: Option<String>,
+    },
 }
 
 /// Applied is the output of docc comments apply.
@@ -306,13 +318,21 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
                 read(i, &mut files)?;
                 let when = comments::now();
                 let again = match op {
-                    Op::Edit { text: None, answer: Some(a), .. } => Some(answer_again(&mut seer, i, &files[&i], id, a, &when).map_err(fail)?),
+                    Op::Edit { text: None, answer, ratings, flag, note, .. } if answer.is_some() || ratings.is_some() || flag.is_some() => {
+                        let given = Comment { answer: answer.clone(), ratings: ratings.clone(), flag: flag.clone(), note: note.clone(), ..Default::default() };
+                        Some(answer_again(&mut seer, i, &files[&i], id, given, &when).map_err(fail)?)
+                    }
                     _ => None,
                 };
                 let e = match (op, &again) {
                     (_, Some(c)) => Edit::Replace(id, c),
-                    (Op::Edit { text: Some(t), answer: None, .. }, _) => Edit::Text(id, t, &when),
-                    (Op::Edit { .. }, _) => return Err(fail("edit takes either \"text\" (a comment) or \"answer\" (an answer to a form field)".into())),
+                    (Op::Edit { text: Some(t), answer: None, ratings: None, flag: None, note: None, .. }, _) => Edit::Text(id, t, &when),
+                    (Op::Edit { .. }, _) => {
+                        return Err(fail(
+                            "edit takes either \"text\" (a comment) or \"answer\", \"ratings\" or \"flag\" with an optional \"note\" (an answer to a form field)"
+                                .into(),
+                        ));
+                    }
                     _ => Edit::Remove(id),
                 };
                 let b = comments::edit(&files[&i], &e).map_err(|m| fail(format!("{}: {m}", p.docs[i].rel)))?;
@@ -346,10 +366,12 @@ pub(super) fn apply(p: &Project, ops: &[Op], hidden: bool) -> Result<Applied, Er
     Ok(out)
 }
 
-/// answer_again is the answer id of document i (its file now in src) with a
-/// new answer: it stays an answer to the same form field, follows the field
-/// if it moved, quotes the field as the reader sees it now and is edited at when.
-fn answer_again(seer: &mut Seer, i: usize, src: &[u8], id: &str, answer: &[String], when: &str) -> Result<Comment, String> {
+/// answer_again is the answer id of document i (its file now in src) given
+/// anew: its answer, ratings, flag and note are those of given (what given
+/// leaves out goes); it stays an answer to the same form field, follows the
+/// field if it moved, quotes the field as the reader sees it now and is
+/// edited at when.
+fn answer_again(seer: &mut Seer, i: usize, src: &[u8], id: &str, given: Comment, when: &str) -> Result<Comment, String> {
     let r = loader::parse(src.strip_prefix(&[0xEF, 0xBB, 0xBF][..]).unwrap_or(src));
     let root = r.root.as_ref().filter(|_| r.err.is_none()).ok_or("the file is not valid JSON")?;
     let cur = comments::of(root).into_iter().find(|c| c.id == id).ok_or_else(|| format!("comment {} is malformed (DOC112)", go_quote(id)))?;
@@ -358,7 +380,7 @@ fn answer_again(seer: &mut Seer, i: usize, src: &[u8], id: &str, answer: &[Strin
     };
     let at = comments::find_input(root, "", &input).unwrap_or(cur.at.clone());
     let quote = seer.quote(i, &at, Some(&input))?;
-    let mut c = Comment { at, quote, answer: Some(answer.to_vec()), edited: when.into(), ..cur };
+    let mut c = Comment { at, quote, answer: given.answer, ratings: given.ratings, flag: given.flag, note: given.note, edited: when.into(), ..cur };
     comments::check(&c)?;
     answer_fits(Some(root), &mut c)?;
     Ok(c)
@@ -371,11 +393,9 @@ fn answer_fits(root: Option<&Node>, c: &mut Comment) -> Result<(), String> {
     let Some(f) = root.and_then(|r| crate::schema::resolve_pointer(r, &c.at)).filter(|f| engine::is_input(f)) else {
         return Ok(());
     };
-    if let Some(a) = c.answer.as_mut() {
-        comments::tidy_answer(f, a);
-    }
+    comments::tidy_answer(f, c);
     comments::check(c)?;
-    comments::answer_problem(f, c.answer.as_deref().unwrap_or_default()).map_or(Ok(()), Err)
+    comments::answer_problem(f, c).map_or(Ok(()), Err)
 }
 
 fn print_applied(c: &Common, a: &Applied, stdout: &mut dyn Write) -> Result<i32, Error> {
@@ -461,7 +481,10 @@ fn import(c: &Common, p: &Project, files: &[String], hidden: bool, stdout: &mut 
         if at != it.path {
             moved += 1;
         }
-        let answer = (!it.input.is_empty()).then(|| if it.answer.is_empty() { vec![it.text.clone()] } else { it.answer.clone() });
+        // an answer of version 1 carried only its text
+        let bare = it.answer.is_empty() && it.ratings.is_none() && it.flag.is_empty();
+        let is_answer = !it.input.is_empty();
+        let answer = (is_answer && (bare || !it.answer.is_empty())).then(|| if bare { vec![it.text.clone()] } else { it.answer.clone() });
         let cm = Comment {
             id: it.id,
             at: comments::at_of(root, &at),
@@ -469,9 +492,12 @@ fn import(c: &Common, p: &Project, files: &[String], hidden: bool, stdout: &mut 
             fragment: it.fragment,
             prefix: it.prefix,
             suffix: it.suffix,
-            text: answer.is_none().then_some(it.text),
-            input: answer.is_some().then_some(it.input),
+            text: (!is_answer).then_some(it.text),
+            input: is_answer.then_some(it.input),
             answer,
+            ratings: it.ratings,
+            flag: Some(it.flag).filter(|f| !f.is_empty()),
+            note: Some(it.note).filter(|n| !n.is_empty()),
             author: it.author,
             email: String::new(),
             created: if it.created.is_empty() { comments::now() } else { it.created },
@@ -601,7 +627,20 @@ fn list(c: &Common, p: &Project, stdout: &mut dyn Write) -> Result<i32, Error> {
             }
             None => "block",
         };
-        b += &format!("  {}{}\n", who(&cm.author, &cm.created), indent(&cm.words()));
+        // an answer: the choice, each rating on a line of its own, the note last
+        let said = match (&cm.ratings, &cm.flag) {
+            (Some(_), None) => "rated:".to_string(),
+            (_, Some(f)) => format!("{} ({f})", comments::flag_words(f)),
+            _ => Comment { note: None, ..cm.clone() }.words(),
+        };
+        b += &format!("  {}{}\n", who(&cm.author, &cm.created), indent(&said));
+        for r in cm.ratings.iter().flatten() {
+            let note = r.note.as_deref().map(|n| format!(" — {}", indent(n))).unwrap_or_default();
+            b += &format!("    {}: {}{note}\n", r.option, r.rating);
+        }
+        if let Some(n) = &cm.note {
+            b += &format!("  note: {}\n", indent(n));
+        }
         b += &match l.place {
             Place::Same => format!("  {what}: {}\n", indent(&cm.quote)),
             Place::Changed => {

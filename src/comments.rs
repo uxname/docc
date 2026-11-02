@@ -22,7 +22,8 @@ pub const KEY: &str = "$comments";
 
 /// Comment is one item of "$comments", the contract Docspace codes against:
 /// either a text, or an answer to the form field `input` (then `at` is the
-/// pointer of the field).
+/// pointer of the field): `answer`, `ratings` (a rating field) or `flag`
+/// (the reader is stuck), with an optional `note`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Comment {
@@ -44,6 +45,15 @@ pub struct Comment {
     pub input: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub answer: Option<Vec<String>>,
+    /// the answer to a rating field: every item rated
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ratings: Option<Vec<Rating>>,
+    /// one of FLAGS: the reader did not choose and says why
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flag: Option<String>,
+    /// a comment to the answer
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
     pub author: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub email: String,
@@ -54,18 +64,68 @@ pub struct Comment {
     pub edited: String,
 }
 
+/// Rating is one item of a rating field rated: the option by its label as
+/// written in the source, like, unsure or dislike, and an optional note.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Rating {
+    pub option: String,
+    pub rating: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
 /// FIELDS are the members of a comment, in the order docc writes them.
-pub const FIELDS: [&str; 13] =
-    ["id", "at", "quote", "fragment", "prefix", "suffix", "text", "input", "answer", "author", "email", "created", "edited"];
+pub const FIELDS: [&str; 16] = [
+    "id", "at", "quote", "fragment", "prefix", "suffix", "text", "input", "answer", "ratings", "flag", "note", "author", "email",
+    "created", "edited",
+];
+
+/// FLAGS are the values of "flag": the four buttons of a reader who cannot choose.
+pub const FLAGS: [&str; 4] = ["not_understood", "help_choose", "decide_for_me", "more_options"];
+
+/// RATINGS are the values of "rating" in "ratings".
+pub const RATINGS: [&str; 3] = ["like", "unsure", "dislike"];
+
+/// NOTE_MAX is the most characters a note may have.
+// ponytail: docc has no limit on a comment's text; 2000 keeps a note a note
+pub const NOTE_MAX: usize = 2000;
+
+/// flag_words is a flag in English words.
+pub fn flag_words(f: &str) -> &'static str {
+    match f {
+        "not_understood" => "I do not understand the question",
+        "help_choose" => "Help me choose",
+        "decide_for_me" => "Decide for me",
+        "more_options" => "Suggest other options",
+        _ => "",
+    }
+}
 
 impl Comment {
-    /// words is what the comment says: its text, or the answer given.
+    /// words is what the comment says: its text, or the answer given (the
+    /// values, the ratings or the flag, then " — " and the note).
     pub fn words(&self) -> String {
-        match (&self.text, &self.answer) {
-            (Some(t), _) => t.clone(),
-            (None, Some(a)) => a.join(", "),
-            _ => String::new(),
+        if let Some(t) = &self.text {
+            return t.clone();
         }
+        let mut w = match (&self.answer, &self.ratings, &self.flag) {
+            (_, _, Some(f)) => flag_words(f).to_string(),
+            (Some(a), _, _) => a.join(", "),
+            (_, Some(r), _) => r
+                .iter()
+                .map(|r| match &r.note {
+                    Some(n) => format!("{}: {} — {n}", r.option, r.rating),
+                    None => format!("{}: {}", r.option, r.rating),
+                })
+                .collect::<Vec<_>>()
+                .join("; "),
+            _ => String::new(),
+        };
+        if let Some(n) = &self.note {
+            w += &format!(" — {n}");
+        }
+        w
     }
 
     /// json is the item as docc writes it into a document: one line, the
@@ -119,7 +179,7 @@ pub struct Problem {
     pub hint: String,
 }
 
-const SHAPE_HINT: &str = "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply.";
+const SHAPE_HINT: &str = "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply.";
 
 static RFC3339: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$").unwrap()
@@ -170,10 +230,15 @@ fn item_problem(it: &Node) -> Option<Problem> {
         }
         let ok = match m.key.as_str() {
             "answer" => m.value.kind == Kind::Array && m.value.items.iter().all(|a| a.kind == Kind::String),
+            "ratings" => m.value.kind == Kind::Array && m.value.items.iter().all(|a| a.kind == Kind::Object),
             _ => m.value.kind == Kind::String,
         };
         if !ok {
-            let want = if m.key == "answer" { "an array of strings" } else { "a string" };
+            let want = match m.key.as_str() {
+                "answer" => "an array of strings",
+                "ratings" => "an array of objects",
+                _ => "a string",
+            };
             return bad(&m.value, format!("comment field {} must be {want}", go_quote(&m.key)));
         }
     }
@@ -196,44 +261,136 @@ fn item_problem(it: &Node) -> Option<Problem> {
     if let Some(e) = it.get("edited").filter(|e| !RFC3339.is_match(&e.str)) {
         return bad(e, "\"edited\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")".into());
     }
-    match (it.get("text"), it.get("input"), it.get("answer")) {
-        (Some(t), None, None) if t.str.trim().is_empty() => bad(t, "the text of a comment is empty".into()),
-        (Some(_), None, None) => None,
-        (None, Some(i), Some(_)) if i.str.trim().is_empty() => bad(i, "\"input\" of an answer is empty".into()),
-        (None, Some(_), Some(a)) => {
+    let given = ["answer", "ratings", "flag", "note"].into_iter().find_map(|k| it.get(k));
+    match (it.get("text"), it.get("input")) {
+        (Some(t), None) if given.is_none() && t.str.trim().is_empty() => bad(t, "the text of a comment is empty".into()),
+        (Some(_), None) if given.is_none() => None,
+        (None, Some(i)) if i.str.trim().is_empty() => bad(i, "\"input\" of an answer is empty".into()),
+        (None, Some(_)) => answer_shape(it).and_then(|(n, m)| bad(n, m)),
+        _ => bad(
+            it,
+            "a comment has either \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (an answer to a form field)".into(),
+        ),
+    }
+}
+
+/// answer_shape is the first thing wrong with the answer of an answer
+/// comment, whatever its field: the node and the text.
+fn answer_shape(it: &Node) -> Option<(&Node, String)> {
+    let note = |n: &Node| -> Option<String> {
+        if n.str.trim().is_empty() {
+            Some("a note is blank: leave it out".into())
+        } else if n.str.chars().count() > NOTE_MAX {
+            Some(format!("a note is longer than {NOTE_MAX} characters"))
+        } else {
+            None
+        }
+    };
+    if let Some(m) = it.get("note").and_then(|n| note(n).map(|m| (n, m))) {
+        return Some(m);
+    }
+    match (it.get("answer"), it.get("ratings"), it.get("flag")) {
+        (None, None, None) => Some((it, "an answer has \"answer\", \"ratings\" or \"flag\"".into())),
+        (Some(_), Some(_), _) => Some((it, "an answer has either \"answer\" or \"ratings\", not both".into())),
+        (Some(_), _, Some(f)) | (_, Some(_), Some(f)) => {
+            Some((f, "a flag replaces the choice: an answer with \"flag\" has no \"answer\" or \"ratings\"".into()))
+        }
+        (None, None, Some(f)) => (!FLAGS.contains(&f.str.as_str()))
+            .then(|| (f, format!("\"flag\" is one of {}", FLAGS.join(", ")))),
+        (Some(a), None, None) => {
             // what no form field takes: no value, a blank one, the same one twice
             let mut seen = std::collections::HashSet::new();
             if a.items.is_empty() {
-                return bad(a, "\"answer\" of an answer is empty: give at least one value".into());
+                return Some((a, "\"answer\" of an answer is empty: give at least one value".into()));
             }
             a.items.iter().find_map(|v| {
                 if v.str.trim().is_empty() {
-                    bad(v, "a value of \"answer\" is blank".into())
+                    Some((v, "a value of \"answer\" is blank".into()))
                 } else if !seen.insert(v.str.as_str()) {
-                    bad(v, format!("\"answer\" gives {} twice", go_quote(&v.str)))
+                    Some((v, format!("\"answer\" gives {} twice", go_quote(&v.str))))
                 } else {
                     None
                 }
             })
         }
-        _ => bad(it, "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)".into()),
+        (None, Some(r), None) => {
+            let mut seen = std::collections::HashSet::new();
+            if r.items.is_empty() {
+                return Some((r, "\"ratings\" of an answer is empty: rate every item".into()));
+            }
+            r.items.iter().find_map(|x| {
+                if let Some(m) = x.members.iter().find(|m| !matches!(m.key.as_str(), "option" | "rating" | "note")) {
+                    return Some((x, format!("unknown field {} in a rating", go_quote(&m.key))));
+                }
+                let s = |k: &str| x.get(k).filter(|v| v.kind == Kind::String);
+                match (s("option"), s("rating")) {
+                    (Some(o), _) if o.str.trim().is_empty() => Some((o, "the option of a rating is blank".into())),
+                    (Some(o), _) if !seen.insert(o.str.as_str()) => Some((o, format!("\"ratings\" rates {} twice", go_quote(&o.str)))),
+                    (Some(_), Some(v)) if !RATINGS.contains(&v.str.as_str()) => {
+                        Some((v, format!("\"rating\" is one of {}", RATINGS.join(", "))))
+                    }
+                    (Some(_), Some(_)) => match x.get("note") {
+                        Some(n) if n.kind != Kind::String => Some((n, "the note of a rating must be a string".into())),
+                        Some(n) => note(n).map(|m| (n, m)),
+                        None => None,
+                    },
+                    _ => Some((x, "a rating is {\"option\", \"rating\", \"note\"?} of strings".into())),
+                }
+            })
+        }
     }
 }
 
-/// options are the options of the form field n.
-fn options(n: &Node) -> Vec<&str> {
-    n.get("options").map(|o| o.items.iter().map(|i| i.str.as_str()).collect()).unwrap_or_default()
+/// options are the labels of the options of the form field n: an option is
+/// a string or an object with "label".
+pub fn options(n: &Node) -> Vec<&str> {
+    fn label(i: &Node) -> &str {
+        if i.kind == Kind::Object { i.get("label").map_or("", |l| l.str.as_str()) } else { i.str.as_str() }
+    }
+    n.get("options").map(|o| o.items.iter().map(label).collect()).unwrap_or_default()
 }
 
-/// answer_problem is what the form field n cannot take in answer (the
+/// field_text is what an answer quotes of its form field and is compared by
+/// (place): the field as history::text writes it, with only the labels of
+/// its options. A new description or recommendation leaves it as it was, so
+/// answers stay; a field of string options reads exactly as history::text.
+pub fn field_text(n: &Node) -> String {
+    n.members
+        .iter()
+        .map(|m| {
+            let v = if m.key == "options" { options(n).join("\n") } else { history::text(&m.value) };
+            format!("{}: {v}", m.key)
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+/// answer_problem is what the form field n cannot take in answer c (the
 /// checks of item_problem aside), None when it takes it: a text field and
 /// radio buttons exactly one value (radio: an option or an own answer),
-/// check boxes at most one value that is none of the options (the own answer).
-pub fn answer_problem(n: &Node, answer: &[String]) -> Option<String> {
+/// check boxes at most one value that is none of the options (the own
+/// answer), a rating field every option rated once; a flag fits any field.
+pub fn answer_problem(n: &Node, c: &Comment) -> Option<String> {
     let kind = n.get(engine::INPUT_KEY).map_or("", |k| k.str.as_str());
     let opts = options(n);
+    if let Some(r) = &c.ratings {
+        if kind != "rating" {
+            return Some(format!("a {kind} field takes \"answer\", not \"ratings\""));
+        }
+        if let Some(x) = r.iter().find(|x| !opts.contains(&x.option.as_str())) {
+            return Some(format!("{} is not an option of the field", go_quote(&x.option)));
+        }
+        return opts
+            .iter()
+            .find(|o| !r.iter().any(|x| x.option == **o))
+            .map(|o| format!("the ratings leave out the option {}: rate every option", go_quote(o)));
+    }
+    let Some(answer) = &c.answer else {
+        return None;
+    };
     let own = answer.iter().filter(|a| !opts.contains(&a.as_str())).count();
     match kind {
+        "rating" => Some("a rating field takes \"ratings\", not \"answer\"".into()),
         "text" | "radio" if answer.len() != 1 => {
             Some(format!("a {kind} field takes exactly one answer, the answer gives {}", answer.len()))
         }
@@ -246,11 +403,15 @@ pub fn answer_problem(n: &Node, answer: &[String]) -> Option<String> {
 
 /// tidy_answer trims the values of an answer to the form field n that are
 /// not its options, as the HTML file does with what a reader types (the text
-/// of a text field, the own answer); an option is kept exactly.
-pub fn tidy_answer(n: &Node, answer: &mut [String]) {
+/// of a text field, the own answer), and the notes; an option is kept exactly.
+pub fn tidy_answer(n: &Node, c: &mut Comment) {
     let opts = options(n);
-    for a in answer.iter_mut().filter(|a| !opts.contains(&a.as_str())) {
+    for a in c.answer.iter_mut().flatten().filter(|a| !opts.contains(&a.as_str())) {
         *a = a.trim().to_string();
+    }
+    let notes = c.ratings.iter_mut().flatten().map(|r| &mut r.note).chain([&mut c.note]);
+    for t in notes.flatten() {
+        *t = t.trim().to_string();
     }
 }
 
@@ -311,7 +472,7 @@ pub fn place(root: &Node, c: &Comment, title: &dyn Fn(&str) -> Option<String>) -
             .filter(|n| engine::is_input(n) && n.get("id").is_some_and(|v| v.str == *input));
         return match n {
             Some(n) => {
-                let t = history::text(n);
+                let t = field_text(n);
                 (if t == c.quote { Place::Same } else { Place::Changed }, t)
             }
             None => (Place::Lost, String::new()),
@@ -573,6 +734,14 @@ pub struct Item {
     pub input: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub answer: Vec<String>,
+    /// version 3: the ratings of a rating field, the flag of a stuck reader
+    /// and the note to the answer
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ratings: Option<Vec<Rating>>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub flag: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub note: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub author: String,
     #[serde(skip_serializing_if = "String::is_empty")]
@@ -693,8 +862,9 @@ pub fn parse_export(name: &str, b: &[u8]) -> Result<Vec<Item>, Error> {
             "{path}: not a comments file of docc (no \"docc\": \"comments\")"
         )));
     }
-    // version 2 has answers to form fields; a file without them stays version 1
-    if e.version != 1 && e.version != 2 {
+    // version 2 has answers to form fields, version 3 notes, flags or
+    // ratings in them; a file without answers stays version 1
+    if !(1..=3).contains(&e.version) {
         return Err(Error(format!("{path}: unsupported version {}", e.version)));
     }
     for (i, it) in e.comments.iter().enumerate() {
@@ -889,6 +1059,16 @@ mod tests {
         assert!(probs(&format!("[{ok}]")).is_empty());
         let ans = r#"{"id":"c-2","at":"/body/1","quote":"q","input":"x","answer":["Yes"],"author":"","created":"2026-10-22T09:00:00.5Z"}"#;
         assert!(probs(&format!("[{ans}]")).is_empty());
+        for good in [
+            "\"answer\":[\"Yes\"],\"note\":\"because\"",
+            "\"flag\":\"decide_for_me\",\"note\":\"either is fine\"",
+            "\"ratings\":[{\"option\":\"A\",\"rating\":\"unsure\",\"note\":\"why\"},{\"option\":\"B\",\"rating\":\"like\"}]",
+        ] {
+            let it = ans.replace("\"answer\":[\"Yes\"]", good);
+            assert!(probs(&format!("[{it}]")).is_empty(), "{it}");
+            let c: Comment = serde_json::from_str(&it).unwrap();
+            assert!(check(&c).is_ok(), "{it}");
+        }
         let edited = ok.replace("\"author\"", "\"edited\":\"2026-10-23T10:48:18Z\",\"author\"");
         assert!(probs(&format!("[{edited}]")).is_empty(), "\"edited\" is an RFC 3339 time like \"created\"");
         assert_eq!(probs("{}"), ["\"$comments\" must be an array of comments"]);
@@ -908,6 +1088,19 @@ mod tests {
             (ans.replace("[\"Yes\"]", "[]"), "\"answer\" of an answer is empty"),
             (ans.replace("[\"Yes\"]", "[\"Yes\", \" \"]"), "a value of \"answer\" is blank"),
             (ans.replace("[\"Yes\"]", "[\"Yes\", \"Yes\"]"), "\"answer\" gives \"Yes\" twice"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"note\":\"n\""), "an answer has \"answer\", \"ratings\" or \"flag\""),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"flag\":\"later\""), "\"flag\" is one of"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"answer\":[\"Yes\"],\"flag\":\"help_choose\""), "a flag replaces the choice"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"answer\":[\"Yes\"],\"ratings\":[]"), "not both"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"answer\":[\"Yes\"],\"note\":\" \""), "a note is blank"),
+            (ans.replace("\"answer\":[\"Yes\"]", &format!("\"answer\":[\"Yes\"],\"note\":\"{}\"", "x".repeat(NOTE_MAX + 1))), "longer than 2000"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"ratings\":[]"), "\"ratings\" of an answer is empty"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"ratings\":[\"A\"]"), "\"ratings\" must be an array of objects"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"ratings\":[{\"option\":\"A\",\"rating\":\"love\"}]"), "\"rating\" is one of"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"ratings\":[{\"option\":\"A\",\"rating\":\"like\"},{\"option\":\"A\",\"rating\":\"like\"}]"), "rates \"A\" twice"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"ratings\":[{\"option\":\"A\",\"rating\":\"like\",\"why\":\"x\"}]"), "unknown field \"why\" in a rating"),
+            (ans.replace("\"answer\":[\"Yes\"]", "\"ratings\":[{\"option\":\"A\",\"rating\":\"like\",\"note\":\"\"}]"), "a note is blank"),
+            (ok.replace("\"text\":\"t\"", "\"text\":\"t\",\"note\":\"n\""), "a comment has either"),
         ] {
             let got = probs(&format!("[{bad}]"));
             assert!(got.len() == 1 && got[0].contains(want), "{bad}: {got:?}");
@@ -951,12 +1144,58 @@ mod tests {
             (2, a(&["Own"]), None),
             (2, a(&["A", "Own", "More"]), Some("at most one own answer (a value that is none of its options), the answer gives 2")),
         ] {
-            let got = answer_problem(f(i), &ans);
+            let got = answer_problem(f(i), &Comment { answer: Some(ans.clone()), ..Default::default() });
             assert!(got.as_deref().map(|g| want.is_some_and(|w| g.contains(w))).unwrap_or(want.is_none()), "{ans:?}: {got:?}");
         }
-        let mut ans = a(&[" B ", "  Own  "]);
-        tidy_answer(f(2), &mut ans);
-        assert_eq!(ans, a(&[" B ", "Own"]), "an option stays as it is, typed text is trimmed");
+        let mut c = Comment { answer: Some(a(&[" B ", "  Own  "])), note: Some(" why ".into()), ..Default::default() };
+        tidy_answer(f(2), &mut c);
+        assert_eq!(c.answer.unwrap(), a(&[" B ", "Own"]), "an option stays as it is, typed text is trimmed");
+        assert_eq!(c.note.as_deref(), Some("why"));
+    }
+
+    /// A rating field takes ratings of every option once, by the label as
+    /// written; the other fields take no ratings; a flag fits any field.
+    #[test]
+    fn rating_answers() {
+        let root = parse(r#"{"body":[{"$input":"rating","id":"r","label":"R","options":["A",{"label":"**B**","description":"d"}]},{"$input":"radio","id":"q","label":"Q","options":["A","B"]}]}"#);
+        let f = |i: usize| &root.get("body").unwrap().items[i];
+        let rate = |v: &[(&str, &str)]| Comment {
+            ratings: Some(v.iter().map(|(o, r)| Rating { option: o.to_string(), rating: r.to_string(), note: None }).collect()),
+            ..Default::default()
+        };
+        assert_eq!(answer_problem(f(0), &rate(&[("A", "like"), ("**B**", "dislike")])), None);
+        assert!(answer_problem(f(0), &rate(&[("A", "like")])).unwrap().contains("leave out the option \"**B**\""));
+        assert!(answer_problem(f(0), &rate(&[("A", "like"), ("B", "like")])).unwrap().contains("\"B\" is not an option"));
+        assert!(answer_problem(f(1), &rate(&[("A", "like")])).unwrap().contains("not \"ratings\""));
+        assert!(answer_problem(f(0), &Comment { answer: Some(vec!["A".into()]), ..Default::default() }).unwrap().contains("not \"answer\""));
+        assert_eq!(answer_problem(f(0), &Comment { flag: Some("help_choose".into()), ..Default::default() }), None);
+    }
+
+    /// An answer quotes its field by kind, label, option labels and rating
+    /// labels: a new description or recommendation keeps it the same
+    /// question, a new label makes it an earlier one; a field of strings
+    /// reads as history::text, so answers given before stay.
+    #[test]
+    fn field_text_ignores_descriptions() {
+        let old = parse(r#"{"$input":"radio","id":"q","label":"Q?","options":["A","B"]}"#);
+        assert_eq!(field_text(&old), history::text(&old));
+        let quote = field_text(&old);
+        let body = |f: &str| parse(&format!(r#"{{"title":"T","body":[{f}]}}"#));
+        let ans = Comment { input: Some("q".into()), answer: Some(vec!["A".into()]), quote, text: None, ..comment("c", "/body/0") };
+        let none = |_: &str| None;
+        for (f, want) in [
+            (r#"{"$input":"radio","id":"q","label":"Q?","options":["A","B"]}"#, Place::Same),
+            (r#"{"$input":"radio","id":"q","label":"Q?","options":[{"label":"A","description":"Why A","recommended":true},"B"]}"#, Place::Same),
+            (r#"{"$input":"radio","id":"q","label":"Q?","options":[{"label":"A"},{"label":"B","description":"New"}]}"#, Place::Same),
+            (r#"{"$input":"radio","id":"q","label":"Q?","options":[{"label":"A2"},"B"]}"#, Place::Changed),
+            (r#"{"$input":"radio","id":"q","label":"Q2?","options":["A","B"]}"#, Place::Changed),
+            (r#"{"$input":"checkbox","id":"q","label":"Q?","options":["A","B"]}"#, Place::Changed),
+        ] {
+            assert_eq!(place(&body(f), &ans, &none).0, want, "{f}");
+        }
+        let r = parse(r#"{"$input":"rating","id":"r","label":"R","options":["A"],"labels":["Yes","Maybe","No"]}"#);
+        let r2 = parse(r#"{"$input":"rating","id":"r","label":"R","options":["A"],"labels":["Yes","Maybe","Never"]}"#);
+        assert_ne!(field_text(&r), field_text(&r2), "rating labels are part of the question");
     }
 
     /// A paragraph inserted above moves the commented block down by one.

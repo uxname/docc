@@ -60,6 +60,8 @@ A source file is written by docc (the codes of blocks, `docc migrate`) only if i
 
 `docc watch` serves the page itself on `127.0.0.1` instead of only rebuilding the files, because the aim is to read while an agent writes, and a page opened from a file cannot learn that it changed. It has no flag for the port and none to open a browser: the port comes from the path of the project, because the browser keeps the readers' comments for each address and a port that changed would lose them. The server uses the standard library alone (a thread per connection, GET only), so docc gets no dependency for it. Rejected: a rebuild without a server, where the reader presses F5, and a page that reloads itself on a timer, which blinks and loses its place. Come back to it when the address is a nuisance to open by hand or two projects meet on one port.
 
+A question in a document is the form field it was, grown: options with descriptions and a recommendation, a rating, and answers with a note, a flag or ratings, as in the agents' tool `ask` (ADR-0040 of Docspace). A second kind of question block would be two words for one thing. An answer turns into one to an earlier question only when the question, its kind, its option labels or its rating names changed, so fixing a description does not ask every reader again; the price is that an agent who changes what an option means must rename it. The added data of a field in the HTML file and `docc compile` is added beside `label` and `options`, which stay the source text, so a reader written for the old shape keeps working.
+
 The rules are listed in [Rules and diagnostics](rules.md) and the settings in [Configuration](config.md).
 
 ## Not verified

@@ -6,13 +6,18 @@
     "Delivery takes five days. ^IND-1",
     { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] },
     { "$input": "checkbox", "id": "formats", "label": "Formats?", "options": ["CSV", "PDF"] },
-    { "$input": "radio", "id": "when", "label": "When now?", "options": ["Now", "Later"] }
+    { "$input": "radio", "id": "when", "label": "When now?", "options": ["Now", "Later"] },
+    { "$input": "rating", "id": "ideas", "label": "Ideas?", "options": ["Dark", { "label": "Export", "description": "PDF", "recommended": false }] },
+    { "$input": "radio", "id": "plan", "label": "Plan?", "options": [{ "label": "Small", "description": "Was: cheap" }, { "label": "Big", "recommended": true }] }
   ],
   "$comments": [
     {"id": "c-aaaaaaaaaa", "at": "^IND-1", "quote": "Delivery takes five days.", "fragment": "five days", "prefix": "takes ", "text": "TODO: is it working days? [[nowhere]]", "author": "Ann", "email": "ann@example.com", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-bbbbbbbbbb", "at": "/body/1", "quote": "$input: radio; id: export; label: Export?; options: Yes\nNo", "input": "export", "answer": ["Yes"], "author": "", "created": "2026-10-22T09:00:00.123+03:00"},
     {"id": "c-cccccccccc", "at": "/body/1", "quote": "$input: radio; id: export; label: Export?; options: Yes\nNo", "input": "export", "answer": ["Only on Fridays"], "author": "Bob", "created": "2026-10-22T09:00:00Z"},
     {"id": "c-dddddddddd", "at": "/body/2", "quote": "$input: checkbox; id: formats; label: Formats?; options: CSV\nPDF", "input": "formats", "answer": ["CSV", "PDF", "XLSX"], "author": "Bob", "created": "2026-10-22T09:00:00Z"},
-    {"id": "c-eeeeeeeeee", "at": "/body/3", "quote": "$input: checkbox; id: when; label: When?; options: Now\nLater", "input": "when", "answer": ["Now", "Later"], "author": "Bob", "created": "2026-10-22T09:00:00Z"}
+    {"id": "c-eeeeeeeeee", "at": "/body/3", "quote": "$input: checkbox; id: when; label: When?; options: Now\nLater", "input": "when", "answer": ["Now", "Later"], "author": "Bob", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-ffffffffff", "at": "/body/4", "quote": "$input: rating; id: ideas; label: Ideas?; options: Dark\nExport", "input": "ideas", "ratings": [{"option": "Dark", "rating": "like"}, {"option": "Export", "rating": "dislike", "note": "Nobody prints"}], "note": "Quick", "author": "Bob", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-gggggggggg", "at": "/body/5", "quote": "$input: radio; id: plan; label: Plan?; options: Small\nBig", "input": "plan", "flag": "help_choose", "note": "What does Big cost?", "author": "Bob", "created": "2026-10-22T09:00:00Z"},
+    {"id": "c-hhhhhhhhhh", "at": "/body/5", "quote": "$input: radio; id: plan; label: Plan?; options: Small\nBig", "input": "plan", "answer": ["Big"], "note": "Growth comes", "author": "Ann", "created": "2026-10-22T09:00:00Z"}
   ]
 }

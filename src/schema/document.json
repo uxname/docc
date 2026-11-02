@@ -37,7 +37,7 @@
     },
     "$comments": {
       "type": "array",
-      "description": "The readers' comments, written by docc comments apply (DOC112, DOC215). Each is about the block at the JSON Pointer at; an answer to a form field has input and answer instead of text. A handled comment is deleted.",
+      "description": "The readers' comments, written by docc comments apply (DOC112, DOC215). Each is about the block at the JSON Pointer at; an answer to a form field has input and answer, ratings or flag (with an optional note) instead of text. A handled comment is deleted.",
       "items": {
         "type": "object",
         "required": ["id", "at", "quote", "author", "created"],
@@ -52,12 +52,27 @@
           "text": { "type": "string", "minLength": 1 },
           "input": { "type": "string", "minLength": 1 },
           "answer": { "type": "array", "items": { "type": "string" } },
+          "ratings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["option", "rating"],
+              "additionalProperties": false,
+              "properties": {
+                "option": { "type": "string", "minLength": 1 },
+                "rating": { "enum": ["like", "unsure", "dislike"] },
+                "note": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "flag": { "enum": ["not_understood", "help_choose", "decide_for_me", "more_options"] },
+          "note": { "type": "string", "minLength": 1 },
           "author": { "type": "string" },
           "email": { "type": "string" },
           "created": { "type": "string", "format": "date-time" },
           "edited": { "type": "string", "format": "date-time" }
         },
-        "oneOf": [{ "required": ["text"] }, { "required": ["input", "answer"] }]
+        "oneOf": [{ "required": ["text"] }, { "required": ["input"] }]
       }
     }
   }

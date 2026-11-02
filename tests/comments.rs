@@ -515,3 +515,30 @@ fn edit_sets_edited() {
     assert_eq!(code, 0, "{out} {errs}");
     assert!(p.read("docs/src/index.json").contains(r#""created": "2026-10-20T10:00:00Z", "edited": "2026-10-21T10:00:00Z""#), "{}", p.read("docs/src/index.json"));
 }
+
+/// A question with explained options and a rating, and answers with a note,
+/// a flag and ratings, as docc compile gives them: the shape of its schema.
+#[test]
+fn compile_shows_rich_questions() {
+    let page = r#"{"title":"Index","kind":"page","body":["Intro.",
+        {"$input":"radio","id":"plan","label":"Which [[other]]?","options":[{"label":"Small","description":"*Cheap*"},{"label":"Big","recommended":true}]},
+        {"$input":"rating","id":"ideas","label":"Rate","options":["Dark","Export"],"labels":["Yes","Maybe","No"]}]}"#;
+    let p = project([SCHEMA, ("docs/src/index.json", page), ("docs/src/other.json", r#"{"title":"Other","kind":"page","parent":"index","body":["Gamma."]}"#)]);
+    let (code, _, errs) = apply(&p.path, &json!([
+        {"op": "add", "doc": "index", "comment": {"at": "/body/1", "input": "plan", "flag": "more_options", "note": "Medium?", "author": "A"}},
+        {"op": "add", "doc": "index", "comment": {"at": "/body/2", "input": "ideas", "ratings": [{"option": "Dark", "rating": "like"}, {"option": "Export", "rating": "unsure", "note": "Which formats?"}], "author": "A"}},
+    ]));
+    assert_eq!(code, 0, "{errs}");
+    let (_, out, _) = p.run(&["compile", "--format", "json"]);
+    let v: Value = serde_json::from_str(&out).unwrap();
+    check_schema("compile", &v);
+    let pg = &v["pages"][0];
+    let i = &pg["blocks"][1]["i"];
+    assert_eq!(i["labelHtml"], r##"Which <a href="#other">Other</a>?"##, "{i}");
+    assert_eq!((i["descriptions"].clone(), i["recommended"].clone()), (json!(["<em>Cheap</em>", ""]), json!([1])), "{i}");
+    assert_eq!(pg["blocks"][2]["i"]["labels"], json!(["Yes", "Maybe", "No"]));
+    let cs = pg["comments"].as_array().unwrap();
+    assert!(cs.iter().all(|c| c["place"] == "same"), "{cs:?}");
+    assert_eq!((cs[0]["flag"].clone(), cs[0]["note"].clone()), (json!("more_options"), json!("Medium?")));
+    assert_eq!(cs[1]["ratings"][1], json!({"option": "Export", "rating": "unsure", "note": "Which formats?"}));
+}

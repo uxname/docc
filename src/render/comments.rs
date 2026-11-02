@@ -51,23 +51,71 @@ impl<'a> Renderer<'a> {
 
     /// md_comment is one comment under its block, as a quote.
     fn md_comment(&self, c: &Comment, n: &Node) -> String {
-        format!("> 💬 {}", self.md_comment_line(c, n.get("label").map(|l| l.str.as_str())).replace('\n', "\n> "))
+        format!("> 💬 {}", self.md_comment_line(c, Some(n)).replace('\n', "\n> "))
     }
 
     /// md_comment_line is "**Author**, date, on «words»: text"; an answer is
-    /// "**Author**, date, answer to «question»: the answer".
-    fn md_comment_line(&self, c: &Comment, label: Option<&str>) -> String {
+    /// "**Author**, date, answer to «question»: the answer — note" (the
+    /// question when the block n of the comment is its field).
+    fn md_comment_line(&self, c: &Comment, n: Option<&Node>) -> String {
+        let label = n.and_then(|n| n.get("label")).map(|l| l.str.as_str());
+        let names: Vec<String> = n.and_then(|n| n.get("labels")).map(|l| l.items.iter().map(|i| i.str.clone()).collect()).unwrap_or_default();
         let who = if c.author.trim().is_empty() { self.t("Anonymous") } else { md_escape(c.author.trim()) };
         let mut s = format!("**{who}**, {}", c.created.chars().take(10).collect::<String>());
         if !c.fragment.is_empty() {
             s += &format!(", {} «{}»", self.t("on"), md_escape(&c.fragment));
         }
-        match (&c.answer, label) {
-            (Some(a), Some(q)) => s += &format!(", {} «{}»: {}", self.t("answer to"), md_escape(q), md_escape(&a.join(", "))),
-            (Some(a), None) => s += &format!(", {}: {}", self.t("answer"), md_escape(&a.join(", "))),
-            (None, _) => s += &format!(": {}", md_escape(c.text.as_deref().unwrap_or_default())),
+        if c.input.is_none() {
+            return s + &format!(": {}", md_escape(c.text.as_deref().unwrap_or_default()));
         }
-        s
+        let mut a = match (&c.flag, &c.answer, &c.ratings) {
+            (Some(f), _, _) => self.flag(f),
+            (_, Some(a), _) => md_escape(&a.join(", ")),
+            (_, _, Some(r)) => r
+                .iter()
+                .map(|r| {
+                    let mut x = format!("{}: {}", md_escape(&r.option), self.rating(&r.rating, &names));
+                    if let Some(n) = &r.note {
+                        x += &format!(" — {}", md_escape(n));
+                    }
+                    x
+                })
+                .collect::<Vec<_>>()
+                .join("; "),
+            _ => String::new(),
+        };
+        if let Some(n) = &c.note {
+            a += &format!(" — {}", md_escape(n));
+        }
+        match label {
+            Some(q) => s + &format!(", {} «{}»: {a}", self.t("answer to"), md_escape(q)),
+            None => s + &format!(", {}: {a}", self.t("answer")),
+        }
+    }
+
+    /// flag is the flag of an answer in words.
+    fn flag(&self, f: &str) -> String {
+        match f {
+            "not_understood" => self.t("I do not understand the question"),
+            "help_choose" => self.t("Help me choose"),
+            "decide_for_me" => self.t("Decide for me"),
+            "more_options" => self.t("Suggest other options"),
+            _ => f.to_string(),
+        }
+    }
+
+    /// rating is a rating of an item in words: the field's own names (labels),
+    /// else the default ones.
+    fn rating(&self, r: &str, names: &[String]) -> String {
+        if let (Some(i), 3) = (crate::comments::RATINGS.iter().position(|x| *x == r), names.len()) {
+            return md_escape(&names[i]);
+        }
+        match r {
+            "like" => self.t("Like"),
+            "unsure" => self.t("Not sure"),
+            "dislike" => self.t("Dislike"),
+            _ => r.to_string(),
+        }
     }
 }
 

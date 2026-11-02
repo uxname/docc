@@ -113,8 +113,8 @@ fn comments() {
     assert!(code == 2 && errs.contains("no status any more"), "done is gone: {code} {errs}");
 }
 
-/// A form field is a block of the HTML file and nothing in the Markdown; an
-/// answer to it comes back as a comment (version 2) with input and answer,
+/// A form field is a block of the HTML file and its question with the options
+/// in the Markdown; an answer to it comes back as a comment (version 2) with input and answer,
 /// stands at the field, and is lost once the field moves away from at.
 #[test]
 fn form_field_answers() {
@@ -122,7 +122,7 @@ fn form_field_answers() {
     let p = project([("docs/src/index.json", format!(r#"{{"title":"I","body":["Intro.",{field},"End."]}}"#).as_str())]);
     let (code, out, errs) = p.run(&["build", "--html"]);
     assert_eq!(code, 0, "{out} {errs}");
-    assert!(!p.read("docs/out/index.md").contains("Export"), "the Markdown must leave the field out");
+    assert!(p.read("docs/out/index.md").contains("Intro.\n\n**Export?**\n\n- Yes\n- No\n\nEnd."), "the field in the Markdown:\n{}", p.read("docs/out/index.md"));
     let a = read_app(&p, "docs/out.html");
     let b = &a.pages()[0]["blocks"][1];
     assert!(s(b, "p") == "/body/1" && s(&b["i"], "t") == "radio" && b["i"]["options"][1] == "No", "field block: {b}");
@@ -132,9 +132,9 @@ fn form_field_answers() {
             "path": "/body/1", "quote": s(b, "s"), "input": "export", "answer": ["Yes"], "text": "Yes", "author": "Ivan", "created": "2026-10-15T10:00:00Z"}]})
         .to_string()
     };
-    p.write("v3.json", export(3));
-    let (code, _, errs) = p.run(&["comments", "import", "v3.json"]);
-    assert!(code == 2 && errs.contains("unsupported version 3"), "{code} {errs}");
+    p.write("v4.json", export(4));
+    let (code, _, errs) = p.run(&["comments", "import", "v4.json"]);
+    assert!(code == 2 && errs.contains("unsupported version 4"), "{code} {errs}");
     p.write("export.json", export(2));
     let (code, out, errs) = p.run(&["comments", "import", "export.json"]);
     assert!(code == 0 && out == "imported 1 comments into 1 documents\n", "{code} {out} {errs}");
@@ -154,6 +154,74 @@ fn form_field_answers() {
     assert_eq!(code, 0, "{out} {errs}");
     let cs = read_app(&p, "docs/out.html").data["comments"].clone();
     assert!(s(&cs[0], "input") == "export" && cs[0]["answer"][0] == "Yes" && cs[0]["lost"] == true, "{cs}");
+}
+
+/// A question with explained options, a recommendation and a rating: the
+/// Markdown prints them in the language of the project, the HTML data gives
+/// them as inline HTML, and answers with a note, a flag or ratings come in
+/// through the comments file version 3 and docc comments apply.
+#[test]
+fn rich_questions() {
+    let radio = r#"{"$input":"radio","id":"plan","label":"Which **plan**?","options":[{"label":"Small","description":"One `server`, <b>cheap</b>"},{"label":"Big","recommended":true}]}"#;
+    let rating = r#"{"$input":"rating","id":"ideas","label":"Rate","options":["Dark",{"label":"Export","description":"PDF"}]}"#;
+    let p = project([
+        ("docc.json", r#"{"src":"docs/src","out":"docs/out","lang":"ru"}"#),
+        ("docs/src/index.json", format!(r#"{{"title":"I","body":["Intro.",{radio},{rating}]}}"#).as_str()),
+    ]);
+    let (code, out, errs) = p.run(&["build", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let md = p.read("docs/out/index.md");
+    assert!(
+        md.contains("**Which **plan**?**\n\n- Small — One `server`, &lt;b>cheap&lt;/b>\n- Big (рекомендую)\n\n**Rate** (Нравится / Не уверен / Не нравится)\n\n- Dark\n- Export — PDF"),
+        "{md}"
+    );
+    let a = read_app(&p, "docs/out.html");
+    let (b, r) = (&a.pages()[0]["blocks"][1], &a.pages()[0]["blocks"][2]);
+    assert_eq!(b["i"]["options"], serde_json::json!(["Small", "Big"]), "{b}");
+    assert_eq!(s(&b["i"], "labelHtml"), "Which <strong>plan</strong>?");
+    assert_eq!(b["i"]["descriptions"], serde_json::json!(["One <code>server</code>, &lt;b&gt;cheap&lt;/b&gt;", ""]), "{b}");
+    assert_eq!(b["i"]["recommended"], serde_json::json!([1]));
+    assert!(r["i"].get("recommended").is_none() && r["i"].get("labels").is_none(), "{r}");
+    let item = |id: &str, extra: serde_json::Value| {
+        let mut it = serde_json::json!({"id": id, "doc": "index", "path": "/body/1", "quote": s(b, "s"), "input": "plan", "text": "x", "author": "Ivan", "created": "2026-10-15T10:00:00Z"});
+        it.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+        it
+    };
+    let file = serde_json::json!({"docc": "comments", "version": 3, "comments": [
+        item("ans1", serde_json::json!({"flag": "help_choose", "note": "  What does Big cost?  "})),
+        item("ans2", serde_json::json!({"answer": ["Big"], "note": "Growth"})),
+        item("ans3", serde_json::json!({"path": "/body/2", "quote": s(r, "s"), "input": "ideas", "ratings": [{"option": "Dark", "rating": "like"}, {"option": "Export", "rating": "dislike", "note": "Nobody prints"}]})),
+    ]});
+    p.write("v3.json", file.to_string());
+    let (code, out, errs) = p.run(&["comments", "import", "v3.json"]);
+    assert!(code == 0 && out == "imported 3 comments into 1 documents\n", "{code} {out} {errs}");
+    let src = p.read("docs/src/index.json");
+    assert!(src.contains(r#""input": "plan", "flag": "help_choose", "note": "What does Big cost?", "author""#), "{src}");
+    let (code, out, _) = p.run(&["validate"]);
+    assert_eq!(code, 0, "{out}");
+    let (_, out, _) = p.run(&["comments"]);
+    assert!(out.contains("  Ivan 2026-10-15: Help me choose (help_choose)\n  note: What does Big cost?\n"), "{out}");
+    assert!(out.contains("  Ivan 2026-10-15: rated:\n    Dark: like\n    Export: dislike — Nobody prints\n"), "{out}");
+    let (code, out, errs) = p.run(&["build"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let md = p.read("docs/out/index.md");
+    assert!(md.contains("ответ на «Which **plan**?»: Помоги выбрать — What does Big cost?"), "{md}");
+    assert!(md.contains("ответ на «Rate»: Dark: Нравится; Export: Не нравится — Nobody prints"), "{md}");
+    // a new description and recommendation keep the answers to the question as it is
+    p.write("docs/src/index.json", src.replace(r#""recommended": true"#, r#""description": "More""#).replace("\"recommended\":true", "\"description\":\"More\""));
+    let (_, out, _) = p.run(&["comments", "--format", "json"]);
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert!(v["comments"].as_array().unwrap().iter().all(|c| c["place"] == "same"), "{out}");
+    // apply: a rating must rate every option; edit gives the answer anew
+    let apply = |ops: serde_json::Value| do_stdin(&p.path, ops.to_string().as_bytes(), &["comments", "apply"]);
+    let (code, _, errs) = apply(serde_json::json!([{"op": "add", "doc": "index", "comment": {"at": "/body/2", "input": "ideas", "ratings": [{"option": "Dark", "rating": "like"}], "author": "A"}}]));
+    assert!(code == 2 && errs.contains("leave out the option \"Export\""), "{code} {errs}");
+    let (code, _, errs) = apply(serde_json::json!([{"op": "edit", "id": "ans2", "flag": "decide_for_me"}]));
+    assert_eq!(code, 0, "{errs}");
+    let src = p.read("docs/src/index.json");
+    assert!(src.contains(r#""id": "ans2""#) && src.contains(r#""flag": "decide_for_me", "author": "Ivan""#), "the note goes with the old answer:\n{src}");
+    let (code, _, errs) = apply(serde_json::json!([{"op": "edit", "id": "ans2", "answer": ["Big"], "flag": "help_choose"}]));
+    assert!(code == 2 && errs.contains("a flag replaces the choice"), "{code} {errs}");
 }
 
 /// Comments copied from the page as text come in through standard input;

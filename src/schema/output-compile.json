@@ -179,12 +179,17 @@
                 "type": "object",
                 "description": "A form field, drawn in place of h.",
                 "additionalProperties": false,
-                "required": ["t", "id", "label"],
+                "required": ["t", "id", "label", "labelHtml"],
                 "properties": {
-                  "t": { "enum": ["text", "radio", "checkbox"] },
+                  "t": { "enum": ["text", "radio", "checkbox", "rating"] },
                   "id": { "type": "string" },
-                  "label": { "type": "string" },
-                  "options": { "type": "array", "items": { "type": "string" } }
+                  "label": { "type": "string", "description": "The question as written in the source (inline Markdown)." },
+                  "labelHtml": { "type": "string", "description": "The question as inline HTML: links resolved, raw HTML escaped." },
+                  "options": { "type": "array", "items": { "type": "string" }, "description": "The labels of the options as written in the source: what an answer gives and ratings name." },
+                  "optionsHtml": { "type": "array", "items": { "type": "string" }, "description": "The labels of the options as inline HTML, one per option." },
+                  "descriptions": { "type": "array", "items": { "type": "string" }, "description": "The description of each option as inline HTML, \"\" for an option without one; absent when no option has one." },
+                  "recommended": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Indexes of the recommended options (radio: at most one); absent when none." },
+                  "labels": { "type": "array", "items": { "type": "string" }, "minItems": 3, "maxItems": 3, "description": "A rating field: the names of its ratings like, unsure and dislike, when the source gives them; absent means the reader's defaults." }
                 }
               }
             }
@@ -207,14 +212,30 @@
               "text": { "type": "string", "description": "The comment; absent for an answer." },
               "input": { "type": "string", "description": "An answer: the id of the form field." },
               "answer": { "type": "array", "items": { "type": "string" }, "description": "An answer: the text given, the option picked or the options ticked." },
+              "ratings": {
+                "type": "array",
+                "description": "An answer to a rating field: every option rated.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["option", "rating"],
+                  "properties": {
+                    "option": { "type": "string", "description": "The label of the option as written in the source." },
+                    "rating": { "enum": ["like", "unsure", "dislike"] },
+                    "note": { "type": "string" }
+                  }
+                }
+              },
+              "flag": { "enum": ["not_understood", "help_choose", "decide_for_me", "more_options"], "description": "An answer without a choice: the reader does not understand the question, asks for help, leaves the choice to the author or asks for other options." },
+              "note": { "type": "string", "description": "A comment to the answer." },
               "author": { "type": "string", "description": "The name of the author; may be empty." },
               "created": { "type": "string", "description": "RFC 3339 time." },
               "edited": { "type": "string", "description": "RFC 3339 time of the last edit of the text or the answer (docc comments apply, op edit); absent when never edited." },
               "place": { "enum": ["same", "changed", "lost"], "description": "same: the block reads as quoted; changed: the block was edited since; lost: no block at at, the fragment is not in it, or the answered field is gone (DOC215)." }
             },
             "oneOf": [
-              { "required": ["text"], "not": { "anyOf": [{ "required": ["input"] }, { "required": ["answer"] }] } },
-              { "required": ["input", "answer"], "not": { "required": ["text"] } }
+              { "required": ["text"], "not": { "anyOf": [{ "required": ["input"] }, { "required": ["answer"] }, { "required": ["ratings"] }, { "required": ["flag"] }, { "required": ["note"] }] } },
+              { "required": ["input"], "anyOf": [{ "required": ["answer"] }, { "required": ["ratings"] }, { "required": ["flag"] }], "not": { "required": ["text"] } }
             ]
           }
         }

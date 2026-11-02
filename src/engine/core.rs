@@ -4,6 +4,7 @@ use super::project::{Doc, Project};
 use super::strings::{INPUT_KEY, RESERVED_KEYS, is_input, is_sections, reserved_key};
 use crate::config::go_quote;
 use crate::loader::{Kind, Node};
+use crate::mdscan;
 use crate::schema;
 
 impl Project {
@@ -135,19 +136,20 @@ impl Project {
 /// input_problem is the first thing wrong with a form field, ("", "") when
 /// nothing is; ids collects the ids of the document.
 fn input_problem(n: &Node, item: bool, ids: &mut HashSet<String>) -> (String, &'static str) {
-    const SHAPE: &str = r#"A form field is {"$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"]}; $input is text, radio or checkbox."#;
+    const SHAPE: &str = r#"A form field is {"$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", {"label": "No", "description": "Why not", "recommended": true}]}; $input is text, radio, checkbox or rating."#;
+    const OPTION: &str = r#"An option is a string or {"label": "No", "description": "Why not", "recommended": true}: a label of its own, the other two optional."#;
     if !item {
         return (
             "a form field stands only as an item of an array of paragraphs".into(),
             r#"Put it into the array of paragraphs of body, a free field or a section: "body": ["Text.", {"$input": ...}]."#,
         );
     }
-    if let Some(m) = n.members.iter().find(|m| !matches!(m.key.as_str(), INPUT_KEY | "id" | "label" | "options")) {
+    if let Some(m) = n.members.iter().find(|m| !matches!(m.key.as_str(), INPUT_KEY | "id" | "label" | "options" | "labels")) {
         return (format!("form field has an unknown member {}", go_quote(&m.key)), SHAPE);
     }
     let kind = n.get(INPUT_KEY).filter(|k| k.kind == Kind::String).map_or("", |k| k.str.as_str());
-    if !matches!(kind, "text" | "radio" | "checkbox") {
-        return ("form field kind must be \"text\", \"radio\" or \"checkbox\"".into(), SHAPE);
+    if !matches!(kind, "text" | "radio" | "checkbox" | "rating") {
+        return ("form field kind must be \"text\", \"radio\", \"checkbox\" or \"rating\"".into(), SHAPE);
     }
     let id = match n.get("id") {
         Some(v) if v.kind == Kind::String && input_id(&v.str) => v.str.as_str(),
@@ -159,8 +161,24 @@ fn input_problem(n: &Node, item: bool, ids: &mut HashSet<String>) -> (String, &'
             "Give every form field of the document its own id.",
         );
     }
-    if !n.get("label").is_some_and(|l| l.kind == Kind::String && !l.str.trim().is_empty()) {
+    let text = |v: Option<&Node>| v.is_some_and(|l| l.kind == Kind::String && !l.str.trim().is_empty());
+    if !text(n.get("label")) {
         return ("form field needs a label".into(), "Write the question as \"label\".");
+    }
+    const INLINE: &str = "A label or a description is inline Markdown: bold, italic, code and links; put a picture in a paragraph above the field.";
+    let image = |v: Option<&Node>| v.is_some_and(|l| !mdscan::new(&l.str).images().is_empty());
+    if image(n.get("label")) {
+        return ("the label of a form field has a picture".into(), INLINE);
+    }
+    match n.get("labels") {
+        Some(_) if kind != "rating" => return ("only a rating field has \"labels\"".into(), "Remove \"labels\", or make the field \"rating\"."),
+        Some(l) if l.kind != Kind::Array || l.items.len() != 3 || !l.items.iter().all(|i| text(Some(i))) => {
+            return (
+                "\"labels\" of a rating field are 3 non-empty strings".into(),
+                "Name the three ratings, good to bad: \"labels\": [\"Like\", \"Not sure\", \"Dislike\"]; or leave them out for these.",
+            );
+        }
+        _ => {}
     }
     let opts = n.get("options");
     if kind == "text" {
@@ -177,10 +195,47 @@ fn input_problem(n: &Node, item: bool, ids: &mut HashSet<String>) -> (String, &'
         );
     };
     let mut seen = HashSet::new();
+    let mut recommended = 0;
     for o in &opts.items {
-        if o.kind != Kind::String || o.str.trim().is_empty() || !seen.insert(o.str.as_str()) {
-            return ("form field options must be distinct non-empty strings".into(), "Every option is a string of its own.");
+        let label = match o.kind {
+            Kind::String => o,
+            Kind::Object => {
+                if let Some(m) = o.members.iter().find(|m| !matches!(m.key.as_str(), "label" | "description" | "recommended")) {
+                    return (format!("an option has an unknown member {}", go_quote(&m.key)), OPTION);
+                }
+                if o.get("description").is_some_and(|d| !text(Some(d))) {
+                    return ("the description of an option is not a non-empty string".into(), OPTION);
+                }
+                if image(o.get("description")) {
+                    return ("the description of an option has a picture".into(), INLINE);
+                }
+                match o.get("recommended") {
+                    Some(r) if r.kind != Kind::Bool => return ("\"recommended\" of an option is true or false".into(), OPTION),
+                    Some(r) if r.str == "true" => recommended += 1,
+                    _ => {}
+                }
+                match o.get("label") {
+                    Some(l) => l,
+                    None => return ("an option needs a label".into(), OPTION),
+                }
+            }
+            _ => o,
+        };
+        if label.kind != Kind::String || label.str.trim().is_empty() || !seen.insert(label.str.as_str()) {
+            return ("form field options must have distinct non-empty labels".into(), OPTION);
         }
+        if image(Some(label)) {
+            return ("the label of an option has a picture".into(), INLINE);
+        }
+    }
+    if recommended > 0 && kind == "rating" {
+        return ("a rating field recommends nothing".into(), "Remove \"recommended\": every item of a rating is rated.");
+    }
+    if recommended > 1 && kind == "radio" {
+        return (
+            format!("a radio field recommends at most one option, it recommends {recommended}"),
+            "Keep \"recommended\": true on the one option you advise; a checkbox field may recommend several.",
+        );
     }
     (String::new(), "")
 }

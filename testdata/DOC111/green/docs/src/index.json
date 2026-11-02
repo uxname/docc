@@ -6,7 +6,11 @@
     "Text. ^IND-1",
     { "$input": "radio", "id": "export", "label": "Export?", "options": ["Yes", "No"] },
     { "$input": "checkbox", "id": "formats", "label": "Formats", "options": ["CSV"] },
-    { "$input": "text", "id": "more", "label": "Anything else?" }
+    { "$input": "text", "id": "more", "label": "Anything else?" },
+    { "$input": "radio", "id": "plan", "label": "Which **plan**?", "options": [{ "label": "Small", "description": "Cheap, `one` server" }, { "label": "Big", "recommended": true }, "Later"] },
+    { "$input": "checkbox", "id": "extras", "label": "Extras", "options": [{ "label": "A", "recommended": true }, { "label": "B", "recommended": true }, { "label": "C", "recommended": false }] },
+    { "$input": "rating", "id": "ideas", "label": "Rate the ideas", "options": ["Dark theme", { "label": "Export", "description": "PDF and CSV" }] },
+    { "$input": "rating", "id": "named", "label": "Rate", "options": ["One"], "labels": ["Yes", "Maybe", "No"] }
   ],
   "questions": {
     "$sections": true,

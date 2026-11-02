@@ -11,7 +11,16 @@
     { "$input": "text", "id": "same", "label": "Used id" },
     { "$input": "text", "id": "opts", "label": "Text with options", "options": ["A"] },
     { "$input": "text", "id": "empty", "label": 5 },
-    { "$input": "text", "id": "extra", "label": "Extra", "hint": "x" }
+    { "$input": "text", "id": "extra", "label": "Extra", "hint": "x" },
+    { "$input": "rating", "id": "rate-rec", "label": "Rate", "options": [{ "label": "A", "recommended": true }] },
+    { "$input": "radio", "id": "two-rec", "label": "Two", "options": [{ "label": "A", "recommended": true }, { "label": "B", "recommended": true }] },
+    { "$input": "radio", "id": "labels", "label": "Labels", "options": ["A", "B"], "labels": ["X", "Y", "Z"] },
+    { "$input": "rating", "id": "two-labels", "label": "Two labels", "options": ["A"], "labels": ["X", "Y"] },
+    { "$input": "checkbox", "id": "why", "label": "Unknown", "options": [{ "label": "A", "why": "x" }] },
+    { "$input": "checkbox", "id": "no-label", "label": "No label", "options": [{ "description": "x" }] },
+    { "$input": "checkbox", "id": "picture", "label": "Picture", "options": [{ "label": "A", "description": "![x](https://example.com/x.png)" }] },
+    { "$input": "radio", "id": "same-label", "label": "Same", "options": ["A", { "label": "A" }] },
+    { "$input": "radio", "id": "rec-str", "label": "Recommended", "options": [{ "label": "A", "recommended": "yes" }, "B"] }
   ],
   "alone": { "$input": "text", "id": "alone", "label": "Not in an array" },
   "list": [{ "name": "a" }, { "$input": "text", "id": "in-list", "label": "In a list" }]

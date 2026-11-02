@@ -4,24 +4,12 @@
     "rule": "syntax/invalid-comment",
     "level": "error",
     "file": "docs/src/index.json",
-    "line": 11,
+    "line": 12,
     "column": 35,
-    "endLine": 11,
+    "endLine": 12,
     "endColumn": 43,
     "message": "unknown field \"status\" in a comment",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
-  },
-  {
-    "code": "DOC112",
-    "rule": "syntax/invalid-comment",
-    "level": "error",
-    "file": "docs/src/index.json",
-    "line": 12,
-    "column": 5,
-    "endLine": 12,
-    "endColumn": 105,
-    "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -31,9 +19,9 @@
     "line": 13,
     "column": 5,
     "endLine": 13,
-    "endColumn": 154,
-    "message": "a comment has either \"text\" or \"input\" and \"answer\" (an answer to a form field)",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+    "endColumn": 105,
+    "message": "a comment has either \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (an answer to a form field)",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -41,11 +29,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 14,
-    "column": 25,
+    "column": 5,
     "endLine": 14,
-    "endColumn": 33,
-    "message": "\"at\" of a comment must be the code of its block (\"^PAY-14\"), or the JSON Pointer of a block without a code (\"/body/0\")",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+    "endColumn": 154,
+    "message": "a comment has either \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (an answer to a form field)",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -53,20 +41,32 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 15,
-    "column": 97,
+    "column": 25,
     "endLine": 15,
-    "endColumn": 109,
-    "message": "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+    "endColumn": 33,
+    "message": "\"at\" of a comment must be the code of its block (\"^PAY-14\"), or the JSON Pointer of a block without a code (\"/body/0\")",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
     "rule": "syntax/invalid-comment",
     "level": "error",
     "file": "docs/src/index.json",
-    "line": 17,
+    "line": 16,
+    "column": 97,
+    "endLine": 16,
+    "endColumn": 109,
+    "message": "\"created\" of a comment must be an RFC 3339 time (\"2026-10-22T09:30:00Z\")",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 18,
     "column": 12,
-    "endLine": 17,
+    "endLine": 18,
     "endColumn": 17,
     "message": "comment id \"c-6\" is used twice",
     "hint": "Give every comment its own id (docc comments apply makes one when the id is left out)."
@@ -76,24 +76,12 @@
     "rule": "syntax/invalid-comment",
     "level": "error",
     "file": "docs/src/index.json",
-    "line": 18,
+    "line": 19,
     "column": 5,
-    "endLine": 18,
+    "endLine": 19,
     "endColumn": 15,
     "message": "a comment must be an object",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
-  },
-  {
-    "code": "DOC112",
-    "rule": "syntax/invalid-comment",
-    "level": "error",
-    "file": "docs/src/index.json",
-    "line": 19,
-    "column": 119,
-    "endLine": 19,
-    "endColumn": 131,
-    "message": "comment \"c-7\": a radio field takes exactly one answer, the answer gives 2",
-    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer), or delete the comment (docc comments rm \u003cid\u003e)."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -101,11 +89,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 20,
-    "column": 122,
+    "column": 119,
     "endLine": 20,
-    "endColumn": 141,
-    "message": "comment \"c-8\": a checkbox field takes at most one own answer (a value that is none of its options), the answer gives 2",
-    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer), or delete the comment (docc comments rm \u003cid\u003e)."
+    "endColumn": 131,
+    "message": "comment \"c-7\": a radio field takes exactly one answer, the answer gives 2",
+    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer; rating: \"ratings\" with every option once), or delete the comment (docc comments rm \u003cid\u003e)."
   },
   {
     "code": "DOC112",
@@ -113,11 +101,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 21,
-    "column": 103,
+    "column": 122,
     "endLine": 21,
-    "endColumn": 117,
-    "message": "comment \"c-9\": a text field takes exactly one answer, the answer gives 2",
-    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer), or delete the comment (docc comments rm \u003cid\u003e)."
+    "endColumn": 141,
+    "message": "comment \"c-8\": a checkbox field takes at most one own answer (a value that is none of its options), the answer gives 2",
+    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer; rating: \"ratings\" with every option once), or delete the comment (docc comments rm \u003cid\u003e)."
   },
   {
     "code": "DOC112",
@@ -125,11 +113,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 22,
-    "column": 123,
+    "column": 103,
     "endLine": 22,
-    "endColumn": 125,
-    "message": "\"answer\" of an answer is empty: give at least one value",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+    "endColumn": 117,
+    "message": "comment \"c-9\": a text field takes exactly one answer, the answer gives 2",
+    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer; rating: \"ratings\" with every option once), or delete the comment (docc comments rm \u003cid\u003e)."
   },
   {
     "code": "DOC112",
@@ -137,11 +125,11 @@
     "level": "error",
     "file": "docs/src/index.json",
     "line": 23,
-    "column": 129,
+    "column": 123,
     "endLine": 23,
-    "endColumn": 133,
-    "message": "a value of \"answer\" is blank",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+    "endColumn": 125,
+    "message": "\"answer\" of an answer is empty: give at least one value",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",
@@ -151,9 +139,93 @@
     "line": 24,
     "column": 129,
     "endLine": 24,
+    "endColumn": 133,
+    "message": "a value of \"answer\" is blank",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 25,
+    "column": 129,
+    "endLine": 25,
     "endColumn": 132,
     "message": "\"answer\" gives \"A\" twice",
-    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 26,
+    "column": 122,
+    "endLine": 26,
+    "endColumn": 157,
+    "message": "comment \"c-13\": the ratings leave out the option \"B\": rate every option",
+    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer; rating: \"ratings\" with every option once), or delete the comment (docc comments rm \u003cid\u003e)."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 27,
+    "column": 121,
+    "endLine": 27,
+    "endColumn": 126,
+    "message": "comment \"c-14\": a rating field takes \"ratings\", not \"answer\"",
+    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer; rating: \"ratings\" with every option once), or delete the comment (docc comments rm \u003cid\u003e)."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 28,
+    "column": 121,
+    "endLine": 28,
+    "endColumn": 156,
+    "message": "comment \"c-15\": a radio field takes \"answer\", not \"ratings\"",
+    "hint": "Keep the answer the field takes (text and radio: one value; checkbox: the options ticked and at most one own answer; rating: \"ratings\" with every option once), or delete the comment (docc comments rm \u003cid\u003e)."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 29,
+    "column": 118,
+    "endLine": 29,
+    "endColumn": 125,
+    "message": "\"flag\" is one of not_understood, help_choose, decide_for_me, more_options",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 30,
+    "column": 135,
+    "endLine": 30,
+    "endColumn": 148,
+    "message": "a flag replaces the choice: an answer with \"flag\" has no \"answer\" or \"ratings\"",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
+  },
+  {
+    "code": "DOC112",
+    "rule": "syntax/invalid-comment",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 31,
+    "column": 135,
+    "endLine": 31,
+    "endColumn": 139,
+    "message": "a note is blank: leave it out",
+    "hint": "A comment is {\"id\", \"at\", \"quote\", \"text\" or \"input\" and \"answer\", \"ratings\" or \"flag\" (with an optional \"note\"), \"author\", \"created\"} with optional \"fragment\", \"prefix\", \"suffix\", \"email\" and \"edited\"; edit the list with docc comments apply."
   },
   {
     "code": "DOC112",

@@ -79,13 +79,19 @@
         "k": { "type": "string", "description": "A property: the field name as a heading." },
         "i": {
           "type": "object",
+          "description": "A form field, as in docc compile.",
           "additionalProperties": false,
-          "required": ["t", "id", "label"],
+          "required": ["t", "id", "label", "labelHtml"],
           "properties": {
-            "t": { "enum": ["text", "radio", "checkbox"] },
+            "t": { "enum": ["text", "radio", "checkbox", "rating"] },
             "id": { "type": "string" },
             "label": { "type": "string" },
-            "options": { "type": "array", "items": { "type": "string" } }
+            "labelHtml": { "type": "string" },
+            "options": { "type": "array", "items": { "type": "string" } },
+            "optionsHtml": { "type": "array", "items": { "type": "string" } },
+            "descriptions": { "type": "array", "items": { "type": "string" } },
+            "recommended": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+            "labels": { "type": "array", "items": { "type": "string" }, "minItems": 3, "maxItems": 3 }
           }
         }
       }
