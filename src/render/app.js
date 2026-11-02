@@ -550,6 +550,11 @@
     var p = store('passed') || [];
     return local.filter(function (c) { return p.indexOf(sig(c)) < 0; });
   }
+  // closing the tab asks first while a comment is not passed on or a field has a choice not saved
+  function leave(e) {
+    var any = Object.keys(dirtyFields).some(function (k) { return dirtyFields[k]; });
+    if (any || unpassed().length) { e.preventDefault(); e.returnValue = ''; }
+  }
   // done(kind, ids) is told which comments went out, so the panel can offer to clear them
   function sendCopy(done) {
     var ids = local.map(function (c) { return c.id; });
@@ -573,7 +578,7 @@
     var at = local.indexOf(c);
     setLocal(local.filter(function (x) { return x.id !== c.id; }));
     // put back only this comment: others may have been added or removed since
-    toast('{{t:Comment deleted.}}', '{{t:Undo}}', function () {
+    toast(c.input ? '{{t:Answer deleted.}}' : '{{t:Comment deleted.}}', '{{t:Undo}}', function () {
       var rest = local.slice(); rest.splice(Math.max(0, Math.min(at, rest.length)), 0, c); setLocal(rest);
     });
   }
@@ -769,6 +774,29 @@
   function flagName(f) { var x = FLAGS.filter(function (y) { return y[0] === f; })[0]; return x ? x[1] : f; }
   function rateNames(f) { return f.labels && f.labels.length === 3 ? f.labels : ['{{t:Like}}', '{{t:Not sure}}', '{{t:Dislike}}']; }
   function clip(n) { return (n || '').trim().slice(0, NOTE_MAX); }
+  // fieldProblem is why Save is off, in words, '' when the answer may be
+  // saved: a text over the limit, an own answer chosen but empty, a rating
+  // not complete, no choice. o is fieldAnswer(f, st).
+  function fieldProblem(f, st, o) {
+    var texts = [st.note];
+    if (!st.flag && f.t === 'text') { texts.push(st.v[0] || ''); }
+    if (!st.flag && f.t === 'rating') { Object.keys(st.rates).forEach(function (x) { if (st.rates[x][0] !== 'like') { texts.push(st.rates[x][1]); } }); }
+    if (texts.some(function (x) { return (x || '').length > NOTE_MAX; })) { return '{{t:Shorten the text to 2000 characters}}'; }
+    if (o.flag) { return ''; }
+    if ((f.t === 'radio' || f.t === 'checkbox') && st.own[0] && !st.own[1].trim()) { return '{{t:Write your own answer}}'; }
+    if (o.ratings) { return o.ratings.length === f.options.length ? '' : '{{t:Rate every item:}} ' + o.ratings.length + ' {{t:of}} ' + f.options.length; }
+    return answerOk(f, o) ? '' : f.t === 'text' ? '{{t:Write an answer}}' : '{{t:Choose an option}}';
+  }
+  // the name an answer is saved with: the one kept now (the dialog may have
+  // asked for it after the field was drawn), else the one typed into From
+  function authorNow(typed) { return (store('author') || typed || '').trim(); }
+  // the fields with a choice not saved, by name: closing the tab asks first
+  var dirtyFields = {};
+  // a counter under a text from 1800 characters, «1850 / 2000», red over the limit
+  function Count(props) {
+    var n = (props.s || '').length;
+    return n >= NOTE_MAX - 200 && html`<small class=${'cnt' + (n > NOTE_MAX ? ' over' : '')}>${n} / ${NOTE_MAX}</small>`;
+  }
   // fieldAnswer is what a field holds as it would be saved: the flag, the
   // ratings (every option rated so far, notes only on unsure and dislike) or
   // the answer, and the note of radio buttons and check boxes. st: {v, own:
@@ -817,12 +845,14 @@
       var first = root.current.querySelector('.stk-m button');
       if (first) { first.focus(); }
       function out(e) { if (!root.current.contains(e.target)) { open[1](false); } }
+      // Esc on the document: a click does not focus a button in every browser (Safari), so the key may come from outside
+      function esc(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } }
       document.addEventListener('pointerdown', out);
-      return function () { document.removeEventListener('pointerdown', out); };
+      document.addEventListener('keydown', esc, true);
+      return function () { document.removeEventListener('pointerdown', out); document.removeEventListener('keydown', esc, true); };
     }, [open[0]]);
     function close() { open[1](false); var b = root.current.querySelector('.stk-b'); if (b) { b.focus(); } }
     function key(e) {
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') { return; }
       var bs = [].slice.call(root.current.querySelectorAll('.stk-m button')), k = bs.indexOf(document.activeElement);
       e.preventDefault();
@@ -848,12 +878,16 @@
     // what this reader answered: in this browser, else imported under their name
     var own = props.comments.filter(function (c) { return c.doc === doc && c.input === f.id; })[0] ||
       (me && given.filter(function (c) { return c.author === me; })[0]);
-    var start = fieldState(f, own), st = useState(start), who = useState(me), v = st[0];
+    var start = fieldState(f, own), st = useState(start), who = useState(''), v = st[0];
+    // «Reset»: back to the answer saved, or to no answer
     function reset() { st[1](fieldState(f, own)); }
     useEffect(reset, [own ? own.id : '']);
     function set(ch) { st[1](Object.assign({}, v, ch)); }
-    var o = fieldAnswer(f, v), dirty = JSON.stringify(o) !== JSON.stringify(fieldAnswer(f, start)), ok = answerOk(f, o);
+    var o = fieldAnswer(f, v), dirty = JSON.stringify(o) !== JSON.stringify(fieldAnswer(f, start)) ||
+      (!v.flag && v.own[0] !== start.own[0]), why = fieldProblem(f, v, o);
     var name = 'f-' + doc + '-' + f.id, opts = f.options || [], rec = f.recommended || [], desc = f.descriptions || [];
+    dirtyFields[name] = dirty && !props.past;
+    useEffect(function () { return function () { delete dirtyFields[name]; }; }, [name]);
     // a choice takes back the flag, a flag takes back the choice
     function pick(x, on) {
       set({ flag: '', v: f.t === 'radio' ? [x] : opts.filter(function (y) { return y === x ? on : v.v.indexOf(y) >= 0; }),
@@ -862,17 +896,18 @@
     function pickOwn(on, text) { set({ flag: '', own: [on, text], v: on && f.t === 'radio' ? [] : v.v }); }
     function rate(x, r) { var rs = Object.assign({}, v.rates); rs[x] = [r, (v.rates[x] || [])[1] || '']; set({ flag: '', rates: rs }); }
     function rateNote(x, n) { var rs = Object.assign({}, v.rates); rs[x] = [rs[x][0], n]; set({ rates: rs }); }
-    function flag(fl) { set(fl ? { flag: fl, v: [], own: [false, v.own[1]], rates: {} } : { flag: '' }); }
+    // a flag hides the choice, it does not erase it: taking the flag off brings it back
+    function flag(fl) { set({ flag: fl }); }
     function save() {
-      var w = who[0].trim(), first = !local.length;
+      var w = authorNow(who[0]), first = !local.length;
       if (w) { store('author', w); }
       var c = Object.assign({ id: uuid(), doc: doc, path: props.ptr, quote: props.quote, text: answerWords(f, o), input: f.id }, o,
         { author: w, created: new Date().toISOString(), build: H.head || '' });
       // one answer of this browser per field: a new one takes its place
       setLocal(local.filter(function (x) { return !(x.doc === doc && x.input === f.id); }).concat([c]));
-      toast(first ? '{{t:Saved in this browser only. Pass your comments on with the button at the top.}}' : '{{t:Answer saved.}}');
+      toast(first ? '{{t:Answer saved. It is kept in this browser only: pass it on with the button at the top.}}' : '{{t:Answer saved.}}');
     }
-    var names = rateNames(f), rated = Object.keys(v.rates).filter(function (x) { return opts.indexOf(x) >= 0; }).length;
+    var names = rateNames(f);
     var recd = rec.map(function (k) { return opts[k]; }).filter(Boolean);
     function card(x, k) {
       return html`<label class="opt"><input type=${f.t} name=${name} checked=${v.v.indexOf(x) >= 0}
@@ -887,29 +922,29 @@
           return html`<label class=${'r-' + y}><input type="radio" name=${name + '-' + k} value=${y} checked=${r === y} onChange=${function () { rate(x, y); }} />${names[i]}</label>`;
         })}</div></div>
         ${r && r !== 'like' && html`<label class="rnote">${r === 'unsure' ? '{{t:What is unclear?}}' : '{{t:Why?}}'}
-          <input type="text" class="own-t" maxlength=${NOTE_MAX} placeholder="{{t:Optional}}" value=${v.rates[x][1]} onInput=${function (e) { rateNote(x, e.target.value); }} /></label>`}</div>`;
+          <input type="text" class="own-t" placeholder="{{t:Optional}}" value=${v.rates[x][1]} onInput=${function (e) { rateNote(x, e.target.value); }} /><${Count} s=${v.rates[x][1]} /></label>`}</div>`;
     }
     return html`<fieldset class=${'fld fld-' + f.t} disabled=${props.past}>
       <legend><${Html} h=${f.labelHtml || esc(plain(f.label))} /></legend>
-      ${f.t === 'text' ? html`<textarea rows="3" aria-label=${plain(f.label)} value=${v.v[0] || ''} onInput=${function (e) { set({ flag: '', v: [e.target.value] }); }}></textarea>`
+      ${v.flag ? '' : f.t === 'text' ? html`<textarea rows="3" aria-label=${plain(f.label)} value=${v.v[0] || ''} onInput=${function (e) { set({ flag: '', v: [e.target.value] }); }}></textarea><${Count} s=${v.v[0]} />`
         : f.t === 'rating' ? html`<div class="rrows">${opts.map(row)}</div>`
         : html`<div class="opts">${opts.map(card)}
           <label class="opt own"><input type=${f.t} name=${name} checked=${v.own[0]} aria-label="{{t:Own answer}}"
             onChange=${function (e) { pickOwn(e.target.checked, v.own[1]); }} />
             <span class="ot">{{t:Own answer}}</span>
             <input type="text" class="own-t" placeholder="{{t:Your option}}" aria-label="{{t:Own answer}}" value=${v.own[1]}
-              onInput=${function (e) { pickOwn(true, e.target.value); }} /></label></div>
-          <label class="nl">{{t:Comment on the answer}} <span>{{t:(optional)}}</span>
-            <textarea rows="2" maxlength=${NOTE_MAX} placeholder="{{t:A reservation, a wish, the reason for the choice}}" value=${v.note}
-              onInput=${function (e) { set({ note: e.target.value }); }}></textarea></label>`}
+              onInput=${function (e) { pickOwn(!!e.target.value.trim(), e.target.value); }} /></label></div>`}
+      ${(f.t === 'radio' || f.t === 'checkbox') && html`<label class="nl">{{t:Comment on the answer}} <span>{{t:(optional)}}</span>
+            <textarea rows="2" placeholder="{{t:A reservation, a wish, the reason for the choice}}" value=${v.note}
+              onInput=${function (e) { set({ note: e.target.value }); }}></textarea><${Count} s=${v.note} /></label>`}
       ${v.flag === 'decide_for_me' && recd.length > 0 && html`<p class="fhint">{{t:The recommended one will be chosen:}} «${recd.map(plain).join('», «')}»</p>`}
-      ${!me && html`<label class="who-l">{{t:From}} <input class="who" autocomplete="name" placeholder="{{t:Your name}}" value=${who[0]}
+      ${!store('author') && html`<label class="who-l">{{t:From}} <input class="who" autocomplete="name" placeholder="{{t:Your name}}" value=${who[0]}
         onInput=${function (e) { who[1](e.target.value); }} /></label>`}
       ${!props.past && html`<div class="ffoot"><${Stuck} flag=${v.flag} set=${flag} />
-        ${f.t === 'rating' && html`<span class="muted">{{t:Rated}} ${rated} {{t:of}} ${opts.length}</span>`}<span class="sp"></span>
-        ${dirty && html`<span class="muted">{{t:Not saved}}</span>`}
-        ${dirty && own && html`<button type="button" class="btn" onClick=${reset}>{{t:Cancel}}</button>`}
-        <button type="button" class="btn pri" disabled=${!dirty || !ok} onClick=${save}>{{t:Save}}</button></div>`}
+        <span class="sp"></span>
+        ${dirty && html`<span class="muted" id=${name + '-why'}>${why || '{{t:Not saved}}'}</span>`}
+        ${dirty && html`<button type="button" class="btn" onClick=${reset}>{{t:Reset}}</button>`}
+        <button type="button" class="btn pri" disabled=${!dirty || !!why} aria-describedby=${dirty ? name + '-why' : undefined} onClick=${save}>{{t:Save}}</button></div>`}
     </fieldset>`;
   }
   // one answer as a card beside its field: the choice, the flag or the ratings, the note, who and when
@@ -1658,7 +1693,7 @@
     function done(kind, ids) { out[1]({ kind: kind, ids: ids }); }
     if (!n && !left.length) { return null; }
     return html`<button type="button" class="btn pri send-b" popovertarget="send" aria-label=${'{{t:Pass on comments}} (' + n + ')'}>
-        <${Icon} name="send" /><span class="wide">{{t:Pass on comments}} </span>(${n})</button>
+        <${Icon} name="send" /><span class="wide">{{t:Pass on comments}} </span><span class="short">{{t:Pass on}} </span>(${n})</button>
       <div id="send" popover="auto" class="pop send-p" onToggle=${function (e) { if (e.newState === 'closed') { out[1](null); } }}>
         <h2>{{t:Comments in this browser:}} ${n}</h2>
         <p>{{t:There is no server: send them to whoever keeps the documentation. Paste them into a mail or chat, or attach the file.}}</p>
@@ -1833,7 +1868,6 @@
       function sys() { if ((store('theme') || 'system') === 'system') { applyTheme('system'); dark[1](theme); } }
       if (darkQ && darkQ.addEventListener) { darkQ.addEventListener('change', sys); }
       // comments not passed on since the last copy or download: the browser asks before the tab closes
-      function leave(e) { if (unpassed().length) { e.preventDefault(); e.returnValue = ''; } }
       window.addEventListener('beforeunload', leave);
       // the folded old texts and removed paragraphs are printed open
       function bp() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.dataset.was = d.open ? '1' : ''; d.open = true; }); }
@@ -1968,7 +2002,7 @@
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
     saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer,
-    fieldAnswer: fieldAnswer, answerOk: answerOk, answerWords: answerWords, fieldState: fieldState, exportJSON: exportJSON, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
+    fieldAnswer: fieldAnswer, answerOk: answerOk, fieldProblem: fieldProblem, authorNow: authorNow, store: store, dirtyFields: dirtyFields, leave: leave, markPassed: markPassed, answerWords: answerWords, fieldState: fieldState, exportJSON: exportJSON, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
   applyTheme(store('theme'));
   render(html`<${App} />`, document.getElementById('app'));
 })();

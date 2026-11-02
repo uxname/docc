@@ -94,6 +94,7 @@ a{color:var(--hue);text-decoration-thickness:1px;text-underline-offset:.15em}
 .skip:focus{left:1rem;top:1rem;z-index:90;background:var(--background);padding:.5rem 1rem;box-shadow:var(--shadow)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .muted{color:var(--muted-foreground);font-size:13px}
+.top .short{display:none}
 .sp{flex:1}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .noscript{padding:2rem}
@@ -401,6 +402,8 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px solid var(--
 .fld .nl textarea{font-weight:400}
 .fld .fhint{margin:10px 0 0;font-size:14px;color:var(--muted-foreground)}
 .fld .who-l{margin:10px 0 0}
+.fld .cnt{display:block;margin-top:2px;font-size:12px;font-weight:400;text-align:right;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.fld .cnt.over{color:var(--destructive)}
 .ffoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:14px}
 .ffoot .btn{min-height:max(36px,var(--tgt))}
 .stk{position:relative}
@@ -535,6 +538,7 @@ mark.frag{background:var(--frag-bg);color:inherit;border-bottom:2px solid var(--
 .top .btn.ico,.top .srch{min-width:36px}
 .top .btn::after{content:"";position:absolute;inset:-4px}
 .top .wide,.proj .sep,.proj small{display:none}
+.top .short{display:inline}
 .top .srch{padding:0}
 .top .send-b{padding:0 10px}
 .pop{left:8px;right:8px;width:auto;top:calc(var(--top) + 4px)}

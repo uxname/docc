@@ -242,7 +242,18 @@ pub(super) const RU: &[(&str, &str)] = &[
     ("New page", "Новая страница"),
     // the look of the Docspace reader: the bar of the edits, the hand-off, the theme
     // the rich form fields of the HTML file: option cards, «Stuck ▾», a rating
-    ("Rated", "Отмечено"),
+    ("Reset", "Сбросить"),
+    ("Write your own answer", "Напишите свой ответ"),
+    ("Write an answer", "Напишите ответ"),
+    ("Choose an option", "Выберите вариант"),
+    ("Rate every item:", "Оцените все пункты:"),
+    ("Shorten the text to 2000 characters", "Сократите текст до 2000 знаков"),
+    ("Answer deleted.", "Ответ удалён."),
+    (
+        "Answer saved. It is kept in this browser only: pass it on with the button at the top.",
+        "Ответ сохранён. Он хранится только в этом браузере: передайте его кнопкой вверху.",
+    ),
+    ("Pass on", "Передать"),
     ("Recommended", "Рекомендую"),
     ("Why?", "Почему?"),
     ("What is unclear?", "Что неясно?"),

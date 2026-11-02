@@ -27,7 +27,8 @@ global.htmPreact = { html: () => null, render: noop, useState: (v) => [v, noop],
 global.document = { getElementById: () => ({ textContent: JSON.stringify(data) }), createElement: () => ({}) };
 // the browser holds one rich answer: a flag with a note
 const kept = [{ id: 'c-local00001', doc: 'f', path: '/body/1', quote: 'q', input: 'export', flag: 'decide_for_me', note: 'You know best', text: 'Stuck: Decide for me — You know best', author: 'A', created: '2026-11-02T10:00:00Z' }];
-global.localStorage = { getItem: (k) => (k === 'test:comments' ? JSON.stringify(kept) : null), setItem: noop };
+const ls = { 'test:comments': JSON.stringify(kept) };
+global.localStorage = { getItem: (k) => (k in ls ? ls[k] : null), setItem: (k, v) => { ls[k] = v; } };
 global.addEventListener = noop;
 let T;
 global.doccTest = (t) => { T = t; };
@@ -188,3 +189,40 @@ assert.strictEqual(T.fieldState(rf, { flag: 'help_choose' }).flag, 'help_choose'
 const ex = JSON.parse(T.exportJSON());
 assert.strictEqual(ex.version, 3, 'a flag or a note makes version 3');
 assert.ok(ex.comments[0].flag === 'decide_for_me' && ex.comments[0].note && ex.comments[0].text, JSON.stringify(ex));
+
+// «Reset» brings the field back to the answer saved, or to no answer
+const saved = { answer: ['Year'], note: 'n' };
+assert.deepStrictEqual(T.fieldAnswer(rf, T.fieldState(rf, saved)), saved);
+assert.deepStrictEqual(T.fieldState(rf, undefined), st({}), 'no answer saved: an empty field');
+// a flag hides the choice and the ratings, it does not erase them: what is saved is the flag and the note
+const chosen = st({ v: ['Year'], note: 'n' }), flagged = Object.assign({}, chosen, { flag: 'help_choose' });
+assert.deepStrictEqual(T.fieldAnswer(rf, flagged), { flag: 'help_choose', note: 'n' });
+assert.deepStrictEqual(T.fieldAnswer(rf, Object.assign({}, flagged, { flag: '' })), { answer: ['Year'], note: 'n' }, 'taking the flag off brings the choice back');
+const rflag = st({ rates: { A: ['like', ''] }, flag: 'not_understood' });
+assert.deepStrictEqual(T.fieldAnswer(rt, Object.assign({}, rflag, { flag: '' })), { ratings: [{ option: 'A', rating: 'like' }] });
+// why Save is off, in words
+const why = (f, s) => en(T.fieldProblem(f, s, T.fieldAnswer(f, s)));
+assert.strictEqual(why(rf, st({})), 'Choose an option');
+assert.strictEqual(why(rf, st({ own: [true, ' '] })), 'Write your own answer');
+assert.strictEqual(why(rf, st({ own: [true, 'Mine'] })), '');
+assert.strictEqual(why({ t: 'text', id: 't' }, st({ v: [''] })), 'Write an answer');
+assert.strictEqual(why(rt, st({ rates: { A: ['like', ''] } })), 'Rate every item: 1 of 2');
+assert.strictEqual(why(rt, st({ rates: { A: ['like', ''], B: ['dislike', ''] } })), '');
+assert.strictEqual(why(rf, st({ flag: 'decide_for_me' })), '', 'a flag may always be saved');
+// 2000 characters for the note, a text answer and a rating note; longer is not cut but stops Save
+assert.strictEqual(why(rf, st({ v: ['Year'], note: 'x'.repeat(2000) })), '');
+assert.strictEqual(why(rf, st({ v: ['Year'], note: 'x'.repeat(2001) })), 'Shorten the text to 2000 characters');
+assert.strictEqual(why({ t: 'text', id: 't' }, st({ v: ['x'.repeat(2001)] })), 'Shorten the text to 2000 characters');
+assert.strictEqual(why(rt, st({ rates: { A: ['like', ''], B: ['unsure', 'x'.repeat(2001)] } })), 'Shorten the text to 2000 characters');
+// the name is read when the answer is saved: one given in the dialog after the field was drawn counts
+assert.strictEqual(T.authorNow(' Typed '), 'Typed');
+T.store('author', 'Ivan');
+assert.strictEqual(T.authorNow(''), 'Ivan');
+// closing the tab asks while a comment is not passed on or a field has a choice not saved
+const ev = () => ({ preventDefault() { this.asked = true; } });
+let e1 = ev(); T.leave(e1); assert.ok(e1.asked, 'a comment not passed on');
+T.markPassed();
+e1 = ev(); T.leave(e1); assert.ok(!e1.asked, 'everything passed on, nothing to save');
+T.dirtyFields['f-f-export'] = true;
+e1 = ev(); T.leave(e1); assert.ok(e1.asked && e1.returnValue === '', 'a choice not saved');
+console.log('ok fields');
