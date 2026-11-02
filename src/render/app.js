@@ -18,6 +18,15 @@
   var mq = function (q) { return !!(window.matchMedia && matchMedia(q).matches); };
   var coarse = mq('(pointer: coarse)');
   var reduced = mq('(prefers-reduced-motion: reduce)');
+  // The theme: Light, Dark or System (the default), kept in this file's storage.
+  // <html data-theme> carries the resolved one, as in the Docspace reader;
+  // diagrams and HTML-block frames are drawn in it.
+  var darkQ = window.matchMedia && matchMedia('(prefers-color-scheme: dark)');
+  var theme = 'light';
+  function applyTheme(v) {
+    theme = v === 'light' || v === 'dark' ? v : darkQ && darkQ.matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  }
 
   // ---- small helpers ----
   function store(k, v) {
@@ -533,15 +542,24 @@
     lines.push('docc-comments:' + b64(exportJSON()));
     return lines.join('\n') + '\n';
   }
-  // done(kind, ids) is told which comments went out, so the tab can offer to clear them
+  // What the last copy or download carried, kept in the browser: a comment
+  // written or changed since then is not passed on, and closing the tab asks first.
+  function sig(c) { return c.id + ':' + hash(JSON.stringify([c.text, c.answer || null, c.author || ''])); }
+  function markPassed() { store('passed', local.map(sig)); }
+  function unpassed() {
+    var p = store('passed') || [];
+    return local.filter(function (c) { return p.indexOf(sig(c)) < 0; });
+  }
+  // done(kind, ids) is told which comments went out, so the panel can offer to clear them
   function sendCopy(done) {
     var ids = local.map(function (c) { return c.id; });
-    copy(exportText()).then(function () { toast('{{t:Copied. Paste it into a message.}}'); done('copy', ids); },
+    copy(exportText()).then(function () { markPassed(); toast('{{t:Copied. Paste it into a message.}}'); done('copy', ids); },
       function () { toast('{{t:Could not copy: download the file instead.}}'); });
   }
   function sendFile(done) {
     var ids = local.map(function (c) { return c.id; });
     save('comments-' + new Date().toISOString().slice(0, 10) + '.json', 'application/json', exportJSON());
+    markPassed();
     done('file', ids);
   }
   // Only the comments that went out are cleared, not the ones written since. The
@@ -664,7 +682,7 @@
         if (props.frag) { c.fragment = props.frag.fragment; c.prefix = props.frag.prefix; c.suffix = props.frag.suffix; }
         setLocal(local.concat([c]));
         // nothing leaves the file by itself: say so once
-        if (first) { toast('{{t:Saved in this browser only. Copy your comments in the Comments tab to pass them on.}}'); }
+        if (first) { toast('{{t:Saved in this browser only. Pass your comments on with the button at the top.}}'); }
       }
       draft = false;
       props.close();
@@ -692,6 +710,11 @@
     </div>`;
   }
 
+  // the moment of a comment as the reader writes it, «2 Nov, 14:10»
+  function when(iso) {
+    if (!iso) { return ''; }
+    try { return intl(Intl.DateTimeFormat, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)); } catch (e) { return iso.slice(0, 16).replace('T', ' '); }
+  }
   // one comment as a card on the margin (or under the paragraph on a narrow screen)
   function Card(props) {
     var c = props.c, edit = useState(false);
@@ -700,8 +723,8 @@
       ${c.fragment && html`<div class="fq">${props.lost ? html`<i>{{t:Fragment changed}}:</i> ` : ''}${c.fragment}</div>`}
       <div class="nt">${c.text}</div>
       <div class="meta"><b>${c.author || '{{t:Anonymous}}'}</b>
-        <small>${c.created ? new Date(c.created).toLocaleDateString() : ''}</small>
-        ${c.edited && html`<small>{{t:edited}} ${new Date(c.edited).toLocaleDateString()}</small>`}
+        <small>${when(c.created)}</small>
+        ${c.edited && html`<small>{{t:edited}} ${when(c.edited)}</small>`}
         ${!props.repo && html`<span class="acts">
           <button type="button" class="link" onClick=${function () { edit[1](true); }}>{{t:Edit}}</button>
           <button type="button" class="link" onClick=${function () { removeComment(c); }}>{{t:Delete}}</button></span>`}
@@ -769,18 +792,18 @@
         author: w, created: new Date().toISOString(), build: H.head || '' };
       // one answer of this browser per field: a new one takes its place
       setLocal(local.filter(function (x) { return !(x.doc === doc && x.input === f.id); }).concat([c]));
-      toast(first ? '{{t:Saved in this browser only. Copy your comments in the Comments tab to pass them on.}}' : '{{t:Answer saved.}}');
+      toast(first ? '{{t:Saved in this browser only. Pass your comments on with the button at the top.}}' : '{{t:Answer saved.}}');
     }
     return html`<fieldset class="fld" disabled=${props.past}>
       <legend>${label}</legend>
       ${f.t === 'text' ? html`<textarea rows="3" aria-label=${label} value=${v[0] || ''} onInput=${function (e) { val[1]([e.target.value]); }}></textarea>`
-        : f.options.map(function (o) {
+        : html`<div class="opts">${f.options.map(function (o) {
           return html`<label class="opt"><input type=${f.t} name=${name} checked=${v.indexOf(o) >= 0}
             onChange=${function (e) { pick(o, e.target.checked); }} /> ${plain(o)}</label>`;
         }).concat([html`<div class="opt own"><input type=${f.t} name=${name} checked=${x[0][0]} aria-label="{{t:Own answer}}"
             onChange=${function (e) { pickOwn(e.target.checked, x[0][1]); }} />
           <input type="text" class="own-t" placeholder="{{t:Own answer}}" aria-label="{{t:Own answer}}" value=${x[0][1]}
-            onInput=${function (e) { pickOwn(true, e.target.value); }} /></div>`])}
+            onInput=${function (e) { pickOwn(true, e.target.value); }} /></div>`])}</div>`}
       ${!me && html`<label class="who-l">{{t:From}} <input class="who" autocomplete="name" placeholder="{{t:Your name}}" value=${who[0]}
         onInput=${function (e) { who[1](e.target.value); }} /></label>`}
       ${!props.past && html`<div class="row"><span class="sp"></span>
@@ -795,14 +818,14 @@
   }
 
   // ---- diagrams: a ```mermaid block is drawn by mermaid, embedded only when a page has one ----
-  var diagrams = 0;
+  var diagrams = 0, mmdTheme = '';
   function drawDiagrams(el) {
     var codes = el.querySelectorAll('pre > code.language-mermaid');
     if (!codes.length || !window.mermaid) { return; }
-    if (!diagrams) {
+    if (mmdTheme !== theme) {
       // strict: no scripts or clicks in a diagram; the theme follows the page
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true,
-        theme: window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default' });
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true, theme: theme === 'dark' ? 'dark' : 'default' });
+      mmdTheme = theme;
     }
     Array.prototype.forEach.call(codes, function (code) {
       var pre = code.parentNode;
@@ -837,7 +860,6 @@
     if (b) { f.style.height = Math.ceil(b.getBoundingClientRect().height) + 'px'; }
   }
   function drawHtml(el) {
-    var theme = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     Array.prototype.forEach.call(el.querySelectorAll('pre > code.language-html'), function (code) {
       var pre = code.parentNode, f = document.createElement('iframe');
       f.className = 'hblk';
@@ -996,7 +1018,7 @@
         <div class="tl-h">
           <span class="tl-s-l">{{t:Edits since:}} <b>${sinceLabel(s)}</b><small>${s < last ? exact(s) : ''}</small></span>
           <span class="tl-t-l">{{t:Text as of:}} <b>${atLabel(t)}</b><small>${exact(t)}</small></span>
-          <button type="button" class="btn sm tl-x" popovertarget="when" popovertargetaction="hide">✕ {{t:Close}}</button>
+          <button type="button" class="btn sm flat tl-x" onClick=${props.close}><${Icon} name="x" />{{t:Close}}</button>
         </div>
         ${track && html`<div class="tl-r" onPointerDown=${down} onPointerMove=${drift} onPointerUp=${up} onPointerCancel=${up}>
           <div class="tl-in">
@@ -1042,22 +1064,30 @@
         {{t:Show more:}} ${Math.min(ROWS, days.length - shown.length)} {{t:of}} ${days.length - shown.length}</button>`}
     </div>`;
   }
-  // the timeline in the header: a short summary that opens it
+  // The timeline in a bar at the bottom, as the Changes of the Docspace reader:
+  // «Edits» and a short summary; pressed, it opens upwards over the page.
+  // The list is drawn only while it is open: drawing it on every step is slow.
   function When(props) {
-    var s = props.s, t = props.t, past = t < last, pop = useRef(null);
-    // a long list is drawn only while it is open: drawing it on every step of the page is slow
-    var open = useState(last <= LONG || !('popover' in HTMLElement.prototype));
-    // on a narrow screen the sheet covers the text: it goes away after a pick
-    function done() { if (mq('(max-width: 820px)') && pop.current.hidePopover) { pop.current.hidePopover(); } }
+    var s = props.s, t = props.t, past = t < last, open = useState(false), bar = useRef(null);
+    function close() { open[1](false); var b = bar.current && bar.current.querySelector('.bb-b'); if (b) { b.focus({ preventScroll: true }); } }
+    // on a narrow screen the panel covers the text: it goes away after a pick
+    function done() { if (mq('(max-width: 820px)')) { open[1](false); } }
     // a moment in the past reads by its exact time: «3 days ago → 3 days ago» says nothing
     var short = function (k) { return fmt(k, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
-    var to = past ? short(t) : '{{t:now}}', from = past && ago(s, true) === ago(t, true) ? short(s) : ago(s, true);
-    // one save picked in the list, or a date, reads as that moment
-    var sum = s >= last ? '{{t:edits are not shown}}' : past && s >= t - 1 ? to : from + ' → ' + to;
-    return html`<button type="button" class=${'btn when-b' + (past ? ' past' : '')} popovertarget="when" title=${'{{t:Timeline}}: ' + sinceLabel(s) + ' → ' + atLabel(t)}>
-        <span aria-hidden="true">🕘</span><span class="when-l">{{t:Edits:}}</span><span class="when-s">${sum}</span><span aria-hidden="true">▾</span></button>
-      <div id="when" popover="auto" class="pop when" ref=${pop} onToggle=${function (e) { if (last > LONG) { open[1](e.newState === 'open'); } }}>
-        ${open[0] && html`<${Timeline} ...${props} done=${done} />`}</div>`;
+    var from = past && ago(s, true) === ago(t, true) ? short(s) : ago(s, true), day = fmt(last, { day: 'numeric', month: 'short' });
+    var at = past ? '{{t:Text as of:}} ' + short(t) : '{{t:The latest version is shown}}' + (day ? ' · ' + day : '');
+    // one save picked in the list, or a date, reads as that moment with its edits
+    var sum = at + (s >= last ? '' : past && s >= t - 1 ? ' · {{t:its edits are shown}}' : ' · {{t:Edits since:}} ' + from);
+    return html`<div ref=${bar} class=${'bbar' + (open[0] ? ' open' : '') + (past ? ' past' : '')} role="region" aria-label="{{t:Timeline}}"
+        onKeyDown=${function (e) { if (e.key === 'Escape' && open[0]) { e.stopPropagation(); close(); } }}>
+      <div class="bb-h">
+        <button type="button" class="btn flat bb-b" aria-expanded=${open[0] ? 'true' : 'false'} aria-controls="when"
+          title=${'{{t:Timeline}}: ' + sinceLabel(s) + ' → ' + atLabel(t)} onClick=${function () { if (open[0]) { close(); } else { open[1](true); } }}>
+          <${Icon} name="history" />{{t:Edits}}<span class="bb-up"><${Icon} name="up" /></span></button>
+        <span class="bb-s">${sum}</span>
+      </div>
+      ${open[0] && html`<div id="when" class="bb-p"><${Timeline} ...${props} done=${done} close=${close} /></div>`}
+    </div>`;
   }
 
   // ---- page ----
@@ -1187,6 +1217,17 @@
     '#': '<path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3l-2 18"/>'
   };
   ICONS.spec = ICONS.requirement;
+  // the icons of the bars and buttons (Lucide, ISC)
+  ICONS.search = '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>';
+  ICONS.menu = '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>';
+  ICONS.dots = '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>';
+  ICONS.send = '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>';
+  ICONS.copy = '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>';
+  ICONS.download = '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>';
+  ICONS.history = '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>';
+  ICONS.up = '<path d="m18 15-6-6-6 6"/>';
+  ICONS.comment = '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>';
+  ICONS.x = '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>';
   function Icon(props) {
     return html`<span class="ic" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: '<svg viewBox="0 0 24 24">' + (ICONS[props.name] || ICONS.file) + '</svg>' }}></span>`;
   }
@@ -1242,12 +1283,10 @@
     return html`<li class=${x.kids.length ? 'parent' : ''}>
       <a href=${'#' + p.id} class=${m ? 'm-' + m.k : undefined} aria-current=${here ? 'page' : undefined} onClick=${props.picked}><${Icon} name=${p.kind} /><span class="tt">${p.title}</span>${p.hidden && html` <span class="chip bad">{{t:hidden}}</span>`}
         ${m && html`<span class=${'tm ' + m.k} title=${m.k === 'new' ? '{{t:New page}}' : '{{t:Edits:}} ' + m.n}>${m.k === 'new' ? html`+<span class="sr">{{t:New page}}</span>` : html`<span class="sr">{{t:Edits:}} </span>${m.n}`}</span>`}
-        ${inner && html`<span class="td" title="{{t:Edits inside}}"><span class="sr">{{t:Edits inside}}</span></span>`}</a>
+        ${inner && html`<span class="td" title="{{t:Edits inside}}"><span class="sr">{{t:Edits inside}}</span></span>`}
+        ${props.cnt[p.id] > 0 && html`<span class="cc" title="{{t:Comments}}"><${Icon} name="comment" /><span class="sr">{{t:Comments}}: </span>${props.cnt[p.id]}</span>`}</a>
       ${x.kids.length > 0 && !top && html`<button class="tw" type="button" aria-expanded=${isOpen ? 'true' : 'false'}
         aria-label=${(isOpen ? '{{t:Collapse}}' : '{{t:Expand}}') + ': ' + p.title} onClick=${function () { open[1](!isOpen); }}></button>`}
-      ${here && props.toc.length > 0 && html`<ul class="toc" aria-label="{{t:Sections of the page}}">${props.toc.map(function (h) {
-        return html`<li><a href=${'#' + h.id} class=${'l' + h.level + (props.spy === h.id ? ' on' : '')} onClick=${props.picked}><${Icon} name="#" /><span class="tt">${h.text}</span></a></li>`;
-      })}</ul>`}
       ${x.kids.length > 0 && isOpen && html`<${Items} ...${props} depth=${(props.depth || 0) + 1} nodes=${x.kids} />`}
     </li>`;
   }
@@ -1261,10 +1300,21 @@
     return any;
   }
   function Tree(props) {
-    var inner = {};
+    var inner = {}, cnt = {};
     marked(tree, props.marks, inner);
+    // the comments of a page beside its title, as the reader counts them
+    props.comments.concat(imported).forEach(function (c) { cnt[c.doc] = (cnt[c.doc] || 0) + 1; });
     return html`<nav id="tree" aria-label="{{t:Document tree}}">
-      ${tree.length > 0 && html`<${Items} ...${props} inner=${inner} depth=${0} nodes=${tree} />`}
+      ${tree.length > 0 && html`<${Items} ...${props} inner=${inner} cnt=${cnt} depth=${0} nodes=${tree} />`}
+    </nav>`;
+  }
+  // the headings of the open page: a column of its own on a wide screen, under the tree otherwise
+  function Outline(props) {
+    return html`<nav class="outline" aria-label="{{t:Sections of the page}}">
+      <h2 class="ol-h">{{t:Sections}}</h2>
+      ${props.toc.length > 0 && html`<ul>${props.toc.map(function (h) {
+        return html`<li><a href=${'#' + h.id} class=${'l' + h.level + (props.spy === h.id ? ' on' : '')} onClick=${props.picked}>${h.text}</a></li>`;
+      })}</ul>`}
     </nav>`;
   }
 
@@ -1318,6 +1368,15 @@
         })}
       </ul></div>`}
     </div>`;
+  }
+
+  // the search over the page, opened by «/» or the button in the bar
+  function SearchDialog(props) {
+    var d = useRef(null);
+    useEffect(function () { var el = d.current; if (el.showModal && !el.open) { el.showModal(); } var i = document.getElementById('q'); if (i) { i.focus(); i.select(); } }, []);
+    return html`<dialog ref=${d} class="search-d" aria-label="{{t:Search the documentation}}" onClose=${props.close}
+        onClick=${function (e) { if (e.target === d.current) { d.current.close(); } }}>
+      <${Search} q=${props.q} picked=${function () { if (d.current.open) { d.current.close(); } }} go=${props.go} /></dialog>`;
   }
 
   var kindWord = { chg: '{{t:edited}}', 'new': '{{t:new}}', rm: '{{t:removed}}' };
@@ -1393,18 +1452,18 @@
         <span><small>{{t:Next page with edits:}}</small>${byId[nx].title}</span><span aria-hidden="true">→</span></button>`}
     </div>`;
   }
+  // every comment, of this browser and of the documents, as the reader's list: who and when, the page, the words, the text
   function CommentsTab(props) {
     var list = props.comments, rows = [];
-    var out = useState(null), left = out[0] ? list.filter(function (c) { return out[0].ids.indexOf(c.id) >= 0; }) : [];
     list.forEach(function (c) { rows.push([c, false]); });
     imported.forEach(function (c) { rows.push([c, true]); });
     function row(x) {
         var c = x[0], at = commentPlace(c), p = at.page;
         var body = html`
-          <span class="cp">${p ? p.title : c.doc} · ${c.fragment ? '«' + snip(c.fragment, 50) + '»' : c.input ? '«' + snip(c.quote, 70) + '»' : placeOf(p, c.path, c.quote)}
-            ${at.gone && html` <span class="chip">${at.gone === 'page' ? '{{t:page removed}}' : '{{t:paragraph removed}}'}</span>`}</span>
-          <span class="ctx">${c.text}</span>
-          ${c.author && html`<span class="cp">— ${c.author}</span>`}`;
+          <span class="meta"><b>${c.author || '{{t:Anonymous}}'}</b><small>${when(c.created)}</small></span>
+          <span class="cpg">${p ? p.title : c.doc}${at.gone && html` <span class="chip">${at.gone === 'page' ? '{{t:page removed}}' : '{{t:paragraph removed}}'}</span>`}</span>
+          <span class="fq">${c.fragment ? snip(c.fragment, 50) : c.input ? snip(fieldWords(c.quote), 70) : placeOf(p, c.path, c.quote).slice(1, -1)}</span>
+          <span class="ctx">${c.text}</span>`;
         if (!at.gone) { return html`<li><button type="button" class="cr" onClick=${function () { props.show(c); }}>${body}</button></li>`; }
         // its place is not in the text any more: the comment opens here, with the words it was left on
         return html`<li><details class="cg"><summary class="cr">${body}</summary>
@@ -1412,16 +1471,6 @@
           ${p && html`<a href=${'#' + p.id} onClick=${props.picked}>{{t:Open the page}}</a>`}</details></li>`;
     }
     return html`<div class="pad">
-      ${list.length > 0 && html`<div class="send" id="send">
-        <p>{{t:Your comments are kept only in this browser. Copy them or download a file and pass it to whoever keeps the documentation.}}</p>
-        <div class="row"><button type="button" class="btn pri" onClick=${function () { sendCopy(function (kind, ids) { out[1]({ kind: kind, ids: ids }); }); }}>📋 {{t:Copy comments}}</button>
-          <button type="button" class="btn" onClick=${function () { sendFile(function (kind, ids) { out[1]({ kind: kind, ids: ids }); }); }}>{{t:Download as a file}}</button></div>
-      </div>`}
-      ${left.length > 0 && html`<div class="send" role="status">
-        <p>${out[0].kind === 'file' ? '{{t:Downloaded comments:}}' : '{{t:Copied comments:}}'} ${left.length}. {{t:Remove them from this browser, so that next time only the new comments are passed on?}}</p>
-        <div class="row"><button type="button" class="btn pri" onClick=${function () { out[1](null); clearSent(out[0].ids); }}>{{t:Remove from this browser}}</button>
-          <button type="button" class="btn" onClick=${function () { out[1](null); }}>{{t:Keep}}</button></div>
-      </div>`}
       ${!rows.length && html`<p class="muted">{{t:No comments yet. Select text on the page to comment on it.}}</p>`}
       <ul class="clist">${rows.map(row)}</ul>
     </div>`;
@@ -1469,20 +1518,43 @@
     return html`<div class="side-in">
       <div class="side-top">
         ${D.brand.head && html`<div class="side-brand" dangerouslySetInnerHTML=${{ __html: D.brand.head }}></div>`}
-        <${Search} q=${props.q} picked=${props.picked} go=${props.goHash} />
         ${D.full && html`<p class="banner">{{t:Full build: includes hidden documents and notes. Do not publish.}}</p>`}
+        <div class="tabs seg" role="tablist" aria-label="{{t:Navigation}}" onKeyDown=${key}>${tabs.map(function (t) {
+          return html`<button type="button" role="tab" id=${'tab-' + t[0]} aria-selected=${t[0] === tab ? 'true' : 'false'} aria-controls="tabpanel"
+            tabindex=${t[0] === tab ? '0' : '-1'} onClick=${function () { props.setTab(t[0]); }}>${t[1]}${t[2] > 0 && html` <span class="tc">${t[2]}</span>`}</button>`;
+        })}</div>
       </div>
-      <div class="tabs" role="tablist" aria-label="{{t:Navigation}}" onKeyDown=${key}>${tabs.map(function (t) {
-        return html`<button type="button" role="tab" id=${'tab-' + t[0]} aria-selected=${t[0] === tab ? 'true' : 'false'} aria-controls="tabpanel"
-          tabindex=${t[0] === tab ? '0' : '-1'} onClick=${function () { props.setTab(t[0]); }}>${t[1]}${t[2] > 0 && html` <span class="tc">${t[2]}</span>`}</button>`;
-      })}</div>
       <div id="tabpanel" role="tabpanel" aria-labelledby=${'tab-' + tab} class="panel">
         ${tab === 'pages' && html`<${EditsBar} changes=${props.changes} page=${props.page} open=${open} wide=${props.wide} toggle=${toggle} />
-          <${Tree} cur=${props.page.id} toc=${props.toc} spy=${props.spy} picked=${props.picked} marks=${pageMarks(props.changes.list, props.s, props.t)} />`}
+          <${Tree} cur=${props.page.id} picked=${props.picked} comments=${props.comments} marks=${pageMarks(props.changes.list, props.s, props.t)} />`}
         ${tab === 'comments' && html`<${CommentsTab} comments=${props.comments} picked=${props.picked} show=${function (c) { props.picked(); props.showComment(c); }} />`}
       </div>
-      ${D.version && html`<p class="ver">docc ${D.version}</p>`}
+      ${!props.wide && props.toc.length > 0 && html`<div class="side-ol"><${Outline} toc=${props.toc} spy=${props.spy} picked=${props.picked} /></div>`}
     </div>`;
+  }
+
+  // The hand-off of the comments: a primary button in the bar with their number
+  // opens a panel to copy them or download a file; after that it offers to
+  // remove from the browser the ones that went out.
+  function Send(props) {
+    var list = props.comments, n = list.length, out = useState(null);
+    var left = out[0] ? list.filter(function (c) { return out[0].ids.indexOf(c.id) >= 0; }) : [];
+    function done(kind, ids) { out[1]({ kind: kind, ids: ids }); }
+    if (!n && !left.length) { return null; }
+    return html`<button type="button" class="btn pri send-b" popovertarget="send" aria-label=${'{{t:Pass on comments}} (' + n + ')'}>
+        <${Icon} name="send" /><span class="wide">{{t:Pass on comments}} </span>(${n})</button>
+      <div id="send" popover="auto" class="pop send-p" onToggle=${function (e) { if (e.newState === 'closed') { out[1](null); } }}>
+        <h2>{{t:Comments in this browser:}} ${n}</h2>
+        <p>{{t:There is no server: send them to whoever keeps the documentation. Paste them into a mail or chat, or attach the file.}}</p>
+        <div class="row">
+          <button type="button" class="btn sm" onClick=${function () { sendCopy(done); }}><${Icon} name="copy" />{{t:Copy}}</button>
+          <button type="button" class="btn sm" onClick=${function () { sendFile(done); }}><${Icon} name="download" />{{t:Download as a file}}</button></div>
+        ${left.length > 0 && html`<div class="send" role="status">
+          <p>${out[0].kind === 'file' ? '{{t:Downloaded comments:}}' : '{{t:Copied comments:}}'} ${left.length}. {{t:Remove them from this browser, so that next time only the new comments are passed on?}}</p>
+          <div class="row"><button type="button" class="btn sm pri" onClick=${function () { out[1](null); clearSent(out[0].ids); }}>{{t:Remove from this browser}}</button>
+            <button type="button" class="btn sm" onClick=${function () { out[1](null); }}>{{t:Keep}}</button></div>
+        </div>`}
+      </div>`;
   }
 
   // The name of the reader, asked once on the first visit: it fills the
@@ -1508,17 +1580,25 @@
     </dialog>`;
   }
 
-  // «⋯»: a native popover; it holds the reset
+  // «⋯»: a native popover with the name, the theme, the reset and the version of docc
+  var THEMES = [['light', '{{t:Light}}'], ['dark', '{{t:Dark}}'], ['system', '{{t:System}}']];
   function More(props) {
     var pop = useRef(null);
-    return html`<button type="button" class="btn ico more-b" popovertarget="more" aria-label="{{t:More actions}}" title="{{t:More actions}}">⋯</button>
-      <div id="more" popover="auto" ref=${pop} class="pop">
-        <button type="button" class="mi" onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } props.name(); }}>
+    function hide() { if (pop.current.hidePopover) { pop.current.hidePopover(); } }
+    return html`<button type="button" class="btn flat ico more-b" popovertarget="more" aria-label="{{t:More actions}}" title="{{t:More actions}}"><${Icon} name="dots" /></button>
+      <div id="more" popover="auto" ref=${pop} class="pop more-p">
+        <button type="button" class="mi" onClick=${function () { hide(); props.name(); }}>
           {{t:Your name:}} <b>${store('author') || '{{t:not given}}'}</b> · {{t:change}}</button>
-        <button type="button" class="mi bad" onClick=${function () { if (pop.current.hidePopover) { pop.current.hidePopover(); } props.reset(); }}>{{t:Reset everything…}}</button>
+        <p class="pl" id="theme-l">{{t:Theme}}</p>
+        <div class="seg" role="group" aria-labelledby="theme-l">${THEMES.map(function (x) {
+          return html`<button type="button" aria-pressed=${props.theme === x[0] ? 'true' : 'false'} onClick=${function () { props.setTheme(x[0]); }}>${x[1]}</button>`;
+        })}</div>
+        <hr />
+        <button type="button" class="mi bad" onClick=${function () { hide(); props.reset(); }}>{{t:Reset everything…}}</button>
+        ${D.version && html`<p class="ver">docc ${D.version}</p>`}
       </div>`;
   }
-  // everything this file keeps in the browser: the name, the timeline, the tab, the comments
+  // everything this file keeps in the browser: the name, the timeline, the tab, the theme, the comments
   function resetAll() {
     if (!confirm('{{t:Delete from this browser your name, the chosen point of the timeline, the open tab and your comments}} (' + local.length + ')?')) { return; }
     draft = false;
@@ -1551,7 +1631,9 @@
   }
 
   function App() {
-    var r = useState(route(location.hash)), wide = useState(mq('(min-width: 1280px)')), drawer = useState(false);
+    // desk: the tree is a column (else a drawer); wide: the sections and the list of edits are columns too
+    var r = useState(route(location.hash)), wide = useState(mq('(min-width: 1280px)')), desk = useState(mq('(min-width: 821px)')), drawer = useState(false);
+    var themeV = useState(store('theme') || 'system'), dark = useState(theme), finding = useState(false);
     var q = useState(''), tab = useState(store('tab') || 'pages'), edits = useState(!!store('edits'));
     // S is kept by hash (indexes change with every commit), «now» as now;
     // the starting point of docc.json is the default. T always opens at now.
@@ -1608,7 +1690,8 @@
       var h = blockHash(c.doc, at.ptr);
       if (decode(location.hash) === decode(h)) { r[1](route(h)); } else { location.hash = h; }
     }
-    function picked() { if (!wide[0]) { drawer[1](false); } }
+    function picked() { if (!desk[0]) { drawer[1](false); } }
+    function setTheme(v) { themeV[1](v); store('theme', v); applyTheme(v); dark[1](theme); }
     // the focus goes back to the menu, unless a pick has put it on the place it opened:
     // taking it from there would also stop the scroll to that place halfway
     function closeDrawer() {
@@ -1627,15 +1710,24 @@
         t = setTimeout(function () { try { history.replaceState({ y: window.scrollY }, ''); } catch (e) { /* not allowed */ } }, 150);
       }
       window.addEventListener('scroll', onScroll, { passive: true });
-      var m = window.matchMedia && matchMedia('(min-width: 1280px)'), w = function () { wide[1](m.matches); drawer[1](false); };
-      if (m && m.addEventListener) { m.addEventListener('change', w); }
+      var m = window.matchMedia && matchMedia('(min-width: 1280px)'), w = function () { wide[1](m.matches); };
+      var dm = window.matchMedia && matchMedia('(min-width: 821px)'), dw = function () { desk[1](dm.matches); drawer[1](false); };
+      if (m && m.addEventListener) { m.addEventListener('change', w); dm.addEventListener('change', dw); }
+      // the system's theme, while the reader has chosen System
+      function sys() { if ((store('theme') || 'system') === 'system') { applyTheme('system'); dark[1](theme); } }
+      if (darkQ && darkQ.addEventListener) { darkQ.addEventListener('change', sys); }
+      // comments not passed on since the last copy or download: the browser asks before the tab closes
+      function leave(e) { if (unpassed().length) { e.preventDefault(); e.returnValue = ''; } }
+      window.addEventListener('beforeunload', leave);
       // the folded old texts and removed paragraphs are printed open
       function bp() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.dataset.was = d.open ? '1' : ''; d.open = true; }); }
       function ap() { [].forEach.call(document.querySelectorAll('details.ghost,details.old'), function (d) { d.open = !!d.dataset.was; }); }
       window.addEventListener('beforeprint', bp); window.addEventListener('afterprint', ap);
       return function () {
         window.removeEventListener('hashchange', on); window.removeEventListener('scroll', onScroll);
-        if (m && m.removeEventListener) { m.removeEventListener('change', w); }
+        if (m && m.removeEventListener) { m.removeEventListener('change', w); dm.removeEventListener('change', dw); }
+        if (darkQ && darkQ.removeEventListener) { darkQ.removeEventListener('change', sys); }
+        window.removeEventListener('beforeunload', leave);
         window.removeEventListener('beforeprint', bp); window.removeEventListener('afterprint', ap);
       };
     }, []);
@@ -1664,7 +1756,7 @@
       if (!d) { return; }
       if (drawer[0] && !d.open) {
         d.showModal();
-        var f = drawer[0] === 'search' ? document.getElementById('q') : d.querySelector('[role=tab][aria-selected=true]') || d.querySelector('[aria-current]');
+        var f = d.querySelector('[role=tab][aria-selected=true]') || d.querySelector('[aria-current]');
         if (f) { f.focus(); }
       } else if (!drawer[0] && d.open) { d.close(); }
     }, [drawer[0]]);
@@ -1702,7 +1794,7 @@
       return function () { document.removeEventListener('keydown', key); };
     });
     function goSearch() {
-      if (wide[0]) { var i = document.getElementById('q'); if (i) { i.focus(); i.select(); } } else { drawer[1]('search'); }
+      if (finding[0]) { var i = document.getElementById('q'); if (i) { i.focus(); i.select(); } } else { finding[1](true); }
     }
     function setToc(items) { if (JSON.stringify(items) !== JSON.stringify(toc[0])) { toc[1](items); } }
 
@@ -1722,32 +1814,37 @@
     var curA = all.list[cur[0]] ? all.list[cur[0]].a : null;
     // the margin for the cards opens only when the page has comments or an editor
     var rail = !past && (!!editor[0] || comments.concat(imported).some(function (c) { return c.doc === page.id && !c.input && !c.lost; }));
+    var title = page !== pages[0] && page.title;
     return html`
       <a class="skip" href="#main" onClick=${function (e) { e.preventDefault(); var m = document.getElementById('main'); m.focus(); m.scrollIntoView(); }}>{{t:Skip to content}}</a>
-      <header class=${'top' + (last > 0 ? ' has-tl' : '')} role="banner">
-        ${!wide[0] && html`<button id="menu" type="button" class="btn ico" aria-label="{{t:Menu}}" aria-expanded=${drawer[0] ? 'true' : 'false'} onClick=${function () { drawer[1](true); }}>☰</button>`}
-        <div class="proj">${D.brand.head && html`<span dangerouslySetInnerHTML=${{ __html: D.brand.head }}></span>`}<a href=${'#' + pages[0].id}>${D.title}</a></div>
+      <header class="top" role="banner">
+        ${!desk[0] && html`<button id="menu" type="button" class="btn flat ico" aria-label="{{t:Menu}}" aria-expanded=${drawer[0] ? 'true' : 'false'} onClick=${function () { drawer[1](true); }}><${Icon} name="menu" /></button>`}
+        <div class="proj">${D.brand.head && html`<span dangerouslySetInnerHTML=${{ __html: D.brand.head }}></span>`}<a href=${'#' + pages[0].id}>${D.title}</a>
+          ${title && html`<span class="sep" aria-hidden="true">›</span><small>${title}</small>`}</div>
         <span class="sp"></span>
-        ${last > 0 && html`<${When} page=${page} s=${s} t=${t} setRange=${setRange} />`}
-        ${!wide[0] && html`<button type="button" class="btn mid" aria-label="{{t:Search}}" onClick=${goSearch}>🔍<span class="mid-t"> {{t:Search}}</span></button>`}
-        <${More} reset=${resetAll} name=${function () { askName[1](true); }} />
+        <button type="button" class="btn srch" aria-label="{{t:Search}}" title="{{t:Search}} ( / )" onClick=${goSearch}><${Icon} name="search" /><span class="wide">{{t:Search}}</span><kbd class="wide">/</kbd></button>
+        <${Send} comments=${comments} />
+        <${More} reset=${resetAll} name=${function () { askName[1](true); }} theme=${themeV[0]} setTheme=${setTheme} />
       </header>
-      <div class=${'shell' + (rail ? ' work' : '') + (eds ? ' eds' : '')}>
-        ${wide[0] ? html`<aside id="side" aria-label="{{t:Navigation}}">${side}</aside>
-          ${eds && html`<aside id="edits" aria-labelledby="eds-h"><${EditsPanel} ...${sideProps} wide=${true} close=${toggleEdits} /></aside>`}`
+      <div class=${'shell' + (rail ? ' work' : '') + (eds ? ' eds' : wide[0] ? ' ol' : '')}>
+        ${desk[0] ? html`<aside id="side" aria-label="{{t:Navigation}}">${side}</aside>
+          ${eds && html`<aside id="edits" aria-labelledby="eds-h"><${EditsPanel} ...${sideProps} wide=${true} close=${toggleEdits} /></aside>`}
+          ${wide[0] && !eds && html`<aside id="outline"><${Outline} toc=${toc[0]} spy=${spy[0]} picked=${picked} /></aside>`}`
           : html`<dialog id="drawer" ref=${dr} class="drawer" aria-label="{{t:Navigation}}" onClose=${closeDrawer}
               onClick=${function (e) { if (e.target === dr.current) { dr.current.close(); } }}>
-              <button type="button" class="btn side-x" onClick=${function () { dr.current.close(); }}>✕ {{t:Close}}</button>
+              <button type="button" class="btn flat sm side-x" onClick=${function () { dr.current.close(); }}><${Icon} name="x" />{{t:Close}}</button>
               ${drawer[0] && side}</dialog>`}
         <main id="main" tabindex="-1">
-          <${Page} key=${page.id} page=${page} comments=${comments} s=${s} t=${t} setT=${setT} onToc=${setToc} missing=${r[0].missing}
+          <${Page} key=${page.id + ':' + dark[0]} page=${page} comments=${comments} s=${s} t=${t} setT=${setT} onToc=${setToc} missing=${r[0].missing}
             cur=${curA} editor=${editor[0]} closeEditor=${function () { editor[1](null); }} activeC=${activeC[0]} />
         </main>
       </div>
+      ${last > 0 && html`<${When} page=${page} s=${s} t=${t} setRange=${setRange} />`}
       ${frag[0] && coarse && html`<div class="nav" role="region" aria-label="{{t:Comment on the selection}}">
-        <button type="button" class="btn pri" onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 {{t:Comment on the selection}}</button></div>`}
+        <button type="button" class="btn pri" onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}><${Icon} name="comment" />{{t:Comment on the selection}}</button></div>`}
       ${frag[0] && !coarse && html`<button type="button" class="btn pri fragb" style=${'left:' + Math.min(frag[0].x, window.innerWidth - 220) + 'px;top:' + (frag[0].y + 8) + 'px'}
-        onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}>💬 {{t:Comment on the selection}}</button>`}
+        onMouseDown=${function (e) { e.preventDefault(); }} onClick=${commentSel}><${Icon} name="comment" />{{t:Comment on the selection}}</button>`}
+      ${finding[0] && html`<${SearchDialog} q=${q} close=${function () { finding[1](false); }} go=${function (h) { r[1](route(h)); }} />`}
       ${askName[0] && html`<${NameDialog} close=${function () { askName[1](false); }} />`}
       <${Toast} />`;
   }
@@ -1755,5 +1852,6 @@
   // the pure parts, for app_test.js; nothing else sets this
   if (window.doccTest) { window.doccTest({ wordMarks: wordMarks, words: words, plain: plain, snip: snip, findFragment: findFragment, placeGhost: placeGhost, pageDelta: pageDelta, between: between,
     saveDays: saveDays, atDate: atDate, pathOf: pathOf, answersFor: answersFor, splitAnswer: splitAnswer, joinAnswer: joinAnswer, fieldWords: fieldWords, thumbFor: thumbFor, pageMarks: pageMarks, allChanges: allChanges, commentPlace: commentPlace, lostOn: lostOn, nest: nest, pageEdits: pageEdits, nextEdited: nextEdited, route: route, frameDoc: frameDoc, FRAME_SANDBOX: FRAME_SANDBOX }); return; }
+  applyTheme(store('theme'));
   render(html`<${App} />`, document.getElementById('app'));
 })();

@@ -30,8 +30,8 @@ fn branding_in_html_only() {
         r#"<a class="brand" href="https://example.com/x"><span class="logo" role="img" aria-label="A &amp; B"></span></a>"#,
         r#"--brand-logo:url("data:image/svg+xml;base64,"#,
         "--brand-bg:#1f1f1f",
-        "--accent:#0b7a64",
-        "--accent:#57e9c7",
+        "--hue:#0b7a64",
+        "--hue:#57e9c7",
         r#"<div class="brand-print">A &amp; B</div>"#,
         r#"<footer class="brand-foot">A &amp; B · <a href="https://example.com/x">example.com</a></footer>"#,
     ] {
@@ -55,7 +55,7 @@ fn branding_name_only() {
         assert!(html.contains(want), "out.html lacks {want:?}");
     }
     assert!(
-        html.contains(":root{--brand-bg:#1f1f1f;--brand-line:var(--accent)}\n:root{--hbg:var(--brand-bg)")
+        html.contains(":root{--brand-bg:#1f1f1f;--brand-line:var(--hue)}\n.top{background:var(--brand-bg)")
             && !html.contains("--brand-logo:"),
         "no logo and no colours were given: only the default header colour is set"
     );

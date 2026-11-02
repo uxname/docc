@@ -24,7 +24,7 @@ impl Renderer<'_> {
         );
         let mut vars = format!(
             "--brand-bg:{bg};--brand-line:{}",
-            or_default(&b.accent, "var(--accent)")
+            or_default(&b.accent, "var(--hue)")
         );
         let mut logo = String::new();
         if !b.logo.is_empty() {
@@ -43,12 +43,12 @@ impl Renderer<'_> {
         }
         let mut css = format!(":root{{{vars}");
         if !light.is_empty() {
-            css += &format!(";--accent:{light};--accent-bg:color-mix(in srgb,{light} 12%,#fff)");
+            css += &format!(";--hue:{light};--focus:{light}");
         }
         css += "}\n";
         if !dark.is_empty() {
             css += &format!(
-                "@media (prefers-color-scheme:dark){{:root{{--accent:{dark};--accent-bg:color-mix(in srgb,{dark} 20%,#0f1318)}}}}\n"
+                "[data-theme=dark]{{--hue:{dark};--focus:{dark}}}\n"
             );
         }
         css += BRAND_CSS;
