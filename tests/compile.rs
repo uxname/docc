@@ -681,3 +681,16 @@ fn hidden_versions_stay_out_of_the_timeline() {
     let s = p.read("proj/docs/out-full.html");
     assert!(s.contains("HIDDENDOCTEXT") && s.contains("WHILEHIDDEN"), "the audit build keeps every version");
 }
+
+#[test]
+fn compile_block_link_keeps_its_version_hash() {
+    // the reader learns from #<page>--<code>@<hash> that the block changed since the link
+    let p = project([
+        ("docc.json", "{}"),
+        ("docs/src/index.json", r#"{"title":"Home","key":"HOM","body":"See [[a#^AAA-1@2345]]. ^HOM-1"}"#),
+        ("docs/src/a.json", r#"{"title":"A","key":"AAA","parent":"index","body":"Said. ^AAA-1"}"#),
+    ]);
+    let (_, v) = compile(&p.path, &[]);
+    let h = s(&page(&v, "index")["blocks"][0], "h");
+    assert!(h.contains("href=\"#a--AAA-1@2345\""), "{h}");
+}

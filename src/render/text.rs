@@ -222,6 +222,11 @@ impl<'a> Page<'_, 'a> {
             let (mut anc, mut text) = (String::new(), self.r.title(t));
             if let Some(name) = field.strip_prefix('^') {
                 anc = name.to_string(); // a block anchor link reads as the document title
+                // the HTML file's #<page>--<code>@<hash>: its reader (and Docspace's) tells a block
+                // changed since the link; Markdown keeps the plain anchor its <a id> has
+                if let (true, Some(h)) = (self.r.html, &rf.hash) {
+                    anc = format!("{anc}@{h}");
+                }
             } else if has_field && field != "body" && field != "title" {
                 let a = self.r.anchor_of(t, engine::resolve(root(t), field));
                 anc = a.anchor;
