@@ -1,6 +1,6 @@
 ---
 name: docc
-description: Write, edit and fix project documentation stored as JSON in docs/src and checked by the docc linter. Use whenever a task touches docs/src, docs/schemas, docc.json, code files with docc: tags, or asks to document something, record a requirement or decision, or update project documentation in a project that has a docc.json, even if another document skill also fits. Covers block codes, version hashes in links, docc validate, docc build, docc migrate and reading diagnostics.
+description: "Write, edit and fix project documentation stored as JSON in docs/src and checked by the docc linter. Use whenever a task touches docs/src, docs/schemas, docc.json, code files with docc: tags, or asks to document something, record a requirement or decision, or update project documentation in a project that has a docc.json, even if another document skill also fits. Covers block codes, version hashes in links, docc validate, docc build, docc migrate and reading diagnostics."
 ---
 
 # docc
