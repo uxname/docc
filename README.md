@@ -46,7 +46,7 @@ Update it with `npx skills update`. The skill needs the `docc` binary from above
 
     docc init        # docc.json (maxWarnings 0, commitOut false), docs/schemas/page.json, docs/src/index.json, .gitignore lines, docs/out, a git pre-commit hook
     docc validate    # check the sources (--format json for agents and CI; paths limit the report)
-    docc build       # give codes to new blocks, write docs/out (--single, --html: also one .md file and one HTML app, kept up to date once made; --no-comments, --since; --page: one page; --rev: the HTML file of a Git revision)
+    docc build       # give codes to new blocks, write docs/out (--single, --html: also one .md file and one HTML app, kept up to date once made; --no-comments, --since; --codes: block codes in bold, for print; --page: one page; --rev: the HTML file of a Git revision)
     docc compile     # print pages, tree and diagnostics as one JSON object, write nothing (--rev: a Git revision, --hidden: with hidden documents)
     docc log         # the commits that changed the documents, with the files and block counts of each (JSON for programs)
     docc diff A B    # the blocks of the documents of two revisions lined up (--path: one document, every block)

@@ -39,6 +39,8 @@ pub struct Renderer<'a> {
     pub since: String,
     /// the id of the one page the build writes (build --page); "" for every page
     pub only: String,
+    /// Markdown shows each block's code in bold before it (build --codes)
+    pub codes: bool,
 }
 
 impl<'a> Renderer<'a> {
@@ -58,6 +60,7 @@ impl<'a> Renderer<'a> {
             comments: true,
             since: String::new(),
             only: String::new(),
+            codes: false,
         }
     }
 
@@ -71,6 +74,7 @@ impl<'a> Renderer<'a> {
             comments: self.comments,
             since: self.since.clone(),
             only: self.only.clone(),
+            codes: self.codes,
             hidden: self.hidden,
             ..Renderer::new(self.p, self.full)
         }

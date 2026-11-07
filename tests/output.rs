@@ -204,3 +204,46 @@ fn walk(dir: &std::path::Path) -> Vec<String> {
     }
     out
 }
+
+/// build --codes shows each block's code in bold in the Markdown: at the start
+/// of a paragraph or a list item, as a line of its own before a list, table or
+/// quote; the anchor of a linked block stands before it. The HTML file is not
+/// changed, docc check accepts docs/out with and without codes, and a build
+/// without the flag writes the pages as before.
+#[test]
+fn block_codes_shown() {
+    let p = raw_project([
+        ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#),
+        (
+            "docs/src/index.json",
+            r#"{"title":"Index","kind":"page","key":"IND","body":["Plain. ^IND-1","**Note.** Bold. ^IND-2","- one\n- two ^IND-3","| a | b |\n| --- | --- |\n| 1 | 2 | ^IND-4","> quoted ^IND-5","Linked. ^IND-6"],"mixed":["- nested ^IND-7",{"k":"v"}]}"#,
+        ),
+        ("docs/src/a.json", r#"{"title":"A","kind":"page","key":"AA","parent":"index","body":"See [[index#^IND-6@7yrx]] and [[index#^IND-4@du46]]. ^AA-1"}"#),
+    ]);
+    p.must_build();
+    let plain = p.read("docs/out/index.md");
+    assert!(!plain.contains("**IND-"), "no codes without the flag:\n{plain}");
+
+    let (code, out, errs) = p.run(&["build", "--codes", "--single", "--html"]);
+    assert_eq!(code, 0, "{out} {errs}");
+    let md = p.read("docs/out/index.md");
+    for want in [
+        "\n**IND-1** Plain.\n",
+        "\n**IND-2** **Note.** Bold.\n",
+        "\n**IND-3**\n\n- one\n- two\n",
+        "\n<a id=\"IND-4\"></a>**IND-4**\n\n| a | b |\n",
+        "\n**IND-5**\n\n> quoted\n",
+        "\n<a id=\"IND-6\"></a>**IND-6** Linked.\n",
+        "\n- **IND-7**\n\n  - nested\n",
+    ] {
+        assert!(md.contains(want), "want {want:?} in:\n{md}");
+    }
+    let single = p.read("docs/out.md");
+    assert!(single.contains("<a id=\"index--IND-6\"></a>**IND-6** Linked.") && single.contains("**AA-1** See"), "{single}");
+    assert!(!read_app(&p, "docs/out.html").blocks.contains("<strong>IND-"), "the HTML file shows codes itself");
+    let (code, out, _) = p.run(&["check"]);
+    assert_eq!(code, 0, "docs/out with codes is fresh: {out}");
+
+    p.must_build();
+    assert_eq!(p.read("docs/out/index.md"), plain, "a build without the flag writes the pages as before");
+}

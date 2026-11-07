@@ -550,7 +550,7 @@ fn fresh_matches_go(dir: &Path) -> Vec<String> {
     let mut p = engine::load(cfg).unwrap();
     p.validate();
     let files = Renderer::new(&p, false).files();
-    check_fresh(&p, "docs/out", &files, None);
+    check_fresh(&p, "docs/out", &files, Vec::new);
     let mut got: Vec<String> = p
         .sorted()
         .iter()
@@ -863,7 +863,7 @@ fn small_project() -> (PathBuf, engine::Project, HashMap<String, Vec<u8>>) {
 
 /// fresh_diags runs check_fresh on docs/out and returns its DOC501 as "file: message".
 fn fresh_diags(p: &mut engine::Project, files: &HashMap<String, Vec<u8>>) -> Vec<String> {
-    check_fresh(p, "docs/out", files, None);
+    check_fresh(p, "docs/out", files, Vec::new);
     p.sorted()
         .iter()
         .filter(|d| d.code == "DOC501")

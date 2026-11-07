@@ -436,9 +436,12 @@ impl<'a> Page<'_, 'a> {
         // the HTML file finds a block by its code in the data; in Markdown a tag
         // before a fence, table, footnote, list or heading would break it
         // a block no link points to needs no tag
-        let tag = if name.is_empty()
+        // build --codes: the code in bold starts the paragraph, or stands as a
+        // paragraph of its own before a block it would break; the tag goes before it
+        let code = self.r.codes && !name.is_empty() && !self.r.html;
+        let mut tag = if name.is_empty()
             || self.r.html
-            || !plain_start(text)
+            || !(code || plain_start(text))
             || !self.r.p.linked.contains(&format!("{}#{name}", self.doc.id))
         {
             String::new()
@@ -447,6 +450,9 @@ impl<'a> Page<'_, 'a> {
         } else {
             format!(r#"<a id="{name}"></a>"#)
         };
+        if code {
+            tag += &format!("**{name}**{}", if inline_start(text) { " " } else { "\n\n" });
+        }
         (text.to_string(), tag)
     }
 
@@ -543,7 +549,8 @@ impl<'a> Page<'_, 'a> {
         }
         let body = self.inline(&text, includes && it.kind == Kind::String);
         vec![format!(
-            "{indent}{marker}{tag}{}",
+            "{indent}{marker}{}{}",
+            tag.replace("\n\n", &format!("\n\n{indent}{pad}")),
             indent_lines(&body, &format!("{indent}{pad}"))
         )]
     }
@@ -580,6 +587,17 @@ fn plain_start(s: &str) -> bool {
         || matches!(first, '`' | '~' | '|' | '#' | '>' | '<' | '-' | '*' | '+' | '$' | '_' | '=')
         || t.starts_with("[^")
         || t.split_once(['.', ')']).is_some_and(|(n, rest)| !n.is_empty() && n.len() <= 9 && n.bytes().all(|b| b.is_ascii_digit()) && rest.starts_with(' ')))
+}
+
+/// inline_start reports whether a bold code may start the line of s: a
+/// paragraph, or one that opens with emphasis ("**Note.** ..."), not a list
+/// marker or a rule.
+fn inline_start(s: &str) -> bool {
+    let line = s.trim_start_matches(' ').lines().next().unwrap_or("");
+    plain_start(s)
+        || (line.starts_with(['*', '_'])
+            && !line[1..].starts_with(char::is_whitespace)
+            && !line.chars().all(|c| matches!(c, '*' | '_' | ' ')))
 }
 
 /// escape_html_outside_code writes "<" and "&" of s as entities outside

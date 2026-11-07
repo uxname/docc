@@ -39,7 +39,7 @@ Usage: docc [flags] <command> [flags]
 Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate [paths]   check sources (paths: report only the problems in those files and folders)
-  build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --since, --page, --rev)
+  build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --codes, --since, --page, --rev)
   watch              build again whenever a source is saved and serve the HTML page, which reloads itself (--full, --no-comments)
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision, --hidden: with hidden documents)
   log                print the commits that changed the documents, with the files and block counts of each
@@ -103,7 +103,12 @@ rebuilt by every later docc build. A program that shows the pages itself reads d
 They are for reading, are not checked by docc check and are usually kept out of git.
 The readers' comments (\"$comments\" of the documents) stand under their blocks in the
 Markdown and the HTML file, those that lost their place at the top of the page;
---no-comments leaves them out. --since names the revision (tag, branch, commit) of the
+--no-comments leaves them out. --codes shows the code of every block in bold before its text
+in the Markdown pages and docs/out.md (**PAY-14** Text; before a list, table, quote or code
+block it stands as a line of its own), so a printed page names the blocks other documents
+cite; the HTML file is not changed (it shows a block's code on hover). docc check accepts docs/out
+built with or without it; a later build without the flag writes the pages without codes.
+--since names the revision (tag, branch, commit) of the
 version the reader last received: the HTML file shows the edits since it and no history
 before it. Fenced ```mermaid blocks are drawn as diagrams in the HTML file (the drawing
 library goes into the file only when a page has one); elsewhere they stay code.
@@ -120,6 +125,7 @@ Examples:
   docc build
   docc build --full
   docc build --single
+  docc build --codes --single
   docc build --html
   docc build --html --since sent-2026-10-06 --no-comments
   docc build --full --single --html
@@ -808,6 +814,8 @@ fn no_args(pos: &[String]) -> Result<(), Error> {
 struct BuildOpts {
     /// leave the readers' comments out (--no-comments)
     no_comments: bool,
+    /// show each block's code in bold in the Markdown (--codes)
+    codes: bool,
     /// the revision the HTML file counts the edits from (--since)
     since: String,
     /// the id of the one page to write (--page); "" for every page
@@ -838,7 +846,7 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     }
     let dir = if full { &p.cfg.out_full } else { &p.cfg.out };
     let mut r = render::Renderer::new(p, full);
-    (r.comments, r.since, r.only) = (!o.no_comments, o.since.clone(), o.page.clone());
+    (r.comments, r.since, r.only, r.codes) = (!o.no_comments, o.since.clone(), o.page.clone(), o.codes);
     if o.rev {
         // docs/out and docc.lock belong to a checkout; the HTML file goes where docc runs
         let f = PathBuf::from(render::single_file(p, dir, ".html")?.file_name().unwrap_or_default());
@@ -909,6 +917,7 @@ fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
         fs.bool_var(&mut single, "single", "also write all pages as one Markdown file next to the output directory");
         fs.bool_var(&mut html, "html", "also write all pages as one self-contained HTML file next to the output directory");
         fs.bool_var(&mut o.no_comments, "no-comments", "leave the readers' comments ($comments) out of everything this build writes");
+        fs.bool_var(&mut o.codes, "codes", "Markdown: show each block's code (**PAY-14**) before its text, for print; the HTML file is not changed (it shows a block's code on hover)");
         fs.string_var(&mut o.since, "since", "HTML file: the Git revision (tag, branch, commit) of the version the reader last received; the edits since it are shown, the history before it is left out");
         fs.string_var(&mut page, "page", "write only this page: its path relative to src as docc compile gives it (decisions/monolith.json, .json may be left out) or its id");
         fs.string_var(&mut rev, "rev", "build the tree of this Git revision (commit, branch, tag) without a checkout; needs --html and writes only the HTML file, into the current folder");
@@ -991,14 +1000,22 @@ fn cmd_check(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
     // docs/out is compared only when the paths reach it
     let out = p.cfg.out.trim_start_matches("./").trim_end_matches('/').to_string();
     let fresh = p.scope.is_empty() || p.scope.iter().any(|s| engine::under(s, &out) || engine::under(&out, s));
-    // docs/out may be built with or without the readers' comments
+    // docs/out may be built with or without the readers' comments, with or without --codes
     if fresh && !engine::structural(&p.diags()) && p.cfg.commit_out {
-        let r = render::Renderer::new(&p, false);
-        let mut bare = render::Renderer::new(&p, false);
-        bare.comments = false;
-        let with = r.files();
-        let without = p.docs.iter().any(|d| d.root().is_some_and(|r| r.get(crate::comments::KEY).is_some())).then(|| bare.files());
-        render::check_fresh(&p, &p.cfg.out, &with, without.as_ref());
+        let with = render::Renderer::new(&p, false).files();
+        let has_comments = p.docs.iter().any(|d| d.root().is_some_and(|r| r.get(crate::comments::KEY).is_some()));
+        let alts = || {
+            let mut out = Vec::new();
+            for (comments, codes) in [(false, false), (true, true), (false, true)] {
+                if comments || has_comments {
+                    let mut r = render::Renderer::new(&p, false);
+                    (r.comments, r.codes) = (comments, codes);
+                    out.push(r.files());
+                }
+            }
+            out
+        };
+        render::check_fresh(&p, &p.cfg.out, &with, alts);
     }
     let mut ds = p.sorted();
     ds.retain(|d| p.in_scope(&d.file));

@@ -378,10 +378,12 @@ fn src(p: &Project, rel: &str) -> String {
 
 /// CheckFresh compares dir with the expected files and reports DOC501 for
 /// missing, outdated and extra files.
-/// alt, when given, is a second build a file may equal instead (docs/out built
-/// without the readers' comments).
-pub fn check_fresh(p: &Project, out_rel: &str, files: &HashMap<String, Vec<u8>>, alt: Option<&HashMap<String, Vec<u8>>>) {
+/// alts gives the other builds a file may equal instead (docs/out built
+/// without the readers' comments, or with --codes); it runs only when a file
+/// differs from files, and once.
+pub fn check_fresh(p: &Project, out_rel: &str, files: &HashMap<String, Vec<u8>>, alts: impl FnOnce() -> Vec<HashMap<String, Vec<u8>>>) {
     let dir = p.cfg.abs(out_rel);
+    let (mut alts, mut other) = (Some(alts), None);
     let mut seen = std::collections::HashSet::new();
     for e in walk_dir(&dir).0 {
         if e.is_dir {
@@ -415,8 +417,13 @@ pub fn check_fresh(p: &Project, out_rel: &str, files: &HashMap<String, Vec<u8>>,
                 g
             }
         });
-        let other = alt.and_then(|a| e.key().and_then(|k| a.get(k)));
-        if !got.is_ok_and(|g| g == *want || other.is_some_and(|o| g == *o)) {
+        let fresh = got.is_ok_and(|g| {
+            g == *want || {
+                let other: &Vec<HashMap<String, Vec<u8>>> = other.get_or_insert_with(|| alts.take().map_or_else(Vec::new, |f| f()));
+                other.iter().any(|a| e.key().and_then(|k| a.get(k)) == Some(&g))
+            }
+        });
+        if !fresh {
             p.report_file(
                 &file,
                 "DOC501",
