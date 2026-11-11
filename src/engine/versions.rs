@@ -1,7 +1,7 @@
 //! Version hashes of links (DOC209): every [[...]] and every target of a
 //! docc: tag in code carries the hash of what it points to, and a hash that
 //! is missing or no longer matches is an error until an agent reads the
-//! change and writes the new hash by hand.
+//! change and confirms that one place (docc ack <file>:<line>).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -163,8 +163,9 @@ impl Project {
     }
 
     /// stale_message is the message and hint of a link to target written
-    /// with the hash had (None: no hash) when its version is now v.
-    pub(super) fn stale_message(&self, written: &str, target: &str, had: Option<&str>, v: &Version) -> (String, String) {
+    /// with the hash had (None: no hash) when its version is now v; place
+    /// (file:line) is what docc ack takes to confirm it.
+    pub(super) fn stale_message(&self, place: &str, written: &str, target: &str, had: Option<&str>, v: &Version) -> (String, String) {
         thread_local! {
             static OLD: RefCell<HashMap<(String, String), Option<String>>> = RefCell::new(HashMap::new());
         }
@@ -172,7 +173,7 @@ impl Project {
             return (
                 format!("{written} has no version hash"),
                 format!(
-                    "Read {target}, check that this place agrees with it, then write the hash into the link: {target}@{}. It reads now:{}",
+                    "Read {target}, check that this place agrees with it, then confirm this place with docc ack {place} (it writes {target}@{}). It reads now:{}",
                     v.hash,
                     indent(&v.text)
                 ),
@@ -191,7 +192,7 @@ impl Project {
         (
             format!("{written}: the target changed, its hash is now @{}", v.hash),
             format!(
-                "Read the change, check that this place still agrees with it (fix it if not), then write @{} in place of @{had} by hand. {what}",
+                "Read the change, check that this place still agrees with it (fix it if not), then confirm this place with docc ack {place} (it writes @{} in place of @{had}). {what}",
                 v.hash
             ),
         )
@@ -218,7 +219,9 @@ impl Project {
                     continue;
                 }
                 let written = go_quote(&String::from_utf8_lossy(&d.res().src.data[r.start..r.end]));
-                let (msg, hint) = self.stale_message(&format!("link {written}"), &r.inner, r.hash.as_deref(), v);
+                let src = &d.res().src.data;
+                let place = format!("{}:{}", d.file, src[..r.start].iter().filter(|&&b| b == b'\n').count() + 1);
+                let (msg, hint) = self.stale_message(&place, &format!("link {written}"), &r.inner, r.hash.as_deref(), v);
                 self.emit(d, "DOC209", r.start, r.end, msg, hint);
             }
         }

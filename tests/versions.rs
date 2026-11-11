@@ -60,6 +60,50 @@ fn a_changed_target_breaks_its_links() {
     assert_eq!(code, 0, "the hash rewritten by hand: {out}");
 }
 
+/// docc ack confirms one place: the stale link of a line, or the one its
+/// target names when the line holds several, or a target or the fingerprint
+/// of a docc: tag; it prints what it wrote and touches nothing else.
+#[test]
+fn ack_confirms_one_place() {
+    let p = project([
+        ("docc.json", r#"{"commitOut":false,"trace":{"scan":["code/**"]}}"#),
+        ("docs/src/index.json", "{\"title\":\"Index\",\n\"body\":[\"See [[b#^BB-1]] and [[b#^BB-2]].\",\n\"Also [[b#^BB-1]].\"]}"),
+        ("docs/src/b.json", r#"{"title":"B","key":"BB","parent":"index","body":["One. ^BB-1","Two. ^BB-2"]}"#),
+        ("code/a.go", "package a\n\n// docc:begin b#^BB-1\nconst n = 1\n// docc:end\n"),
+    ]);
+    assert_eq!(p.run(&["check"]).0, 0);
+    let index = p.read("docs/src/index.json");
+    let line = 1 + index[..index.find("See").unwrap()].matches('\n').count();
+    let place = format!("docs/src/index.json:{line}");
+    let (code, _, err) = p.run(&["ack", &place]);
+    assert!(code == 2 && err.contains("nothing to confirm"), "{err}");
+    p.write("docs/src/b.json", p.read("docs/src/b.json").replace("One", "Uno").replace("Two", "Dos"));
+    p.write("code/a.go", p.read("code/a.go").replace("n = 1", "n = 2"));
+    let (code, _, err) = p.run(&["ack", &place]);
+    assert!(code == 2 && err.contains("b#^BB-1, b#^BB-2"), "two targets on the line: {err}");
+    let (code, out, err) = p.run(&["ack", &place, "#^BB-2"]);
+    assert!(code == 0 && out.contains(&format!("{place}: b#^BB-2 @")), "{out}{err}");
+    let after = p.read("docs/src/index.json");
+    assert_eq!(after.len(), index.len(), "only four signs changed");
+    let (_, out, _) = p.run(&["validate"]);
+    assert_eq!(out.matches("DOC209").count(), 3, "b#^BB-1 on two lines and in the code are still old: {out}");
+    assert_eq!(p.run(&["ack", &place, "[[b#^BB-1]]"]).0, 0);
+    assert_eq!(p.run(&["ack", &format!("docs/src/index.json:{}", line + 1)]).0, 0, "the next line is its own place");
+    // the tag: a target and the fingerprint to confirm
+    let (code, _, err) = p.run(&["ack", "code/a.go:3"]);
+    assert!(code == 2 && err.contains("b#^BB-1, the fingerprint ~"), "{err}");
+    let (code, out, _) = p.run(&["ack", "code/a.go:3", "~"]);
+    assert!(code == 0 && out.contains("code/a.go:3: fingerprint ~"), "{out}");
+    let (code, out, _) = p.run(&["ack", "code/a.go:3", "--format", "json"]);
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert!(code == 0 && v[0]["target"] == "b#^BB-1" && v[0]["new"].as_str().unwrap().len() == 4, "{out}");
+    let (code, out, _) = p.run(&["check"]);
+    assert_eq!(code, 0, "every place confirmed: {out}");
+    for args in [&["ack"][..], &["ack", "docs/src/index.json"], &["ack", "code/*.go:3"], &["ack", "a:1", "b", "c"]] {
+        assert_eq!(p.run(args).0, 2, "{args:?}");
+    }
+}
+
 /// A hash leaves out block codes, the hashes of links and the readers'
 /// comments: two documents that link each other never loop, a new hash in a
 /// link breaks nothing, a comment changes no version.

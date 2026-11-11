@@ -9,6 +9,6 @@
     "endLine": 1,
     "endColumn": 93,
     "message": "link \"[[b#^DOC-1@ud8q]]\": the target changed, its hash is now @sj38",
-    "hint": "Read the change, check that this place still agrees with it (fix it if not), then write @sj38 in place of @ud8q by hand. Version @ud8q is not in the Git history; it reads now:\n    Ten attempts per minute."
+    "hint": "Read the change, check that this place still agrees with it (fix it if not), then confirm this place with docc ack docs/src/index.json:1 (it writes @sj38 in place of @ud8q). Version @ud8q is not in the Git history; it reads now:\n    Ten attempts per minute."
   }
 ]

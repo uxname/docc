@@ -93,7 +93,8 @@ impl Project {
                 {
                     let had = t.hashes.get(gi).cloned().flatten();
                     if had.as_deref() != Some(v.hash.as_str()) {
-                        let (msg, hint) = self.stale_message(&format!("code tag target {}", go_quote(g)), g, had.as_deref(), &v);
+                        let place = format!("{}:{}", t.file, t.line);
+                        let (msg, hint) = self.stale_message(&place, &format!("code tag target {}", go_quote(g)), g, had.as_deref(), &v);
                         self.emit_file(&t.file, "DOC209", t.line, t.col, msg, hint);
                     }
                     texts.push(format!("{g}: {}", v.text.replace('\n', " / ")));
@@ -116,8 +117,8 @@ impl Project {
                     Some(p) => format!("{what} changed: its fingerprint is ~{} now, not ~{p}", t.want),
                 };
                 let mut hint = format!(
-                    "Check that the code agrees with what it points to (fix the code or the documents if not), then write ~{} at the end of the tag line by hand. The targets read now:",
-                    t.want
+                    "Check that the code agrees with what it points to (fix the code or the documents if not), then confirm it with docc ack {}:{} '~' (it writes ~{} at the end of the tag line). The targets read now:",
+                    t.file, t.line, t.want
                 );
                 for x in &texts {
                     hint.push_str("\n    ");

@@ -24,7 +24,7 @@ use crate::trace;
 type Res<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 /// splice applies edits (byte range of data, new bytes) that do not overlap.
-fn splice(data: &[u8], mut edits: Vec<(usize, usize, String)>) -> Vec<u8> {
+pub(super) fn splice(data: &[u8], mut edits: Vec<(usize, usize, String)>) -> Vec<u8> {
     edits.sort_by_key(|e| e.0);
     let mut out = Vec::with_capacity(data.len() + edits.len() * 8);
     let mut last = 0;
@@ -49,7 +49,7 @@ fn json(s: &str) -> String {
 /// is renamed over the source, so nobody ever sees a half-written document. The
 /// check narrows the window to the time between it and the rename; it does not
 /// close it (that needs a lock, which an agent's editor would not honour anyway).
-fn write_doc(p: &Project, d: &Doc, data: &[u8]) -> Res<()> {
+pub(super) fn write_doc(p: &Project, d: &Doc, data: &[u8]) -> Res<()> {
     let abs = p.cfg.abs(&d.file);
     let src = &d.res().src;
     let bom: &[u8] = if src.bom { b"\xEF\xBB\xBF" } else { b"" };
@@ -679,7 +679,7 @@ fn migrate_code(
 
 /// split_tail cuts the end of a tag line: blanks, a comment closer and the
 /// line's carriage return, and an existing fingerprint stays in the body.
-fn split_tail(s: &str) -> (&str, &str) {
+pub(super) fn split_tail(s: &str) -> (&str, &str) {
     let t = s.trim_end_matches(['\r', ' ', '\t']);
     for c in ["*/", "-->"] {
         if let Some(b) = t.strip_suffix(c) {

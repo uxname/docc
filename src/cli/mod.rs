@@ -46,6 +46,7 @@ Commands:
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
   check [paths]      read-only check for CI and hooks: validate + freshness of out/ (paths: as validate)
   codes              give a code to every block that has none (build does it too)
+  ack <file:line> [target]  confirm one place read after DOC209 or DOC402: write the hash or fingerprint it has now
   migrate            move a project of the old format (docc.lock, named anchors) to block codes and version hashes
   explain <code>     describe a rule
   rules              list rules with effective levels
@@ -246,6 +247,27 @@ Examples:
   docc codes --format json
 "
         }
+        "ack" => {
+            "Usage: docc ack <file>:<line> [target] [flags]
+
+Confirms one place you have just read. When a target changed (DOC209) or code changed
+(DOC402), read the change the message shows, check that the place still agrees (fix it if
+not), then run docc ack on that place: docc writes the hash its target has now into that
+link, or into that target of a docc: tag, or the fingerprint the code has now into that tag,
+and prints what it changed. Nothing else in the file changes.
+The place is the file and line the diagnostic names (the file relative to the current folder,
+inside the project). Two links to the same target on one line are one place. When the line
+holds several things to confirm, name one after the place: its target as in a link (b#^BB-1,
+#^BB-1, [[b#^BB-1]]) or ~ for the fingerprint of the tag. There is no form for many places:
+no globs, no \"all stale links\"; each place is named on its own, after it was read. Exit code
+2 when there is nothing to confirm at the place or the place is ambiguous.
+
+Examples:
+  docc ack docs/src/spec/data.json:12
+  docc ack docs/src/spec/data.json:12 '#^I2-4'
+  docc ack src/limits.go:4 '~'
+"
+        }
         "migrate" => {
             "Usage: docc migrate [flags]
 
@@ -430,6 +452,7 @@ fn dispatch(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         "codes" => cmd_codes(c, rest, stdout),
         "watch" => cmd_watch(c, rest, stdout, stderr),
         "migrate" => cmd_migrate(c, rest, stdout),
+        "ack" => cmd_ack(c, rest, stdout),
         "explain" => cmd_explain(c, rest, stdout),
         "schema" => cmd_schema(rest, stdout).map(|_| 0),
         "compile" => cmd_compile(c, rest, stdout, stderr),
@@ -1036,6 +1059,34 @@ fn cmd_codes(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<
         write_json(stdout, &Out { given: n })?;
     } else {
         say(stdout, &format!("gave codes to {n} blocks\n"));
+    }
+    Ok(0)
+}
+
+/// cmd_ack confirms one place read after DOC209 or DOC402 (engine::ack).
+fn cmd_ack(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
+    let pos = parse(&mut new_flags("ack", c), args)?;
+    c.check()?;
+    let (place, pick) = match pos.as_slice() {
+        [place] => (place, None),
+        [place, pick] => (place, Some(pick.as_str())),
+        _ => return Err(usage_err("docc ack takes one place, <file>:<line>, and an optional target (try docc ack --help)")),
+    };
+    let (file, line) = place
+        .rsplit_once(':')
+        .and_then(|(f, l)| Some((f, l.parse::<usize>().ok().filter(|&n| n > 0)?)))
+        .ok_or_else(|| usage_err(format!("{} is not a place: write <file>:<line>, as the diagnostic names it", config::go_quote(place))))?;
+    let p = load_project(c)?;
+    let rel = scope(&p.cfg.root, &[file.to_string()])?.remove(0);
+    let done = engine::ack(&p, &rel, line, pick).map_err(|e| usage_err(e.to_string()))?;
+    if c.format == "json" {
+        write_json(stdout, &done)?;
+        return Ok(0);
+    }
+    for a in &done {
+        let (what, sign) = if a.target.is_empty() { ("fingerprint".to_string(), '~') } else { (a.target.clone(), '@') };
+        let old = a.old.as_ref().map_or("(none)".to_string(), |o| format!("{sign}{o}"));
+        say(stdout, &format!("{}:{}: {what} {old} -> {sign}{}\n", a.file, a.line, a.new));
     }
     Ok(0)
 }

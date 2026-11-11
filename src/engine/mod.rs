@@ -1,6 +1,7 @@
 //! Package engine loads a project (config, schemas, documents) and runs all
 //! checks, producing diagnostics.
 
+mod ack;
 mod analyze;
 mod comments;
 mod core;
@@ -19,6 +20,7 @@ mod textrules;
 mod trace;
 mod versions;
 
+pub use ack::{Acked, ack};
 pub use analyze::{IncUse, RefUse, string_list};
 pub use graph::{IMAGE_EXT, image_ext, image_path};
 pub use ignore::Ignore;

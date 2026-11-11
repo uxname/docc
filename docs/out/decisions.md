@@ -28,7 +28,7 @@ A link exists only as a reference in the text. A separate list of links would re
 
 docc is a public open source project (MIT) with releases on GitHub, installers, `docc update` and the skill installed by `npx skills add`. The first users are the author's team; there are no sales, plans or support promises.
 
-There is no command that confirms links: an agent rewrites each hash by hand after reading the change, because a command that confirms many links at once lets an agent clear errors about places nobody read. A missing or old hash is an error (DOC209, a core rule), so `docc check`, the pre-commit hook and CI stop on it.
+No command confirms links in bulk, because a command that confirms many links at once lets an agent clear errors about places nobody read. `docc ack <file>:<line>` confirms one place the agent has just read and writes its hash, because rewriting four signs by hand added no checking: on a trial run one edit left hundreds of stale links and every agent rewrote them with a script anyway (issue #1). It takes no globs and has no "all stale" form, so skipping the reading stays an explicit act per place. A missing or old hash is an error (DOC209, a core rule), so `docc check`, the pre-commit hook and CI stop on it.
 
 DOC209 is one diagnostic per link, because each place is checked and rewritten on its own. A link to a block or a field breaks only when that part changes; a link to a whole document breaks on any visible change of it.
 
