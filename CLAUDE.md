@@ -17,7 +17,7 @@ scripts/release.sh v0.1.0                                 # 5 archives + checksu
 scripts/difftest.sh OLD_BIN NEW_BIN                       # compare two builds on testdata, evals, this repo and o2
 ```
 
-After changing anything in `docs/src` run `docc build` (gives codes to new blocks, updates `docs/out`). Editing a document that others link to raises DOC209 on the linking documents: read each of them, then write the new hash into that link by hand. Never touch a block code ` ^PAY-14` or a document's `key`.
+After changing anything in `docs/src` run `docc build` (gives codes to new blocks, updates `docs/out`). Editing a document that others link to raises DOC209 on the linking documents: read each of them, then confirm that place with `docc ack <file>:<line>` (one place per call, never a script). Never touch a block code ` ^PAY-14` or a document's `key`.
 
 **Principle.** Documentation and code are written by AI agents; people only read them. People must not keep the links between documents and code in their heads: agents carry that routine, and docc keeps them from getting it wrong. Every link carries the version hash of what it points to. When a paragraph changes, every link to it breaks until an agent opens each place and checks it. When code changes, its fingerprint breaks until an agent checks it against the paragraphs. The build does not pass while any link is unchecked. There is no command that confirms everything at once: nothing can be confirmed without looking.
 
