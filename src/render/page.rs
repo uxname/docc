@@ -89,13 +89,18 @@ impl<'a> Page<'_, 'a> {
         }
         let mut fields: Vec<Field<'a>> = Vec::new();
         let mut short = 0;
+        // only the one-line fields that open the page join the property list: one
+        // after a section stays a section, so the page keeps the order of the file
+        let mut lead = true;
         for m in &root(d).members {
             if !reserved(&m.key) {
                 let c = self.field_content(&m.value, 3);
                 if !c.is_empty() {
                     // a form field is a block of its own, never a one-line property
                     // a value field (enum, const, x-docc-value) is a property of its own
-                    let sh = d.values.contains(&m.key) || (!has_input(&m.value) && short_value(&self.mark_re().replace_all(&c, "")));
+                    let sh = d.values.contains(&m.key)
+                        || (lead && !has_input(&m.value) && short_value(&self.mark_re().replace_all(&c, "")));
+                    lead &= sh;
                     fields.push(Field { key: m.key.clone(), content: c, node: &m.value, short: sh });
                     if sh {
                         short += 1;

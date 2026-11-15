@@ -1,0 +1,11 @@
+{
+  "title": "Vision",
+  "kind": "page",
+  "key": "VIS",
+  "body": ["Why this page exists; see [[scenario@ucyd]]. ^VIS-1"],
+  "Pitch": ["Press one button after a glass of water; in the evening see how many glasses there were today, without keeping the number in your head. ^VIS-2"],
+  "Problem": ["People lose count of the glasses of water they drank by evening. ^VIS-3"],
+  "Who": ["One role: a person who tracks how much water they drank today, with one press per glass and the count always in sight. ^VIS-4"],
+  "Not doing": ["No undo and no history of past days. ^VIS-5"],
+  "$decided": { "VIS-3": { "by": "human", "source": "owner", "confirmed": null } }
+}

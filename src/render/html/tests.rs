@@ -674,7 +674,7 @@ fn html_build() {
         (
             "docs/src/req.json",
             r#"{"title":"Req","kind":"requirement","status":"accepted","priority":2,"tags":["t1"],
-			"parent":"index","statement":["Fact.","More."],"owner":"Team","stage":"alpha",
+			"parent":"index","owner":"Team","stage":"alpha","statement":["Fact.","More."],
 			"body":"Click <a id=\"x\" onclick=\"evil()\">here</a>.","rows":[{"a":"one\ntwo","b":"x"}]}"#,
         ),
         (

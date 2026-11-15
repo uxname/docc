@@ -67,6 +67,16 @@
     }
   },
   "$defs": {
+    "decided": {
+      "type": "object",
+      "description": "Who decided the block or property: its entry of \"$decided\" in the source, as written.",
+      "required": ["by"],
+      "properties": {
+        "by": { "enum": ["human", "agent", "agent-delegated"] },
+        "source": { "type": "string", "description": "The ground: a [[link@hash]], a URL or free text." },
+        "confirmed": { "description": "A person confirmed an agent's decision.", "oneOf": [{ "type": "null" }, { "type": "object", "required": ["by", "date"], "properties": { "by": { "type": "string" }, "date": { "type": "string" } } }] }
+      }
+    },
     "diagnostic": {
       "type": "object",
       "additionalProperties": false,
@@ -142,7 +152,7 @@
         },
         "props": {
           "type": "array",
-          "description": "One-line fields shown as a property list instead of sections (when a page has two or more), and every value field (a property of the kind schema with enum, const or x-docc-value: not a block, no code).",
+          "description": "One-line fields that open the page, shown as a property list instead of sections (when there are two or more), and every value field (a property of the kind schema with enum, const or x-docc-value: not a block, no code).",
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -155,7 +165,8 @@
               "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the value: what [[id#^code@hash]] carries." },
               "p": { "type": "string", "description": "JSON Pointer of the value." },
               "s": { "type": "string", "description": "Source text." },
-              "h": { "type": "string", "description": "HTML, without the paragraph around it." }
+              "h": { "type": "string", "description": "HTML, without the paragraph around it." },
+              "decided": { "$ref": "#/$defs/decided" }
             }
           }
         },
@@ -187,16 +198,7 @@
               "s": { "type": "string", "description": "Source text (lists and tables flattened), with the code at its end." },
               "h": { "type": "string", "description": "HTML. Links to pages are #<id>, to fields #<id>--<anchor>; images are data: URIs." },
               "sec": { "type": ["string", "null"], "description": "Id of the section the block stands under; null above the first heading." },
-              "decided": {
-                "type": "object",
-                "description": "Who decided the block: its entry of \"$decided\" in the source, as written.",
-                "required": ["by"],
-                "properties": {
-                  "by": { "enum": ["human", "agent", "agent-delegated"] },
-                  "source": { "type": "string", "description": "The ground: a [[link@hash]], a URL or free text." },
-                  "confirmed": { "description": "A person confirmed an agent's decision.", "oneOf": [{ "type": "null" }, { "type": "object", "required": ["by", "date"], "properties": { "by": { "type": "string" }, "date": { "type": "string" } } }] }
-                }
-              },
+              "decided": { "$ref": "#/$defs/decided" },
               "i": {
                 "type": "object",
                 "description": "A form field, drawn in place of h.",

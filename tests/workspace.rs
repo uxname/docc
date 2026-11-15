@@ -60,6 +60,21 @@ fn value_fields_decided_folders_icons_labels() {
     assert!(rp.get("folder").is_none());
 }
 
+/// A one-line field in the property list keeps its entry of "$decided" (like a block).
+#[test]
+fn property_keeps_decided() {
+    let p = coded_project([
+        ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#),
+        (
+            "docs/src/index.json",
+            r#"{"title":"Index","kind":"page","key":"IND","owner":"Ann ^IND-1","stage":"Beta ^IND-2","$decided":{"IND-1":{"by":"human","source":"owner","confirmed":null}}}"#,
+        ),
+    ]);
+    let v = json_of(&p, &["compile", "--format", "json"]);
+    let props = page(&v, "index")["props"].as_array().unwrap().clone();
+    assert!(props.len() == 2 && props[0]["decided"]["by"] == "human" && props[1].get("decided").is_none(), "{props:?}");
+}
+
 #[test]
 fn workspace_object() {
     let p = sample();

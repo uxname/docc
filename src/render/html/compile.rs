@@ -145,6 +145,9 @@ pub struct CProp {
     pub(crate) p: String,
     pub(crate) s: String,
     pub(crate) h: String,
+    /// who decided the value: its entry of "$decided", when there is one
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) decided: Option<serde_json::Value>,
 }
 
 /// Section is a field or $sections heading of a page.
@@ -277,6 +280,9 @@ impl<'a> Renderer<'a> {
             let prefix = format!("{}--", d.id);
             let slug = |id: &str| id.strip_prefix(&prefix).unwrap_or(id).replace("&amp;", "&");
             let str_of = |k: &str| root(d).get(k).filter(|n| n.kind == Kind::String).map(|n| n.str.clone());
+            let decided = root(d).get(crate::engine::DECIDED_KEY).filter(|n| n.kind == Kind::Object);
+            let decided_of =
+                |code: &str| decided?.members.iter().find(|m| m.key.eq_ignore_ascii_case(code)).map(|m| crate::loader::value(&m.value));
             let mut pg = CPage {
                 id: pd.id,
                 path: pd.file,
@@ -294,6 +300,7 @@ impl<'a> Renderer<'a> {
                     .props
                     .into_iter()
                     .map(|p| CProp {
+                        decided: if p.c.is_empty() { None } else { decided_of(&p.c) },
                         id: slug(&p.id),
                         k: p.k,
                         label: p.label,
@@ -312,9 +319,6 @@ impl<'a> Renderer<'a> {
                     .map(|(c, place)| CComment { c: Comment { email: String::new(), ..c }, place })
                     .collect(),
             };
-            let decided = root(d).get(crate::engine::DECIDED_KEY).filter(|n| n.kind == Kind::Object);
-            let decided_of =
-                |code: &str| decided?.members.iter().find(|m| m.key.eq_ignore_ascii_case(code)).map(|m| crate::loader::value(&m.value));
             let mut sec: Option<String> = None;
             for b in pd.blocks {
                 if let Some((level, title)) = b.head {

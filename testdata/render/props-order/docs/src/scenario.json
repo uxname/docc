@@ -1,0 +1,10 @@
+{
+  "title": "Scenario",
+  "kind": "page",
+  "key": "SC",
+  "Participants": "Manager, System ^SC-1",
+  "Precondition": "The manager is signed in. ^SC-2",
+  "Steps": ["The manager opens the list of projects and presses Add, fills in the name and the client, and saves it. ^SC-3"],
+  "Result": "Saved. ^SC-4",
+  "$decided": { "SC-1": { "by": "agent", "source": "the brief", "confirmed": null } }
+}
