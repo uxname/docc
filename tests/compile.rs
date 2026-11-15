@@ -261,7 +261,7 @@ fn compile_rev_reads_git_without_checkout() {
     let home = page(&v, "index");
     assert_eq!(s(&home["blocks"][0], "s").split(" ^").next(), Some("Old TODO"));
     assert!(s(&home["blocks"][1], "h").contains("First summary."), "the include reads the same commit");
-    let d = &v["diagnostics"][0];
+    let d = v["diagnostics"].as_array().unwrap().iter().find(|d| d["code"] == "DOC303").unwrap();
     assert_eq!(
         (s(d, "code"), s(d, "file"), d["line"].as_u64(), d["column"].as_u64()),
         ("DOC303", "docs/src/index.json", Some(4), Some(17)),

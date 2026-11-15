@@ -12,6 +12,18 @@
     "hint": "Set the position with the order field; docc numbers pages and sections itself."
   },
   {
+    "code": "DOC218",
+    "rule": "graph/folder-with-text",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 61,
+    "endLine": 1,
+    "endColumn": 76,
+    "message": "\"index\" has child documents and text of its own",
+    "hint": "A document with children is a folder: the reader shows it as the list of its children, not as a page. Move its text into a child document (an overview) and keep only the title here."
+  },
+  {
     "code": "DOC314",
     "rule": "style/manual-number",
     "level": "warn",

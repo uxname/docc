@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC219",
+    "rule": "codes/duplicate-key",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 44,
+    "endLine": 1,
+    "endColumn": 49,
+    "message": "key \"TSK\" is the key of docs/src/b.json too",
+    "hint": "Two documents cannot share a key: their codes would repeat. Choose another key for the newer document; its blocks then need new codes: delete them and run docc build."
+  }
+]

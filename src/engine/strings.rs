@@ -27,6 +27,8 @@ pub(super) fn reserved_key(k: &str) -> bool {
             | "order"
             | "key"
             | "$comments"
+            | "$decided"
+            | "icon"
     )
 }
 
@@ -156,6 +158,9 @@ fn esc_tok(s: &str) -> String {
     s.replace('~', "~0").replace('/', "~1")
 }
 
+/// DECIDED_KEY holds who decided each block of a document, by its code.
+pub const DECIDED_KEY: &str = "$decided";
+
 /// SectionsKey marks an object whose other keys are section titles.
 pub const SECTIONS_KEY: &str = "$sections";
 
@@ -229,12 +234,13 @@ impl Doc {
                         k,
                         !reserved_key(k),
                         false,
-                        k != "title",
+                        k != "title" && !self.values.contains(k),
                         self.legacy,
                         &mut out,
                     );
-                } else if k == "notes" {
-                    walk(&m.value, "/notes", k, k, false, true, false, self.legacy, &mut out);
+                } else if k == "notes" || k == DECIDED_KEY {
+                    // the source of a decision is read like a note: its links are checked, no text rule applies
+                    walk(&m.value, &format!("/{}", esc_tok(k)), k, k, false, true, false, self.legacy, &mut out);
                 }
             }
             out

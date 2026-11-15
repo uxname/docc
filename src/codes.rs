@@ -309,7 +309,7 @@ pub fn quote(b: &mut String, s: &str) {
 
 /// DOC_SKIP are the top-level keys the hash of a whole document leaves out:
 /// what readers do not see, the order among siblings, the parent and the key.
-pub const DOC_SKIP: &[&str] = &["notes", "docIgnore", "hidden", "order", "parent", "key", "$comments"];
+pub const DOC_SKIP: &[&str] = &["notes", "docIgnore", "hidden", "order", "parent", "key", "$comments", "$decided", "icon"];
 
 /// value_hash is the version hash of a value: its normalized canonical JSON.
 pub fn value_hash(n: &Node) -> String {

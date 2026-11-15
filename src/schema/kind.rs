@@ -20,6 +20,8 @@ impl Kind {
             targets: HashMap::new(),
             covered: false,
             covered_fields: BTreeSet::new(),
+            values: BTreeSet::new(),
+            titles: HashMap::new(),
         };
         if let Some(c) = root.get("x-docc-covered") {
             if c.kind != loader::Kind::Bool {
@@ -49,6 +51,12 @@ impl Kind {
             // the map iterates its keys sorted
             for (name, pm) in props {
                 self.allowed.insert(name.clone());
+                if is_value(pm) || pm.get("items").is_some_and(is_value) {
+                    self.values.insert(name.clone());
+                }
+                if let Some(Value::String(t)) = pm.get("title") {
+                    self.titles.entry(name.clone()).or_insert_with(|| t.clone());
+                }
                 match pm.get("x-docc-covered") {
                     None => {}
                     Some(Value::Bool(c)) => {
@@ -146,6 +154,12 @@ impl Kind {
             .collect();
         closest(key, &names).0
     }
+}
+
+/// is_value reports whether a property schema holds a value, not prose:
+/// "enum", "const" or "x-docc-value": true.
+fn is_value(pm: &Value) -> bool {
+    pm.get("enum").is_some() || pm.get("const").is_some() || pm.get("x-docc-value") == Some(&Value::Bool(true))
 }
 
 /// pointerIn resolves a JSON pointer fragment ("" or "/a/b") in a raw value.

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:docc:schema:workspace:1",
+  "title": "docc workspace output",
+  "description": "What docc workspace --format json prints on one line, docc watch serves at /workspace.json and docc build --html inlines in <script id=\"docc-workspace\" type=\"application/json\">: everything a reader of the project shows. docc knows nothing of the tool that works on the project: the roles of kinds and the areas of code come from the \"workspace\" section of docc.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "compile", "roles", "coverage", "history", "notes", "run", "generatedAt"],
+  "properties": {
+    "$schema": { "const": "urn:docc:schema:workspace:1" },
+    "compile": { "type": "object", "description": "The whole object of docc compile --hidden --format json (urn:docc:schema:compile:3, see docc schema compile): hidden documents included, marked hidden." },
+    "roles": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] },
+      "description": "Role -> a kind name or an array of kind names, as written, copied from workspace.roles of docc.json (tasks, checks, events, questions, meetings); a reader hides the section of a role that is absent. The documents of the meetings kinds are marked hidden in compile.tree (the Meetings tab lists them); docc watch writes the field «Ответ» of a document of a questions kind (POST /answer)."
+    },
+    "coverage": {
+      "type": "array",
+      "description": "One row per block that its kind schema wants covered by code (x-docc-covered; visible documents in the tree).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["doc", "code", "text", "areas", "manual"],
+        "properties": {
+          "doc": { "type": "string", "description": "Id of the document." },
+          "code": { "type": "string", "description": "Block code, PAY-14." },
+          "text": { "type": "string", "description": "Source text of the block without its code and the hashes of its links." },
+          "areas": {
+            "type": "object",
+            "description": "Area -> the code tags that name the block (id#^code): every area of workspace.areas and code (the tags no area matches), each present, empty when no tag is there.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "line"],
+                "properties": { "path": { "type": "string", "description": "Relative to the project root." }, "line": { "type": "integer", "minimum": 1 } }
+              }
+            }
+          },
+          "manual": {
+            "description": "A docIgnore entry for DOC404 on the block: the reason and who accepted it (by of the entry, agent when absent); null otherwise.",
+            "oneOf": [
+              { "type": "null" },
+              { "type": "object", "additionalProperties": false, "required": ["reason", "by"], "properties": { "reason": { "type": "string" }, "by": { "enum": ["human", "agent"] } } }
+            ]
+          }
+        }
+      }
+    },
+    "history": { "type": "array", "maxItems": 200, "description": "The commits of docc log --format json (see docc schema log: each with its trailers and actor, human or agent), newest first, at most 200; empty outside a Git work tree.", "items": { "type": "object", "required": ["actor", "trailers"], "properties": { "actor": { "enum": ["human", "agent"] }, "trailers": { "type": "object", "additionalProperties": { "type": "string" } } } } },
+    "notes": {
+      "type": "array",
+      "description": "Every *.md file directly in docs/inbox/notes/ of the project root, newest first; read-only (an agent writes them at a person's words). Empty when the folder is missing.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "title", "text", "modified"],
+        "properties": {
+          "path": { "type": "string", "description": "Relative to the project root, docs/inbox/notes/<name>.md." },
+          "title": { "type": "string", "description": "The text of the first Markdown heading, else the file name without .md." },
+          "text": { "type": "string", "description": "The Markdown of the file as written." },
+          "modified": { "type": "string", "format": "date-time", "description": "Modification time of the file, UTC." }
+        }
+      }
+    },
+    "run": { "description": "The content of the file at workspace.run of docc.json (the progress of the current run, written by a tool such as crew), or null when it is not set, missing or not JSON." },
+    "generatedAt": { "type": "string", "format": "date-time", "description": "When the object was made, UTC." }
+  }
+}

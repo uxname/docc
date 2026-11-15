@@ -65,6 +65,9 @@ pub struct Doc {
     pub(super) block_of: HashMap<*const Node, usize>,
 
     pub(super) strs: OnceCell<Vec<StrNode>>,
+    /// the top-level fields its kind schema marks as values (schema::Kind::values):
+    /// their strings are not blocks
+    pub values: std::collections::BTreeSet<String>,
 }
 
 impl Doc {
@@ -113,6 +116,8 @@ pub struct Project {
     /// every resolved (code file, target) pair -> hash of its regions, "" for a plain tag
     pub code: HashMap<trace::Key, String>,
 
+    /// id#^CODE -> (file, line) of every code tag that names the block (docc workspace)
+    pub tag_places: HashMap<String, Vec<(String, usize)>>,
     /// first tag line and column per pair of code
     pub(super) code_at: HashMap<trace::Key, (usize, usize)>,
     pub(super) by_file: HashMap<String, usize>,
@@ -190,6 +195,7 @@ pub fn load_any(cfg: Config) -> Result<Project, Box<dyn Error + Send + Sync>> {
         covers: None,
         code: HashMap::new(),
         code_at: HashMap::new(),
+        tag_places: HashMap::new(),
         by_file: HashMap::new(),
         matchers: RefCell::new(HashMap::new()),
         legacy: false,
@@ -412,6 +418,11 @@ impl Project {
             && h.str == "true"
         {
             d.hidden = true;
+        }
+        if let Some(k) = d.r().get("kind").filter(|k| k.kind == loader::Kind::String)
+            && let Some(kd) = self.schemas.kind(&k.str)
+        {
+            d.values = kd.values.clone();
         }
     }
 

@@ -175,9 +175,8 @@ fn html_build() {
     ] {
         assert!(a.blocks.contains(want), "blocks lack {want:?}");
     }
-    for want in ["<title>Index &lt;b&gt;</title>", r#"type="search""#, "prefers-color-scheme", "@media print"] {
-        assert!(a.shell.contains(want), "out.html lacks {want:?}");
-    }
+    // the rest of the page is the embedded reader's
+    assert!(a.shell.contains("<title>Index &lt;b&gt;</title>"), "out.html lacks its title");
     // agents' raw HTML never reaches the blocks; hidden documents stay out; nothing is fetched
     for bad in ["<script>alert", "onclick", "evil", ".md\"", "<h2 id=\"req--owner\""] {
         assert!(!a.blocks.contains(bad), "blocks contain {bad:?}");
@@ -189,8 +188,18 @@ fn html_build() {
         .enumerate()
         .map(|(i, x)| if i == 0 { x } else { x.split_once(')').map_or(x, |(_, r)| r) })
         .collect();
-    for bad in ["Secret", "Hid", "<script src", "<link", "</script>alert", "<script>alert"] {
+    // the workspace object holds the hidden documents, marked hidden: the reader shows them in their sections
+    let (pre, ws) = page.split_once(r#"<script type="application/json" id="docc-workspace">"#).expect("the workspace is inlined");
+    let (ws, post) = ws.split_once("</script>").unwrap();
+    assert!(ws.contains("Secret") && ws.contains(r#""hidden":true"#), "the workspace lacks the hidden document");
+    let page = format!("{pre}{post}");
+    for bad in ["<script src", "<link", "</script>alert", "<script>alert"] {
         assert!(!page.contains(bad), "out.html contains {bad:?}");
+    }
+    // the data island holds no hidden document (the reader's own code may say "Hidden")
+    let island = page.split_once(r#"id="docc-data">"#).and_then(|(_, r)| r.split_once("</script>")).map(|x| x.0).unwrap();
+    for bad in ["Secret", "Hid"] {
+        assert!(!island.contains(bad), "the data island contains {bad:?}");
     }
     let before = p.read("docs/out.html");
     p.run(&["build", "--html"]);

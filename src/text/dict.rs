@@ -1,10 +1,7 @@
 // Built-in dictionaries (Russian and English); docc.json extends them.
 
 /// Forbidden: DOC301.
-pub const FORBIDDEN: &[&str] = &[
-    "быстро", "удобно", "интуитивно", "и т.д.", "и т.п.",
-    "fast", "easy", "intuitive", "user-friendly", "etc.",
-];
+pub const FORBIDDEN: &[&str] = &["удобно", "интуитивно", "и т.д.", "и т.п.", "fast", "easy", "intuitive", "user-friendly", "etc."];
 
 /// Hedging: DOC352.
 pub const HEDGING: &[&str] = &[

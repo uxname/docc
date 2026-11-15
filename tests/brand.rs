@@ -4,12 +4,22 @@ use common::*;
 
 const BRAND_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="2"><rect width="4" height="2" fill="#fff"/></svg>"##;
 
-/// html_with_brand is the HTML file plus the brand parts of its data island.
+/// html_with_brand is the brand parts of the data island of the HTML file.
 fn html_with_brand(p: &Dir) -> String {
-    let html = p.read("docs/out.html");
     let a = read_app(p, "docs/out.html");
     let b = &a.data["brand"];
-    format!("{html}{}{}{}", s(b, "head"), s(b, "print"), s(b, "foot"))
+    format!("{}{}{}", s(b, "head"), s(b, "print"), s(b, "foot"))
+}
+
+/// brand_data is project.brand of the workspace object the HTML file inlines:
+/// the reader draws the logo and the colours from it.
+fn brand_data(p: &Dir) -> serde_json::Value {
+    let html = p.read("docs/out.html");
+    const OPEN: &str = r#"<script type="application/json" id="docc-workspace">"#;
+    let a = html.find(OPEN).expect("the workspace is inlined") + OPEN.len();
+    let b = a + html[a..].find("</script>").unwrap();
+    let ws: serde_json::Value = serde_json::from_str(&html[a..b]).unwrap();
+    ws["compile"]["project"]["brand"].clone()
 }
 
 #[test]
@@ -28,16 +38,20 @@ fn branding_in_html_only() {
     let html = html_with_brand(&p);
     for want in [
         r#"<a class="brand" href="https://example.com/x"><span class="logo" role="img" aria-label="A &amp; B"></span></a>"#,
-        r#"--brand-logo:url("data:image/svg+xml;base64,"#,
-        "--brand-bg:#1f1f1f",
-        "--hue:#0b7a64",
-        "--hue:#57e9c7",
         r#"<div class="brand-print">A &amp; B</div>"#,
         r#"<footer class="brand-foot">A &amp; B · <a href="https://example.com/x">example.com</a></footer>"#,
     ] {
         assert!(html.contains(want), "out.html lacks {want:?}");
     }
-    assert_eq!(html.matches("--brand-logo:url(").count(), 1, "the logo must be embedded once");
+    let b = brand_data(&p);
+    assert!(
+        b["name"] == "A & B"
+            && b["accent"] == "#57e9c7"
+            && b["accentLight"] == "#0b7a64"
+            && b["header"] == "#1f1f1f"
+            && b["logo"].as_str().is_some_and(|l| l.starts_with("data:image/svg+xml;base64,")),
+        "{b}"
+    );
     let md = p.read("docs/out/index.md");
     assert!(!md.contains("A & B"), "Markdown is branded:\n{md}");
 }
@@ -54,11 +68,8 @@ fn branding_name_only() {
     for want in [r#"<span class="brand">Acme</span>"#, r#"<footer class="brand-foot">Acme</footer>"#] {
         assert!(html.contains(want), "out.html lacks {want:?}");
     }
-    assert!(
-        html.contains(":root{--brand-bg:#1f1f1f;--brand-line:var(--hue)}\n.top{background:var(--brand-bg)")
-            && !html.contains("--brand-logo:"),
-        "no logo and no colours were given: only the default header colour is set"
-    );
+    let b = brand_data(&p);
+    assert!(b["name"] == "Acme" && b["logo"].is_null() && b["accent"].is_null(), "no logo and no colours were given: {b}");
 }
 
 #[test]

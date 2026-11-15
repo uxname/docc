@@ -151,8 +151,7 @@ pub fn generated_file(f: &Path, ext: &str) -> bool {
     if ext == ".md" {
         return b.starts_with(GENERATED_MARK.as_bytes());
     }
-    let pat: &[u8] = br#"id="docc-data""#;
-    b.windows(pat.len()).any(|w| w == pat)
+    [&br#"id="docc-data""#[..], br#"id="docc-workspace""#].iter().any(|pat| b.windows(pat.len()).any(|w| w == *pat))
 }
 
 /// generatedMark starts every page docc writes.

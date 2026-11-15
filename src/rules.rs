@@ -38,7 +38,7 @@ const fn rule(
     Rule { code, name, group, default, core, desc, bad, good }
 }
 
-static ALL: [Rule; 44] = [
+static ALL: [Rule; 47] = [
     rule(
         "DOC101",
         "syntax/invalid-json",
@@ -245,7 +245,7 @@ static ALL: [Rule; 44] = [
         "graph",
         E,
         true,
-        "A block code ^PAY-14 stands on two blocks of the project (a copied paragraph, or two branches that gave the same number and were merged; the message names both places), a key stands on two documents, or a code equals the anchor of a field or section heading of its page. docc does not choose: decide which block keeps the code (the one that had it first and that links point to), delete the code of the other and run docc build: it gives the next free number.",
+        "A block code ^PAY-14 stands on two blocks of the project (a copied paragraph, or two branches that gave the same number and were merged; the message names both places), or a code equals the anchor of a field or section heading of its page. docc does not choose: decide which block keeps the code (the one that had it first and that links point to), delete the code of the other and run docc build: it gives the next free number.",
         r#"a.json "body": ["First. ^AA-4"], also "body": ["Copy. ^AA-4"]"#,
         r#""body": ["Copy. ^AA-9"]  (code removed, docc build gave the next number)"#,
     ),
@@ -288,6 +288,36 @@ static ALL: [Rule; 44] = [
         "A text block (a paragraph, a list item, the text of a field or section) has no block code ^PAY-14 at its end, ends in a marker that is not a code (a code of the old format such as ^k7f2, a named anchor: run docc migrate), or has a code of another document; or the document has codes and no \"key\". docc build gives every block without a code its own; codes are never written or changed by hand.",
         r#""body": ["A new paragraph."]"#,
         r#""body": ["A new paragraph. ^PAY-15"]  (after docc build)"#,
+    ),
+    rule(
+        "DOC217",
+        "meta/decided-unknown-block",
+        "graph",
+        E,
+        false,
+        "A key of \"$decided\" (who decided each block: human, agent or agent-delegated, with the source and who confirmed) is not the code of a block of the document: the block was deleted, or the code is mistyped. Key the entry by a code of this document, without ^, or remove it. \"$decided\" is not part of any hash and is not shown as text; a [[link@hash]] in its source is checked like any link.",
+        r#""body": ["Text. ^PAY-1"], "$decided": { "PAY-2": { "by": "agent" } }"#,
+        r#""body": ["Text. ^PAY-1"], "$decided": { "PAY-1": { "by": "agent-delegated", "source": "[[q1@3a9c]]" } }"#,
+    ),
+    rule(
+        "DOC218",
+        "graph/folder-with-text",
+        "graph",
+        W,
+        false,
+        "A document with child documents (by parent, or the page of a folder with \"tree\": \"folders\") has a body or other text blocks of its own. A reader shows such a document as a folder: the list of its children, not a page, so its text is not read. Move the text into a child document (an overview) and keep only the title.",
+        r#"spec.json "body": ["The spec covers..."], stack.json "parent": "spec""#,
+        r#"spec.json { "title": "Spec" }, spec-overview.json "parent": "spec", "body": ["The spec covers..."]"#,
+    ),
+    rule(
+        "DOC219",
+        "codes/duplicate-key",
+        "graph",
+        E,
+        true,
+        "Two documents have the same \"key\": their block codes would repeat. Choose another key for the newer document; its blocks then need new codes: delete them and run docc build.",
+        r#"a.json "key": "TSK", b.json "key": "TSK""#,
+        r#"a.json "key": "TSK", b.json "key": "TSKB""#,
     ),
     rule(
         "DOC301",
@@ -542,7 +572,7 @@ mod tests {
     #[test]
     fn registry() {
         let n = all().len();
-        assert_eq!(n, 44, "want 44 rules, got {n}");
+        assert_eq!(n, 47, "want 47 rules, got {n}");
         let mut core = 0;
         for r in all() {
             assert!(
@@ -556,7 +586,7 @@ mod tests {
             }
             assert!(is_group(r.group), "{}: bad group {}", r.code, r.group);
         }
-        // 101-105, 108, 109, 201-205, 209-213, 216, 401, 402, 501
-        assert_eq!(core, 21, "core rules: {core}");
+        // 101-105, 108, 109, 201-205, 209-213, 216, 219, 401, 402, 501
+        assert_eq!(core, 22, "core rules: {core}");
     }
 }

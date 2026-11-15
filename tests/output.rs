@@ -23,26 +23,10 @@ fn lang_ru() {
         index.contains("Дерево документов: [_tree.md](_tree.md)") && tree.contains("# Дерево документов"),
         "tree label:\n{index}\n{tree}"
     );
+    // the labels of the page are the embedded reader's (it reads lang from the data)
     let html = p.read("docs/out.html");
-    for want in [
-        ">Страницы раздела<",
-        "<small>Далее</small>",
-        "<small>Назад</small>",
-        r#"<html lang="ru">"#,
-        r#"placeholder="Поиск  ( / )""#,
-        r#"aria-label="Шкала времени""#,
-        "'Копировать'",
-        "'Ничего не найдено'",
-        " ещё ↓",
-        "🎤 Надиктовать",
-        "Передать комментарии",
-        "Правки с:",
-    ] {
-        assert!(html.contains(want), "out.html lacks {want:?}");
-    }
-    for bad in ["Pages in this section", "'Copy'", "'On this page'", r#"aria-label="On this page""#, ">Parent<", "{{t:"] {
-        assert!(!html.contains(bad), "out.html keeps {bad:?}");
-    }
+    assert!(html.contains(r#"<html lang="ru">"#) && html.contains(r#""lang":"ru""#), "lang of the HTML file");
+    assert!(!html.contains("{{t:"), "an untranslated label is left");
     let (code, out, _) = p.run(&["build", "--full"]);
     assert!(
         code == 0

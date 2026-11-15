@@ -3,6 +3,7 @@
 //! The pages come from the same build as the HTML file, so a block's HTML
 //! here is the block's HTML there.
 
+use std::collections::HashSet;
 use std::sync::LazyLock;
 
 use base64::Engine as _;
@@ -19,7 +20,7 @@ use crate::loader::Kind;
 
 /// SCHEMA_ID is the "$schema" of the output and the "$id" of its JSON Schema
 /// (`docc schema compile`); the number changes when the shape does.
-pub const SCHEMA_ID: &str = "urn:docc:schema:compile:2";
+pub const SCHEMA_ID: &str = "urn:docc:schema:compile:3";
 
 /// Compiled is what the sources compile to; docc compile adds the diagnostics.
 #[derive(Serialize, Default)]
@@ -100,11 +101,25 @@ pub struct CPage {
     crumbs: Vec<String>,
     /// the version hash of the whole document: what [[id@hash]] carries
     hash: String,
+    /// the page has children: a reader shows it as the list of them
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    folder: bool,
+    /// the colour of its icon: its own "icon" or the nearest ancestor's
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<Icon>,
     pub(crate) props: Vec<CProp>,
     pub(crate) sections: Vec<Section>,
     pub(crate) blocks: Vec<CBlock>,
     /// the readers' comments of the page ("$comments") with their place
     pub(crate) comments: Vec<CComment>,
+}
+
+/// Icon is the effective icon of a page.
+#[derive(Serialize, Clone)]
+pub struct Icon {
+    color: String,
+    /// taken from an ancestor
+    inherited: bool,
 }
 
 /// CComment is a comment of a page as the reader sees it: no email.
@@ -119,6 +134,8 @@ pub struct CComment {
 #[derive(Serialize)]
 pub struct CProp {
     pub(crate) k: String,
+    /// what a reader shows: the "title" of the property in the kind schema, else k
+    pub(crate) label: String,
     id: String,
     /// the block code of the value ("PAY-14"), absent when it has none
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -160,6 +177,81 @@ pub struct CBlock {
     /// diff only: the label of a property (a one-line field of the list)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) k: Option<String>,
+    /// who decided the block: its entry of "$decided", when there is one
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) decided: Option<serde_json::Value>,
+}
+
+/// own_color is the "icon": {"color"} of d itself.
+fn own_color(d: &engine::Doc) -> Option<String> {
+    let c = root(d).get("icon")?.get("color")?;
+    (c.kind == Kind::String && !c.str.trim().is_empty()).then(|| c.str.clone())
+}
+
+/// tree_marks notes for every page of the tree whether it has children (a
+/// folder) and its icon colour, inherited from the nearest ancestor that sets one.
+fn tree_marks(ns: &[TreeNode<'_>], up: Option<&str>, out: &mut std::collections::HashMap<String, (bool, Option<Icon>)>) {
+    for n in ns {
+        let (d, kids) = match n {
+            TreeNode::Page { d, .. } => (Some(*d), n.kids()),
+            TreeNode::Folder { page, .. } => (*page, n.kids()),
+        };
+        let own = d.and_then(own_color);
+        let icon = match (&own, up) {
+            (Some(c), _) => Some(Icon { color: c.clone(), inherited: false }),
+            (None, Some(c)) => Some(Icon { color: c.to_string(), inherited: true }),
+            (None, None) => None,
+        };
+        let pass = icon.as_ref().map(|i| i.color.clone());
+        if let Some(d) = d {
+            out.insert(d.id.clone(), (!kids.is_empty(), icon));
+        }
+        tree_marks(kids, pass.as_deref(), out);
+    }
+}
+
+/// hide_empty marks hidden every entry without text of its own (no page in
+/// texts) whose children are all hidden: a folder of hidden documents is not
+/// shown. It reports whether all of es are hidden.
+fn hide_empty(es: &mut [TreeEntry], texts: &HashSet<String>) -> bool {
+    let mut all = true;
+    for e in es.iter_mut() {
+        let k = key(e);
+        let (TreeEntry::Folder { hidden, children, .. } | TreeEntry::Page { hidden, children, .. }) = e;
+        if hide_empty(children, texts) && !children.is_empty() && !texts.contains(&k) {
+            *hidden = true;
+        }
+        all &= *hidden;
+    }
+    all
+}
+
+/// key is what names an entry in both trees: its page, or "/" and the path of a folder without one.
+fn key(e: &TreeEntry) -> String {
+    match e {
+        TreeEntry::Page { id, .. } | TreeEntry::Folder { id: Some(id), .. } => id.clone(),
+        TreeEntry::Folder { path, .. } => format!("/{path}"),
+    }
+}
+
+/// empty_keys are the keys of the entries hide_empty marked hidden.
+fn empty_keys(es: &[TreeEntry], out: &mut HashSet<String>) {
+    for e in es {
+        let (TreeEntry::Folder { hidden, children, .. } | TreeEntry::Page { hidden, children, .. }) = e;
+        if *hidden {
+            out.insert(key(e));
+        }
+        empty_keys(children, out);
+    }
+}
+
+/// prune drops the entries named in gone.
+fn prune(es: &mut Vec<TreeEntry>, gone: &HashSet<String>) {
+    es.retain(|e| !gone.contains(&key(e)));
+    for e in es {
+        let (TreeEntry::Folder { children, .. } | TreeEntry::Page { children, .. }) = e;
+        prune(children, gone);
+    }
 }
 
 /// Seen is a place of a page that a reader sees (Renderer::seen).
@@ -196,10 +288,21 @@ impl<'a> Renderer<'a> {
                 parent: Some(pd.parent).filter(|p| !p.is_empty()),
                 crumbs: pd.crumbs,
                 hash: crate::codes::doc_hash(root(d)),
+                folder: false,
+                icon: None,
                 props: pd
                     .props
                     .into_iter()
-                    .map(|p| CProp { id: slug(&p.id), k: p.k, code: Some(p.c).filter(|c| !c.is_empty()), hash: p.v, p: p.p, s: p.s, h: p.h })
+                    .map(|p| CProp {
+                        id: slug(&p.id),
+                        k: p.k,
+                        label: p.label,
+                        code: Some(p.c).filter(|c| !c.is_empty()),
+                        hash: p.v,
+                        p: p.p,
+                        s: p.s,
+                        h: p.h,
+                    })
                     .collect(),
                 sections: Vec::new(),
                 blocks: Vec::new(),
@@ -209,6 +312,9 @@ impl<'a> Renderer<'a> {
                     .map(|(c, place)| CComment { c: Comment { email: String::new(), ..c }, place })
                     .collect(),
             };
+            let decided = root(d).get(crate::engine::DECIDED_KEY).filter(|n| n.kind == Kind::Object);
+            let decided_of =
+                |code: &str| decided?.members.iter().find(|m| m.key.eq_ignore_ascii_case(code)).map(|m| crate::loader::value(&m.value));
             let mut sec: Option<String> = None;
             for b in pd.blocks {
                 if let Some((level, title)) = b.head {
@@ -218,6 +324,7 @@ impl<'a> Renderer<'a> {
                     continue;
                 }
                 pg.blocks.push(CBlock {
+                    decided: if b.c.is_empty() { None } else { decided_of(&b.c) },
                     p: b.p,
                     code: Some(b.c).filter(|c| !c.is_empty()),
                     hash: Some(b.v).filter(|v| !v.is_empty()),
@@ -230,7 +337,31 @@ impl<'a> Renderer<'a> {
             }
             out.pages.push(pg);
         }
-        out.tree = s.tree_entries(&s.tree_nodes());
+        let nodes = s.tree_nodes();
+        let mut marks: std::collections::HashMap<String, (bool, Option<Icon>)> = Default::default();
+        tree_marks(&nodes, None, &mut marks);
+        for pg in &mut out.pages {
+            if let Some((folder, icon)) = marks.remove(&pg.id) {
+                (pg.folder, pg.icon) = (folder, icon);
+            } else if let Some(c) = s.p.doc(&pg.id).and_then(own_color) {
+                pg.icon = Some(Icon { color: c, inherited: false });
+            }
+        }
+        out.tree = s.tree_entries(&nodes);
+        // a page with text of its own stays even when its children are all hidden
+        let texts: HashSet<String> = out.pages.iter().filter(|p| !p.blocks.is_empty()).map(|p| p.id.clone()).collect();
+        if s.shows_hidden() {
+            hide_empty(&mut out.tree, &texts);
+        } else {
+            // the hidden documents tell which entries hold nothing visible
+            let mut h = s.variant(true, false, true);
+            h.hidden = true;
+            let mut all = h.tree_entries(&h.tree_nodes());
+            hide_empty(&mut all, &texts);
+            let mut gone = HashSet::new();
+            empty_keys(&all, &mut gone);
+            prune(&mut out.tree, &gone);
+        }
         out.project = s.project_info(out.pages.first().map(|p| p.title.clone()).unwrap_or_default());
         out
     }
@@ -271,22 +402,27 @@ impl<'a> Renderer<'a> {
         ProjectInfo { title, lang: s.p.cfg.lang.clone(), brand }
     }
 
+    /// tree_hidden reports whether the tree marks d hidden: a hidden document or one of a kind of tree_hide.
+    fn tree_hidden(&self, d: &engine::Doc) -> bool {
+        d.hidden || root(d).get("kind").is_some_and(|k| k.kind == Kind::String && self.tree_hide.contains(&k.str))
+    }
+
     fn tree_entries(&self, ns: &[TreeNode<'a>]) -> Vec<TreeEntry> {
         ns.iter()
             .map(|n| {
                 let children = self.tree_entries(n.kids());
                 let title = self.node_title(n);
                 match n {
-                    TreeNode::Page { d, .. } => TreeEntry::Page { id: d.id.clone(), path: d.rel.clone(), title, hidden: d.hidden, children },
-                    TreeNode::Folder { path, page, .. } => {
-                        TreeEntry::Folder {
-                            path: path.clone(),
-                            title,
-                            id: page.map(|d| d.id.clone()),
-                            hidden: page.is_some_and(|d| d.hidden),
-                            children,
-                        }
+                    TreeNode::Page { d, .. } => {
+                        TreeEntry::Page { id: d.id.clone(), path: d.rel.clone(), title, hidden: self.tree_hidden(d), children }
                     }
+                    TreeNode::Folder { path, page, .. } => TreeEntry::Folder {
+                        path: path.clone(),
+                        title,
+                        id: page.map(|d| d.id.clone()),
+                        hidden: page.is_some_and(|d| self.tree_hidden(d)),
+                        children,
+                    },
                 }
             })
             .collect()

@@ -199,6 +199,32 @@ pub fn assign_codes(p: &Project) -> Res<usize> {
     Ok(n)
 }
 
+/// strip_value_codes cuts the block code from every string of a value field
+/// (schema::Kind::values: enum, const, x-docc-value), which is not a block:
+/// an older docc gave them codes. It returns how many it cut; docc build and
+/// docc codes run it first and load the project again when it cut any.
+pub fn strip_value_codes(p: &Project) -> Res<usize> {
+    if p.legacy {
+        return Ok(0);
+    }
+    let mut n = 0;
+    for d in &p.docs {
+        let mut edits = Vec::new();
+        for sn in d.strings().iter().filter(|sn| !sn.notes && d.values.contains(&sn.field)) {
+            let s = &sn.node().str;
+            if let Some(m) = codes::CODE_MARK.find(s) {
+                let (a, b) = d.range(sn.node(), m.start(), s.len());
+                edits.push((a, b, String::new()));
+            }
+        }
+        n += edits.len();
+        if !edits.is_empty() {
+            write_doc(p, d, &splice(&d.res().src.data, edits))?;
+        }
+    }
+    Ok(n)
+}
+
 /// Report is what docc migrate changed.
 #[derive(Serialize, Default, Debug)]
 #[serde(rename_all = "camelCase")]

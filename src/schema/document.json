@@ -21,6 +21,39 @@
     "hidden": { "type": "boolean", "description": "true: checked but not printed to out/." },
     "order": { "type": "number", "description": "Position among siblings." },
     "key": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,4}$", "description": "The key of the document's block codes (PAY in ^PAY-14): two to five capital Latin letters and digits, a letter first, unique in the project, written by docc when it gives the first code; it never changes." },
+    "icon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "color": { "type": "string", "pattern": "\\S", "description": "A CSS colour or a token: blue, green, amber, red, violet, gray, teal, pink." }
+      },
+      "description": "How the reader draws the document's icon; nested documents inherit the colour."
+    },
+    "$decided": {
+      "type": "object",
+      "description": "Who decided each block, by its code (DOC217): human, agent or agent-delegated, the source ([[link@hash]], URL or text) and who confirmed an agent's decision. Not part of any hash, not shown as text.",
+      "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9]{1,4}-[1-9][0-9]{0,5}$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["by"],
+        "additionalProperties": false,
+        "properties": {
+          "by": { "enum": ["human", "agent", "agent-delegated"] },
+          "source": { "type": "string" },
+          "confirmed": {
+            "anyOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["by", "date"],
+                "additionalProperties": false,
+                "properties": { "by": { "type": "string", "minLength": 1 }, "date": { "type": "string", "format": "date" } }
+              }
+            ]
+          }
+        }
+      }
+    },
     "docIgnore": {
       "type": "array",
       "items": {
@@ -29,7 +62,8 @@
         "properties": {
           "rule": { "type": "string" },
           "reason": { "type": "string" },
-          "path": { "type": "string" }
+          "path": { "type": "string" },
+          "by": { "enum": ["human", "agent"], "description": "Who accepted the exception; the coverage table shows it (docc workspace)." }
         },
         "additionalProperties": false
       },

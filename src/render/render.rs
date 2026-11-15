@@ -41,6 +41,8 @@ pub struct Renderer<'a> {
     pub only: String,
     /// Markdown shows each block's code in bold before it (build --codes)
     pub codes: bool,
+    /// kinds whose documents the tree of docc compile marks hidden (the meetings role of docc workspace)
+    pub tree_hide: Vec<String>,
 }
 
 impl<'a> Renderer<'a> {
@@ -61,6 +63,7 @@ impl<'a> Renderer<'a> {
             since: String::new(),
             only: String::new(),
             codes: false,
+            tree_hide: Vec::new(),
         }
     }
 
@@ -76,6 +79,7 @@ impl<'a> Renderer<'a> {
             only: self.only.clone(),
             codes: self.codes,
             hidden: self.hidden,
+            tree_hide: self.tree_hide.clone(),
             ..Renderer::new(self.p, self.full)
         }
     }
@@ -447,4 +451,16 @@ pub(super) struct AnchorInfo {
     pub anchor: String,
     pub title: String,
     pub num: String,
+}
+
+impl Renderer<'_> {
+    /// label_of is what a reader shows for the field key of d: the "title" of
+    /// the property in the kind schema, else the field name as a heading.
+    pub(super) fn label_of(&self, d: &Doc, key: &str) -> String {
+        root(d)
+            .get("kind")
+            .and_then(|k| self.p.schemas.kind(&k.str))
+            .and_then(|kd| kd.titles.get(key).cloned())
+            .unwrap_or_else(|| heading(key))
+    }
 }

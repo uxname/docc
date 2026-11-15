@@ -69,7 +69,7 @@
     "endLine": 9,
     "endColumn": 58,
     "message": "unknown key \"extra\" in a docIgnore entry",
-    "hint": "Use only rule, reason and path."
+    "hint": "Use only rule, reason, path and by."
   },
   {
     "code": "DOC108",

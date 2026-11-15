@@ -10,5 +10,17 @@
     "endColumn": 93,
     "message": "link \"[[b#^DOC-1@ud8q]]\": the target changed, its hash is now @sj38",
     "hint": "Read the change, check that this place still agrees with it (fix it if not), then confirm this place with docc ack docs/src/index.json:1 (it writes @sj38 in place of @ud8q). Version @ud8q is not in the Git history; it reads now:\n    Ten attempts per minute."
+  },
+  {
+    "code": "DOC218",
+    "rule": "graph/folder-with-text",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 59,
+    "endLine": 1,
+    "endColumn": 102,
+    "message": "\"index\" has child documents and text of its own",
+    "hint": "A document with children is a folder: the reader shows it as the list of its children, not as a page. Move its text into a child document (an overview) and keep only the title here."
   }
 ]

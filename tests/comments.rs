@@ -69,8 +69,9 @@ fn apply_edits_only_comments() {
         format!("{}, \"$comments\": [{{\"id\": \"c-given\", \"at\": \"^{other_code}\", \"quote\": \"{other_text}\", \"text\": \"And this?\", \"author\": \"Bob\", \"created\": \"2026-10-22T09:00:00Z\"}}]}}", &other0[..other0.len() - 1]),
         "a file on one line stays on one line; at is the code of the block, the quote its text"
     );
-    let (code, out, errs) = p.run(&["validate", "--max-warnings", "0"]);
-    assert_eq!(code, 0, "{out} {errs}");
+    // the one warning is DOC218: index has a child and text of its own
+    let (code, out, errs) = p.run(&["validate", "--max-warnings", "1"]);
+    assert!(code == 0 && out.contains("0 errors, 1 warning"), "{out} {errs}");
 
     // one bad operation fails the batch and nothing is written
     let before = (p.read("docs/src/index.json"), p.read("docs/src/other.json"));

@@ -238,5 +238,17 @@
     "endColumn": 17,
     "message": "comment id \"c-2\" is used in docs/src/index.json too",
     "hint": "Give every comment of the project its own id (docc comments apply makes one when the id is left out)."
+  },
+  {
+    "code": "DOC218",
+    "rule": "graph/folder-with-text",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 5,
+    "column": 12,
+    "endLine": 5,
+    "endColumn": 27,
+    "message": "\"index\" has child documents and text of its own",
+    "hint": "A document with children is a folder: the reader shows it as the list of its children, not as a page. Move its text into a child document (an overview) and keep only the title here."
   }
 ]

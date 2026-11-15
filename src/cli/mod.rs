@@ -5,6 +5,7 @@ mod flags;
 mod rulescmd;
 mod update;
 mod watch;
+mod workspace;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -26,6 +27,7 @@ use flags::{FlagError, FlagSet};
 use rulescmd::{cmd_explain, cmd_rules, write_json};
 use update::cmd_update;
 use watch::cmd_watch;
+use workspace::cmd_workspace;
 
 /// Error is any error a command fails with; run tells them apart by type.
 pub(crate) type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -40,8 +42,9 @@ Commands:
   init               create docc.json and docs/src/index.json, build docs/out
   validate [paths]   check sources (paths: report only the problems in those files and folders)
   build              build Markdown into docs/out (--full: audit, --single/--html: one file, --no-comments, --codes, --since, --page, --rev)
-  watch              build again whenever a source is saved and serve the HTML page, which reloads itself (--full, --no-comments)
+  watch              build again whenever a source is saved and serve the reader, which updates itself (--full, --no-comments)
   compile            print the pages, tree and diagnostics as one JSON object; writes nothing (--rev: a Git revision, --hidden: with hidden documents)
+  workspace          print what a reader of the project shows as one JSON object: the pages with the hidden ones, roles, coverage, history, run
   log                print the commits that changed the documents, with the files and block counts of each
   diff <base> <head> print the blocks of the documents of two revisions lined up (--path: one document)
   check [paths]      read-only check for CI and hooks: validate + freshness of out/ (paths: as validate)
@@ -50,7 +53,7 @@ Commands:
   migrate            move a project of the old format (docc.lock, named anchors) to block codes and version hashes
   explain <code>     describe a rule
   rules              list rules with effective levels
-  schema document|config|compile|log|diff|comments-apply   print a JSON Schema
+  schema document|config|compile|workspace|log|diff|comments-apply   print a JSON Schema
   update             replace docc with the latest release (--check: only look, --version vX.Y.Z)
   comments           the readers' comments in the documents: list, apply (edits from stdin), import <file>, rm <id>
 
@@ -224,7 +227,8 @@ again). With errors that stop the build the page stays as it was and the termina
 
 The port is taken from the path of the project, so it is the same every time and other
 projects get other ports; if it is busy, docc watch says so and stops. The server listens
-on 127.0.0.1 only and answers nothing but the page.
+on 127.0.0.1 only and answers nothing but the page, and GET /diff?base=<rev>&head=<rev> with
+what docc diff <base> <head> --format json prints (hashes or ref names only).
 The readers' comments are kept by the browser for each address: those written in the file
 docs/out.html are not seen at http://127.0.0.1:<port>, and the other way round.
 
@@ -307,13 +311,29 @@ Examples:
 "
         }
         "schema" => {
-            "Usage: docc schema document|config|compile|log|diff|comments-apply
+            "Usage: docc schema document|config|compile|workspace|log|diff|comments-apply
 
-Prints a JSON Schema for documents, for docc.json or for the output of docc compile, log,
-diff or comments apply.
+Prints a JSON Schema for documents, for docc.json or for the output of docc compile,
+workspace, log, diff or comments apply.
 
 Example:
   docc schema document
+"
+        }
+        "workspace" => {
+            "Usage: docc workspace [--format json] [flags]
+
+Prints on one line, as JSON, everything a reader of the project shows
+(urn:docc:schema:workspace:1, docc schema workspace): the object of docc compile --hidden,
+the roles of kinds (workspace.roles of docc.json: tasks, checks, events, questions), one
+coverage row per block its kind wants covered by code (x-docc-covered) with the code tags
+that name it sorted into the areas of workspace.areas (the rest is code), the history of
+the documents (docc log, newest first, at most 200 commits) and the content of the run
+file (workspace.run, null when missing). Writes nothing. docc watch serves the same object
+at /workspace.json, and docc build --html inlines it.
+
+Example:
+  docc workspace --format json
 "
         }
         "comments" => comments::COMMENTS_USAGE,
@@ -456,6 +476,7 @@ fn dispatch(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         "explain" => cmd_explain(c, rest, stdout),
         "schema" => cmd_schema(rest, stdout).map(|_| 0),
         "compile" => cmd_compile(c, rest, stdout, stderr),
+        "workspace" => cmd_workspace(c, rest, stdout),
         "log" => cmd_log(c, rest, stdout),
         "diff" => cmd_diff(c, rest, stdout),
         "update" => cmd_update(rest, stdout),
@@ -798,18 +819,19 @@ fn cmd_diff(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i
 fn cmd_schema(args: &[String], stdout: &mut dyn Write) -> Result<(), Error> {
     let pos = parse(&mut FlagSet::new("schema"), args)?;
     if pos.len() != 1 {
-        return Err(usage_err("usage: docc schema document|config|compile|log|diff|comments-apply"));
+        return Err(usage_err("usage: docc schema document|config|compile|workspace|log|diff|comments-apply"));
     }
     match pos[0].as_str() {
         "document" => stdout.write_all(schema::document())?,
         "config" => stdout.write_all(&schema::config())?,
         "compile" => stdout.write_all(schema::compile_output())?,
+        "workspace" => stdout.write_all(schema::workspace_output())?,
         "log" => stdout.write_all(schema::log_output())?,
         "diff" => stdout.write_all(schema::diff_output())?,
         "comments-apply" => stdout.write_all(schema::comments_apply_output())?,
         other => {
             return Err(usage_err(format!(
-                "unknown schema {}: use document, config, compile, log, diff or comments-apply",
+                "unknown schema {}: use document, config, compile, workspace, log, diff or comments-apply",
                 config::go_quote(other)
             )));
         }
@@ -862,7 +884,15 @@ struct Built {
 /// Markdown into out (or outFull) and returns the number of files. With single
 /// and html, or when that file is already there, it also writes the one-file
 /// Markdown and HTML next to the directory and returns their paths in extra.
-fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut html: bool, o: &BuildOpts) -> Result<Built, Error> {
+fn build(
+    p: &Project,
+    warn: &mut dyn Write,
+    full: bool,
+    mut single: bool,
+    mut html: bool,
+    o: &BuildOpts,
+    ws: &dyn Fn() -> Option<String>,
+) -> Result<Built, Error> {
     let mut b = Built { n: 0, extra: Vec::new(), html_err: None, html_file: None };
     if engine::structural(&p.diags()) {
         return Ok(b);
@@ -875,7 +905,7 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
         let f = PathBuf::from(render::single_file(p, dir, ".html")?.file_name().unwrap_or_default());
         match r.html() {
             Ok(h) => {
-                render::write_file(&f, h.as_bytes())?;
+                render::write_file(&f, with_workspace(p, h, None).as_bytes())?;
                 b.extra.push(f.display().to_string());
             }
             Err(e) => b.html_err = Some(e),
@@ -910,7 +940,7 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     // a bad --since stops only the HTML file, not the pages and the lock
     if html {
         match r.html() {
-            Ok(h) => one.push((".html", h)),
+            Ok(h) => one.push((".html", with_workspace(p, h, ws()))),
             Err(e) => b.html_err = Some(e),
         }
     }
@@ -920,7 +950,11 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     }
     render::write(&p.cfg.abs(dir), dir, &p.cfg.abs(&p.cfg.src), &files)?;
     for (ext, content) in &one {
-        render::write_file(&paths[ext], content.as_bytes())?;
+        // the time of the workspace object alone does not make a new file
+        let same = std::fs::read_to_string(&paths[ext]).is_ok_and(|old| untimed(&old) == untimed(content));
+        if !same {
+            render::write_file(&paths[ext], content.as_bytes())?;
+        }
         b.extra.push(format!("{dir}{ext}"));
         if *ext == ".html" {
             b.html_file = Some(paths[ext].clone());
@@ -928,6 +962,35 @@ fn build(p: &Project, warn: &mut dyn Write, full: bool, mut single: bool, mut ht
     }
     b.n = files.len();
     Ok(b)
+}
+
+/// untimed is a one-file build without the time of its workspace object.
+fn untimed(s: &str) -> std::borrow::Cow<'_, str> {
+    static AT: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| regex::Regex::new(r#""generatedAt":"[^"]*""#).unwrap());
+    AT.replace_all(s, "")
+}
+
+/// with_workspace is the one-file HTML with the workspace object (JSON) in it:
+/// the reader page when the reader bundle is embedded, else the page of
+/// app.js with the object inlined next to its data.
+fn with_workspace(p: &Project, page: String, ws: Option<String>) -> String {
+    let at = r#"<script type="application/json" id="docc-data">"#;
+    if !render::reader_installed() {
+        return match ws {
+            Some(ws) => page.replacen(at, &format!("{}{at}", render::workspace_script(&ws)), 1),
+            None => page,
+        };
+    }
+    // the data island of the file (comments, form fields, old versions, block
+    // pointers) goes along: the reader's file mode and docc comments import read it
+    let island = page.find(at).and_then(|a| page[a..].find("</script>").map(|b| &page[a..a + b + "</script>".len()])).unwrap_or("");
+    let title = island
+        .strip_prefix(at)
+        .and_then(|j| serde_json::from_str::<serde_json::Value>(j.strip_suffix("</script>").unwrap_or(j)).ok())
+        .and_then(|v| v["title"].as_str().map(String::from))
+        .unwrap_or_default();
+    let data = format!("{island}\n{}", ws.as_deref().map(render::workspace_script).unwrap_or_default());
+    render::reader_page(&title, &p.cfg.lang, &data)
 }
 
 fn cmd_build(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mut dyn Write) -> Result<i32, Error> {
@@ -976,6 +1039,13 @@ fn run_build(
     o.rev = !rev.is_empty();
     if rev.is_empty() {
         // blocks without a code get one first; the project is read again below
+        let stripped = strip_value_codes(c)?;
+        if stripped > 0 {
+            say(
+                stderr,
+                &format!("docc: removed the block codes of {stripped} value fields (enum, const, x-docc-value): they are not blocks\n"),
+            );
+        }
         engine::assign_codes(&engine::load(load_config(c)?)?)?;
     }
     let mut p = engine::load(load_config_at(c, rev)?)?;
@@ -990,7 +1060,11 @@ fn run_build(
             ))
         })?;
     }
-    let b = build(&p, stderr, full, single, html, &o)?;
+    // the workspace object the HTML file inlines; not for --rev, whose sources are not on the disk
+    let ws = || {
+        if o.rev { None } else { workspace::parts(c, !o.no_comments).ok().map(|w| w.json()) }
+    };
+    let b = build(&p, stderr, full, single, html, &o, &ws)?;
     let ds = p.sorted();
     let res = emit(stdout, stderr, c, &p, &ds);
     let mut code = *res.as_ref().unwrap_or(&2);
@@ -1045,20 +1119,32 @@ fn cmd_check(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &m
     emit(stdout, stderr, c, &p, &ds)
 }
 
+/// strip_value_codes loads the project and cuts the codes of its value fields
+/// (engine::strip_value_codes).
+fn strip_value_codes(c: &Common) -> Result<usize, Error> {
+    engine::strip_value_codes(&engine::load(load_config(c)?)?)
+}
+
 /// cmd_codes gives a code to every block without one (engine::assign_codes).
 fn cmd_codes(c: &mut Common, args: &[String], stdout: &mut dyn Write) -> Result<i32, Error> {
     let pos = parse(&mut new_flags("codes", c), args)?;
     no_args(&pos)?;
     c.check()?;
+    let stripped = strip_value_codes(c)?;
     let n = engine::assign_codes(&engine::load(load_config(c)?)?)?;
     if c.format == "json" {
         #[derive(serde::Serialize)]
         struct Out {
             given: usize,
+            /// codes cut from value fields, which are not blocks
+            stripped: usize,
         }
-        write_json(stdout, &Out { given: n })?;
+        write_json(stdout, &Out { given: n, stripped })?;
     } else {
         say(stdout, &format!("gave codes to {n} blocks\n"));
+        if stripped > 0 {
+            say(stdout, &format!("removed the block codes of {stripped} value fields (enum, const, x-docc-value): they are not blocks\n"));
+        }
     }
     Ok(0)
 }
@@ -1257,7 +1343,7 @@ fn cmd_init(c: &mut Common, args: &[String], stdout: &mut dyn Write, stderr: &mu
         create(stdout, name, INIT_HOOK, 0o755)?;
     }
     let mut p = load_project(c)?;
-    let b = build(&p, stderr, false, false, false, &BuildOpts::default())?;
+    let b = build(&p, stderr, false, false, false, &BuildOpts::default(), &|| None)?;
     if b.n > 0 {
         say(stdout, &format!("built {} files in {}\n", b.n, p.cfg.out));
     }

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:docc:schema:compile:2",
+  "$id": "urn:docc:schema:compile:3",
   "title": "docc compile output",
   "description": "What docc compile --format json prints: one object on one line. It is printed in every case; when the sources have errors of groups 1xx-2xx, or docc failed (exit code 2), tree and pages are empty and ok is false.",
   "type": "object",
   "additionalProperties": false,
   "required": ["$schema", "ok", "summary", "diagnostics", "project", "tree", "pages"],
   "properties": {
-    "$schema": { "const": "urn:docc:schema:compile:2", "description": "The version of this shape." },
+    "$schema": { "const": "urn:docc:schema:compile:3", "description": "The version of this shape." },
     "ok": { "type": "boolean", "description": "No error diagnostics and not more warnings than maxWarnings (or --max-warnings): the exit code is 0." },
     "summary": {
       "type": "object",
@@ -129,15 +129,27 @@
         "parent": { "type": ["string", "null"], "description": "Id of the parent page, null when there is none or it is hidden." },
         "crumbs": { "type": "array", "items": { "type": "string" }, "description": "Ids of the parent chain, outermost first." },
         "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the whole document: what a link [[id@hash]] carries." },
+        "folder": { "const": true, "description": "The page has children in the tree: a reader shows it as the list of them, not as a page (DOC218 warns when it has text of its own); absent otherwise." },
+        "icon": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "inherited"],
+          "description": "The colour of the page's icon: its own \"icon\" of the source, or the nearest ancestor's in the tree; absent when none sets one.",
+          "properties": {
+            "color": { "type": "string", "description": "A CSS colour or a token: blue, green, amber, red, violet, gray, teal, pink." },
+            "inherited": { "type": "boolean", "description": "Taken from an ancestor." }
+          }
+        },
         "props": {
           "type": "array",
-          "description": "One-line fields shown as a property list instead of sections (when a page has two or more).",
+          "description": "One-line fields shown as a property list instead of sections (when a page has two or more), and every value field (a property of the kind schema with enum, const or x-docc-value: not a block, no code).",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["k", "id", "hash", "p", "s", "h"],
+            "required": ["k", "label", "id", "hash", "p", "s", "h"],
             "properties": {
               "k": { "type": "string", "description": "Field name as a heading." },
+              "label": { "type": "string", "description": "What a reader shows: the title of the property in the kind schema, else k." },
               "id": { "type": "string", "description": "Anchor of the field." },
               "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,4}-[1-9][0-9]{0,5}$", "description": "Block code of the value: the key of the document, a dash and a number (PAY-14); absent when it has none." },
               "hash": { "type": "string", "pattern": "^[2-9a-hjkmnp-z]{4}$", "description": "Version hash of the value: what [[id#^code@hash]] carries." },
@@ -175,6 +187,16 @@
               "s": { "type": "string", "description": "Source text (lists and tables flattened), with the code at its end." },
               "h": { "type": "string", "description": "HTML. Links to pages are #<id>, to fields #<id>--<anchor>; images are data: URIs." },
               "sec": { "type": ["string", "null"], "description": "Id of the section the block stands under; null above the first heading." },
+              "decided": {
+                "type": "object",
+                "description": "Who decided the block: its entry of \"$decided\" in the source, as written.",
+                "required": ["by"],
+                "properties": {
+                  "by": { "enum": ["human", "agent", "agent-delegated"] },
+                  "source": { "type": "string", "description": "The ground: a [[link@hash]], a URL or free text." },
+                  "confirmed": { "description": "A person confirmed an agent's decision.", "oneOf": [{ "type": "null" }, { "type": "object", "required": ["by", "date"], "properties": { "by": { "type": "string" }, "date": { "type": "string" } } }] }
+                }
+              },
               "i": {
                 "type": "object",
                 "description": "A form field, drawn in place of h.",

@@ -62,6 +62,16 @@
       "properties": {
         "scan": { "type": "array", "items": { "type": "string" }, "description": "Masks from the project root for docc: tags in code; absent: DOC401 and DOC403 do not run." }
       }
+    },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What docc workspace (and docc watch, docc build --html) adds to the pages; written by a tool such as crew.",
+      "properties": {
+        "run": { "type": "string", "description": "Project-relative path of the progress file of the current run; its content goes into the workspace as run (null when missing or not JSON)." },
+        "roles": { "type": "object", "additionalProperties": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] }, "description": "Role -> a kind or an array of kinds: tasks, checks, events, questions, meetings. A reader hides the section of a role that is absent." },
+        "areas": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } }, "description": "Area -> masks from the project root: sorts the code tags of the coverage table; a tag that matches none is code." }
+      }
     }
   },
   "$defs": {

@@ -296,10 +296,10 @@ fn init_config_blocks_suspect_links() {
     let (code, out, _) = p.run(&["init"]);
     assert_eq!(code, 0, "{out}");
     p.write("docs/src/index.json", r#"{"title":"Index","kind":"page","body":"See [[a]]."}"#);
-    p.write("docs/src/a.json", r#"{"title":"A","kind":"page","parent":"index","body":"Five."}"#);
+    p.write("docs/src/a.json", r#"{"title":"A","kind":"page","body":"Five."}"#);
     p.migrate();
     p.must_build();
-    p.write("docs/src/a.json", r#"{"title":"A","kind":"page","parent":"index","body":"Ten."}"#);
+    p.write("docs/src/a.json", r#"{"title":"A","kind":"page","body":"Ten."}"#);
     let (code, out, _) = p.run(&["check"]);
     assert!(code == 1 && out.contains("DOC209"), "a stale link must fail check in a project made by init: {code}\n{out}");
 }

@@ -11,7 +11,7 @@ pub fn fingerprint(root: &Node) -> String {
     hex::encode(sum)[..8].to_string()
 }
 
-pub(super) const FINGERPRINT_SKIP: &[&str] = &["docIgnore", "notes", "$comments"];
+pub(super) const FINGERPRINT_SKIP: &[&str] = &["docIgnore", "notes", "$comments", "$decided", "icon"];
 
 pub(super) fn canonical(b: &mut String, n: &Node, skip: &[&str]) {
     crate::codes::canonical(b, n, skip, false)

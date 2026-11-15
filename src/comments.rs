@@ -698,7 +698,12 @@ pub fn new_id() -> String {
 
 /// now is the current time in RFC 3339, UTC, to the second.
 pub fn now() -> String {
-    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()) as i64;
+    rfc3339(std::time::SystemTime::now())
+}
+
+/// rfc3339 is a time in RFC 3339, UTC, to the second.
+pub fn rfc3339(t: std::time::SystemTime) -> String {
+    let secs = t.duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()) as i64;
     let (days, rem) = (secs.div_euclid(86400), secs.rem_euclid(86400));
     // civil_from_days (H. Hinnant)
     let z = days + 719468;

@@ -30,7 +30,7 @@ pub fn find_code<'a>(root: &'a Node, code: &str) -> Option<&'a Node> {
             Kind::Object => n
                 .members
                 .iter()
-                .filter(|m| !(top && matches!(m.key.as_str(), "notes" | "docIgnore" | comments::KEY)))
+                .filter(|m| !(top && matches!(m.key.as_str(), "notes" | "docIgnore" | "$decided" | "icon" | comments::KEY)))
                 .find_map(|m| walk(&m.value, false, code)),
             _ => None,
         }

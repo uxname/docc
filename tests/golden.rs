@@ -167,12 +167,16 @@ fn render_golden() {
             }
             compare_trees(&mut fails, &expect_dir, &work.join(out));
             for f in files {
-                let got = std::fs::read_to_string(work.join("docs").join(f)).unwrap();
+                // the workspace object holds the time and the history: tests/workspace.rs checks it
+                let got = no_workspace(&std::fs::read_to_string(work.join("docs").join(f)).unwrap());
                 let want = src.join("expect").join(f);
                 if update() {
                     std::fs::write(&want, &got).unwrap();
                 }
                 let b = std::fs::read_to_string(&want).unwrap_or_default();
+                // the page around it is the embedded reader (tests of its own in Docspace):
+                // an HTML file is compared by its data island, the format docc comments import reads
+                let (b, got) = if f.ends_with(".html") { (island(&b), island(&got)) } else { (b, got) };
                 // the zip inside the HTML is compressed by another library: compare what it holds
                 if unzip_html(&b) != unzip_html(&got) {
                     fails.push(format!("{f} differs from {}:\n{got}", want.display()));
@@ -181,6 +185,28 @@ fn render_golden() {
         }
     }
     assert!(fails.is_empty(), "{}", fails.join("\n"));
+}
+
+/// island is the data island docc-data of an HTML file.
+fn island(s: &str) -> String {
+    const AT: &str = r#"<script type="application/json" id="docc-data">"#;
+    let Some(a) = s.find(AT) else {
+        return String::new();
+    };
+    let b = a + s[a..].find("</script>").unwrap();
+    s[a..b].to_string()
+}
+
+/// no_workspace drops the element of the workspace object from an HTML file.
+fn no_workspace(s: &str) -> String {
+    const AT: &str = r#"<script type="application/json" id="docc-workspace">"#;
+    match s.find(AT) {
+        Some(a) => {
+            let b = a + s[a..].find("</script>\n").map_or(s.len() - a, |i| i + "</script>\n".len());
+            format!("{}{}", &s[..a], &s[b..])
+        }
+        None => s.to_string(),
+    }
 }
 
 /// unzip_html replaces the base64 zip in the data of an HTML file with the

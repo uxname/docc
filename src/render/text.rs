@@ -36,6 +36,8 @@ pub(super) struct Page<'r, 'a> {
 /// prop is one entry of the property list of the HTML file.
 pub(super) struct Prop<'a> {
     pub key: String,
+    /// the title of the property in the kind schema, else key
+    pub label: String,
     pub id: String,
     pub node: &'a Node,
     pub md: String,

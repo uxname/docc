@@ -115,6 +115,8 @@ impl Project {
     pub(super) fn check_graph(&self) {
         self.dup_ids();
         self.dup_anchors();
+        self.decided();
+        self.folders_with_text();
         self.broken_refs();
         self.parent_cycles();
         if !self.cfg.folders {
@@ -123,6 +125,68 @@ impl Project {
         }
         self.includes();
         self.broken_files();
+    }
+
+    /// decided emits DOC217: a key of "$decided" names no block of the document.
+    fn decided(&self) {
+        for d in &self.docs {
+            let Some(dec) = d.root().and_then(|r| r.get(super::strings::DECIDED_KEY)).filter(|n| n.kind == Kind::Object) else {
+                continue;
+            };
+            for m in &dec.members {
+                if d.block_anchor(&m.key).is_none() {
+                    self.emit(
+                        d,
+                        "DOC217",
+                        m.key_start,
+                        m.key_end,
+                        format!("\"$decided\" names block {}, which this document does not have", go_quote(&m.key)),
+                        "Key each entry of \"$decided\" by the code of a block of this document (PAY-14, without ^); remove the entry of a block that was deleted.".into(),
+                    );
+                }
+            }
+        }
+    }
+
+    /// folders_with_text emits DOC218: a document with children (by parent,
+    /// or the own page of a folder in folder mode) has text blocks of its own.
+    /// A reader shows such a document as the list of its children.
+    fn folders_with_text(&self) {
+        let mut parents: HashSet<&str> = HashSet::new();
+        // a hidden child is not shown in the tree: it makes no folder
+        for d in self.docs.iter().filter(|d| !d.hidden) {
+            if let Some(p) = parent_of(d) {
+                parents.insert(p.str.as_str());
+            }
+        }
+        for d in &self.docs {
+            if !d.parsed() || !self.in_graph(d) {
+                continue;
+            }
+            // in folder mode a/b/b.json is the page of folder a/b
+            let has_kids = if self.cfg.folders {
+                d.rel.rsplit_once('/').is_some_and(|(dir, name)| {
+                    name.strip_suffix(".json") == dir.rsplit('/').next()
+                        && self.docs.iter().any(|o| !o.hidden && o.rel.starts_with(&format!("{dir}/")) && o.rel != d.rel)
+                })
+            } else {
+                parents.contains(d.id.as_str())
+            };
+            if !has_kids {
+                continue;
+            }
+            if let Some(sn) = d.strings().iter().find(|sn| sn.blk && !sn.notes && !sn.node().str.trim().is_empty()) {
+                let n = sn.node();
+                self.emit(
+                    d,
+                    "DOC218",
+                    n.start,
+                    n.end,
+                    format!("{} has child documents and text of its own", go_quote(&d.id)),
+                    "A document with children is a folder: the reader shows it as the list of its children, not as a page. Move its text into a child document (an overview) and keep only the title here.".into(),
+                );
+            }
+        }
     }
 
     /// brokenFiles emits DOC213 for relative image paths that name no image file in src.
@@ -438,7 +502,7 @@ impl Project {
                 match keys.get(&k.str) {
                     Some(f) => self.emit(
                         d,
-                        "DOC212",
+                        "DOC219",
                         k.start,
                         k.end,
                         format!("key {} is the key of {f} too", go_quote(&k.str)),

@@ -29,6 +29,8 @@ impl Project {
         let mut covers: HashMap<String, Vec<String>> = HashMap::new();
         // the blocks a tag names as id#^code, the id as resolved (DOC404)
         let mut tagged: HashSet<String> = HashSet::new();
+        // id#^CODE -> the file and line of every tag that names the block
+        let mut places: HashMap<String, Vec<(String, usize)>> = HashMap::new();
         let (mut code, mut code_at) = (HashMap::new(), HashMap::new());
         let bad = |t: &Tag, msg: String, hint: String| {
             self.emit_file(
@@ -87,6 +89,7 @@ impl Project {
                 }
                 if let Some(code) = field.strip_prefix('^') {
                     tagged.insert(format!("{}#^{code}", d.id));
+                    places.entry(format!("{}#^{}", d.id, code.to_ascii_uppercase())).or_default().push((t.file.clone(), t.line));
                 }
                 if !self.legacy
                     && let Some(v) = self.version(g)
@@ -135,7 +138,7 @@ impl Project {
         for files in covers.values_mut() {
             files.sort();
         }
-        (self.covers, self.code, self.code_at) = (Some(covers), code, code_at);
+        (self.covers, self.code, self.code_at, self.tag_places) = (Some(covers), code, code_at, places);
         for d in &self.docs {
             if self.needs_code(d) {
                 let k = d.r().get("kind").expect("needs_code checked the kind");
@@ -251,7 +254,7 @@ impl Project {
     /// covered_blocks are the blocks of d that DOC404 wants a tag on, with
     /// the kind: none for a hidden document, one outside the graph or of a
     /// kind that asks for no coverage.
-    pub(super) fn covered_blocks<'d>(&self, d: &'d Doc) -> Option<(&'d str, Vec<&'d StrNode>)> {
+    pub fn covered_blocks<'d>(&self, d: &'d Doc) -> Option<(&'d str, Vec<&'d StrNode>)> {
         if !d.parsed() || !self.in_graph(d) || d.hidden {
             return None;
         }

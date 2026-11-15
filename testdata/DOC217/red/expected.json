@@ -1,0 +1,14 @@
+[
+  {
+    "code": "DOC217",
+    "rule": "meta/decided-unknown-block",
+    "level": "error",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 143,
+    "endLine": 1,
+    "endColumn": 150,
+    "message": "\"$decided\" names block \"IND-2\", which this document does not have",
+    "hint": "Key each entry of \"$decided\" by the code of a block of this document (PAY-14, without ^); remove the entry of a block that was deleted."
+  }
+]

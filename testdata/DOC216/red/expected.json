@@ -70,5 +70,17 @@
     "endColumn": 79,
     "message": "the document has no \"key\" for its block codes",
     "hint": "Run docc build: it writes the key its codes carry. Never write or change a code by hand."
+  },
+  {
+    "code": "DOC218",
+    "rule": "graph/folder-with-text",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 60,
+    "endLine": 1,
+    "endColumn": 88,
+    "message": "\"index\" has child documents and text of its own",
+    "hint": "A document with children is a folder: the reader shows it as the list of its children, not as a page. Move its text into a child document (an overview) and keep only the title here."
   }
 ]

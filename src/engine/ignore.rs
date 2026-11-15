@@ -17,6 +17,8 @@ pub struct Ignore {
     /// DOC800: every custom rule
     pub all_cust: bool,
     pub reason: String,
+    /// who accepted the exception: "human" or "agent" (the default)
+    pub by: String,
     pub path: String,
     pub has_path: bool,
     /// byte range of the resolved path value, None when the path does not exist
@@ -113,6 +115,15 @@ impl Project {
             match m.key.as_str() {
                 "rule" => rule_node = Some(&m.value),
                 "reason" => reason_node = Some(&m.value),
+                "by" if m.value.kind == Kind::String && matches!(m.value.str.as_str(), "human" | "agent") => ig.by = m.value.str.clone(),
+                "by" => {
+                    bad(
+                        &m.value,
+                        "by must be \"human\" or \"agent\"".into(),
+                        r#"Write "by": "human" when a person accepted the exception."#,
+                    );
+                    return None;
+                }
                 "path" => {
                     if m.value.kind != Kind::String
                         || (!m.value.str.is_empty() && !m.value.str.starts_with('/'))
@@ -133,7 +144,7 @@ impl Project {
                         m.key_start,
                         m.key_end,
                         format!("unknown key {} in a docIgnore entry", go_quote(&m.key)),
-                        "Use only rule, reason and path.".into(),
+                        "Use only rule, reason, path and by.".into(),
                     );
                     return None;
                 }
@@ -212,8 +223,14 @@ impl Project {
     /// ignored reports whether a docIgnore entry of d would suppress a
     /// diagnostic of the rule code at the byte offset start.
     pub(super) fn ignored(&self, d: &Doc, code: &str, start: usize) -> bool {
+        self.ignore_of(d, code, start).is_some()
+    }
+
+    /// ignore_of is the docIgnore entry of d that would suppress a diagnostic
+    /// of code at start, if any.
+    pub fn ignore_of<'d>(&self, d: &'d Doc, code: &str, start: usize) -> Option<&'d Ignore> {
         let dg = Diagnostic { code: code.to_string(), start, ..Default::default() };
-        d.ignores.iter().any(|ig| ig.covers(&dg))
+        d.ignores.iter().find(|ig| ig.covers(&dg))
     }
 }
 

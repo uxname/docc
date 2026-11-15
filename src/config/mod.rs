@@ -118,6 +118,19 @@ pub struct Branding {
     pub header: String,
 }
 
+/// Workspace is the "workspace" section of docc.json, written by a tool
+/// such as crew: the progress file it writes, the kinds that play its roles
+/// (tasks, checks, events, questions) and the areas that sort code tags.
+#[derive(Debug, Clone, Default)]
+pub struct Workspace {
+    /// project-relative path of the run file ("" for none)
+    pub run: String,
+    /// role -> a kind name or an array of kind names, as written, in the order of the file
+    pub roles: Vec<(String, serde_json::Value)>,
+    /// area -> masks, in the order of the file; a tag matching none is "code"
+    pub areas: Vec<(String, Vec<Glob>)>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Config {
     /// absolute project root
@@ -151,7 +164,11 @@ pub struct Config {
     pub rule_codes: Vec<(usize, usize, String)>,
     pub custom: Vec<Custom>,
     pub trace_scan: Vec<Glob>,
+    /// the masks of trace.scan as written (docc watch watches their folders)
+    pub trace_masks: Vec<String>,
     pub brand: Option<Branding>,
+    /// the "workspace" section: what docc workspace and docc watch add to the pages
+    pub workspace: Workspace,
     /// "tree": "folders": the document tree is the folder structure of src
     /// (roots, DOC203 and DOC205 do not apply); false: nested by parent
     pub folders: bool,
@@ -435,7 +452,10 @@ impl Walker<'_> {
             }
             for mk in self.strs(&m.value)? {
                 match compile_glob(&mk) {
-                    Ok(g) => c.trace_scan.push(g),
+                    Ok(g) => {
+                        c.trace_scan.push(g);
+                        c.trace_masks.push(mk.clone());
+                    }
                     Err(err) => {
                         return Err(self.err_at(
                             m.value.start,
@@ -446,6 +466,50 @@ impl Walker<'_> {
             }
         }
         Ok(())
+    }
+
+    fn workspace(&self, n: &loader::Node) -> Result<Workspace, Error> {
+        if n.kind != loader::Kind::Object {
+            return Err(self.type_err(n, "an object"));
+        }
+        let mut ws = Workspace::default();
+        for m in &n.members {
+            let v = &m.value;
+            match m.key.as_str() {
+                "run" => ws.run = self.str(v)?,
+                "roles" => {
+                    if v.kind != loader::Kind::Object {
+                        return Err(self.type_err(v, "an object"));
+                    }
+                    for r in &v.members {
+                        let k = if r.value.kind == loader::Kind::Array {
+                            serde_json::Value::from(self.strs(&r.value)?)
+                        } else {
+                            self.str(&r.value).map_err(|_| self.type_err(&r.value, "a kind name or an array of kind names"))?.into()
+                        };
+                        ws.roles.push((r.key.clone(), k));
+                    }
+                }
+                "areas" => {
+                    if v.kind != loader::Kind::Object {
+                        return Err(self.type_err(v, "an object"));
+                    }
+                    for a in &v.members {
+                        let mut gs = Vec::new();
+                        for mk in self.strs(&a.value)? {
+                            gs.push(compile_glob(&mk).map_err(|err| {
+                                self.err_at(a.value.start, format!("bad mask {}: {}", go_quote(&mk), regex_err_text(&err)))
+                            })?);
+                        }
+                        ws.areas.push((a.key.clone(), gs));
+                    }
+                }
+                _ => {
+                    return Err(self.err_at(m.key_start, format!("unknown key {}", go_quote(&m.key))));
+                }
+            }
+        }
+        Ok(ws)
     }
 
     fn branding(&self, n: &loader::Node, root: &Path, src: &Source) -> Result<Branding, Error> {
@@ -610,6 +674,7 @@ pub fn parse_from(data: &[u8], root: &Path, file: &str, src: Source) -> Result<C
                     }
                 }
                 "trace" => w.trace(&mut c, v)?,
+                "workspace" => c.workspace = w.workspace(v)?,
                 "branding" => c.brand = Some(w.branding(v, root, &c.source)?),
                 "tree" => {
                     c.folders = match w.str(v)?.as_str() {

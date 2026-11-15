@@ -25,7 +25,8 @@ impl Project {
 
 /// Structural reports whether the diagnostics contain an error of group 1xx
 /// or 2xx; build, compile and comments stop on those. A link whose version
-/// hash is missing or old (DOC209) and a block without a code (DOC216) are
+/// hash is missing or old (DOC209), a block without a code (DOC216) and an
+/// entry of "$decided" for a block that is gone (DOC217) are
 /// not: the pages still render, so a draft an agent is checking stays
 /// readable and commentable; validate and check still fail on them.
 pub fn structural(ds: &[Diagnostic]) -> bool {
@@ -37,4 +38,4 @@ pub fn structural(ds: &[Diagnostic]) -> bool {
 }
 
 /// NON_BLOCKING are the errors of groups 1xx-2xx that do not stop the output.
-pub const NON_BLOCKING: [&str; 2] = ["DOC209", "DOC216"];
+pub const NON_BLOCKING: [&str; 3] = ["DOC209", "DOC216", "DOC217"];

@@ -58,5 +58,17 @@
     "endColumn": 31,
     "message": "reference [[no-note]] points to a document that does not exist: \"no-note\"",
     "hint": "Fix the id, or create docs/src/no-note.json only if the document is really needed."
+  },
+  {
+    "code": "DOC218",
+    "rule": "graph/folder-with-text",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 4,
+    "column": 11,
+    "endLine": 4,
+    "endColumn": 75,
+    "message": "\"index\" has child documents and text of its own",
+    "hint": "A document with children is a folder: the reader shows it as the list of its children, not as a page. Move its text into a child document (an overview) and keep only the title here."
   }
 ]

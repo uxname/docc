@@ -30,6 +30,8 @@ pub(super) fn reserved(k: &str) -> bool {
             | "order"
             | "key"
             | "$comments"
+            | "$decided"
+            | "icon"
     )
 }
 
@@ -92,13 +94,9 @@ impl<'a> Page<'_, 'a> {
                 let c = self.field_content(&m.value, 3);
                 if !c.is_empty() {
                     // a form field is a block of its own, never a one-line property
-                    let sh = !has_input(&m.value) && short_value(&self.mark_re().replace_all(&c, ""));
-                    fields.push(Field {
-                        key: m.key.clone(),
-                        content: c,
-                        node: &m.value,
-                        short: sh,
-                    });
+                    // a value field (enum, const, x-docc-value) is a property of its own
+                    let sh = d.values.contains(&m.key) || (!has_input(&m.value) && short_value(&self.mark_re().replace_all(&c, "")));
+                    fields.push(Field { key: m.key.clone(), content: c, node: &m.value, short: sh });
                     if sh {
                         short += 1;
                     }
@@ -107,7 +105,7 @@ impl<'a> Page<'_, 'a> {
         }
         // HTML: one-line values form a property list before the sections, so a page
         // is not a stack of headings with a single word under each
-        let props = r.html && short >= 2;
+        let props = r.html && (short >= 2 || fields.iter().any(|f| d.values.contains(&f.key)));
         if props {
             // drawn by the page script from pg.props
             for f in &fields {
@@ -116,6 +114,7 @@ impl<'a> Page<'_, 'a> {
                     self.cut += re.find_iter(&f.content).count();
                     self.props.push(Prop {
                         key: heading(&f.key),
+                        label: r.label_of(d, &f.key),
                         id: format!("{}--{}", d.id, r.anchor_of(d, Some(f.node)).anchor),
                         node: f.node,
                         md: re.replace_all(&f.content, "").into_owned(),

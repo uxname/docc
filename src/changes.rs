@@ -82,8 +82,44 @@ pub struct LogCommit {
     pub date: String,
     pub subject: String,
     body: String,
+    /// the trailers of the message (`Key: value` lines of its last paragraph)
+    trailers: std::collections::BTreeMap<String, String>,
+    /// who made the commit: the trailer Crew-Actor, else agent for a subject
+    /// starting with crew- or PRD:, else human
+    actor: &'static str,
     comments_only: bool,
     pub files: Vec<LogFile>,
+}
+
+/// trailers are the `Key: value` lines of the last paragraph of a commit
+/// body when every line of it is one (keys of letters, digits and dashes);
+/// a key given twice keeps its values one per line.
+fn trailers(body: &str) -> std::collections::BTreeMap<String, String> {
+    let mut out = std::collections::BTreeMap::new();
+    let last = body.trim_end().rsplit("\n\n").next().unwrap_or("");
+    let mut pairs = Vec::new();
+    for l in last.lines() {
+        match l.split_once(':') {
+            Some((k, v)) if !k.is_empty() && k.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-') => pairs.push((k, v.trim())),
+            _ => return out,
+        }
+    }
+    for (k, v) in pairs {
+        out.entry(k.to_string()).and_modify(|o: &mut String| *o = format!("{o}\n{v}")).or_insert_with(|| v.to_string());
+    }
+    out
+}
+
+/// actor is who made a commit: its Crew-Actor trailer (any case of the key),
+/// else agent when the subject starts with crew- or PRD:, else human.
+fn actor(subject: &str, trailers: &std::collections::BTreeMap<String, String>) -> &'static str {
+    let t = trailers.iter().find(|(k, _)| k.eq_ignore_ascii_case("Crew-Actor")).map(|(_, v)| v.trim().to_ascii_lowercase());
+    match t.as_deref() {
+        Some("human") => "human",
+        Some("agent") => "agent",
+        _ if subject.starts_with("crew-") || subject.starts_with("PRD:") => "agent",
+        _ => "human",
+    }
 }
 
 /// Counts are the blocks a change added, changed and removed.
@@ -216,16 +252,21 @@ pub fn log(cfg: &Config, rev: &str, since: &str) -> Result<LogOut, String> {
     }
     let mut commits: Vec<LogCommit> = metas
         .into_iter()
-        .map(|m| LogCommit {
-            sha: m.hash,
-            parents: m.parents,
-            author: Person { name: m.author.0, email: m.author.1 },
-            committer: Person { name: m.committer.0, email: m.committer.1 },
-            date: m.date,
-            subject: m.subject,
-            body: m.body,
-            comments_only: false,
-            files: Vec::new(),
+        .map(|m| {
+            let t = trailers(&m.body);
+            LogCommit {
+                actor: actor(&m.subject, &t),
+                trailers: t,
+                sha: m.hash,
+                parents: m.parents,
+                author: Person { name: m.author.0, email: m.author.1 },
+                committer: Person { name: m.committer.0, email: m.committer.1 },
+                date: m.date,
+                subject: m.subject,
+                body: m.body,
+                comments_only: false,
+                files: Vec::new(),
+            }
         })
         .collect();
     for e in &entries {
@@ -366,8 +407,9 @@ impl Side {
             sec: None,
             i: None,
             k: Some(p.k.clone()),
+            decided: None,
         });
-        let bs: Vec<CBlock> = props.chain(pg.blocks.iter().cloned()).collect();
+        let bs: Vec<CBlock> = props.chain(pg.blocks.iter().map(|b| CBlock { decided: None, ..b.clone() })).collect();
         // the footnotes block has no source: its HTML stands for its text
         let leaves = bs
             .iter()
@@ -487,4 +529,27 @@ pub fn diff(
         });
     }
     Ok(DiffOut { schema: DIFF_SCHEMA_ID, base: bsha, head: hsha, files })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trailers_and_actor() {
+        let t = trailers("Why it changed.\n\nCrew-Actor: agent\nCo-Authored-By: A <a@x>\nCo-Authored-By: B <b@x>");
+        assert_eq!(t["Crew-Actor"], "agent");
+        assert_eq!(t["Co-Authored-By"], "A <a@x>\nB <b@x>");
+        assert_eq!(actor("fix: x", &t), "agent");
+        // a paragraph with a line that is no trailer has none
+        assert!(trailers("Note: this matters\nand goes on.").is_empty());
+        assert!(trailers("").is_empty());
+        let none = BTreeMapS::new();
+        assert_eq!(actor("crew-spec: ТЗ", &none), "agent");
+        assert_eq!(actor("PRD: шаг 3", &none), "agent");
+        assert_eq!(actor("fix typo", &none), "human");
+        assert_eq!(actor("crew-build: x", &trailers("crew-actor: Human")), "human");
+    }
+
+    type BTreeMapS = std::collections::BTreeMap<String, String>;
 }

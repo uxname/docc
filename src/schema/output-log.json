@@ -21,7 +21,7 @@
     "commit": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sha", "parents", "author", "committer", "date", "subject", "body", "commentsOnly", "files"],
+      "required": ["sha", "parents", "author", "committer", "date", "subject", "body", "trailers", "actor", "commentsOnly", "files"],
       "properties": {
         "sha": { "$ref": "#/$defs/sha" },
         "parents": { "type": "array", "items": { "$ref": "#/$defs/sha" }, "description": "First parent first; empty for a root commit." },
@@ -30,6 +30,8 @@
         "date": { "type": "string", "format": "date-time", "description": "Author date, RFC 3339." },
         "subject": { "type": "string" },
         "body": { "type": "string", "description": "The message after the subject, trailing newlines cut." },
+        "trailers": { "type": "object", "additionalProperties": { "type": "string" }, "description": "The Key: value lines of the last paragraph of the body, when every line of that paragraph is one (keys of letters, digits and dashes, as written); a key given twice has its values one per line. Empty when there are none." },
+        "actor": { "enum": ["human", "agent"], "description": "Who made the commit: the trailer Crew-Actor (key in any case, value human or agent); without it agent when the subject starts with crew- or PRD:, else human." },
         "commentsOnly": { "type": "boolean", "description": "Every file of the commit is commentsOnly." },
         "files": { "type": "array", "items": { "$ref": "#/$defs/file" }, "description": "Every file below the source folder the commit changed, in Git's order." }
       }

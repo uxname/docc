@@ -24,7 +24,7 @@ use crate::loader::{self, Node};
 use crate::source::{self, Source};
 
 pub use kind::closest;
-pub use public::{comments_apply_output, compile_output, config, diff_output, document, log_output};
+pub use public::{comments_apply_output, compile_output, config, diff_output, document, log_output, workspace_output};
 
 use texts::{display, go_quote, join_quoted, printer_float, printer_int, quote, type_of};
 
@@ -67,6 +67,12 @@ pub struct Kind {
     /// the properties marked "x-docc-covered": true: only their blocks need
     /// a tag each (DOC404); empty with covered: every block does
     pub covered_fields: BTreeSet<String>,
+    /// the top-level properties that hold a value, not prose: a string with
+    /// "enum", "const" or "x-docc-value": true, or an array of such items.
+    /// Their strings are not blocks: no code, shown as properties.
+    pub values: BTreeSet<String>,
+    /// the "title" of top-level properties: the label a reader shows
+    pub titles: HashMap<String, String>,
 }
 
 /// LoadError is what Load fails with: a config error that points at a
@@ -1000,9 +1006,8 @@ impl Set {
 const DEFAULT_HINT: &str = "Change the value so that it matches the schema.";
 
 /// builtinFields are the fields the built-in schema is applied to (DOC105).
-pub(crate) const BUILTIN_FIELDS: [&str; 10] = [
-    "title", "kind", "status", "parent", "tags", "body", "notes", "hidden", "order", "key",
-];
+pub(crate) const BUILTIN_FIELDS: [&str; 12] =
+    ["title", "kind", "status", "parent", "tags", "body", "notes", "hidden", "order", "key", "$decided", "icon"];
 
 /// Origin is where the errors collect gets come from: the schema the
 /// validator started at, its keyword path as the Go library prints it, and

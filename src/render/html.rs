@@ -306,6 +306,7 @@ impl<'a> Renderer<'a> {
             let (c, v) = code_hash(n);
             pd.props.push(PropData {
                 k: p.key.clone(),
+                label: p.label.clone(),
                 id: p.id.clone(),
                 c,
                 v,
@@ -641,6 +642,9 @@ fn code_hash(n: &Node) -> (String, String) {
 #[derive(Serialize, Default)]
 struct PropData {
     k: String,
+    /// docc compile only: the label of the property (schema title, else k)
+    #[serde(skip)]
+    pub(super) label: String,
     id: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     c: String,

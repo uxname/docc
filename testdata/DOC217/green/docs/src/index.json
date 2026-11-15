@@ -1,0 +1,1 @@
+{ "title": "Index", "kind": "page", "key": "IND", "body": ["Text. ^IND-1", "More. ^IND-2"], "$decided": { "IND-1": { "by": "agent-delegated", "source": "[[q@rp55]]", "confirmed": { "by": "Ann", "date": "2026-11-14" } }, "IND-2": { "by": "agent", "confirmed": null } } }

@@ -41,18 +41,6 @@
     "level": "warn",
     "file": "docs/src/index.json",
     "line": 3,
-    "column": 63,
-    "endLine": 3,
-    "endColumn": 69,
-    "message": "forbidden word or phrase \"быстро\"",
-    "hint": "Replace it with a specific, measurable statement."
-  },
-  {
-    "code": "DOC301",
-    "rule": "text/forbidden-words",
-    "level": "warn",
-    "file": "docs/src/index.json",
-    "line": 3,
     "column": 72,
     "endLine": 3,
     "endColumn": 78,

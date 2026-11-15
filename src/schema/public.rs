@@ -8,6 +8,12 @@ const COMPILE_SCHEMA: &str = include_str!("output-compile.json");
 const LOG_SCHEMA: &str = include_str!("output-log.json");
 const DIFF_SCHEMA: &str = include_str!("output-diff.json");
 const APPLY_SCHEMA: &str = include_str!("output-comments-apply.json");
+const WORKSPACE_SCHEMA: &str = include_str!("output-workspace.json");
+
+/// workspace_output is the schema of the output of docc workspace.
+pub fn workspace_output() -> &'static [u8] {
+    WORKSPACE_SCHEMA.as_bytes()
+}
 
 /// comments_apply_output is the schema of the output of docc comments apply.
 pub fn comments_apply_output() -> &'static [u8] {

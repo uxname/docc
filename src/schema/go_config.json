@@ -244,6 +244,12 @@
               "graph/comment-lost",
               "DOC216",
               "graph/missing-code",
+              "DOC217",
+              "meta/decided-unknown-block",
+              "DOC218",
+              "graph/folder-with-text",
+              "DOC219",
+              "codes/duplicate-key",
               "DOC301",
               "text/forbidden-words",
               "DOC303",
@@ -337,6 +343,44 @@
         "parents",
         "folders"
       ]
+    },
+    "workspace": {
+      "additionalProperties": false,
+      "description": "What docc workspace (and docc watch, docc build --html) adds to the pages; written by a tool such as crew.",
+      "properties": {
+        "areas": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": "Area -\u003e masks from the project root: sorts the code tags of the coverage table; a tag that matches none is code.",
+          "type": "object"
+        },
+        "roles": {
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "description": "Role -\u003e a kind or an array of kinds: tasks, checks, events, questions, meetings. A reader hides the section of a role that is absent.",
+          "type": "object"
+        },
+        "run": {
+          "description": "Project-relative path of the progress file of the current run; its content goes into the workspace as run (null when missing or not JSON).",
+          "type": "string"
+        }
+      },
+      "type": "object"
     }
   },
   "title": "docc.json",

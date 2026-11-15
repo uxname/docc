@@ -1,10 +1,18 @@
-//! docc watch: builds again whenever a source is saved and serves the HTML page
-//! on 127.0.0.1; the page reloads itself when a build changes it. It is made for
-//! reading the documents while an agent writes them.
+//! docc watch: builds again whenever a source is saved and serves the reader
+//! on 127.0.0.1: GET / the reader page, GET /workspace.json the workspace
+//! object (docc workspace), GET /events Server-Sent Events: `event: workspace`
+//! after every change, and the reader fetches the object again. A change of
+//! only the run file of the workspace section sends the event without a build.
+//! It is made for reading the documents while an agent writes them.
 //!
-//! The server is std only: one thread per connection, GET only, and it hands out
-//! nothing but the page and the channel the page waits on (no file is read by a
-//! path of the request).
+//! The server is std only: one thread per connection, and it hands out nothing
+//! but the page, the object and the event stream (no file is read by a path of
+//! the request). GET /diff?base=<rev>&head=<rev> is what `docc diff <base>
+//! <head> --format json` prints (it runs this binary), for 127.0.0.1 only and
+//! with both revisions checked before git sees them. It writes exactly one
+//! thing: POST /answer sets the field
+//! «Ответ» of a document of a questions kind (the person answers in the
+//! reader); the save starts the build like any other.
 
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -14,7 +22,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant, SystemTime};
 
+use super::workspace::{self, Parts};
 use super::{BuildOpts, Common, Error, load_config, new_flags, no_args, parse, run_build, say, usage_err};
+use crate::render;
 
 /// POLL is how often the sources are looked at; QUIET how long they must stay
 /// unchanged before a build starts (an agent saves several files in a row);
@@ -22,31 +32,33 @@ use super::{BuildOpts, Common, Error, load_config, new_flags, no_args, parse, ru
 const POLL: Duration = Duration::from_millis(250);
 const QUIET: Duration = Duration::from_millis(1000);
 const MAX_WAIT: Duration = Duration::from_secs(3);
-/// how long a page waits for news before it asks again
+/// how often an idle event stream gets a comment, so proxies and the browser keep it open
 const HOLD: Duration = Duration::from_secs(25);
 const MAX_CONNECTIONS: usize = 64;
 
-const WAITING: &str = "<!doctype html><meta charset=\"utf-8\"><title>docc</title><body style=\"font:16px system-ui;margin:3rem\"><p>docc: waiting for a build without errors. The reasons are in the terminal where docc watch runs; this page opens the documents as soon as it can.</p></body>";
+/// WAITING is the workspace before the first build: no pages yet.
+const WAITING: &str = r#"{"$schema":"urn:docc:schema:workspace:1","compile":{"$schema":"urn:docc:schema:compile:3","ok":false,"summary":{"checked":0,"errors":0,"warnings":0,"shown":0,"truncated":false},"diagnostics":[],"project":{"title":"","lang":"en","brand":null},"tree":[],"pages":[]},"roles":{},"coverage":[],"history":[],"notes":[],"run":null,"generatedAt":""}"#;
 
-/// The script put at the end of the page as it is served (never into the
-/// file on disk). It asks for news; a new version means reload, but not while the
-/// reader has typed text into the page (a comment, an answer): the words must not be lost.
-const RELOAD: &str = "<script>(function(){var v=@V@;function busy(){return [].some.call(document.querySelectorAll('main textarea,main input[type=text],main input:not([type])'),function(e){return !!e.value.trim();});}function go(){if(busy()){setTimeout(go,1000);}else{location.reload();}}function wait(){fetch('/__docc/wait?v='+v,{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){if(t.trim()===String(v)){wait();}else{go();}}).catch(function(){setTimeout(wait,1000);});}wait();})();</script>";
-
-/// Shared is the page the server hands out and the number of its version.
+/// Shared is the workspace object the server hands out and the number of its version.
 struct Shared {
-    page: Mutex<(Vec<u8>, u64)>,
+    ws: Mutex<(String, u64)>,
     news: Condvar,
 }
 
+/// without_time is the object without its generatedAt, which changes every time.
+fn without_time(ws: &str) -> &str {
+    ws.rfind(r#","generatedAt":"#).map_or(ws, |i| &ws[..i])
+}
+
 impl Shared {
-    /// set replaces the page; the version changes only when the page does.
-    fn set(&self, html: Vec<u8>) -> bool {
-        let mut g = self.page.lock().unwrap_or_else(|e| e.into_inner());
-        if g.0 == html {
+    /// set replaces the object; the version changes only when the object
+    /// does (its time aside).
+    fn set(&self, ws: String) -> bool {
+        let mut g = self.ws.lock().unwrap_or_else(|e| e.into_inner());
+        if without_time(&g.0) == without_time(&ws) {
             return false;
         }
-        *g = (html, g.1 + 1);
+        *g = (ws, g.1 + 1);
         self.news.notify_all();
         true
     }
@@ -56,7 +68,7 @@ pub(super) fn cmd_watch(c: &mut Common, args: &[String], stdout: &mut dyn Write,
     let (mut full, mut no_comments) = (false, false);
     let pos = {
         let mut fs = new_flags("watch", c);
-        fs.bool_var(&mut full, "full", "audit build into outFull, and serve that page");
+        fs.bool_var(&mut full, "full", "audit build into outFull (the reader shows the reader's pages either way)");
         fs.bool_var(&mut no_comments, "no-comments", "leave the readers' comments ($comments) out of everything this build writes");
         parse(&mut fs, args)
     };
@@ -74,34 +86,41 @@ pub(super) fn cmd_watch(c: &mut Common, args: &[String], stdout: &mut dyn Write,
         ))
     })?;
     let port = listener.local_addr()?.port();
-    let start = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map_or(1, |d| d.as_millis() as u64);
-    let shared = Arc::new(Shared { page: Mutex::new((WAITING.as_bytes().to_vec(), start)), news: Condvar::new() });
+    let shared = Arc::new(Shared { ws: Mutex::new((WAITING.to_string(), 0)), news: Condvar::new() });
     {
-        let shared = shared.clone();
-        std::thread::spawn(move || serve(listener, port, shared));
+        let (shared, page) = (shared.clone(), render::reader_page("docc", &cfg.lang, ""));
+        // ponytail: the source folder of the start; a save of docc.json that moves it needs a restart for answers
+        let src = cfg.abs(&cfg.src);
+        let cfg_args: Vec<String> = if c.config_path.is_empty() { vec![] } else { vec!["--config".into(), c.config_path.clone()] };
+        std::thread::spawn(move || serve(listener, port, shared, page, src, cfg_args));
     }
     say(stdout, &format!("docc: watching http://127.0.0.1:{port} (stop with Ctrl+C)\n"));
     let _ = stdout.flush();
 
-    let mut watched = watched_of(&cfg);
+    let (mut watched, mut run) = watched_of(&cfg);
+    let mut parts: Option<Parts> = None;
     loop {
         // read again: a save of docc.json may move the sources (a broken one changes nothing)
         if let Ok(cfg) = load_config(c) {
-            watched = watched_of(&cfg);
+            (watched, run) = watched_of(&cfg);
         }
         // taken before the build: a save during it differs from this and builds again
         let before = snapshot(&watched);
+        let mut run_seen = snapshot(&run);
         let opts = BuildOpts { no_comments, ..Default::default() };
-        match run_build(c, full, false, true, "", "", opts, stdout, stderr) {
-            Ok((_, Some(file))) => {
-                if let Ok(html) = std::fs::read(&file) {
-                    if shared.set(html) {
-                        say(stdout, "docc: page updated\n");
-                    }
+        if let Err(e) = run_build(c, full, false, false, "", "", opts, stdout, stderr) {
+            say(stderr, &format!("docc: error: {e}\n"));
+        }
+        match workspace::parts(c, !no_comments) {
+            // the reader keeps the last pages; the reasons are in the terminal
+            Ok(p) if p.broken && parts.is_some() => {}
+            Ok(p) => {
+                if shared.set(p.json()) {
+                    say(stdout, "docc: page updated\n");
                 }
+                parts = Some(p);
             }
-            Ok(_) => {}
-            // the page stays as it was; the next save tries again
+            // the reader keeps what it has; the next save tries again
             Err(e) => say(stderr, &format!("docc: error: {e}\n")),
         }
         let _ = stdout.flush();
@@ -112,6 +131,16 @@ pub(super) fn cmd_watch(c: &mut Common, args: &[String], stdout: &mut dyn Write,
             let now = snapshot(&watched);
             if now != before {
                 break now;
+            }
+            let r = snapshot(&run);
+            if r != run_seen {
+                run_seen = r;
+                if let Some(p) = &parts
+                    && shared.set(p.json())
+                {
+                    say(stdout, "docc: run updated\n");
+                    let _ = stdout.flush();
+                }
             }
         };
         let first = Instant::now();
@@ -126,10 +155,35 @@ pub(super) fn cmd_watch(c: &mut Common, args: &[String], stdout: &mut dyn Write,
     }
 }
 
-/// watched_of are the places whose files start a build: the sources, the schemas and the config.
+/// Watched are the places whose files start a build, and the files under
+/// them that do not (the output, which the build itself writes).
+struct Watched {
+    paths: Vec<PathBuf>,
+    skip: Vec<PathBuf>,
+}
+
+/// watched_of are the places whose files start a build (the sources, the
+/// schemas, the config and the folders the code tags are read from) and the
+/// run file, whose change alone only sends the workspace again.
 /// ponytail: the logo of the branding section is not watched; add it when that matters.
-fn watched_of(cfg: &crate::config::Config) -> [PathBuf; 3] {
-    [cfg.abs(&cfg.src), cfg.abs(&cfg.schemas), cfg.root.join(Path::new(&cfg.file).file_name().unwrap_or_default())]
+fn watched_of(cfg: &crate::config::Config) -> (Watched, Watched) {
+    let mut paths = vec![
+        cfg.abs(&cfg.src),
+        cfg.abs(&cfg.schemas),
+        cfg.root.join(Path::new(&cfg.file).file_name().unwrap_or_default()),
+        cfg.root.join(workspace::NOTES),
+    ];
+    for g in &cfg.trace_masks {
+        // the part of the mask before its first wildcard: a folder or one file
+        let fixed = &g[..g.find(['*', '?', '[']).unwrap_or(g.len())];
+        let fixed = if fixed.len() < g.len() { fixed.rsplit_once('/').map_or("", |(d, _)| d) } else { fixed };
+        paths.push(cfg.abs(fixed));
+    }
+    // a prefix of a path, not a folder: docs/out also skips docs/out.html and docs/out-full
+    let mut skip: Vec<PathBuf> = [&cfg.out, &cfg.out_full].iter().map(|o| cfg.abs(o)).collect();
+    let run: Vec<PathBuf> = workspace::run_file(cfg).into_iter().collect();
+    skip.extend(run.iter().cloned());
+    (Watched { paths, skip }, Watched { paths: run, skip: Vec::new() })
 }
 
 /// port_for is the port of a project: the same every time, so the readers'
@@ -144,14 +198,25 @@ fn port_for(root: &Path) -> u16 {
 
 type Snapshot = BTreeMap<PathBuf, (SystemTime, u64)>;
 
-/// snapshot is the modification time and size of every file under paths.
-fn snapshot(paths: &[PathBuf]) -> Snapshot {
-    fn walk(p: &Path, out: &mut Snapshot) {
-        let Ok(m) = std::fs::symlink_metadata(p) else { return };
+/// snapshot is the modification time and size of every file under the
+/// watched paths; folders whose name starts with '.', node_modules and target are left out.
+fn snapshot(w: &Watched) -> Snapshot {
+    fn walk(p: &Path, skip: &[PathBuf], top: bool, out: &mut Snapshot) {
+        let s = p.as_os_str().as_encoded_bytes();
+        if skip.iter().any(|k| s.starts_with(k.as_os_str().as_encoded_bytes())) {
+            return;
+        }
+        let Ok(m) = std::fs::symlink_metadata(p) else {
+            return;
+        };
         if m.is_dir() {
+            let name = p.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
+            if !top && (name.starts_with('.') || name == "node_modules" || name == "target") {
+                return;
+            }
             if let Ok(rd) = std::fs::read_dir(p) {
                 for e in rd.flatten() {
-                    walk(&e.path(), out);
+                    walk(&e.path(), skip, false, out);
                 }
             }
         } else if !p.to_string_lossy().ends_with(".docc-tmp") {
@@ -161,14 +226,14 @@ fn snapshot(paths: &[PathBuf]) -> Snapshot {
         }
     }
     let mut out = Snapshot::new();
-    for p in paths {
-        walk(p, &mut out);
+    for p in &w.paths {
+        walk(p, &w.skip, true, &mut out);
     }
     out
 }
 
-fn serve(listener: TcpListener, port: u16, shared: Arc<Shared>) {
-    let open = Arc::new(AtomicUsize::new(0));
+fn serve(listener: TcpListener, port: u16, shared: Arc<Shared>, page: String, src: PathBuf, cfg_args: Vec<String>) {
+    let (open, page, src, cfg_args) = (Arc::new(AtomicUsize::new(0)), Arc::new(page), Arc::new(src), Arc::new(cfg_args));
     for conn in listener.incoming() {
         let Ok(conn) = conn else {
             std::thread::sleep(Duration::from_millis(100)); // out of descriptors, say: do not spin
@@ -178,9 +243,9 @@ fn serve(listener: TcpListener, port: u16, shared: Arc<Shared>) {
             open.fetch_sub(1, Ordering::SeqCst);
             continue; // dropped: the browser asks again
         }
-        let (shared, open) = (shared.clone(), open.clone());
+        let (shared, open, page, src, cfg_args) = (shared.clone(), open.clone(), page.clone(), src.clone(), cfg_args.clone());
         std::thread::spawn(move || {
-            let _ = handle(conn, port, &shared);
+            let _ = handle(conn, port, &shared, &page, &src, &cfg_args);
             open.fetch_sub(1, Ordering::SeqCst);
         });
     }
@@ -198,7 +263,7 @@ fn reply(s: &mut TcpStream, status: &str, kind: &str, body: &[u8]) -> std::io::R
 /// handle answers one request. The Host and Origin of the request must be this
 /// server's own address: a page of another site that points its name at
 /// 127.0.0.1 (DNS rebinding) must not be able to read the documents.
-fn handle(mut s: TcpStream, port: u16, shared: &Shared) -> std::io::Result<()> {
+fn handle(mut s: TcpStream, port: u16, shared: &Shared, page: &str, src: &Path, cfg_args: &[String]) -> std::io::Result<()> {
     s.set_read_timeout(Some(Duration::from_secs(5)))?;
     s.set_write_timeout(Some(Duration::from_secs(5)))?;
     // a request is a line and some headers (a browser sends the cookies of every
@@ -211,7 +276,7 @@ fn handle(mut s: TcpStream, port: u16, shared: &Shared) -> std::io::Result<()> {
         let mut it = line.split_whitespace();
         (it.next().unwrap_or("").to_string(), it.next().unwrap_or("").to_string())
     };
-    let (mut host, mut origin) = (String::new(), None);
+    let (mut host, mut origin, mut length, mut json) = (String::new(), None, None, false);
     loop {
         line.clear();
         if r.read_line(&mut line)? == 0 || began.elapsed() > Duration::from_secs(10) {
@@ -224,6 +289,8 @@ fn handle(mut s: TcpStream, port: u16, shared: &Shared) -> std::io::Result<()> {
             match k.trim().to_ascii_lowercase().as_str() {
                 "host" => host = v.trim().to_string(),
                 "origin" => origin = Some(v.trim().to_string()),
+                "content-length" => length = v.trim().parse::<usize>().ok(),
+                "content-type" => json = v.trim().starts_with("application/json"),
                 _ => {}
             }
         }
@@ -232,28 +299,258 @@ fn handle(mut s: TcpStream, port: u16, shared: &Shared) -> std::io::Result<()> {
     if !own(&host) || origin.as_deref().is_some_and(|o| !own(o.strip_prefix("http://").unwrap_or(o))) {
         return reply(&mut s, "403 Forbidden", "text/plain", b"forbidden");
     }
-    if method != "GET" {
-        return reply(&mut s, "405 Method Not Allowed", "text/plain", b"GET only");
+    let (path, query) = target.split_once('?').unwrap_or((target.as_str(), ""));
+    let local = s.peer_addr().is_ok_and(|a| a.ip() == std::net::Ipv4Addr::LOCALHOST);
+    if method == "GET" && path == "/diff" {
+        if !local {
+            return reply(&mut s, "403 Forbidden", "application/json", br#"{"error":"forbidden"}"#);
+        }
+        let (status, body) = diff(query, cfg_args);
+        return reply(&mut s, status, "application/json; charset=utf-8", body.as_bytes());
     }
-    let (path, query) = target.split_once('?').unwrap_or((&target, ""));
+    if method == "POST" && path == "/answer" {
+        // only this machine; a JSON body, which a page of another site cannot send without asking first
+        if !local {
+            return reply(&mut s, "403 Forbidden", "text/plain", b"forbidden");
+        }
+        if !json {
+            return reply(&mut s, "415 Unsupported Media Type", "text/plain", b"application/json only");
+        }
+        let Some(n) = length.filter(|&n| n <= ANSWER_MAX) else {
+            return reply(&mut s, "413 Payload Too Large", "text/plain", b"a body of at most 16 KiB with Content-Length");
+        };
+        let mut body = vec![0; n];
+        r.read_exact(&mut body)?;
+        let ws = shared.ws.lock().unwrap_or_else(|e| e.into_inner()).0.clone();
+        return match answer(&ws, src, &body) {
+            Ok(()) => reply(&mut s, "200 OK", "application/json; charset=utf-8", b"{\"ok\":true}"),
+            Err((status, why)) => reply(&mut s, status, "text/plain; charset=utf-8", why.as_bytes()),
+        };
+    }
+    if method != "GET" {
+        return reply(&mut s, "405 Method Not Allowed", "text/plain", b"GET only, and POST /answer");
+    }
     match path {
-        "/" => {
-            let (html, v) = shared.page.lock().unwrap_or_else(|e| e.into_inner()).clone();
-            let mut html = String::from_utf8_lossy(&html).into_owned();
-            let script = RELOAD.replace("@V@", &v.to_string());
-            // at the very end: the page has no closing body tag, and the code of the app holds the text "</body>"
-            html.push_str(&script);
-            reply(&mut s, "200 OK", "text/html; charset=utf-8", html.as_bytes())
+        "/" => reply(&mut s, "200 OK", "text/html; charset=utf-8", page.as_bytes()),
+        "/workspace.json" => {
+            let ws = shared.ws.lock().unwrap_or_else(|e| e.into_inner()).0.clone();
+            reply(&mut s, "200 OK", "application/json; charset=utf-8", ws.as_bytes())
         }
-        "/__docc/wait" => {
-            let known = query.strip_prefix("v=").and_then(|v| v.parse::<u64>().ok());
-            let g = shared.page.lock().unwrap_or_else(|e| e.into_inner());
-            let (g, _) = shared.news.wait_timeout_while(g, HOLD, |g| Some(g.1) == known).unwrap_or_else(|e| e.into_inner());
-            let v = g.1;
-            drop(g);
-            reply(&mut s, "200 OK", "text/plain", v.to_string().as_bytes())
-        }
+        "/events" => events(s, shared),
         _ => reply(&mut s, "404 Not Found", "text/plain", b"not found"),
+    }
+}
+
+/// diff answers GET /diff: the output of `docc diff <base> <head> --format
+/// json` run by this binary in the folder and with the config of the watch.
+/// Both revisions must pass is_rev first. A usage error of docc diff (an
+/// unknown revision, say) is 400, any other failure 500; errors are
+/// `{"error": text}`.
+fn diff(query: &str, cfg_args: &[String]) -> (&'static str, String) {
+    let err = |status, msg: &str| (status, serde_json::json!({ "error": msg }).to_string());
+    let (mut base, mut head) = (None, None);
+    for kv in query.split('&') {
+        let (k, v) = kv.split_once('=').unwrap_or((kv, ""));
+        let Some(v) = unescape(v) else { return err("400 Bad Request", "bad percent-encoding") };
+        match k {
+            "base" => base = Some(v),
+            "head" => head = Some(v),
+            _ => {}
+        }
+    }
+    // ponytail: docc diff compares two revisions only; head = the working tree waits for docc diff to support it
+    let (Some(base), Some(head)) = (base, head) else {
+        return err("400 Bad Request", "base and head are both required (docc diff has no working-tree side)");
+    };
+    for r in [&base, &head] {
+        if !is_rev(r) {
+            return err("400 Bad Request", &format!("not a commit hash or ref name: {r:?}"));
+        }
+    }
+    let exe = match std::env::current_exe() {
+        Ok(e) => e,
+        Err(e) => return err("500 Internal Server Error", &format!("cannot find docc: {e}")),
+    };
+    let out = match std::process::Command::new(exe)
+        .args(["diff", "--format", "json"])
+        .args(cfg_args)
+        .args([&base, &head])
+        .stdin(std::process::Stdio::null())
+        .output()
+    {
+        Ok(o) => o,
+        Err(e) => return err("500 Internal Server Error", &format!("cannot run docc diff: {e}")),
+    };
+    let text = String::from_utf8_lossy(&out.stdout).trim_end().to_string();
+    if out.status.success() {
+        return ("200 OK", text);
+    }
+    // a failed run prints the error report of --format json: its first diagnostic says why
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+    let d = &v["diagnostics"][0];
+    let msg = d["message"].as_str().map_or_else(|| String::from_utf8_lossy(&out.stderr).trim().to_string(), str::to_string);
+    let status = if d["code"] == "usage" { "400 Bad Request" } else { "500 Internal Server Error" };
+    err(status, &msg)
+}
+
+/// unescape decodes the percent-escapes of a query value ("+" is a space);
+/// None when one is broken or the bytes are not UTF-8.
+fn unescape(v: &str) -> Option<String> {
+    let b = v.as_bytes();
+    let (mut out, mut i) = (Vec::with_capacity(b.len()), 0);
+    while i < b.len() {
+        match b[i] {
+            b'%' => {
+                out.push(u8::from_str_radix(std::str::from_utf8(b.get(i + 1..i + 3)?).ok()?, 16).ok()?);
+                i += 3;
+            }
+            b'+' => {
+                out.push(b' ');
+                i += 1;
+            }
+            c => {
+                out.push(c);
+                i += 1;
+            }
+        }
+    }
+    String::from_utf8(out).ok()
+}
+
+/// is_rev is true for a commit hash (4 to 64 hex digits) or a ref name by the
+/// rules of git check-ref-format (HEAD, main, origin/main, v1.0): nothing that
+/// starts with "-" (an option of git), no spaces or control characters, none
+/// of ~^:?*[\, no "..", "@{", "//", no part that starts with "." or ends
+/// with ".lock". So HEAD~1 is refused: the reader sends hashes.
+fn is_rev(r: &str) -> bool {
+    if r.is_empty() || r.len() > 255 || r.starts_with('-') {
+        return false;
+    }
+    if (4..=64).contains(&r.len()) && r.bytes().all(|c| c.is_ascii_hexdigit()) {
+        return true;
+    }
+    !(r == "@"
+        || r.bytes().any(|c| c <= b' ' || c == 0x7f || b"~^:?*[\\".contains(&c))
+        || r.contains("..")
+        || r.contains("@{")
+        || r.contains("//")
+        || r.starts_with('/')
+        || r.ends_with('/')
+        || r.ends_with('.')
+        || r.split('/').any(|part| part.starts_with('.') || part.ends_with(".lock")))
+}
+
+/// ANSWER_MAX is the largest body of POST /answer.
+const ANSWER_MAX: usize = 16384;
+
+/// ANSWER is the one field docc watch writes.
+const ANSWER: &str = "Ответ";
+
+/// answer takes `{"doc": id, "answer": text}` and writes text into the field
+/// «Ответ» of that document, when the workspace object ws lists it with a kind
+/// of the questions role. The block code of the field stays; nothing else of
+/// the file changes. The save starts the build.
+fn answer(ws: &str, src: &Path, body: &[u8]) -> Result<(), (&'static str, String)> {
+    let bad = |why: &str| ("400 Bad Request", why.to_string());
+    let req: serde_json::Value = serde_json::from_slice(body).map_err(|e| bad(&format!("not JSON: {e}")))?;
+    let (Some(id), Some(text)) = (req["doc"].as_str(), req["answer"].as_str()) else {
+        return Err(bad(r#"expected {"doc": "<id>", "answer": "<text>"}"#));
+    };
+    let text = crate::codes::strip_code(text.trim()).trim_end();
+    if text.is_empty() {
+        return Err(bad("the answer is empty"));
+    }
+    let ws: serde_json::Value = serde_json::from_str(ws).map_err(|e| ("500 Internal Server Error", e.to_string()))?;
+    let kinds: Vec<&str> = match &ws["roles"]["questions"] {
+        serde_json::Value::String(k) => vec![k.as_str()],
+        serde_json::Value::Array(ks) => ks.iter().filter_map(|k| k.as_str()).collect(),
+        _ => Vec::new(),
+    };
+    let page = ws["compile"]["pages"].as_array().into_iter().flatten().find(|p| p["id"] == id);
+    let Some(page) = page.filter(|p| p["kind"].as_str().is_some_and(|k| kinds.contains(&k))) else {
+        return Err(("404 Not Found", format!("no question document {id:?} (a document of a kind of workspace.roles.questions)")));
+    };
+    let rel = page["path"].as_str().unwrap_or("");
+    if rel.is_empty() || Path::new(rel).components().any(|c| !matches!(c, std::path::Component::Normal(_))) {
+        return Err(("500 Internal Server Error", format!("bad path {rel:?}")));
+    }
+    let file = std::fs::canonicalize(src.join(rel)).map_err(|e| ("404 Not Found", e.to_string()))?;
+    let data = std::fs::read(&file).map_err(|e| ("500 Internal Server Error", e.to_string()))?;
+    let out = set_answer(&data, text).map_err(|e| ("409 Conflict", e))?;
+    let mut tmp = file.clone().into_os_string();
+    tmp.push(".docc-tmp");
+    let tmp = PathBuf::from(tmp);
+    std::fs::write(&tmp, &out).and_then(|_| std::fs::rename(&tmp, &file)).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp);
+        ("500 Internal Server Error", e.to_string())
+    })
+}
+
+/// set_answer is the JSON text of a document with the field «Ответ» set to
+/// text: its value replaced (a block code at the end of a string stays), or a
+/// new member after the last one, indented like the file.
+fn set_answer(src: &[u8], text: &str) -> Result<Vec<u8>, String> {
+    let (bom, data) = match src.strip_prefix(b"\xEF\xBB\xBF") {
+        Some(rest) => (&src[..3], rest),
+        None => (&src[..0], src),
+    };
+    let r = crate::loader::parse(data);
+    let root = match (&r.err, &r.root) {
+        (None, Some(root)) if root.kind == crate::loader::Kind::Object => root,
+        _ => return Err("the file is not valid JSON with an object at the root".into()),
+    };
+    if r.dups.iter().any(|d| d.key == ANSWER) {
+        return Err(format!("the file has {ANSWER:?} twice"));
+    }
+    let lit = |s: &str| serde_json::to_string(s).unwrap_or_default().replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029");
+    let (start, end, new) = match root.members.iter().find(|m| m.key == ANSWER) {
+        Some(m) => {
+            let code = (m.value.kind == crate::loader::Kind::String).then(|| crate::codes::code_of(&m.value.str)).flatten();
+            let v = code.map_or_else(|| text.to_string(), |c| crate::codes::with_code(text, c));
+            (m.value.start, m.value.end, lit(&v))
+        }
+        None => {
+            let Some(last) = root.members.last() else {
+                return Ok([bom, b"{", format!("{}: {}", lit(ANSWER), lit(text)).as_bytes(), &data[root.start + 1..]].concat());
+            };
+            let first = &root.members[0];
+            let lead = &data[root.start + 1..first.key_start];
+            let sep = match lead.iter().rposition(|&c| c == b'\n') {
+                Some(at) => format!(
+                    ",{}{}",
+                    if data.windows(2).any(|w| w == b"\r\n") { "\r\n" } else { "\n" },
+                    String::from_utf8_lossy(&lead[at + 1..])
+                ),
+                None => ", ".into(),
+            };
+            (last.value.end, last.value.end, format!("{sep}{}: {}", lit(ANSWER), lit(text)))
+        }
+    };
+    Ok([bom, &data[..start], new.as_bytes(), &data[end..]].concat())
+}
+
+/// events streams `event: workspace` with the time of the object every time
+/// it changes, the first one at once; a comment line keeps an idle stream open.
+fn events(mut s: TcpStream, shared: &Shared) -> std::io::Result<()> {
+    s.set_read_timeout(None)?;
+    write!(
+        s,
+        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nConnection: keep-alive\r\n\r\nretry: 1000\n\n"
+    )?;
+    let mut known = None;
+    loop {
+        let g = shared.ws.lock().unwrap_or_else(|e| e.into_inner());
+        let (g, _) = shared.news.wait_timeout_while(g, HOLD, |g| Some(g.1) == known).unwrap_or_else(|e| e.into_inner());
+        if Some(g.1) == known {
+            drop(g);
+            s.write_all(b": idle\n\n")?;
+            continue;
+        }
+        known = Some(g.1);
+        let at = g.0.rsplit_once(r#""generatedAt":""#).map_or("", |(_, t)| t.trim_end_matches(['"', '}']));
+        let msg = format!("event: workspace\ndata: {{\"generatedAt\":\"{at}\"}}\n\n");
+        drop(g);
+        s.write_all(msg.as_bytes())?;
     }
 }
 
@@ -270,10 +567,35 @@ mod tests {
     }
 
     #[test]
-    fn the_page_version_moves_only_with_the_page() {
-        let s = Shared { page: Mutex::new((b"a".to_vec(), 5)), news: Condvar::new() };
-        assert!(!s.set(b"a".to_vec()));
-        assert!(s.set(b"b".to_vec()));
-        assert_eq!(s.page.lock().unwrap().1, 6);
+    fn the_version_moves_only_with_the_object() {
+        let s = Shared { ws: Mutex::new((r#"{"a":1,"generatedAt":"t1"}"#.into(), 5)), news: Condvar::new() };
+        assert!(!s.set(r#"{"a":1,"generatedAt":"t2"}"#.into()));
+        assert!(s.set(r#"{"a":2,"generatedAt":"t3"}"#.into()));
+        assert_eq!(s.ws.lock().unwrap().1, 6);
+    }
+
+    #[test]
+    fn revisions_are_hashes_or_ref_names() {
+        for ok in ["HEAD", "main", "origin/main", "v1.0", "feature/x-y_z", "1a2b", "4b825dc642cb6eb9a060e54bf8d69288fbee4904"] {
+            assert!(is_rev(ok), "{ok}");
+        }
+        for bad in ["", "-p", "--output=/tmp/x", "a b", "HEAD~1", "HEAD^", "a..b", "a:b", "@", "x@{1}", "a//b", "/a", "a/", "a.", ".a", "a/.b", "x.lock", "a\\b", "a*", "a?", "a[", "a\tb", "a\nb"] {
+            assert!(!is_rev(bad), "{bad}");
+        }
+        assert_eq!(unescape("origin%2Fmain").as_deref(), Some("origin/main"));
+        assert_eq!(unescape("a+b").as_deref(), Some("a b"));
+        assert_eq!(unescape("%zz"), None);
+        assert_eq!(unescape("%4"), None);
+    }
+
+    #[test]
+    fn set_answer_writes_only_the_field() {
+        let got = |src: &str, t: &str| String::from_utf8(set_answer(src.as_bytes(), t).unwrap()).unwrap();
+        assert_eq!(got("{\n  \"title\": \"Q?\"\n}\n", "Yes"), "{\n  \"title\": \"Q?\",\n  \"Ответ\": \"Yes\"\n}\n");
+        assert_eq!(got(r#"{"title":"Q?","Ответ":"No ^QA-3","x":1}"#, "Yes"), r#"{"title":"Q?","Ответ":"Yes ^QA-3","x":1}"#);
+        assert_eq!(got(r#"{"title":"Q?","Ответ":["a"]}"#, "Yes"), r#"{"title":"Q?","Ответ":"Yes"}"#);
+        assert_eq!(got("{}", "Yes"), r#"{"Ответ": "Yes"}"#);
+        assert!(set_answer(r#"{"Ответ":"a","Ответ":"b"}"#.as_bytes(), "x").is_err());
+        assert!(set_answer(b"[1]", "x").is_err());
     }
 }

@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "code": "DOC218",
+    "rule": "graph/folder-with-text",
+    "level": "warn",
+    "file": "docs/src/index.json",
+    "line": 1,
+    "column": 29,
+    "endLine": 1,
+    "endColumn": 73,
+    "message": "\"index\" has child documents and text of its own",
+    "hint": "A document with children is a folder: the reader shows it as the list of its children, not as a page. Move its text into a child document (an overview) and keep only the title here."
+  }
+]
