@@ -11,7 +11,7 @@ description: "Write, edit and fix project documentation stored as JSON in docs/s
 
 A project of the old format (a `docc.lock`, named anchors `^name`, links without hashes) is refused with "run docc migrate": run `docc migrate` once (a script: it rewrites documents, code tags and comments, and running it again changes nothing), then `docc build`, and commit.
 
-The binary must be on PATH (`docc --version`). Install it with `curl -fsSL https://raw.githubusercontent.com/uxname/docc/main/install.sh | sh` (Windows: `irm https://raw.githubusercontent.com/uxname/docc/main/install.ps1 | iex`); `docc update` upgrades it. A project without `docc.json` is not set up: ask the user before you run `docc init`.
+The binary must be on PATH (`docc --version`); call it only from PATH, never `npx docc` (that npm name belongs to an unrelated package). Install it with `curl -fsSL https://raw.githubusercontent.com/uxname/docc/main/install.sh | sh` (Windows: `irm https://raw.githubusercontent.com/uxname/docc/main/install.ps1 | iex`); `docc update` upgrades it. A project without `docc.json` is not set up: ask the user before you run `docc init`.
 
 ## The loop
 
