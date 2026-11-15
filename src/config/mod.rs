@@ -129,6 +129,19 @@ pub struct Workspace {
     pub roles: Vec<(String, serde_json::Value)>,
     /// area -> masks, in the order of the file; a tag matching none is "code"
     pub areas: Vec<(String, Vec<Glob>)>,
+    /// the command docc watch runs after an answer, with the document id ("" for none)
+    pub on_answer: String,
+}
+
+impl Workspace {
+    /// kinds are the kinds of a role: one kind or a list.
+    pub fn kinds(&self, role: &str) -> Vec<String> {
+        match self.roles.iter().find(|(r, _)| r == role).map(|(_, k)| k) {
+            Some(serde_json::Value::String(k)) => vec![k.clone()],
+            Some(serde_json::Value::Array(ks)) => ks.iter().filter_map(|k| k.as_str().map(String::from)).collect(),
+            _ => Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -477,6 +490,7 @@ impl Walker<'_> {
             let v = &m.value;
             match m.key.as_str() {
                 "run" => ws.run = self.str(v)?,
+                "onAnswer" => ws.on_answer = self.str(v)?,
                 "roles" => {
                     if v.kind != loader::Kind::Object {
                         return Err(self.type_err(v, "an object"));

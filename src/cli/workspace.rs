@@ -93,7 +93,7 @@ pub(super) fn parts(c: &Common, comments: bool) -> Result<Parts, Error> {
         let mut r = render::Renderer::new(&p, false);
         (r.hidden, r.comments) = (true, comments);
         // the meetings have their own tab: the tree leaves them out
-        r.tree_hide = kinds_of(&p.cfg, "meetings");
+        r.tree_hide = p.cfg.workspace.kinds("meetings");
         r.compile()
     };
     let ds = p.sorted();
@@ -119,15 +119,6 @@ pub(super) fn parts(c: &Common, comments: bool) -> Result<Parts, Error> {
         serde_json::to_string(&notes(&p.cfg))?
     );
     Ok(Parts { body, run: run_file(&p.cfg), broken })
-}
-
-/// kinds_of are the kinds of a role of the workspace section: one kind or a list.
-pub(super) fn kinds_of(cfg: &Config, role: &str) -> Vec<String> {
-    match cfg.workspace.roles.iter().find(|(r, _)| r == role).map(|(_, k)| k) {
-        Some(serde_json::Value::String(k)) => vec![k.clone()],
-        Some(serde_json::Value::Array(ks)) => ks.iter().filter_map(|k| k.as_str().map(String::from)).collect(),
-        _ => Vec::new(),
-    }
 }
 
 #[derive(Serialize)]

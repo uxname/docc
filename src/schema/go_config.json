@@ -358,6 +358,10 @@
           "description": "Area -\u003e masks from the project root: sorts the code tags of the coverage table; a tag that matches none is code.",
           "type": "object"
         },
+        "onAnswer": {
+          "description": "Command docc watch runs after it writes an answer (POST /answer), with the document id as the one argument: split like a shell does, a leading ~/ is the home folder, no shell, run in the project root, stopped after 30 s.",
+          "type": "string"
+        },
         "roles": {
           "additionalProperties": {
             "oneOf": [

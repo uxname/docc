@@ -213,6 +213,57 @@ fn answers_a_question_and_shows_notes() {
     assert!(p.read("docs/src/q1.json").contains(r#""Ответ": "The first. ^QA-2""#), "{}", p.read("docs/src/q1.json"));
 }
 
+/// After the answer: who and when in the document, a commit of that file
+/// alone when nothing is staged, and workspace.onAnswer run with the id.
+#[test]
+fn an_answer_is_committed_and_handed_over() {
+    let p = project([
+        ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#.to_string()),
+        (
+            "docs/schemas/question.json",
+            r#"{"type":"object","properties":{"answeredBy":{"type":"string","x-docc-value":true},"answeredAt":{"type":"string","x-docc-value":true}},"additionalProperties":true}"#.to_string(),
+        ),
+        ("docs/src/index.json", index(r#""Text. ^IND-1""#)),
+        ("docs/src/q1.json", r#"{"title":"Which?","kind":"question","key":"QA","hidden":true,"body":["Why we ask. ^QA-1"]}"#.to_string()),
+        (
+            "docc.json",
+            r#"{"workspace":{"roles":{"questions":"question"},"onAnswer":"sh -c 'printf %s \"$0\" > handed.txt'"}}"#.to_string(),
+        ),
+    ]);
+    let git = |args: &[&str]| {
+        let out = Command::new("git").args(args).current_dir(&p.path).output().ok()?;
+        assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+        Some(String::from_utf8_lossy(&out.stdout).trim().to_string())
+    };
+    if git(&["init", "-q", "-b", "main"]).is_none() {
+        return; // no git here
+    }
+    for (k, v) in [("user.name", "Tess Ter"), ("user.email", "t@x.test"), ("commit.gpgsign", "false"), ("core.hooksPath", "/dev/null")] {
+        git(&["config", k, v]);
+    }
+    git(&["add", "-A"]);
+    git(&["commit", "-q", "-m", "start"]);
+    let w = start(&p);
+    workspace_with(&w, "Why we ask.");
+
+    let r = post(w.port, "/answer", "application/json", r#"{"doc":"q1","answer":"Yes."}"#, None);
+    assert!(r.contains(r#""committed":true,"handedOver":true"#), "{r}");
+    let q = p.read("docs/src/q1.json");
+    assert!(q.contains(r#""answeredBy": "Tess Ter""#) && q.contains(r#""answeredAt": "20"#), "{q}");
+    assert_eq!(git(&["log", "-1", "--format=%s%n%(trailers:key=Crew-Actor,valueonly)"]).unwrap(), "Ответ человека: Which?\nhuman");
+    assert_eq!(git(&["show", "--format=", "--name-only", "HEAD"]).unwrap(), "docs/src/q1.json");
+    assert_eq!(p.read("handed.txt"), "q1");
+
+    // something staged: the answer is written, not committed
+    p.write("other.txt", "x");
+    git(&["add", "other.txt"]);
+    let r = post(w.port, "/answer", "application/json", r#"{"doc":"q1","answer":"No."}"#, None);
+    assert!(r.contains(r#""committed":false"#), "{r}");
+    assert!(p.read("docs/src/q1.json").contains("No."));
+    assert_eq!(git(&["log", "-1", "--format=%s"]).unwrap(), "Ответ человека: Which?");
+    assert_eq!(git(&["diff", "--cached", "--name-only"]).unwrap(), "other.txt");
+}
+
 /// GET /diff is what docc diff --format json prints; the revisions are
 /// checked before git sees them, and the errors are JSON.
 #[test]

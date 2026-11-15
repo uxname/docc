@@ -229,6 +229,9 @@ The port is taken from the path of the project, so it is the same every time and
 projects get other ports; if it is busy, docc watch says so and stops. The server listens
 on 127.0.0.1 only and answers nothing but the page, and GET /diff?base=<rev>&head=<rev> with
 what docc diff <base> <head> --format json prints (hashes or ref names only).
+POST /answer {\"doc\": <id>, \"answer\": <text>} writes the field «Ответ» of a question with
+answeredBy and answeredAt, commits that file when nothing is staged, and runs
+workspace.onAnswer with the id; it replies {\"ok\", \"committed\", \"handedOver\"}.
 The readers' comments are kept by the browser for each address: those written in the file
 docs/out.html are not seen at http://127.0.0.1:<port>, and the other way round.
 

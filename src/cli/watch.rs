@@ -89,8 +89,8 @@ pub(super) fn cmd_watch(c: &mut Common, args: &[String], stdout: &mut dyn Write,
     let shared = Arc::new(Shared { ws: Mutex::new((WAITING.to_string(), 0)), news: Condvar::new() });
     {
         let (shared, page) = (shared.clone(), render::reader_page("docc", &cfg.lang, ""));
-        // ponytail: the source folder of the start; a save of docc.json that moves it needs a restart for answers
-        let src = cfg.abs(&cfg.src);
+        // ponytail: the source folder and onAnswer of the start; a save of docc.json that changes them needs a restart for answers
+        let src = Spot { src: cfg.abs(&cfg.src), root: cfg.root.clone(), on_answer: cfg.workspace.on_answer.clone() };
         let cfg_args: Vec<String> = if c.config_path.is_empty() { vec![] } else { vec!["--config".into(), c.config_path.clone()] };
         std::thread::spawn(move || serve(listener, port, shared, page, src, cfg_args));
     }
@@ -232,7 +232,15 @@ fn snapshot(w: &Watched) -> Snapshot {
     out
 }
 
-fn serve(listener: TcpListener, port: u16, shared: Arc<Shared>, page: String, src: PathBuf, cfg_args: Vec<String>) {
+/// Spot is where an answer goes: the source folder, the project root (git
+/// and the onAnswer command run there) and the command of workspace.onAnswer.
+struct Spot {
+    src: PathBuf,
+    root: PathBuf,
+    on_answer: String,
+}
+
+fn serve(listener: TcpListener, port: u16, shared: Arc<Shared>, page: String, src: Spot, cfg_args: Vec<String>) {
     let (open, page, src, cfg_args) = (Arc::new(AtomicUsize::new(0)), Arc::new(page), Arc::new(src), Arc::new(cfg_args));
     for conn in listener.incoming() {
         let Ok(conn) = conn else {
@@ -263,7 +271,7 @@ fn reply(s: &mut TcpStream, status: &str, kind: &str, body: &[u8]) -> std::io::R
 /// handle answers one request. The Host and Origin of the request must be this
 /// server's own address: a page of another site that points its name at
 /// 127.0.0.1 (DNS rebinding) must not be able to read the documents.
-fn handle(mut s: TcpStream, port: u16, shared: &Shared, page: &str, src: &Path, cfg_args: &[String]) -> std::io::Result<()> {
+fn handle(mut s: TcpStream, port: u16, shared: &Shared, page: &str, src: &Spot, cfg_args: &[String]) -> std::io::Result<()> {
     s.set_read_timeout(Some(Duration::from_secs(5)))?;
     s.set_write_timeout(Some(Duration::from_secs(5)))?;
     // a request is a line and some headers (a browser sends the cookies of every
@@ -323,7 +331,10 @@ fn handle(mut s: TcpStream, port: u16, shared: &Shared, page: &str, src: &Path, 
         r.read_exact(&mut body)?;
         let ws = shared.ws.lock().unwrap_or_else(|e| e.into_inner()).0.clone();
         return match answer(&ws, src, &body) {
-            Ok(()) => reply(&mut s, "200 OK", "application/json; charset=utf-8", b"{\"ok\":true}"),
+            Ok((committed, handed_over)) => {
+                let out = format!(r#"{{"ok":true,"committed":{committed},"handedOver":{handed_over}}}"#);
+                reply(&mut s, "200 OK", "application/json; charset=utf-8", out.as_bytes())
+            }
             Err((status, why)) => reply(&mut s, status, "text/plain; charset=utf-8", why.as_bytes()),
         };
     }
@@ -443,14 +454,19 @@ fn is_rev(r: &str) -> bool {
 /// ANSWER_MAX is the largest body of POST /answer.
 const ANSWER_MAX: usize = 16384;
 
-/// ANSWER is the one field docc watch writes.
+/// ANSWER is the field docc watch writes the answer into.
 const ANSWER: &str = "Ответ";
 
 /// answer takes `{"doc": id, "answer": text}` and writes text into the field
 /// «Ответ» of that document, when the workspace object ws lists it with a kind
-/// of the questions role. The block code of the field stays; nothing else of
-/// the file changes. The save starts the build.
-fn answer(ws: &str, src: &Path, body: &[u8]) -> Result<(), (&'static str, String)> {
+/// of the questions role, with who answered (git user.name) and when
+/// (answeredBy, answeredAt). The block code of the field stays; nothing else of
+/// the file changes. The save starts the build. Then it commits that file
+/// alone when nothing is staged (`Ответ человека: <title>`, trailer
+/// `Crew-Actor: human`) and runs workspace.onAnswer with the id; it returns
+/// whether it committed and whether the command succeeded.
+fn answer(ws: &str, spot: &Spot, body: &[u8]) -> Result<(bool, bool), (&'static str, String)> {
+    let src = spot.src.as_path();
     let bad = |why: &str| ("400 Bad Request", why.to_string());
     let req: serde_json::Value = serde_json::from_slice(body).map_err(|e| bad(&format!("not JSON: {e}")))?;
     let (Some(id), Some(text)) = (req["doc"].as_str(), req["answer"].as_str()) else {
@@ -476,20 +492,129 @@ fn answer(ws: &str, src: &Path, body: &[u8]) -> Result<(), (&'static str, String
     }
     let file = std::fs::canonicalize(src.join(rel)).map_err(|e| ("404 Not Found", e.to_string()))?;
     let data = std::fs::read(&file).map_err(|e| ("500 Internal Server Error", e.to_string()))?;
-    let out = set_answer(&data, text).map_err(|e| ("409 Conflict", e))?;
+    let mut out = set_field(&data, ANSWER, text).map_err(|e| ("409 Conflict", e))?;
+    let by = git(&spot.root, &["config", "user.name"]).map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string()).unwrap_or_default();
+    if !by.is_empty() {
+        out = set_field(&out, "answeredBy", &by).map_err(|e| ("409 Conflict", e))?;
+    }
+    out = set_field(&out, "answeredAt", &crate::comments::now()).map_err(|e| ("409 Conflict", e))?;
     let mut tmp = file.clone().into_os_string();
     tmp.push(".docc-tmp");
     let tmp = PathBuf::from(tmp);
     std::fs::write(&tmp, &out).and_then(|_| std::fs::rename(&tmp, &file)).map_err(|e| {
         let _ = std::fs::remove_file(&tmp);
         ("500 Internal Server Error", e.to_string())
-    })
+    })?;
+    let title = page["title"].as_str().unwrap_or(id);
+    let committed = git(&spot.root, &["diff", "--cached", "--quiet"]).is_some()
+        && git(&spot.root, &["add", "--", &file.to_string_lossy()]).is_some()
+        && git(&spot.root, &["commit", "-q", "-m", &format!("Ответ человека: {title}"), "-m", "Crew-Actor: human", "--", &file.to_string_lossy()]).is_some();
+    Ok((committed, hand_over(&spot.on_answer, id, &spot.root)))
 }
 
-/// set_answer is the JSON text of a document with the field «Ответ» set to
-/// text: its value replaced (a block code at the end of a string stays), or a
+/// git runs git in the project root; None when it cannot run or fails.
+fn git(root: &Path, args: &[&str]) -> Option<std::process::Output> {
+    let out = std::process::Command::new("git").arg("-C").arg(root).args(args).stdin(std::process::Stdio::null()).output().ok()?;
+    out.status.success().then_some(out)
+}
+
+/// hand_over runs the command cmd (workspace.onAnswer) with the document id
+/// as its one more argument, without a shell, in the project root, for at
+/// most 30 s; its output is dropped. It reports whether it ran and succeeded.
+fn hand_over(cmd: &str, id: &str, root: &Path) -> bool {
+    let Some(mut words) = split_words(cmd) else { return false };
+    if words.is_empty() {
+        return false;
+    }
+    // the command crew writes is "python3 ~/.claude/...": the shell would expand ~/, so it is done here
+    if let Some(home) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) {
+        for w in &mut words {
+            if let Some(rest) = w.strip_prefix("~/") {
+                *w = Path::new(&home).join(rest).to_string_lossy().into_owned();
+            }
+        }
+    }
+    let null = std::process::Stdio::null;
+    let Ok(mut child) = std::process::Command::new(&words[0]).args(&words[1..]).arg(id).current_dir(root).stdin(null()).stdout(null()).stderr(null()).spawn() else {
+        return false;
+    };
+    let end = Instant::now() + Duration::from_secs(30);
+    loop {
+        match child.try_wait() {
+            Ok(Some(st)) => return st.success(),
+            Ok(None) if Instant::now() < end => std::thread::sleep(Duration::from_millis(50)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return false;
+            }
+        }
+    }
+}
+
+/// split_words splits a command line like a POSIX shell does (the shell-words
+/// rules): blanks separate words, '...' keeps everything, "..." keeps all but
+/// \" \\ \$ \` and a backslash keeps the next sign. None for an open quote.
+fn split_words(s: &str) -> Option<Vec<String>> {
+    let (mut words, mut cur, mut any) = (Vec::new(), String::new(), false);
+    let mut it = s.chars();
+    while let Some(c) = it.next() {
+        match c {
+            ' ' | '\t' | '\n' => {
+                if any {
+                    words.push(std::mem::take(&mut cur));
+                    any = false;
+                }
+            }
+            '\'' => {
+                any = true;
+                loop {
+                    match it.next()? {
+                        '\'' => break,
+                        c => cur.push(c),
+                    }
+                }
+            }
+            '"' => {
+                any = true;
+                loop {
+                    match it.next()? {
+                        '"' => break,
+                        '\\' => match it.next()? {
+                            c @ ('"' | '\\' | '$' | '`') => cur.push(c),
+                            '\n' => {}
+                            c => {
+                                cur.push('\\');
+                                cur.push(c);
+                            }
+                        },
+                        c => cur.push(c),
+                    }
+                }
+            }
+            '\\' => {
+                any = true;
+                match it.next() {
+                    Some('\n') | None => {}
+                    Some(c) => cur.push(c),
+                }
+            }
+            c => {
+                any = true;
+                cur.push(c);
+            }
+        }
+    }
+    if any {
+        words.push(cur);
+    }
+    Some(words)
+}
+
+/// set_field is the JSON text of a document with the top-level field key set
+/// to text: its value replaced (a block code at the end of a string stays), or a
 /// new member after the last one, indented like the file.
-fn set_answer(src: &[u8], text: &str) -> Result<Vec<u8>, String> {
+fn set_field(src: &[u8], key: &str, text: &str) -> Result<Vec<u8>, String> {
     let (bom, data) = match src.strip_prefix(b"\xEF\xBB\xBF") {
         Some(rest) => (&src[..3], rest),
         None => (&src[..0], src),
@@ -499,11 +624,11 @@ fn set_answer(src: &[u8], text: &str) -> Result<Vec<u8>, String> {
         (None, Some(root)) if root.kind == crate::loader::Kind::Object => root,
         _ => return Err("the file is not valid JSON with an object at the root".into()),
     };
-    if r.dups.iter().any(|d| d.key == ANSWER) {
-        return Err(format!("the file has {ANSWER:?} twice"));
+    if r.dups.iter().any(|d| d.key == key) {
+        return Err(format!("the file has {key:?} twice"));
     }
     let lit = |s: &str| serde_json::to_string(s).unwrap_or_default().replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029");
-    let (start, end, new) = match root.members.iter().find(|m| m.key == ANSWER) {
+    let (start, end, new) = match root.members.iter().find(|m| m.key == key) {
         Some(m) => {
             let code = (m.value.kind == crate::loader::Kind::String).then(|| crate::codes::code_of(&m.value.str)).flatten();
             let v = code.map_or_else(|| text.to_string(), |c| crate::codes::with_code(text, c));
@@ -511,7 +636,7 @@ fn set_answer(src: &[u8], text: &str) -> Result<Vec<u8>, String> {
         }
         None => {
             let Some(last) = root.members.last() else {
-                return Ok([bom, b"{", format!("{}: {}", lit(ANSWER), lit(text)).as_bytes(), &data[root.start + 1..]].concat());
+                return Ok([bom, b"{", format!("{}: {}", lit(key), lit(text)).as_bytes(), &data[root.start + 1..]].concat());
             };
             let first = &root.members[0];
             let lead = &data[root.start + 1..first.key_start];
@@ -523,7 +648,7 @@ fn set_answer(src: &[u8], text: &str) -> Result<Vec<u8>, String> {
                 ),
                 None => ", ".into(),
             };
-            (last.value.end, last.value.end, format!("{sep}{}: {}", lit(ANSWER), lit(text)))
+            (last.value.end, last.value.end, format!("{sep}{}: {}", lit(key), lit(text)))
         }
     };
     Ok([bom, &data[..start], new.as_bytes(), &data[end..]].concat())
@@ -589,7 +714,8 @@ mod tests {
     }
 
     #[test]
-    fn set_answer_writes_only_the_field() {
+    fn set_field_writes_only_the_field() {
+        let set_answer = |src: &[u8], t: &str| set_field(src, ANSWER, t);
         let got = |src: &str, t: &str| String::from_utf8(set_answer(src.as_bytes(), t).unwrap()).unwrap();
         assert_eq!(got("{\n  \"title\": \"Q?\"\n}\n", "Yes"), "{\n  \"title\": \"Q?\",\n  \"Ответ\": \"Yes\"\n}\n");
         assert_eq!(got(r#"{"title":"Q?","Ответ":"No ^QA-3","x":1}"#, "Yes"), r#"{"title":"Q?","Ответ":"Yes ^QA-3","x":1}"#);
@@ -597,5 +723,15 @@ mod tests {
         assert_eq!(got("{}", "Yes"), r#"{"Ответ": "Yes"}"#);
         assert!(set_answer(r#"{"Ответ":"a","Ответ":"b"}"#.as_bytes(), "x").is_err());
         assert!(set_answer(b"[1]", "x").is_err());
+    }
+
+    #[test]
+    fn commands_split_like_a_shell() {
+        let w = |s: &str| split_words(s).map(|v| v.join("|"));
+        assert_eq!(w("python3 ~/.claude/crew.py answered").as_deref(), Some("python3|~/.claude/crew.py|answered"));
+        assert_eq!(w(r#"  a 'b c' "d \"e\" \x" f\ g ''  "#).as_deref(), Some(r#"a|b c|d "e" \x|f g|"#));
+        assert_eq!(w("").as_deref(), Some(""));
+        assert_eq!(w("a 'b"), None);
+        assert_eq!(w(r#"a "b"#), None);
     }
 }
