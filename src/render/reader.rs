@@ -28,7 +28,8 @@ pub fn reader_page(title: &str, lang: &str, data: &str) -> String {
     let mut rest = PAGE;
     for (k, v) in [
         ("{{LANG}}", esc(lang)),
-        ("{{VERSION}}", esc(VERSION.trim())),
+        ("{{VERSION}}", esc(crate::VERSION)),
+        ("{{READER}}", esc(VERSION.trim())),
         ("{{TITLE}}", esc(if title.is_empty() { "docc" } else { title })),
         ("{{CSS}}", CSS.to_string()),
         ("{{DATA}}", data),
@@ -57,6 +58,8 @@ mod tests {
     fn the_page_inlines_the_workspace_once_and_safely() {
         let p = reader_page("A <b>", "ru", &workspace_script(r#"{"x":"</script><script>alert(1)</script>"}"#));
         assert!(p.contains("<title>A &lt;b&gt;</title>") && p.contains(r#"<html lang="ru">"#));
+        assert!(p.contains(&format!(r#"<meta name="generator" content="docc {}">"#, crate::VERSION)));
+        assert!(p.contains(&format!(r#"<meta name="docc-reader" content="{}">"#, VERSION.trim())));
         assert_eq!(p.matches(r#"id="docc-workspace""#).count(), 1);
         assert!(!p.contains("</script><script>alert"));
         assert!(!reader_page("", "en", "").contains("docc-workspace\">"));
