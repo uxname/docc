@@ -99,8 +99,10 @@ fn numbers(p: &Project) -> codes::Numbers {
 
 /// Keys gives each document its key: the one it says it has, else the one
 /// most of its codes carry, else one made from its id that no other
-/// document has.
-struct Keys(HashSet<String>);
+/// document has. A document of a kind of the meetings role at
+/// meeting-<N>.json gets M<N> instead (Docspace ADR-0037), and no other
+/// document gets M and digits while that role is set.
+struct Keys(HashSet<String>, Vec<String>);
 
 impl Keys {
     fn of(p: &Project) -> Keys {
@@ -112,7 +114,16 @@ impl Keys {
                 }
             }
         }
-        Keys(taken)
+        Keys(taken, p.cfg.workspace.kinds("meetings"))
+    }
+
+    /// meeting is M<N> for a meeting at meeting-<N>.json, when no one has it.
+    fn meeting(&self, d: &Doc) -> Option<String> {
+        let kind = d.root()?.get("kind").filter(|k| k.kind == Kind::String)?;
+        let name = d.rel.rsplit('/').next()?;
+        let n = name.strip_prefix("meeting-")?.strip_suffix(".json")?;
+        let k = format!("M{n}");
+        (self.1.contains(&kind.str) && !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()) && codes::is_key(&k) && !self.0.contains(&k)).then_some(k)
     }
 
     /// pick is the key of d and whether the file still has to say it.
@@ -126,7 +137,11 @@ impl Keys {
         }
         let k = match count.into_iter().max_by(|a, b| a.1.cmp(&b.1).then(b.0.cmp(a.0))) {
             Some((k, _)) => k.to_string(),
-            None => codes::propose_key(&d.id, &|k| self.0.contains(k)),
+            // ponytail: with a meetings role, M<digits> is left to the meetings (a milestone m1 took M1 from meeting-1)
+            None => self.meeting(d).unwrap_or_else(|| {
+                let reserved = |k: &str| !self.1.is_empty() && k.len() > 1 && k.starts_with('M') && k[1..].bytes().all(|b| b.is_ascii_digit());
+                codes::propose_key(&d.id, &|k| self.0.contains(k) || reserved(k))
+            }),
         };
         self.0.insert(k.clone());
         (k, true)

@@ -85,6 +85,37 @@ fn a_new_document_gets_a_key_and_numbers() {
     assert!(!out.contains("DOC216") && !out.contains("DOC212"), "{code} {out}");
 }
 
+/// A meeting (a kind of workspace.roles.meetings) at meeting-<N>.json gets
+/// the key M<N> (Docspace ADR-0037); taken, the usual one. Other documents
+/// never get M and digits.
+#[test]
+fn a_meeting_gets_the_key_m_and_its_number() {
+    let m = |kind: &str| format!(r#"{{"title":"Call","kind":"{kind}","body":["Hello."]}}"#);
+    let p = raw_project([
+        ("docc.json", r#"{"workspace":{"roles":{"meetings":"meeting"}}}"#.to_string()),
+        ("docs/schemas/page.json", r#"{"type":"object","additionalProperties":true}"#.to_string()),
+        ("docs/schemas/meeting.json", r#"{"type":"object","additionalProperties":true}"#.to_string()),
+        ("docs/src/index.json", r#"{"title":"Index","kind":"page","key":"M3","body":["One. ^M3-1"]}"#.to_string()),
+        ("docs/src/meetings/meeting-1.json", m("meeting")),
+        ("docs/src/meetings/meeting-12.json", m("meeting")),
+        ("docs/src/meetings/meeting-3.json", m("meeting")),
+        ("docs/src/notes/meeting-4.json", m("page")),
+        ("docs/src/m7.json", m("page")),
+    ]);
+    let (code, out, _) = p.run(&["codes"]);
+    assert_eq!(code, 0, "{out}");
+    let key = |f: &str| {
+        let d: serde_json::Value = serde_json::from_str(&p.read(f)).unwrap();
+        d["key"].as_str().unwrap_or_default().to_string()
+    };
+    assert_eq!(key("docs/src/meetings/meeting-1.json"), "M1");
+    assert_eq!(key("docs/src/meetings/meeting-12.json"), "M12");
+    assert_ne!(key("docs/src/meetings/meeting-3.json"), "M3", "taken by the index");
+    // M and digits are the meetings' own: a page (a milestone m7, say) gets another key
+    assert!(!key("docs/src/notes/meeting-4.json").starts_with("M4"));
+    assert_eq!(key("docs/src/m7.json"), "M7A");
+}
+
 #[test]
 fn codes_of_the_old_format_are_migrated() {
     // the format of docc 0.5 to 0.7: four signs, unique in the project
