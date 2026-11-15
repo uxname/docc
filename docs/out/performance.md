@@ -22,4 +22,4 @@ The first measurement was 1.66 seconds. The word lists were matched with case-in
 
 - [Architecture](architecture.md)
 - [Decisions and assumptions](decisions.md)
-- [docc](index.md)
+- [Overview](overview.md)

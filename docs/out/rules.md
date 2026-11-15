@@ -8,7 +8,7 @@ Rules are grouped like in Biome: syntax, schema, graph, text, markdown, style, t
 
 The preset recommended gives every rule a default level, and every rule is on by default. The rules style/hedging (DOC352) and style/time-bound-words (DOC353) warn about vague and time-bound words. Word rules, the repeated-word rule and custom rules match text in Unicode NFC and skip text in backticks, so an identifier such as `new` is written in backticks.
 
-Core rules are always errors and cannot be suppressed, switched off or given another level: broken JSON, duplicate keys, a missing title, invalid ids, the built-in schema, a missing kind schema (DOC109), duplicate ids, broken references, orphans, parent cycles, missing roots, links to hidden documents, bad includes, stale link hashes (DOC209), duplicate block codes (DOC212), blocks without a code (DOC216), broken image paths (DOC213), bad code tags (DOC401), changed code (DOC402) and stale output (DOC501).
+Core rules are always errors and cannot be suppressed, switched off or given another level: broken JSON, duplicate keys, a missing title, invalid ids, the built-in schema, a missing kind schema (DOC109), duplicate ids, broken references, orphans, parent cycles, missing roots, links to hidden documents, bad includes, stale link hashes (DOC209), duplicate block codes (DOC212), duplicate keys (DOC219), blocks without a code (DOC216), broken image paths (DOC213), bad code tags (DOC401), changed code (DOC402) and stale output (DOC501).
 
 Rule levels are set in [Configuration](config.md); the commands that run the rules are in [Commands](commands.md); version hashes are described in [Document model](document-model.md#change-tracking).
 
@@ -16,7 +16,7 @@ Rule levels are set in [Configuration](config.md); the commands that run the rul
 
 DOC209 graph/suspect-link reports a link whose version hash is missing or no longer matches its target, with the change and the hash the target has now. DOC110 syntax/reserved-field-typo warns about a free field spelled almost like a reserved key (`parnet`, `hiden`). DOC202 names the nearest existing ids. DOC310 markdown/raw-html also reports links with a `javascript:`, `vbscript:` or `data:` address; docc does not rewrite them. DOC402 trace/code-changed reports a code file or region whose fingerprint is missing or no longer matches: the documents it points to may no longer agree with the code. DOC112 syntax/invalid-comment reports a malformed item of `$comments` or an id used by another comment; DOC215 graph/comment-lost warns that a comment lost its place and asks to move its pointer or delete it.
 
-DOC212 graph/duplicate-anchor reports a block code on two blocks of the project or equal to a heading anchor of its page; DOC216 graph/missing-code a block without a code. DOC213 graph/broken-file reports an image path that names no file in the sources, lies outside them or is not a png, jpg, jpeg, gif, svg or webp file. DOC214 graph/wrong-target-kind reports a reference whose target kind is not allowed by `x-docc-target`.
+DOC212 graph/duplicate-anchor reports a block code on two blocks of the project or equal to a heading anchor of its page; DOC216 graph/missing-code a block without a code; DOC219 codes/duplicate-key a key on two documents. DOC217 meta/decided-unknown-block reports an entry of `$decided` whose code names no block of the document; like DOC216 it does not stop the pages. DOC218 graph/folder-with-text warns about a document with children (by parent, or the page of a folder) that has text of its own: a reader shows it as the list of its children. DOC213 graph/broken-file reports an image path that names no file in the sources, lies outside them or is not a png, jpg, jpeg, gif, svg or webp file. DOC214 graph/wrong-target-kind reports a reference whose target kind is not allowed by `x-docc-target`.
 
 DOC314 style/manual-number warns when `numbering` is on and a title or a section key starts with its own number. DOC403 trace/uncovered warns when a document of a kind with `x-docc-covered` has no code tag; DOC404 trace/uncovered-block warns about each block such a kind wants covered that no tag names as `id#^code` (a tag on the whole document or a field does not count); `docc check <paths>` also reports, at the place where the tag stood at HEAD, a block whose last tag under those paths this change removes. DOC303 also catches `N/A`, a lone dash, `see above` and `works correctly`, and their Russian forms.
 
@@ -39,4 +39,4 @@ Run `docc rules` for the list with current levels and `docc explain` with a code
 - [Agent workflow](agent-workflow.md)
 - [Decisions and assumptions](decisions.md)
 - [Document model](document-model.md)
-- [docc](index.md)
+- [Overview](overview.md)

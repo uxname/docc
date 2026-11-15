@@ -1,11 +1,5 @@
 {
   "title": "docc",
   "kind": "overview",
-  "key": "IND",
-  "body": [
-    "docc is a compiler and linter for documentation written as JSON. It checks structure, links, content and style, and builds Markdown for people to read. ^IND-1",
-    "{{goals#summary}} ^IND-2",
-    "Start with [[document-model@pyhf]] to see what a document looks like, then [[agent-workflow@ub9c]] for the loop an agent follows. ^IND-3",
-    "The rest of the description: [[goals@bq7u]], [[rules@kvpj]], [[commands@ep95]], [[config@sbmf]], [[rendering@323g]], [[architecture@uq2k]], [[performance@pwkp]] and [[decisions@8qnf]]. ^IND-4"
-  ]
+  "key": "IND"
 }

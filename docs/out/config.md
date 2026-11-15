@@ -18,6 +18,8 @@ Paths: `src`, `out`, `schemas` and `outFull`. The folder `out` is owned by docc:
 
 `branding` (name, url, logo, accent, accentLight, header) dresses the single HTML file for a company, as described in [Rendering](rendering.md); `name` is required, the logo is a file inside the project and must exist.
 
+The `workspace` section is written by a tool that works on the project, such as crew, and read by `docc workspace`, `docc watch` and `docc build --html` ([Commands](commands.md)): `run`, the project path of the progress file of the current run (docc watch sends its changes at once); `roles`, a role (tasks, checks, events, questions, meetings) for a kind or a list of kinds, so a reader knows which documents feed its sections and hides the sections of absent roles; `areas`, masks from the project root that sort the code tags of the coverage table (`prototype`, `tests`), the rest being `code`.
+
 `trace.scan` lists masks of code files, from the project root, that are searched for `docc:` tags; without it DOC401 to DOC404 do not run. Masks reach into git submodules: the files of a submodule are listed by its own git, with its own ignores, and a Git hook's environment (GIT_DIR and the like) does not change which repository is read. A mask that matches nothing is no error.
 
 ## Parent
@@ -28,6 +30,6 @@ Paths: `src`, `out`, `schemas` and `outFull`. The folder `out` is owned by docc:
 
 - [Commands](commands.md)
 - [Decisions and assumptions](decisions.md)
-- [docc](index.md)
+- [Overview](overview.md)
 - [Rendering](rendering.md)
 - [Rules and diagnostics](rules.md)

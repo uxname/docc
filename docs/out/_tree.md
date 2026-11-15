@@ -3,6 +3,7 @@
 # Document tree
 
 - [docc](index.md)
+  - [Overview](overview.md)
   - [Agent workflow](agent-workflow.md)
   - [Architecture](architecture.md)
   - [Commands](commands.md)

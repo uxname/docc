@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The entry page of the documentation: a title and a text that links to the sections.",
+  "description": "The entry page of the documentation: a folder of the sections, with only its title (DOC218); its text is the child document overview.",
   "type": "object",
-  "required": ["body"],
   "additionalProperties": true
 }
