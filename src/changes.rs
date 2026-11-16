@@ -130,6 +130,15 @@ pub struct Counts {
     pub rm: usize,
 }
 
+/// Codes are the block codes of the blocks counted in Counts: a block with
+/// no code yet is only counted. A changed block gives its new code.
+#[derive(Serialize, Default, Clone)]
+pub struct Codes {
+    pub add: Vec<String>,
+    pub ch: Vec<String>,
+    pub rm: Vec<String>,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogFile {
@@ -142,6 +151,7 @@ pub struct LogFile {
     #[serde(skip_serializing_if = "Option::is_none")]
     title: Option<String>,
     pub blocks: Counts,
+    pub codes: Codes,
     comments_only: bool,
     /// the new version is not a JSON object
     #[serde(skip_serializing_if = "std::ops::Not::not")]
@@ -158,27 +168,46 @@ fn block_leaf(ptr: &str, text: &str) -> bool {
     !text.is_empty() && render::block_field(&top)
 }
 
-/// counts are the block counts of the last step of st when it was commit c.
-fn counts(st: &Replay, c: usize) -> Counts {
-    let mut n = Counts::default();
+/// all are the count and the codes of every block of st: a new, shown or
+/// deleted document.
+fn all(st: &Replay) -> (usize, Vec<String>) {
+    let bs: Vec<&Leaf> = st.leaves.iter().filter(|l| block_leaf(&l.ptr, &l.text)).collect();
+    (bs.len(), bs.iter().filter_map(|l| code_of(&l.text)).collect())
+}
+
+fn code_of(text: &str) -> Option<String> {
+    crate::codes::code_of(text).map(String::from)
+}
+
+/// counts are the block counts and codes of the last step of st when it was commit c.
+fn counts(st: &Replay, c: usize) -> (Counts, Codes) {
+    let (mut n, mut k) = (Counts::default(), Codes::default());
     let Some(ch) = st.doc.changes.last().filter(|ch| ch.c == c) else {
-        return n;
+        return (n, k);
     };
     if ch.created {
-        n.add = st.leaves.iter().filter(|l| block_leaf(&l.ptr, &l.text)).count();
-        return n;
+        (n.add, k.add) = all(st);
+        return (n, k);
     }
     for v in &ch.changed {
-        match (block_leaf(&v[0], &v[1]), block_leaf(&v[0], &v[2])) {
-            (true, true) => n.ch += 1,
-            (false, true) => n.add += 1,
-            (true, false) => n.rm += 1,
-            _ => {}
-        }
+        let (count, codes, text) = match (block_leaf(&v[0], &v[1]), block_leaf(&v[0], &v[2])) {
+            (true, true) => (&mut n.ch, &mut k.ch, &v[2]),
+            (false, true) => (&mut n.add, &mut k.add, &v[2]),
+            (true, false) => (&mut n.rm, &mut k.rm, &v[1]),
+            _ => continue,
+        };
+        *count += 1;
+        codes.extend(code_of(text));
     }
-    n.add += ch.added.iter().filter(|v| block_leaf(&v[0], &v[1])).count();
-    n.rm += ch.removed.iter().filter(|v| block_leaf(&v[0], &v[1])).count();
-    n
+    for v in ch.added.iter().filter(|v| block_leaf(&v[0], &v[1])) {
+        n.add += 1;
+        k.add.extend(code_of(&v[1]));
+    }
+    for v in ch.removed.iter().filter(|v| block_leaf(&v[0], &v[1])) {
+        n.rm += 1;
+        k.rm.extend(code_of(&v[1]));
+    }
+    (n, k)
 }
 
 fn title_of(st: &Replay) -> Option<String> {
@@ -277,6 +306,7 @@ pub fn log(cfg: &Config, rev: &str, since: &str) -> Result<LogOut, String> {
             id: None,
             title: None,
             blocks: Counts::default(),
+            codes: Codes::default(),
             comments_only: false,
             broken: false,
             hidden: false,
@@ -286,7 +316,7 @@ pub fn log(cfg: &Config, rev: &str, since: &str) -> Result<LogOut, String> {
             if e.status == b'D' {
                 raw.remove(&e.path);
                 if let Applied::Gone(Some(st)) = history::apply(&mut state, e, None, &o) {
-                    f.blocks.rm = st.leaves.iter().filter(|l| block_leaf(&l.ptr, &l.text)).count();
+                    (f.blocks.rm, f.codes.rm) = all(&st);
                     (f.title, f.hidden) = (title_of(&st), st.hidden);
                 }
             } else {
@@ -297,10 +327,11 @@ pub fn log(cfg: &Config, rev: &str, since: &str) -> Result<LogOut, String> {
                 f.broken = matches!(history::apply(&mut state, e, Some(&data), &o), Applied::Broken);
                 if let Some(st) = state.get(&e.path) {
                     if !f.broken {
-                        f.blocks = counts(st, e.c);
+                        (f.blocks, f.codes) = counts(st, e.c);
                         if was_hidden && !st.hidden {
                             // shown: a reader had no page before, as docc diff lines it up
-                            f.blocks = Counts { add: st.leaves.iter().filter(|l| block_leaf(&l.ptr, &l.text)).count(), ..Default::default() };
+                            (f.blocks, f.codes) = (Counts::default(), Codes::default());
+                            (f.blocks.add, f.codes.add) = all(st);
                         }
                     }
                     (f.title, f.hidden) = (title_of(st), st.hidden);

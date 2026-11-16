@@ -164,10 +164,11 @@ Prints the commits of the first-parent chain of --rev (default HEAD), newest fir
 changed anything in the source folder, down to --since (not included). Each commit has its
 full hash, parents, author, committer, date, subject and body, and the files it changed:
 status A, M, D or R, path relative to src (oldPath for a rename), id and title of a document,
-how many blocks it added, changed and removed (the alignment of docc diff), and commentsOnly
-when only its \"$comments\" changed. A deleted document keeps its last title. With --format
-json (the format for programs) it is one JSON object on one line; docc schema log prints its
-JSON Schema. Works in a bare mirror with --config naming the project's docc.json in it.
+how many blocks it added, changed and removed (the alignment of docc diff) and their codes
+(a block with no code yet is only counted), and commentsOnly when only its \"$comments\"
+changed. A deleted document keeps its last title. With --format json (the format for
+programs) it is one JSON object on one line; docc schema log prints its JSON Schema. Works
+in a bare mirror with --config naming the project's docc.json in it.
 
 Examples:
   docc log --format json

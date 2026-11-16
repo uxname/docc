@@ -39,7 +39,7 @@
     "file": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "path", "blocks", "commentsOnly"],
+      "required": ["status", "path", "blocks", "codes", "commentsOnly"],
       "properties": {
         "status": { "enum": ["A", "M", "D", "R"], "description": "Added, modified, deleted, renamed (a copy is A, a type change M). A file moved into or out of the source folder is A or D." },
         "path": { "type": "string", "description": "Relative to src, as the path of a page of docc compile; for D the last path." },
@@ -55,6 +55,17 @@
             "add": { "type": "integer", "minimum": 0 },
             "ch": { "type": "integer", "minimum": 0 },
             "rm": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "codes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["add", "ch", "rm"],
+          "description": "The block codes (PAY-14, without ^) of the blocks counted in blocks: a changed block gives its new code; a block with no code yet is counted but not listed. A removed block gives the code it had.",
+          "properties": {
+            "add": { "type": "array", "items": { "type": "string" } },
+            "ch": { "type": "array", "items": { "type": "string" } },
+            "rm": { "type": "array", "items": { "type": "string" } }
           }
         },
         "commentsOnly": { "type": "boolean", "description": "M of a JSON file whose only change is inside its top-level \"$comments\" (both versions parsed, $comments dropped, compared as JSON)." },

@@ -185,12 +185,14 @@ fn log_lists_commits_files_and_blocks() {
     let a = file(c, "a.json");
     assert_eq!((s(a, "status"), s(a, "id"), s(a, "title")), ("M", "a", "A2"));
     assert_eq!(blocks(a), (1, 2, 0), "a paragraph added, one edited, the owner property changed; notes and title are not blocks");
+    assert_eq!(a["codes"], json!({"add": ["AA-10"], "ch": ["AA-2", "AA-8"], "rm": []}), "the codes of those blocks");
     let b = file(c, "sub/b.json");
     assert_eq!((s(b, "status"), s(b, "oldPath"), blocks(b)), ("R", "b.json", (0, 0, 0)));
     let h = file(c, "h.json");
     assert_eq!((s(h, "status"), h["hidden"].clone(), blocks(h)), ("A", Value::Bool(true), (1, 0, 0)));
     assert_eq!(commit(&log, "first")["parents"], json!([]));
     assert_eq!(blocks(file(commit(&log, "first"), "a.json")), (5, 0, 0), "a new document: every block, properties too");
+    assert_eq!(file(commit(&log, "first"), "a.json")["codes"]["add"], json!(["AA-1", "AA-2", "AA-3", "AA-8", "AA-9"]));
 
     let c = commit(&log, "comments");
     assert!(c["commentsOnly"] == true && file(c, "a.json")["commentsOnly"] == true, "{c}");
@@ -201,8 +203,10 @@ fn log_lists_commits_files_and_blocks() {
     assert_eq!(c["commentsOnly"], false);
     let c = commit(&log, "fix");
     assert_eq!(blocks(file(c, "a.json")), (0, 0, 2), "against the last good version");
+    assert_eq!(file(c, "a.json")["codes"], json!({"add": [], "ch": [], "rm": ["AA-10", "AA-3"]}));
     let b = file(c, "sub/b.json");
     assert_eq!((s(b, "status"), s(b, "title"), blocks(b)), ("D", "B", (0, 0, 1)), "a deleted document keeps its title");
+    assert_eq!(b["codes"]["rm"].as_array().map(Vec::len), Some(1), "{b}");
     let p = file(commit(&log, "pic"), "pic.png");
     assert!(p.get("id").is_none() && p.get("title").is_none() && blocks(p) == (0, 0, 0), "{p}");
     let c = commit(&log, "merge feat");
