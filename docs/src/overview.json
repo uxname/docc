@@ -7,7 +7,7 @@
   "body": [
     "docc is a compiler and linter for documentation written as JSON. It checks structure, links, content and style, and builds Markdown for people to read. ^OVE-1",
     "{{goals#summary}} ^OVE-2",
-    "Start with [[document-model@d9p7]] to see what a document looks like, then [[agent-workflow@ub9c]] for the loop an agent follows. ^OVE-3",
+    "Start with [[document-model@hjjb]] to see what a document looks like, then [[agent-workflow@ub9c]] for the loop an agent follows. ^OVE-3",
     "The rest of the description: [[goals@bq7u]], [[rules@eyba]], [[commands@t95g]], [[config@732u]], [[rendering@bytp]], [[architecture@uq2k]], [[performance@pwkp]] and [[decisions@2atk]]. ^OVE-4"
   ]
 }

@@ -347,6 +347,12 @@ fn compile_hidden_adds_hidden_pages_without_notes() {
     assert_eq!((c0, c1), (1, 1));
     assert_eq!(yes["diagnostics"], no["diagnostics"]);
     assert!(yes["diagnostics"].to_string().contains("DOC210"), "{yes}");
+    // the source of a decision may name a hidden document (a question), as notes may
+    p.write("docs/src/a.json", r#"{"title":"A","parent":"index","body":["Fact."],"$decided":{"A-1":{"by":"agent-delegated","source":"[[h1]]","confirmed":null}}}"#);
+    p.run(&["codes"]);
+    let (_, v) = compile(&p.path, &[]);
+    let d = v["diagnostics"].to_string();
+    assert!(!d.contains("DOC210") && d.contains("DOC209"), "the link is read, a hidden target allowed: {v}");
     assert_eq!((yes["ok"].clone(), yes["pages"].clone()), (Value::Bool(false), serde_json::json!([])));
 }
 
