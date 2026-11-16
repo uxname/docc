@@ -386,17 +386,22 @@ pub(crate) fn go_quote(s: &str) -> String {
 }
 
 /// is_print is unicode.IsPrint: letters, marks, numbers, punctuation, symbols
-/// and the ASCII space. Rust's own printable table (used by escape_debug past
-/// the first char) excludes the same categories: C*, Z* other than ' '.
+/// and the ASCII space. Read from the general category, not from Rust's
+/// escape_debug, whose treatment of combining marks changed between releases.
 fn is_print(c: char) -> bool {
-    if c == ' ' || c == '\'' {
-        return true;
-    }
-    if c.is_whitespace() {
-        return false;
-    }
-    let s = format!("a{c}"); // escape_debug also escapes ', which Go prints as is
-    s.escape_debug().to_string() == s
+    use unicode_general_category::{GeneralCategory as G, get_general_category};
+    c == ' '
+        || !matches!(
+            get_general_category(c),
+            G::Control
+                | G::Format
+                | G::Surrogate
+                | G::PrivateUse
+                | G::Unassigned
+                | G::LineSeparator
+                | G::ParagraphSeparator
+                | G::SpaceSeparator
+        )
 }
 
 struct Walker<'a> {

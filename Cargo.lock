@@ -233,6 +233,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "tar",
+ "unicode-general-category",
  "unicode-normalization",
  "ureq",
  "url",
